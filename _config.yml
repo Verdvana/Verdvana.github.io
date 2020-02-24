@@ -115,12 +115,12 @@ jekyll-theme-WuK: # 我的主题的自定义样式都在这个命名空间
         onload='
           new Valine({
             "el": ".v",
-            "appId": "9hABRddSuEkTgqLrt1VSK5B1-gzGzoHsz",
-            "appKey": "NJ7RwmgrxsF7KDzlqU7YewlL",
+            "appId": "0KCYIvqG5ktP9Pw9zjIQyESV-gzGzoHsz",
+            "appKey": "hVnb4I7RVQClldY6uAIuYGrk",
             "notify": "true",
             "verify": "true",
             "avatar": "identicon",
-            "placeholder": "在这里评论吧！",
+            "placeholder": "评论："",
             "visitor": true,
             "highlight": true,
             "avatarForce": false,
