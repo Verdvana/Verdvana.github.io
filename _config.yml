@@ -5,7 +5,7 @@ description: | # 头像背后的信息，<br/>代表换行
   数字IC设计<br/>
   硬件不行了<br/>
   <a href="/static/img/wechat.jpg" title="Wechat">
-    <i class="fas fa-wechat"></i>
+    <i class="fa-wechat"></i>
   </a>
   <a href="https://weibo.com/u/2200615701?is_hot=1" title="Weibo">
     <i class="fas fa-weibo"></i>
@@ -15,10 +15,6 @@ description: | # 头像背后的信息，<br/>代表换行
   </a>
   <a href="https://github.com/Verdvana" title="Github">
     <i class="fab fa-github"></i>
-  </a>
-  <a href="https://codeforces.com/profile/WuK" title="WuK">
-    <i class="fas fa-chart-bar"></i>
-
   </a>
   <a href="https://www.zhihu.com/people/wu.kan/activities" title="zhihu">
     <i class="fab fa-zhihu"></i>
