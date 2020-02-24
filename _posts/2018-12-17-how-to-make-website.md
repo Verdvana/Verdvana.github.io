@@ -1,9 +1,7 @@
 ---
-layout: post
 title:  "如何利用GitHub Pages搭建个人博客"
 tags:
   - Others
-date:   2018-12-18 11:07:10 +0700
 ---
 
 -------
