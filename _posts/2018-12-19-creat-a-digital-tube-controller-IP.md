@@ -91,7 +91,7 @@ tags:
 
 &#160; &#160; &#160; &#160; 首先是Avalon总线通信模块：
 
-```
+```verilog
 module digital_tube_avalon_slaver(
 			input 				clk,	//时钟信号
 			input 				rst_n,	//复位信号，低电平有效
@@ -316,7 +316,7 @@ endmodule
 
 &#160; &#160; &#160; &#160; 最后用顶层文件把他们组合在一起：
 
-```
+```verilog
 module digital_tube_controller(
 			input clk,						//时钟信号，25MHz
 			input rst_n,					//复位信号，低电平有效
@@ -455,7 +455,7 @@ endmodule
 &#160; &#160; &#160; &#160; 都是仿照Altera的HAL库写的。
 
 &#160; &#160; &#160; &#160; 首先是寄存器头文件：
-```
+```c
 #ifndef __VERDVANA_AVALON_DIGITAL_TUBE_REGS_H__
 #define __VERDVANA_AVALON_DIGITAL_TUBE_REGS_H__
 
@@ -468,7 +468,7 @@ endmodule
 &#160; &#160; &#160; &#160; 很简单，就是把写io的句子定义成写数码管的句子，参数为地址（base）和需要写入的数据（data）。
 
 &#160; &#160; &#160; &#160; 然后是驱动函数头文件：
-```
+```c
 #ifndef __DIGITAL_TUBE_CONTROLLER_H__
 #define __DIGITAL_TUBE_CONTROLLER_H__
 
@@ -501,7 +501,7 @@ void verdvana_digital_tube_display(alt_u32 hex);
 
 &#160; &#160; &#160; &#160; 最后就是驱动源文件：
 
-```
+```c
 #include "unistd.h"
 #include "alt_types.h"
 #include "stdlib.h"
@@ -529,7 +529,7 @@ void verdvana_digital_tube_display(alt_u32 hex)
 
 &#160; &#160; &#160; &#160; 这时NiosⅡ SBT for Eclipse并不能调用编写好的驱动文件，于是就需要编写一个*.tcl来让NiosⅡ SBT for Eclipse自动抓取驱动文件。
 
-```
+```tcl
 #
 #  digital_tube_controller.tcl
 #
