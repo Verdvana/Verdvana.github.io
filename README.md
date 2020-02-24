@@ -14,7 +14,7 @@ title: Home
   - **verdvana@foxmail.com**  
   - **verdvana@gmail.com**  
 - 微信：
-  - **erdvana**  
+  - **verdvana**  
 
 ----
 
