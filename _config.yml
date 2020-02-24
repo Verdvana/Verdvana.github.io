@@ -4,7 +4,6 @@ description: | # 头像背后的信息，<br/>代表换行
   西安电子科技大学<br/>
   数字IC设计<br/>
   硬件不行了<br/>
-  ASC<br/>
   <a href="mailto:verdvana@foxmail.com" title="verdvana@foxmail.com">
     <i class="fas fa-envelope"></i>
   </a>
@@ -21,7 +20,7 @@ description: | # 头像背后的信息，<br/>代表换行
     <i class="fab fa-zhihu"></i>
   </a>
   <iframe
-    src="https://music.163.com/outchain/player?type=0&id=155059595&auto=0&height=32"
+    src="https://music.163.com/#/song?id=210049"
     width=100%
     height=52
     frameborder="no"
