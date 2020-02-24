@@ -1,9 +1,9 @@
 title: VERDVANA' BLOG # 站点标题
 tagline: verdvana
 description: | # 头像背后的信息，<br/>代表换行
-  西安电子科技大学<br/>
   数字IC设计<br/>
-  硬件不行了<br/>
+  FPGA<br/>
+  PCB Layout<br/>
   <a href="/static/img/wechat.jpg" title="Wechat">
     <i class="fas fa-weixin"></i>
   </a>

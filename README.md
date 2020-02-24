@@ -2,26 +2,28 @@
 title: Home
 ---
 
-## Contact
+## 联系方式
 
-- Address: **Sun Yat-sen University - 132 Waihuan East Rd. - Guangzhou, China**
-- Phone: **+86 18756280097**
-- E-mail:
-  - **wu.kan@foxmail.com**
-  - **wukan3@mail2.sysu.edu.cn**
-  - **im.wu.kan@gmail.com**
-- WeChat: **Wu-\_-Kan**
-- QQ: **942759535**
-- Site: **<https://wu-kan.cn>**
+> 陕西省 西安市 雁塔区 太白南路2号 西安电子科技大学    
+> +86 18703416745     
+> +86 15698343510
 
-## Education
+> 1306024218@st.nuc.edu.cn   
+> verdvana@foxmail.com  
+> verdvana@gmail.com  
 
-School of Data and Computer Science, Sun Yat-sen University, Guangzhou, Sept. 2017 - Jul. 2021(expected)
 
-- Bachelor of Computer Science (Supercomputer Class)
-  - Principle of Supercomputer
-  - Parallel and Distributed Computing
-  - High Performance Computing
+> [verdvana.top](http://verdvana.top)       
+
+## 教育背景
+
+#### __中北大学__ `2013.9 - 2017.7`
+
+- 电子科学与技术 __学士__
+
+#### __西安电子科技大学__ `2018.9 - `
+
+- 电子与通信工程 __硕士__
 
 ## Project
 
