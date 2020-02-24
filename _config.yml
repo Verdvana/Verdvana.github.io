@@ -4,6 +4,11 @@ description: | # 头像背后的信息，<br/>代表换行
   西安电子科技大学<br/>
   数字IC设计<br/>
   硬件不行了<br/>
+  <a href="/static/img/wechat.jpg" title="Wechat">
+    <i class="fas fa-wechat"></i>
+  <a href="https://weibo.com/u/2200615701?is_hot=1" title="Weibo">
+    <i class="fas fa-weibo"></i>
+  </a>
   <a href="mailto:verdvana@foxmail.com" title="verdvana@foxmail.com">
     <i class="fas fa-envelope"></i>
   </a>
