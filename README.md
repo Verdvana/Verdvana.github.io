@@ -7,14 +7,14 @@ title: Home
 - 地址：
   - **陕西省 西安市 雁塔区 太白南路2号 西安电子科技大学**
 - 电话：
-  - +86 15698343510
-  - +86 18703416745     
+  - **+86 15698343510**
+  - **+86 18703416745** 
 - 邮箱：
-  - 1306024218@st.nuc.edu.cn   
-  - verdvana@foxmail.com  
-  - verdvana@gmail.com  
+  - **1306024218@st.nuc.edu.cn**   
+  - **verdvana@foxmail.com**  
+  - **verdvana@gmail.com**  
 - 微信：
-  - Verdvana  
+  - **erdvana**  
 
 ----
 
