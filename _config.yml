@@ -172,7 +172,7 @@ jekyll-theme-WuK: # 我的主题的自定义样式都在这个命名空间
       disable: false
       avatar: # 侧边栏显示的头像
         enable: true
-        img: https://gravatar.loli.net/avatar/a12c5fff23dde00df79af9aca4e7b6e4?s=300 # 头像的地址
+        img: https://raw.githubusercontent.com/Verdvana/jekyll-theme-verdvana/master/assets/image/avatar.jpg # 头像的地址
       nav:
         - title: '<i class="fas fa-home fa-fw"></i> 首页'
           href: /
