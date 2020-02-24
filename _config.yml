@@ -448,11 +448,11 @@ jekyll-theme-WuK: # 我的主题的自定义样式都在这个命名空间
           background-position: center top;
           background-repeat: no-repeat;
           background-attachment: fixed;
-          background-image: url(https://github.com/Verdvana/Verdvana.github.io/blob/master/static/img/wallpaper.jpg);
+          background-image: url(https://raw.githubusercontent.com/Verdvana/jekyll-theme-verdvana/master/assets/image/subtle_dots.png);
         }
         @media (min-aspect-ratio: 2400/1850) {
           .wrap {
-            background-image: url(https://github.com/Verdvana/Verdvana.github.io/blob/master/static/img/wallpaper.jpg);
+            background-image: url(https://raw.githubusercontent.com/Verdvana/jekyll-theme-verdvana/master/assets/image/subtle_dots.png);
           }
         }
         .masthead {
