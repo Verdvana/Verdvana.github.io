@@ -1,14 +1,14 @@
-title: VERDVANA' blog # 站点标题
+title: VERDVANA' BLOG # 站点标题
 tagline: verdvana
 description: | # 头像背后的信息，<br/>代表换行
-  SYSU超算17级在读<br/>
-  永远喜欢水野爱<br/>
-  田宫例四驱车<br/>
+  西安电子科技大学<br/>
+  数字IC设计<br/>
+  硬件不行了<br/>
   ASC<br/>
-  <a href="mailto:wu.kan@foxmail.com" title="wu.kan@foxmail.com">
+  <a href="mailto:verdvana@foxmail.com" title="verdvana@foxmail.com">
     <i class="fas fa-envelope"></i>
   </a>
-  <a href="https://github.com/wu-kan" title="github">
+  <a href="https://github.com/Verdvana" title="Github">
     <i class="fab fa-github"></i>
   </a>
   <a href="https://codeforces.com/profile/WuK" title="WuK">
@@ -29,7 +29,7 @@ description: | # 头像背后的信息，<br/>代表换行
     marginwidth="0"
     marginheight="0"
   ></iframe>
-url: https://wu-kan.cn # https://wu-kan.github.io
+url: https://verdvana.top # https://verdvana.top
 baseurl: "" # 假如你的博客是建在某个目录下的，请在这里加上目录名，并且下面配置的所有链接里的`/assets`前也要加，即`/your_baseurl/assets`。这一项结尾不要有'/'。
 
 plugins: # https://jekyllrb.com/docs/plugins/
