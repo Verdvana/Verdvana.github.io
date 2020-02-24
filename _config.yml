@@ -5,7 +5,7 @@ description: | # 头像背后的信息，<br/>代表换行
   FPGA<br/>
   PCB Layout<br/>
   <a href="/static/img/wechat.jpg" title="Wechat">
-    <i class="fas fa-weixin"></i>
+    <i class="fas fa-wechat"></i>
   </a>
   <a href="https://weibo.com/u/2200615701?is_hot=1" title="Weibo">
     <i class="fas fa-weibo"></i>
@@ -448,11 +448,11 @@ jekyll-theme-WuK: # 我的主题的自定义样式都在这个命名空间
           background-position: center top;
           background-repeat: no-repeat;
           background-attachment: fixed;
-          background-image: /static/image/wallpaper.jpg;
+          background-image: "/static/image/wallpaper.jpg";
         }
         @media (min-aspect-ratio: 2400/1850) {
           .wrap {
-            background-image: /static/image/wallpaper.jpg;
+            background-image: "/static/image/wallpaper.jpg";
           }
         }
         .masthead {
