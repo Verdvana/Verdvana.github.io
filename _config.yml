@@ -16,9 +16,6 @@ description: | # 头像背后的信息，<br/>代表换行
   <a href="https://github.com/Verdvana" title="Github">
     <i class="fab fa-github"></i>
   </a>
-  <a href="https://www.zhihu.com/people/wu.kan/activities" title="zhihu">
-    <i class="fab fa-zhihu"></i>
-  </a>
   <iframe
     src="https://music.163.com/outchain/player?type=2&id=167876&auto=1&height=32"
     width=100%
@@ -222,7 +219,7 @@ jekyll-theme-WuK: # 我的主题的自定义样式都在这个命名空间
         - | # Copyright
           <div>
             <i class="fas fa-copyright fa-fw"></i>
-            2017-2020 WuK
+            2018-2020 Verdvana
           </div>
         - | # 运行时间
           <div>
@@ -313,12 +310,12 @@ jekyll-theme-WuK: # 我的主题的自定义样式都在这个命名空间
         />
         <link
           rel="apple-touch-icon-precomposed"
-          href="https://gravatar.loli.net/avatar/a12c5fff23dde00df79af9aca4e7b6e4?s=300"
+          href="/static/img/avatar.jpg"
         />
         <link
           rel="shortcut
           icon"
-          href="https://gravatar.loli.net/avatar/a12c5fff23dde00df79af9aca4e7b6e4?s=32"
+          href="/static/img/favicon.ico"
         />
         <link
           rel="stylesheet"
