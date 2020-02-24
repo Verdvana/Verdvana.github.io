@@ -41,7 +41,7 @@ jekyll-theme-WuK: # 我的主题的自定义样式都在这个命名空间
   home:
     recent:
       enable: true
-      title: Recent
+      title: 最近博文
       limit: 5
       archive:
         enable: true
@@ -177,7 +177,7 @@ jekyll-theme-WuK: # 我的主题的自定义样式都在这个命名空间
           href: /comments/
         - title: '<i class="fas fa-tags fa-fw"></i> 标签'
           href: /tags/
-        - title: '<i class="fas fa-archive fa-fw"></i> 归档'
+        - title: '<i class="fas fa-archive fa-fw"></i> 博文'
           href: /archive/
         - title: '<i class="fas fa-coffee fa-fw"></i> 打赏'
           href: /merger/
