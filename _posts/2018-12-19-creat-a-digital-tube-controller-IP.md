@@ -2,9 +2,11 @@
 title:  "自定义数码管IP核，并让NiosⅡ SBT for Eclipse自动抓取驱动文件"
 tags:
   - Nios Ⅱ
+  - FPGA
+  - SOPC
+  - Verilog
 ---
 
--------
 ### 1.前言
 
 &#160; &#160; &#160; &#160; 在Platform Designer（原Qsys）中创建自定义六位七段独立数码管IP核并让NiosⅡ SBT for Eclipse自动抓取驱动文件。

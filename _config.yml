@@ -25,7 +25,7 @@ description: | # 头像背后的信息，<br/>代表换行
     marginwidth="0"
     marginheight="0"
   ></iframe>
-url: https://verdvana.top # https://verdvana.top
+url: https://verdvana.cn # https://verdvana.cn
 baseurl: "" # 假如你的博客是建在某个目录下的，请在这里加上目录名，并且下面配置的所有链接里的`/assets`前也要加，即`/your_baseurl/assets`。这一项结尾不要有'/'。
 
 plugins: # https://jekyllrb.com/docs/plugins/
