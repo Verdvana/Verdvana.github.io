@@ -459,9 +459,9 @@ jekyll-theme-WuK: # 我的主题的自定义样式都在这个命名空间
           border-bottom: 0;
         }
         .content {
-          background-color: rgba(255, 255, 255, 0.8);
-          box-shadow: 0 0 9px 9px rgba(255, 255, 255, 0.8);
-          text-shadow: 1px 1px 1px #fff;
+          background-color: rgba(255, 255, 255, 0.9);
+          box-shadow: 0 0 9px 9px #aaaaaa;
+          text-shadow: 0px 0px 0px #fff;
         }
         @media (min-width: 70em) {
           .container {
