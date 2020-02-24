@@ -16,6 +16,8 @@ title: Home
 - 微信：
   - Verdvana  
 
+----
+
 ## 教育背景
 
 #### __中北大学__ `2013.9 - 2017.7`
@@ -26,16 +28,21 @@ title: Home
 
 - 电子与通信工程 __硕士__
 
+----
+
 ## 工作经历
 
 #### __山西中谷科技股份有限公司__ `2018.4 - 2018.8`
 - 硬件工程师
 
-## Project
+----
 
-- [jekyll-theme-WuK](https://jekyll-theme-WuK.wu-kan.cn/)
-  - [![Star](https://img.shields.io/github/stars/wu-kan/wu-kan.github.io.svg)](https://github.com/wu-kan/wu-kan.github.io)[![Fork](https://img.shields.io/github/forks/wu-kan/wu-kan.github.io.svg)](https://github.com/wu-kan/wu-kan.github.io/fork)，我的个人主页使用的主题样式，也欢迎你用于搭建自己的博客~
+## 工程项目
 
+- [总线型温室大棚监控系统](https://github.com/Verdvana/Bus_Type_Greenhouse_Monitoring_System)
+  - [![Star](https://img.shields.io/github/stars/wu-kan/wu-kan.github.io.svg)](https://github.com/wu-kan/wu-kan.github.io)[![Fork](https://img.shields.io/github/forks/wu-kan/wu-kan.github.io.svg)](https://github.com/wu-kan/wu-kan.github.io/fork) 2016年电子科学与技术专业实训
+
+----
 
 ## 技能
 
@@ -46,6 +53,7 @@ title: Home
 * 单片机驱动编写及程序设计  `Keil`
 * NiosⅡ软核系统搭建与程序设计 `NiosⅡ SBT for Eclipse`
 
+----
 
 ## 博文
 
@@ -55,3 +63,5 @@ title: Home
 - [再见，算法竞赛！](https://wu-kan.cn/_posts/2019-11-04-%E5%86%8D%E8%A7%81-%E7%AE%97%E6%B3%95%E7%AB%9E%E8%B5%9B/)
 - [Markdown 写作心得](https://wu-kan.cn/_posts/2020-01-18-Markdown%E5%86%99%E4%BD%9C%E5%BF%83%E5%BE%97/)
 - [今日此时所想之事](http://wu-kan.cn/_posts/2020-01-24-%E4%BB%8A%E6%97%A5%E6%AD%A4%E6%97%B6%E6%89%80%E6%83%B3%E4%B9%8B%E4%BA%8B/)
+
+----
