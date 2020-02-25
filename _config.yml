@@ -40,8 +40,8 @@ plugins: # https://jekyllrb.com/docs/plugins/
   - jekyll-feed
   - jekyll-seo-tag
 
-remote_theme: https://github.com/wu-kan/jekyll-theme-WuK # 使用remote_theme插件实现主题的前后分离，详见https://github.com/benbalter/jekyll-remote-theme/
-jekyll-theme-WuK: # 我的主题的自定义样式都在这个命名空间
+remote_theme: https://github.com/Verdvana/jekyll-theme-Verdvana # 使用remote_theme插件实现主题的前后分离，详见https://github.com/benbalter/jekyll-remote-theme/
+jekyll-theme-Verdvana: # 我的主题的自定义样式都在这个命名空间
   home:
     recent:
       enable: true
