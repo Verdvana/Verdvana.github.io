@@ -124,7 +124,7 @@ jekyll-theme-WuK: # 用了wu-kan的主题，自定义样式都在这个命名空
             "notify": "true",
             "verify": "true",
             "avatar": "identicon",
-            "placeholder": "在这里评论吧！",
+            "placeholder": "在这里评论吧！最好填昵称再评论",
             "visitor": true,
             "highlight": true,
             "avatarForce": false,
