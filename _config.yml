@@ -14,7 +14,7 @@ description: | # 头像背后的信息，<br/>代表换行
     <i class="fas fa-chart-bar"></i>
   </a>
   <a href="/static/img/wechat.jpg" title="Wechat">
-    <i class="fab fa-wechat"></i>
+    <i class="fab fa-weixin"></i>
   </a>
   <a href="https://www.zhihu.com/people/verdvana/activities" title="zhihu">
     <i class="fab fa-zhihu"></i>
