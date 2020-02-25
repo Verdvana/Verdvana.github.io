@@ -2,8 +2,6 @@
 title: Home
 ---
 
-![home](https://raw.githubusercontent.com/Verdvana/Verdvana.github.io/master/static/img/home.jpeg)
-
 ## 联系方式
 
 - 地址：
@@ -17,6 +15,9 @@ title: Home
   - **verdvana@gmail.com**  
 - 微信：
   - **verdvana**  
+- 站点：
+  [verdvana.cn](https://verdvana.cn)https://verdvana.cn
+
 
 ----
 
