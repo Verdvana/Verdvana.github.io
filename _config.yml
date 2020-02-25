@@ -13,8 +13,8 @@ description: | # 头像背后的信息，<br/>代表换行
   <a href="https://codeforces.com/profile/WuK" title="WuK">
     <i class="fas fa-chart-bar"></i>
   </a>
-  <a href="https://vjudge.net/user/WuK" title="WuK">
-    <i class="fas fa-smile"></i>
+  <a href="/static/img/avatar.jpg" title="Wechat">
+    <i class="fas fa-Wechat"></i>
   </a>
   <a href="https://www.zhihu.com/people/verdvana/activities" title="zhihu">
     <i class="fab fa-zhihu"></i>
@@ -172,7 +172,7 @@ jekyll-theme-WuK: # 我的主题的自定义样式都在这个命名空间
       disable: false
       avatar: # 侧边栏显示的头像
         enable: true
-        img: https://gravatar.loli.net/avatar/a12c5fff23dde00df79af9aca4e7b6e4?s=300 # 头像的地址
+        img: /static/img/avatar.jpg # 头像的地址
       nav:
         - title: '<i class="fas fa-home fa-fw"></i> 首页'
           href: /
@@ -313,12 +313,12 @@ jekyll-theme-WuK: # 我的主题的自定义样式都在这个命名空间
         />
         <link
           rel="apple-touch-icon-precomposed"
-          href="https://gravatar.loli.net/avatar/a12c5fff23dde00df79af9aca4e7b6e4?s=300"
+          href="/static/img/avatar.jpg"
         />
         <link
           rel="shortcut
           icon"
-          href="https://gravatar.loli.net/avatar/a12c5fff23dde00df79af9aca4e7b6e4?s=32"
+          href="/static/img/favicon.ico"
         />
         <link
           rel="stylesheet"
@@ -443,7 +443,7 @@ jekyll-theme-WuK: # 我的主题的自定义样式都在这个命名空间
         h5,
         h6,
         .sidebar {
-          font-family: Menlo, Monaco, "Courier New", Microsoft JhengHei, monospace;
+          font-family: Arial,Verdana, Microsoft YaHei;
         }
         .wrap {
           display: inline-block;
@@ -451,11 +451,11 @@ jekyll-theme-WuK: # 我的主题的自定义样式都在这个命名空间
           background-position: center top;
           background-repeat: no-repeat;
           background-attachment: fixed;
-          background-image: url(https://cdn.jsdelivr.net/gh/wu-kan/jekyll-theme-WuK/assets/image/74559485_p1.webp);
+          background-image: url(/static/img/subtle_dots.png);
         }
         @media (min-aspect-ratio: 2400/1850) {
           .wrap {
-            background-image: url(https://cdn.jsdelivr.net/gh/wu-kan/jekyll-theme-WuK/assets/image/71932901_p0.webp);
+            background-image: url(/static/img/subtle_dots.png);
           }
         }
         .masthead {
@@ -464,7 +464,7 @@ jekyll-theme-WuK: # 我的主题的自定义样式都在这个命名空间
         .content {
           background-color: rgba(255, 255, 255, 0.8);
           box-shadow: 0 0 9px 9px rgba(255, 255, 255, 0.8);
-          text-shadow: 1px 1px 1px #fff;
+          text-shadow: 0px 0px 0px #fff;
         }
         @media (min-width: 70em) {
           .container {
