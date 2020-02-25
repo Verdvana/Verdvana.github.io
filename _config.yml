@@ -177,12 +177,12 @@ jekyll-theme-WuK: # 用了wu-kan的主题，自定义样式都在这个命名空
       nav:
         - title: '<i class="fas fa-home fa-fw"></i> 首页'
           href: /
-        - title: '<i class="fas fa-comments fa-fw"></i> 留言'
-          href: /comments/
-        - title: '<i class="fas fa-tags fa-fw"></i> 分类'
-          href: /tags/
         - title: '<i class="fas fa-archive fa-fw"></i> 博文'
           href: /archive/
+        - title: '<i class="fas fa-tags fa-fw"></i> 分类'
+          href: /tags/
+        - title: '<i class="fas fa-comments fa-fw"></i> 留言'
+          href: /comments/
         - title: '<i class="fas fa-coffee fa-fw"></i> 打赏'
           href: /merger/
       simple_jekyll_search:
