@@ -780,7 +780,7 @@ set_location_assignment PIN_AK21 -to tft_rgb[15]
 
 &#160; &#160; &#160; &#160; 在SoC EDS中输入以下指令打开bsp-editor：
 
-```
+```shell
 bsp-editor
 ```
 
@@ -805,22 +805,23 @@ bsp-editor
 
 &#160; &#160; &#160; &#160; 在SoC EDS中输入以下路径打开工程目录：
 
-```
+```shell
 cd E:/DE1-SoC/FPGA_HPS/DE1_SoC_GHRD  //修改为自己的工程路径
 ```
 
 &#160; &#160; &#160; &#160; 输入以下指令编译Preloader和Uboot：
 
-```
+```shell
 make uboot
 ```
 &#160; &#160; &#160; &#160; 如果出现以下错误：
 
-```
+```shell
 tar zxf /cygdrive/c/intelFPGA/18.0/embedded/host_tools/altera/preloader/uboot-socfpga.tar.gz
 tar: Error opening archive: Failed to open '/cygdrive/c/intelFPGA/18.0/embedded/host_tools/altera/preloader/uboot-socfpga.tar.gz'
 make: *** [uboot-socfpga/.untar] Error 1
 ```
+
 &#160; &#160; &#160; &#160; 可以参考小梅哥的解决方法：[win10下生成preloader报Failed to open gdrive/……/uboot-socfpga.tar.gz](http://www.corecourse.cn/forum.php?mod=viewthread&tid=27809)
 
 &#160; &#160; &#160; &#160; 编译时间较长，可以听听相声。
@@ -839,17 +840,17 @@ make: *** [uboot-socfpga/.untar] Error 1
 ![38](https://raw.githubusercontent.com/Verdvana/Verdvana.github.io/master/_posts/%E4%BB%8E%E9%9B%B6%E5%BC%80%E5%A7%8B%E6%90%AD%E5%BB%BASoC%E7%B3%BB%E7%BB%9F%EF%BC%88%E5%9F%BA%E4%BA%8EDE1-SoC%E5%BC%80%E5%8F%91%E6%9D%BF%EF%BC%89/38.jpg)
 
 &#160; &#160; &#160; &#160; 在SoC EDS中输入以下路径：
-```
+```shell
 cd software/preloader
 ```
 
 &#160; &#160; &#160; &#160; 在SoC EDS中输入以下指令生成preloader.img：
-```
+```shell
 mkpimage -hv 0 -o preloader.img u-boot-spl.bin
 ```
 
 &#160; &#160; &#160; &#160; 在SoC EDS中输入以下指令生成更新preloader和uboot，注意最后的“J”要改成自己系统识别的盘符：
-```
+```shell
 alt-boot-disk-util -p preloader.img -b u-boot.img -a write -d J  
 ```
 
@@ -867,18 +868,18 @@ alt-boot-disk-util -p preloader.img -b u-boot.img -a write -d J
 #### 4.2 生成dts文件
 
 &#160; &#160; &#160; &#160; 在SoC EDS中输入以下路径退回上两级：
-```
+```shell
 cd ../../
 ```
 
 &#160; &#160; &#160; &#160; 在SoC EDS中输入以下指令生成dts文件：
-```
+```shell
 make dts
 ```
 #### 4.2 生成dtb文件
 
 &#160; &#160; &#160; &#160; 在SoC EDS中输入以下指令生成dtb文件：
-```
+```shell
 dtc -I dts -o dtb -fo socfpga.dtb soc_system.dts
 ```
 
