@@ -164,7 +164,7 @@ jekyll-theme-WuK: # 用了wu-kan的主题，自定义样式都在这个命名空
         disable: true
   default:
     body:
-      theme-base: theme-base-0b # 可选的值08~0f，08：红色，09：橘色，0a：黄色，
+      theme-base: theme-base-0c # 可选的值08~0f，08：红色，09：橘色，0a：黄色，0b：草绿
       layout-reverse: false # 开启后sidebar在右边，反之左边
       sidebar-overlay: false # 开启后正文不随sidebar移动而移动
     masthead:
