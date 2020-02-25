@@ -16,7 +16,7 @@ title: Home
 - 微信：
   - **verdvana**  
 - 站点：
-  [verdvana.cn](https://verdvana.cn)https://verdvana.cn
+  - [verdvana.cn](https://verdvana.cn)
 
 
 ----
