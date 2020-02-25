@@ -456,7 +456,7 @@ jekyll-theme-WuK: # 用了wu-kan的主题，自定义样式都在这个命名空
         }
         @media (min-aspect-ratio: 2400/1850) {
           .wrap {
-            background-image: url(/static/img/subtle_dots.png);
+            background-image: url(/static/img/wallpaper1.jpg);
           }
         }
         .masthead {
