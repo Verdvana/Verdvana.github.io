@@ -4,17 +4,18 @@ description: | # 头像背后的信息，<br/>代表换行
   数字IC设计<br/>
   FPGA<br/>
   PCB Layout<br/>
-  <a href="mailto:wu.kan@foxmail.com" title="wu.kan@foxmail.com">
+  耳机<br/>
+  <a href="/static/img/wechat.jpg" title="微信">
+    <i class="fab fa-weixin"></i>
+  </a>
+  <a href="https://weibo.com/u/2200615701?is_hot=1" title="微博">
+    <i class="fab fa-weixin"></i>
+  </a>
+  <a href="mailto:verdvana@foxmail.com" title="verdvana@foxmail.com">
     <i class="fas fa-envelope"></i>
   </a>
-  <a href="https://github.com/verdvana" title="github">
+  <a href="https://github.com/verdvana" title="Github">
     <i class="fab fa-github"></i>
-  </a>
-  <a href="https://codeforces.com/profile/WuK" title="WuK">
-    <i class="fas fa-chart-bar"></i>
-  </a>
-  <a href="/static/img/wechat.jpg" title="Wechat">
-    <i class="fab fa-weixin"></i>
   </a>
   <a href="https://www.zhihu.com/people/verdvana/activities" title="zhihu">
     <i class="fab fa-zhihu"></i>
