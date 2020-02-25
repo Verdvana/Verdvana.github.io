@@ -2,6 +2,8 @@
 title: Home
 ---
 
+![home]()
+
 ## 联系方式
 
 - 地址：
@@ -66,7 +68,7 @@ title: Home
 
 ----
 
-## 技能
+## 专业技能
 
 * 单片机/FPGA相关电路原理图与PCB设计   `Altium Designer`  `Cadence`
 * 数模电路设计、仿真与调试  `Altium Designer` `Multisim`
