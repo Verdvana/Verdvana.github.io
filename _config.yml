@@ -9,7 +9,7 @@ description: | # 头像背后的信息，<br/>代表换行
     <i class="fab fa-weixin"></i>
   </a>
   <a href="https://weibo.com/u/2200615701?is_hot=1" title="微博">
-    <i class="fab fa-weixin"></i>
+    <i class="fab fa-weibo"></i>
   </a>
   <a href="mailto:verdvana@foxmail.com" title="verdvana@foxmail.com">
     <i class="fas fa-envelope"></i>
@@ -17,7 +17,7 @@ description: | # 头像背后的信息，<br/>代表换行
   <a href="https://github.com/verdvana" title="Github">
     <i class="fab fa-github"></i>
   </a>
-  <a href="https://www.zhihu.com/people/verdvana/activities" title="zhihu">
+  <a href="https://www.zhihu.com/people/verdvana/activities" title="知乎">
     <i class="fab fa-zhihu"></i>
   </a>
   <iframe
