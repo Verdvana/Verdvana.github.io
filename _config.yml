@@ -318,7 +318,7 @@ jekyll-theme-WuK: # 我的主题的自定义样式都在这个命名空间
         <link
           rel="shortcut
           icon"
-          href="/static/img/favicon.ico"
+          href="/static/img/avatar.jpg"
         />
         <link
           rel="stylesheet"
