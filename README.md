@@ -45,6 +45,10 @@ title: Home
 - 校企联合横向科研项目
   - 基于FPGA的圆形光电探测阵列数据采集系统
 
+- 企业项目
+  - 低功耗甲烷检测系统
+  - 单总线多点温度检测器
+
 - 本科毕业设计  `电科专业优秀毕业设计`
   - [带频谱显示的音频播放器](https://github.com/Verdvana/Audio_Power_Amplifier_With_Spectrum_Display)
 
@@ -65,6 +69,7 @@ title: Home
 ## 技能
 
 * 单片机/FPGA相关电路原理图与PCB设计   `Altium Designer`  `Cadence`
+* 数模电路设计、仿真与调试  `Altium Designer` `Multisim`
 * FPGA逻辑设计、仿真与调试  `Quartus Prime` `ModelSim`
 * 数字IC综合与约束  `Design Compiler`
 
