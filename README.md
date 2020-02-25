@@ -2,7 +2,7 @@
 title: Home
 ---
 
-![home]()
+![home](https://raw.githubusercontent.com/Verdvana/Verdvana.github.io/master/static/img/home.jpeg)
 
 ## 联系方式
 
