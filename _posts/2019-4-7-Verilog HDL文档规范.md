@@ -147,7 +147,7 @@ tags:
     `endif                      //包含文件防范
     ```
 * 编译指示符：
-    ``verilog
+    ```verilog
     `include "stddef.h"         //引用stddef.h文件
 
     `define BYTE_DATA_W 8       //定义宏BYTE_DATA_W
