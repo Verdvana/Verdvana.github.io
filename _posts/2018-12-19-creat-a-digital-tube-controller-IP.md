@@ -4,7 +4,6 @@ title:  "自定义数码管IP核，并让NiosⅡ SBT for Eclipse自动抓取驱�
 tags:
   - Nios Ⅱ
   - FPGA
-  - Verilog
 date:   2018-12-19 20:58:10 +0700
 ---
 
