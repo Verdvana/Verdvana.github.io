@@ -16,11 +16,11 @@ tags:
 
 &#160; &#160; &#160; &#160;打开GitHub官网注册帐号：[GitHub](https://github.com/)
 
-![注册账号](/_posts/how_to_make_website/sign_up_github.jpg)     
+![注册账号](https://raw.githubusercontent.com/Verdvana/Verdvana.github.io/master/_posts/how_to_make_website/sign_up_github.jpg)     
 
 --------
 ### 3.创建仓库
-&#160; &#160; &#160; &#160;去创建一个新的仓库。 → [新建仓库](https://github.com/new)       
+&#160; &#160; &#160; &#160;去创建一个新的仓库：[新建仓库](https://github.com/new)       
  
 &#160; &#160; &#160; &#160;仓库的名称必须是 __“用户名.github.io”__ (区分大小写)。   
 
@@ -52,7 +52,7 @@ tags:
 -----
 ### 5.选择模板
 
-&#160; &#160; &#160; &#160;去Jekyll选择一个喜欢的模板。 → [Jekyll](http://jekyllthemes.org/)
+&#160; &#160; &#160; &#160;去Jekyll选择一个喜欢的模板：[Jekyll](http://jekyllthemes.org/)
 
 &#160; &#160; &#160; &#160;将选择的模板下载并解压，把解压出的文件替换掉你github.io仓库中的文件。
 
