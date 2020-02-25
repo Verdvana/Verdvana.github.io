@@ -14,9 +14,9 @@ tags:
 -------
 ### 2.注册GitHub帐号
 
-&#160; &#160; &#160; &#160;打开GitHub官网注册帐号。 → [GitHub](https://github.com/)
+&#160; &#160; &#160; &#160;打开GitHub官网注册帐号：[GitHub](https://github.com/)
 
-![注册账号](https://raw.githubusercontent.com/Verdvana/Verdvana.github.io/master/_posts/how_to_make_website/sign_up_github.jpg)     
+![注册账号](/_posts/how_to_make_website/sign_up_github.jpg)     
 
 --------
 ### 3.创建仓库
