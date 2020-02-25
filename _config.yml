@@ -1,7 +1,7 @@
 title: VERDVANA'S BLOG # 站点标题
 tagline: Verdvana
 description: | # 头像背后的信息，<br/>代表换行
-  數字IC設計<br/>
+  数字IC设计<br/>
   FPGA<br/>
   PCB Layout<br/>
   <a href="mailto:wu.kan@foxmail.com" title="wu.kan@foxmail.com">
@@ -13,8 +13,8 @@ description: | # 头像背后的信息，<br/>代表换行
   <a href="https://codeforces.com/profile/WuK" title="WuK">
     <i class="fas fa-chart-bar"></i>
   </a>
-  <a href="/static/img/avatar.jpg" title="Wechat">
-    <i class="fas fa-zhihu"></i>
+  <a href="/static/img/wechat.jpg" title="Wechat">
+    <i class="fab fa-zhihu"></i>
   </a>
   <a href="https://www.zhihu.com/people/verdvana/activities" title="zhihu">
     <i class="fab fa-zhihu"></i>
