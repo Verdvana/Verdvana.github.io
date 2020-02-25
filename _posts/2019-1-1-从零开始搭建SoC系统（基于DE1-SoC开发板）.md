@@ -163,7 +163,7 @@ tags:
 
 &#160; &#160; &#160; &#160; 新建VerilogHDL，设计顶层文件，代码如下：
 
-```
+```verilog
 module DE1_SoC_GHRD(
 
       input  wire        fpga_clk50m,                      	//      clk.clk
@@ -421,7 +421,7 @@ module DE1_SoC_GHRD(
 
 &#160; &#160; &#160; &#160; 设计引脚分配文件：
 
-```
+```tcl
 
 package require ::quartus::project
 
