@@ -1,14 +1,13 @@
-title: 星合の空 # 站点标题
-tagline: wu-kan
+title: VERDVANA'S BLOG # 站点标题
+tagline: Verdvana
 description: | # 头像背后的信息，<br/>代表换行
-  SYSU超算17级在读<br/>
-  永远喜欢水野爱<br/>
-  田宫例四驱车<br/>
-  ASC<br/>
+  數字IC設計<br/>
+  FPGA<br/>
+  PCB Layout<br/>
   <a href="mailto:wu.kan@foxmail.com" title="wu.kan@foxmail.com">
     <i class="fas fa-envelope"></i>
   </a>
-  <a href="https://github.com/wu-kan" title="github">
+  <a href="https://github.com/verdvana" title="github">
     <i class="fab fa-github"></i>
   </a>
   <a href="https://codeforces.com/profile/WuK" title="WuK">
@@ -17,7 +16,7 @@ description: | # 头像背后的信息，<br/>代表换行
   <a href="https://vjudge.net/user/WuK" title="WuK">
     <i class="fas fa-smile"></i>
   </a>
-  <a href="https://www.zhihu.com/people/wu.kan/activities" title="zhihu">
+  <a href="https://www.zhihu.com/people/verdvana/activities" title="zhihu">
     <i class="fab fa-zhihu"></i>
   </a>
   <iframe
@@ -29,7 +28,7 @@ description: | # 头像背后的信息，<br/>代表换行
     marginwidth="0"
     marginheight="0"
   ></iframe>
-url: https://wu-kan.cn # https://wu-kan.github.io
+url: https://verdvana.cn # https://Verdvana.github.io
 baseurl: "" # 假如你的博客是建在某个目录下的，请在这里加上目录名，并且下面配置的所有链接里的`/assets`前也要加，即`/your_baseurl/assets`。这一项结尾不要有'/'。
 
 plugins: # https://jekyllrb.com/docs/plugins/
@@ -106,7 +105,7 @@ jekyll-theme-WuK: # 我的主题的自定义样式都在这个命名空间
   archive:
     posts_count:
       enable: true
-      alert: 篇博文。长路漫漫！
+      alert: 篇博文。
   comments:
     enable: true # 需要在script中引入
     alert: |
@@ -181,7 +180,7 @@ jekyll-theme-WuK: # 我的主题的自定义样式都在这个命名空间
           href: /comments/
         - title: '<i class="fas fa-tags fa-fw"></i> 标签'
           href: /tags/
-        - title: '<i class="fas fa-archive fa-fw"></i> 归档'
+        - title: '<i class="fas fa-archive fa-fw"></i> 博文'
           href: /archive/
         - title: '<i class="fas fa-coffee fa-fw"></i> 打赏'
           href: /merger/
@@ -418,78 +417,7 @@ jekyll-theme-WuK: # 我的主题的自定义样式都在这个命名空间
                 }
               });
               return button;
-            })'
-        ></script>
-      - | # live2d看板娘！
-        <link
-          rel="stylesheet"
-          href="https://cdn.jsdelivr.net/gh/Dreamer-Paul/Pio@2.4/static/pio.min.css"
-        />
-        <script
-          defer="defer"
-          src="https://cdn.jsdelivr.net/gh/Dreamer-Paul/Pio@2.4/static/l2d.min.js"
-        ></script>
-        <script
-          defer="defer"
-          src="https://cdn.jsdelivr.net/gh/Dreamer-Paul/Pio@2.4/static/pio.min.js"
-          onload='
-            if (screen.width > screen.height)
-            {
-              let pio_container = document.createElement("div");
-              pio_container.classList.add("pio-container");
-              pio_container.classList.add("right");
-              pio_container.style.bottom = "-1rem";
-              document.body.insertAdjacentElement("beforeend", pio_container);
-              let pio_action = document.createElement("div");
-              pio_action.classList.add("pio-action");
-              pio_container.insertAdjacentElement("beforeend", pio_action);
-              let pio_canvas = document.createElement("canvas");
-              pio_canvas.id = "pio";
-              pio_canvas.style.width = "14rem";
-              pio_canvas.width = "600";
-              pio_canvas.height = "800";
-              pio_container.insertAdjacentElement("beforeend", pio_canvas);
-              let pio = new Paul_Pio({
-                "mode": "draggable",
-                "hidden": true,
-                "content": {
-                  "link": ["/about/"],
-                  "skin": ["要换成我的朋友吗？", "让她放个假吧~"],
-                  "custom": [{
-                    "selector": "a",
-                    "type": "link",
-                  }, {
-                    "selector": ".sidebar-toggle",
-                    "text": "打开侧边栏叭~"
-                  }, {
-                    "selector": ".effect-info",
-                    "text": "哇，你发现了什么！"
-                  }, {
-                    "selector": "#sidebar-search-input",
-                    "text": "想搜索什么呢？很多干货哦！"
-                  }, {
-                    "selector": "#toc",
-                    "text": "这是目录~"
-                  }, {
-                    "selector": ".page-title",
-                    "text": "这是标题~"
-                  }, {
-                    "selector": ".v",
-                    "text": "评论没有审核，要对自己的发言负责哦~"
-                  }]
-                },
-                "model": [
-                  "https:\/\/cdn.jsdelivr.net/gh/imuncle/live2d/model/33/model.2018.bls-winter.json",
-                  "https:\/\/cdn.jsdelivr.net/gh/imuncle/live2d/model/platelet-2/model.json",
-                  "https:\/\/cdn.jsdelivr.net/gh/imuncle/live2d/model/xiaomai/xiaomai.model.json",
-                  "https:\/\/cdn.jsdelivr.net/gh/imuncle/live2d/model/mashiro/seifuku.model.json",
-                  "https:\/\/cdn.jsdelivr.net/gh/imuncle/live2d/model/seele/model.json",
-                  "https:\/\/cdn.jsdelivr.net/gh/imuncle/live2d/model/Violet/14.json",
-                  "https:\/\/cdn.jsdelivr.net/gh/xiaoski/live2d_models_collection/Kobayaxi/Kobayaxi.model.json",
-                  "https:\/\/cdn.jsdelivr.net/gh/xiaoski/live2d_models_collection/mikoto/mikoto.model.json",
-                  "https:\/\/cdn.jsdelivr.net/gh/xiaoski/live2d_models_collection/uiharu/uiharu.model.json"]
-              });
-            }'
+            })'    
         ></script>
       - | # 百度爬虫推送，http站点使用 http://push.zhanzhang.baidu.com/push.js
         <script
