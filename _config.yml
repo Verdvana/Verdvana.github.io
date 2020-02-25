@@ -124,7 +124,7 @@ jekyll-theme-WuK: # 用了wu-kan的主题，自定义样式都在这个命名空
             "notify": "true",
             "verify": "true",
             "avatar": "identicon",
-            "placeholder": "在这里评论吧！最好填昵称再评论",
+            "placeholder": "在这里评论吧！（上面可以填写您的昵称、邮箱和网址）",
             "visitor": true,
             "highlight": true,
             "avatarForce": false,
@@ -156,15 +156,15 @@ jekyll-theme-WuK: # 用了wu-kan的主题，自定义样式都在这个命名空
       <i class="fab fa-creative-commons"></i>
       <a rel="license" href="https://creativecommons.org/licenses/by-sa/4.0/deed.zh">BY-SA 4.0</a>（除特别声明或转载文章外）
       <br/>
-      <i class="fas fa-coffee"></i>
-      <a href="/merger/">如果这篇博客帮助到你，可以请我喝一杯咖啡~</a>
+#      <i class="fas fa-coffee"></i>
+#      <a href="/merger/">如果这篇博客帮助到你，可以请我喝一杯咖啡~</a>
   page:
     title:
       site_title:
         disable: true
   default:
     body:
-      theme-base: theme-base-0d # 可选的值08~0f，见https://github.com/poole/lanyon
+      theme-base: theme-base-08 # 可选的值08~0f，见https://github.com/poole/lanyon
       layout-reverse: false # 开启后sidebar在右边，反之左边
       sidebar-overlay: false # 开启后正文不随sidebar移动而移动
     masthead:
