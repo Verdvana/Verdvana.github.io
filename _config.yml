@@ -20,7 +20,7 @@ description: | # 头像背后的信息，<br/>代表换行
     <i class="fab fa-zhihu"></i>
   </a>
   <iframe
-    src="https://music.163.com/outchain/player?type=0&id=155059595&auto=0&height=32"
+    src="https://music.163.com/outchain/player?type=2&id=167876&auto=1&height=32"
     width=100%
     height=52
     frameborder="no"
@@ -118,8 +118,8 @@ jekyll-theme-WuK: # 我的主题的自定义样式都在这个命名空间
         onload='
           new Valine({
             "el": ".v",
-            "appId": "9hABRddSuEkTgqLrt1VSK5B1-gzGzoHsz",
-            "appKey": "NJ7RwmgrxsF7KDzlqU7YewlL",
+            "appId": "0KCYIvqG5ktP9Pw9zjIQyESV-gzGzoHsz",
+            "appKey": "hVnb4I7RVQClldY6uAIuYGrk",
             "notify": "true",
             "verify": "true",
             "avatar": "identicon",
@@ -222,7 +222,7 @@ jekyll-theme-WuK: # 我的主题的自定义样式都在这个命名空间
         - | # Copyright
           <div>
             <i class="fas fa-copyright fa-fw"></i>
-            2017-2020 WuK
+            2018-2020 Verdvana
           </div>
         - | # 运行时间
           <div>
@@ -262,7 +262,7 @@ jekyll-theme-WuK: # 我的主题的自定义样式都在这个命名空间
                 document.getElementById("run_time_hour").innerHTML = setzero(hrsold);
                 document.getElementById("run_time_minute").innerHTML = setzero(minsold);
                 document.getElementById("run_time_second").innerHTML = setzero(seconds);
-              }, 1000, "10/04/2017 11:03:56") // 这是我第一篇CSDN博客的时间
+              }, 1000, "10/04/2018 11:03:56") // 这是我第一篇CSDN博客的时间
             </script>
           </div>
         - | # 不蒜子页面统计
