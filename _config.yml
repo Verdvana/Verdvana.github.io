@@ -291,6 +291,10 @@ jekyll-theme-WuK: # 用了wu-kan的主题，自定义样式都在这个命名空
               defer='defer'
             ></script>
           </div>
+        - |
+          <div>
+            壁纸：https://www.zcool.com.cn/u/13731641
+          </div>    
       wordcount:
         enable: true # 本地调试时建议关闭，非常耗时（与博文数量的平方成正比）
         alert: <i class="fas fa-user-edit fa-fw"></i>
