@@ -14,7 +14,7 @@ title: Home
   - **verdvana@foxmail.com**  
   - **verdvana@gmail.com**  
 - 微信：
-  - **verdvana**  
+  - **[verdvana](./static/img/wechat.jpg)**  
 - 站点：
   - [verdvana.cn](https://verdvana.cn)
 

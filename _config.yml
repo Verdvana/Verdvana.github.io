@@ -457,7 +457,7 @@ jekyll-theme-WuK: # 用了wu-kan的主题，自定义样式都在这个命名空
           background-position: center top;
           background-repeat: no-repeat;
           background-attachment: fixed;
-          background-image: url(/static/img/wallpaper.jpg);
+          background-image: url(/static/img/wallpaper4.jpg);
         }
         @media (min-aspect-ratio: 2400/1850) {
           .wrap {
