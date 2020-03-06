@@ -7,12 +7,12 @@ tags:
 ---
 
 -------
-### 1.前言
+## 1 前言
 
 &#160; &#160; &#160; &#160; 记录一下看到的奇奇怪怪的写法，**我** 觉得不常见的。
 
 -------
-### 2.缩位运算
+## 2 缩位运算
 
 ```verilog
 reg [7:0] 	counter;        //counter <= 8'b00011000;
@@ -23,7 +23,7 @@ assign	counter_max = &counter; //counter_max = 0&0&0&1&1&0&0&0;
 
 -----------
 
-### 3.for
+## 3 for
 
 &#160; &#160; &#160; &#160; for循环语法为：
 ```verilog
@@ -52,7 +52,7 @@ if(opa[bindex])
     result = result + (opa<<(bindex));
 ```
 ------------
-### 4.缩减运算符
+## 4 缩减运算符
 ```verilog
 wire    [3:0]   A;
 wire            B;
@@ -63,15 +63,60 @@ assign B = &A;
 assign  B = ((A[0]&A[1])&A[2])&A[3];
 ```
 ----------
-### 5. 定义存储器模型（RAM）
+## 5 定义存储器模型（RAM）
 
 ```verilog
 (* ramstyle = "MLAB"*)reg[31:0] RegFile[15:0];
 ```
 &#160; &#160; &#160; &#160; RegFile对象在Altera FPGA中将被识别为16个32位位宽的RAM，且指定为MLAB类型。在ASIC设计中，这种描述方式只会被识别为一系列的寄存器堆，并不会识别为RAM。在ASIC中应当利用RAM单元库（IP）梨花的方法描述RAM。
 
--------------
-### 6.function
+
+----
+
+## 6 task和function
+
+### 6.1 task
+
+&#160; &#160; &#160; &#160; task概述：
+* 含有input、output、inout语句；
+* 可以调用function；
+* 消耗仿真时间：
+    * 延迟：
+        ```verilog
+            #20;
+        ```
+    * 时钟周期：
+        ```verilog
+            @(posedge clock)
+        ```
+    * 事件：
+        ```verilog
+            event
+        ```
+
+&#160; &#160; &#160; &#160; 举例：
+
+```verilog
+task task_name
+    parameter
+    input
+    output
+    reg
+
+    …text body…
+endtask
+```
+
+
+### 6.2 function
+
+&#160; &#160; &#160; &#160; function概述：
+* 执行时不消耗仿真时间；
+* 不能有控制仿真时间的语句，例如task中的延时等；
+* 不能调用task；
+* void function没有返回值；
+
+
 &#160; &#160; &#160; &#160; function语法为：
 ```verilog
 funtion <返回值的类型或范围> (函数名)   
@@ -94,9 +139,13 @@ end
 endfunction
 ```
 
+
 ---------------------
-### 7.generate
-#### 7.1 for循环
+
+## 7 generate
+
+### 7.1 for循环
+
 &#160; &#160; &#160; &#160; 8位加法器例化过程：
 ```verilog
 generate
@@ -120,7 +169,7 @@ begin:iq_data_gen
 endgenerate
 
 ```
-#### 7.2 if-else例化
+### 7.2 if-else例化
 
 &#160; &#160; &#160; &#160; 数据宽度不同乘法器的例化过程：
 ```verilog
@@ -135,7 +184,7 @@ begin:else_name
 end
 endgenerate
 ```
-#### 7.3 generate-case例化
+### 7.3 generate-case例化
 &#160; &#160; &#160; &#160; 数据宽度不同乘法器的例化过程：
 ```verilog
 generate
@@ -157,7 +206,7 @@ endgenerate
 
 ----
 
-### 8 宽度定义
+## 8 宽度定义
 
 ```verilog
 wire [A+:B] X ;
@@ -169,7 +218,7 @@ wire [C-:D] Y ;
 
 ----
 
-### 9 运算符
+## 9 运算符
 
 &#160; &#160; &#160; &#160; 这个不少见，只是总结一下：
 
@@ -187,8 +236,54 @@ wire [C-:D] Y ;
 | ^~或~^ | 按位同或 | 两个多位操作数按位进行同或操作：a=4'b1001，b=4'b0011，a^b=4'b0101 |
 
 
+----
+
+## 10 系统函数
+
+### 10.1 随机
+
+&#160; &#160; &#160; &#160; 返回一个32位的有符号的随机数：
+
+```verilog
+$random(seed);  //seed：传递参数
+```
+
+&#160; &#160; &#160; &#160; 返回一个32位的无符号的随机数：
+
+```verilog
+$urandom(seed);  //seed：传递参数
+```
+
+&#160; &#160; &#160; &#160; 生成有一定范围的无符号的随机数：
+
+```verilog
+$urandom_range(min,max);  
+```
+
+&#160; &#160; &#160; &#160; 随机选择有权重的可执行语句：
+
+```verilog
+randcase
+    10:f10;                 //10%概率执行
+    20:f20;                 //20%概率执行
+    40:x=100;               //40%概率执行
+    30:randcase …… endcase; //30%概率执行，嵌套
+endcase
+```
+
+### 10.2 停止
+
+&#160; &#160; &#160; &#160; 停止运行：
+
+```verilog
+$stop;  
+```
+
+
 
 --------
 
 &#160; &#160; &#160; &#160; 告辞。
+
+
 
