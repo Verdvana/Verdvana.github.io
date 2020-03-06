@@ -344,6 +344,120 @@ endmodule
 
 &#160; &#160; &#160; &#160; **接口不要都用线网类型**。一般情况下，接口将把模块的输出连接到另一模块的输入，输出可能是过程性的或者连续性驱动的，输入是连续性驱动的。既然接口是把输出与输入连接起来，而输出常由过程性语句赋值，即使输出是由连续赋值语句指定的，当它们被连接到不同模块时，它也往往被转变成过程性赋值。**而双向和多驱动线网在接口定义中必须声明为线网类型**。
 
+----
+
+## 6 task和function
+
+### 6.1 task
+
+&#160; &#160; &#160; &#160; task概述：
+* 含有input、output、inout语句；
+* 可以调用function；
+* 消耗仿真时间：
+    * 延迟：
+        ```verilog
+            #20;
+        ```
+    * 时钟周期：
+        ```verilog
+            @(posedge clock)
+        ```
+    * 事件：
+        ```verilog
+            event
+        ```
+
+&#160; &#160; &#160; &#160; 举例：
+
+```verilog
+task task_name
+    parameter
+    input
+    output
+    reg
+
+    …text body…
+endtask
+```
+
+
+### 6.2 function
+
+&#160; &#160; &#160; &#160; function概述：
+* 执行时不消耗仿真时间；
+* 不能有控制仿真时间的语句，例如task中的延时等；
+* 不能调用task；
+* void function没有返回值；
+
+
+&#160; &#160; &#160; &#160; function语法为：
+```verilog
+funtion <返回值的类型或范围> (函数名)   
+    <端口说明语句>              //input XXX
+    <变量类型说明语句>          //reg   YYY
+begin
+    <语句>
+    ……
+    函数名 = zzz;               //函数名就相当于输出变量
+end
+endfuntion
+```
+&#160; &#160; &#160; &#160; 计算有符号数绝对值的例子：
+```verilog
+function [width-1:0] DWF_absval;
+input [width-1:0] A;
+begin
+    DWF_absval = ((^(A^A)!==1'b0))?{width{1'bx}} : (A[width-1] == 1'b0) ? A : -A;
+end
+endfunction
+```
+
+### 6.3 return语句
+
+&#160; &#160; &#160; &#160; SystemVerilog中增加了return语句。return用于退出task和function，执行时返回表达式的值，否则最后的返回数值赋值给函数名。
+
+```verilog
+function int divide (input int numerator,denominator);
+    if(denominator==0)
+        return 0;
+    else
+        return numerator/denominator;
+endfunction
+
+always_ff@(posedge clock)
+    result <= divide(b,a);
+//or
+always_ff@(posedge clock)
+    result <= divide(   .denominator(b),
+                        .numerator(a) );
+
+```
+
+### 6.4 传递参数
+
+&#160; &#160; &#160; &#160; SystemVerilog增强了函数形式参数：
+* 增加了input、output传输参数
+* 每一个形式参数都有一个默认的类型，调用task和function时，不必给就具有默认参数值的参数传递数值，如果不传递参数值，就会使用默认值。如上一节的例子。 
+
+&#160; &#160; &#160; &#160; 使用引用（reference）代替复制的方式传递参数：
+* 常见的向task和function传递参数值的方式是复制；
+* 使用reference的方式显式地向task和function传递参数：
+    * 关键字ref取代了input、output、inout；
+    * 只有automatic任务和函数才可以使用ref参数。
+
+```verilog
+function automatic void fill_packet (   ref logic [7:0] data_in [7:0],
+                                        ref pack_t      data_out);
+    for(int i=0;i<=7;i++) begin
+        data_out.data[(8*i)+:8]=data_in[i];
+    end
+endfunction
+
+always_ff@(posedge clock) begin
+    if(data_ready)
+        fill_packet(.data_in(raw_data),.data_out(data_packet));
+end
+```
 
 ----
 
