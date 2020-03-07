@@ -11,19 +11,10 @@ tags:
 
 &#160; &#160; &#160; &#160; 记录一下看到的奇奇怪怪的写法，**我** 觉得不常见的。
 
--------
-## 2 缩位运算
-
-```verilog
-reg [7:0] 	counter;        //counter <= 8'b00011000;
-wire		counter_max;
-
-assign	counter_max = &counter; //counter_max = 0&0&0&1&1&0&0&0;
-```
 
 -----------
 
-## 3 for
+## 2 for
 
 &#160; &#160; &#160; &#160; for循环语法为：
 ```verilog
@@ -52,7 +43,8 @@ if(opa[bindex])
     result = result + (opa<<(bindex));
 ```
 ------------
-## 4 缩减运算符
+
+## 3 缩减运算符
 ```verilog
 wire    [3:0]   A;
 wire            B;
@@ -63,7 +55,7 @@ assign B = &A;
 assign  B = ((A[0]&A[1])&A[2])&A[3];
 ```
 ----------
-## 5 定义存储器模型（RAM）
+## 4 定义存储器模型（RAM）
 
 ```verilog
 (* ramstyle = "MLAB"*)reg[31:0] RegFile[15:0];
@@ -73,9 +65,9 @@ assign  B = ((A[0]&A[1])&A[2])&A[3];
 
 ----
 
-## 6 task和function
+## 5 task和function
 
-### 6.1 task
+### 5.1 task
 
 &#160; &#160; &#160; &#160; task概述：
 * 含有input、output、inout语句；
@@ -108,7 +100,7 @@ endtask
 ```
 
 
-### 6.2 function
+### 5.2 function
 
 &#160; &#160; &#160; &#160; function概述：
 * 执行时不消耗仿真时间；
@@ -138,6 +130,72 @@ begin
 end
 endfunction
 ```
+
+----
+
+## 6 并发操作
+
+&#160; &#160; &#160; &#160; 并发性是指对于所有并发线程，在仿真工具的当前仿真时间内，安排好的时间在仿真步进到下一個仿真时间之前都会执行完成。
+
+&#160; &#160; &#160; &#160; 当一个线程执行时，只有遇到wait语句才会停止，例如：
+
+```verilog
+wait(var_a == 1);
+
+@(router.cb);
+
+#1;
+
+join_any;
+
+join;
+```
+
+### 6.1 initial
+
+&#160; &#160; &#160; &#160; 在整个仿真时间内只执行一次，各个initial语句并发执行。
+
+### 6.2 always
+
+&#160; &#160; &#160; &#160; 对组合和时序电路建模，always语句并发执行。
+
+### 6.3 assign
+
+&#160; &#160; &#160; &#160; 对组合电路建模，并发执行。
+
+
+### 6.4 begin end
+
+&#160; &#160; &#160; &#160; 内部语句从上往下顺序执行。
+
+### 6.5 fork join
+
+&#160; &#160; &#160; &#160; 内部语句并行执行，与顺序无关。例如：
+
+```verilog
+initial begin
+    Statement1;             //*1
+    #10 Statement2;         //*2
+
+    fork
+        Statement3;         //*3
+        #50 Statement4;     //*7
+        #10 Statement5;     //*4
+
+        begin
+            #20 Statement6; //*5
+            #10 Statement7; //*6
+        end
+
+    join
+
+    #30 Statement8;         //*8
+    Statement9;             //*9
+end
+```
+
+
+
 
 
 ---------------------
