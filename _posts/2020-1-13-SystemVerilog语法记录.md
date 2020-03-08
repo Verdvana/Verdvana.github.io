@@ -494,7 +494,7 @@ end
 
 ### 8.2 fork join_any
 
-&#160; &#160; &#160; &#160; 当fork join_any中的子线程有一条执行完，则会跳出fork继续执行父线程的语句，在父线程中遇到延时等语句后又会继续执行fork，此时变为fork join，如果父线程中没有延时语句，则不会再进入fork，例如：
+&#160; &#160; &#160; &#160; 当fork join_any中的子线程有一条执行完，则会跳出fork继续执行父线程的语句，在父线程中遇到延时等语句后又会继续执行fork，此时变为fork join，但执行的时长为父线程中遇到的延时语句的时长，如果父线程中没有延时语句，则不会再进入fork，例如：
 
 
 ```verilog
@@ -512,18 +512,126 @@ initial begin
             #10 Statement7; //子线程，第7个执行
         end
 
-    join
+    join_any
 
     Statement8;             //父线程，第4个执行
     #80 Statement9;         //父线程，第9个执行
 end
 ```
 
+&#160; &#160; &#160; &#160; 而如果Statement9的延时小于子线程内部的50个时间单位的延时，则子程序不会都执行完：
 
+```verilog
+initial begin
+    Statement1;             //父线程，第1个执行
+    #10 Statement2;         //父线程，第2个执行
+
+    fork
+        Statement3;         //子线程，第3个执行
+        #50 Statement4;     //子线程，不执行
+        #10 Statement5;     //子线程，第5个执行
+
+        begin
+            #20 Statement6; //子线程，第6个执行
+            #10 Statement7; //子线程，不执行
+        end
+
+    join_any
+
+    Statement8;             //父线程，第4个执行
+    #30 Statement9;         //父线程，第7个执行；此时遇到延时，该线程挂起30个时间单位，回fork执行语句，30个时间单位后执行该线程
+end
+```
 
 ### 8.3 fork join_none
 
-&#160; &#160; &#160; &#160; 
+&#160; &#160; &#160; &#160; 先执行父线程的语句，如果父线程中有延时语句，才会进入fork执行子线程：
+
+```verilog
+initial begin
+    Statement1;             //父线程，第1个执行
+    #10 Statement2;         //父线程，第2个执行
+
+    fork
+        Statement3;         //子线程，第4个执行
+        #50 Statement4;     //子线程，第8个执行
+        #10 Statement5;     //子线程，第5个执行
+
+        begin
+            #20 Statement6; //子线程，第6个执行
+            #10 Statement7; //子线程，第7个执行
+        end
+
+    join
+
+    Statement8;             //父线程，第3个执行
+    #80 Statement9;         //父线程，第9个执行
+end
+```
+
+&#160; &#160; &#160; &#160; 如果Statement9的延时小于子线程内部的50个时间单位的延时：
+
+```verilog
+initial begin
+    Statement1;             //父线程，第1个执行
+    #10 Statement2;         //父线程，第2个执行
+
+    fork
+        Statement3;         //子线程，第4个执行
+        #50 Statement4;     //子线程，第9个执行
+        #10 Statement5;     //子线程，第5个执行
+
+        begin
+            #20 Statement6; //子线程，第6个执行
+            #10 Statement7; //子线程，第7个执行
+        end
+
+    join
+
+    Statement8;             //父线程，第3个执行
+    #50 Statement9;         //父线程，第8个执行
+end
+```
+
+### 8.4 wait fork
+
+&#160; &#160; &#160; &#160; 如果在fork join_any或fork join_none语句的后面没有延迟语句，可以使用wait fork语句等待所有的fork并发进程执行完成：
+
+```verilog
+task do_test;
+    fork
+        exec1;
+        exec2;
+    join_any
+
+    fork
+        exec3;
+        exec4;
+    join_none
+
+    wait fork;  //会等待exec1、exec2、exec3、exec4全部执行完成
+endtask
+```
+
+### 8.5 disable fork
+
+&#160; &#160; &#160; &#160; 与wait fork相反，停止fork所有并发子线程的执行：
+
+```verilog
+task do_test;
+    fork
+        exec1;
+        exec2;
+    join_any
+
+    fork
+        exec3;
+        exec4;
+    join_none
+
+    disable fork;  //exec1、exec2、exec3、exec4只要有一个执行完则会跳出fork
+endtask
+```
 
 ----
 
@@ -535,8 +643,6 @@ end
 * 'x：等于Verilog中的'bx。
 
 ----
-
-
 
 
 ## 10 循环语句性能增强
