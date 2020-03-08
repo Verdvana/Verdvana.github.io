@@ -174,23 +174,23 @@ join;
 
 ```verilog
 initial begin
-    Statement1;             //*1
-    #10 Statement2;         //*2
+    Statement1;             //父线程，第1个执行
+    #10 Statement2;         //父线程，第2个执行
 
     fork
-        Statement3;         //*3
-        #50 Statement4;     //*7
-        #10 Statement5;     //*4
+        Statement3;         //子线程，第3个执行
+        #50 Statement4;     //子线程，第7个执行
+        #10 Statement5;     //子线程，第4个执行
 
         begin
-            #20 Statement6; //*5
-            #10 Statement7; //*6
+            #20 Statement6; //子线程，第5个执行
+            #10 Statement7; //子线程，第6个执行
         end
 
     join
 
-    #30 Statement8;         //*8
-    Statement9;             //*9
+    #30 Statement8;         //父线程，第8个执行
+    Statement9;             //父线程，第9个执行
 end
 ```
 
