@@ -10,6 +10,7 @@ title: Home
   - **+86 15698343510**
   - **+86 18703416745** 
 - 邮箱：
+  - **jyyan_9@stu.xidian.edu.cn**
   - **1306024218@st.nuc.edu.cn**   
   - **verdvana@foxmail.com**  
   - **verdvana@gmail.com**  
@@ -47,6 +48,7 @@ title: Home
 
 - 校企联合横向科研项目
   - 基于FPGA的圆形光电探测阵列数据采集系统
+  - 基于FPGA的多通道流量及温度检测系统
 
 - 企业项目
   - [![Star](https://img.shields.io/github/stars/Verdvana/Low_Power_Methane_Detector.svg)](https://github.com/Verdvana/Low_Power_Methane_Detectory) [![Fork](https://img.shields.io/github/forks/Verdvana/Low_Power_Methane_Detector.svg)](https://github.com/Verdvana/Low_Power_Methane_Detector) [低功耗甲烷检测系统](https://github.com/Verdvana/Low_Power_Methane_Detector)
