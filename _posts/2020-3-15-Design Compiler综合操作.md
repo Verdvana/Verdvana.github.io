@@ -288,6 +288,7 @@ group_path      -name       COMB        -from	[all_inputs]    -to	[all_outputs]	
 # 報告分組情況
 #report_path_group
 ```
+
 &#160; &#160; &#160; &#160; 最后报告最差路径等，也会分组报告。
 
 ### 3.10 消除多端口互联
@@ -297,7 +298,7 @@ group_path      -name       COMB        -from	[all_inputs]    -to	[all_outputs]	
 ```tcl
 set_app_var     verilogout_no_tri                       ture
 set_app_var     verilogout_show_unconnected_pins        ture        ;# 显示寄存器未用到的Q非端口
-set_app_var     bus_naming_style                        {%s[%d]}
+set_app_var     bus_naming_style                        { %s[%d] }
 
 simplify_constants          -boundary_optimization                  ;# 边界优化
 # 相同net插buffer
