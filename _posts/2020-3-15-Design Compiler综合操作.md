@@ -122,7 +122,7 @@ source      ./Synopsys.sh
 ```
 &#160; &#160; &#160; &#160; 不出意外，DC会启动并加载之前设定好的配置文件：
 
-![1](https://raw.githubusercontent.com/Verdvana/Verdvana.github.io/master/_posts/Design%20Compiler%E7%BB%BC%E5%90%88%E6%93%8D%E4%BD%9C/1.png)
+![1](./Design%20Compiler%E7%BB%BC%E5%90%88%E6%93%8D%E4%BD%9C/1.png)
 
 ----
 
@@ -348,7 +348,7 @@ source  ../script/AXI4_Interconnect.tcl
 
 &#160; &#160; &#160; &#160; 之前写好的约束指令便会一条一条排队执行，最后生成报告：
 
-![2](https://raw.githubusercontent.com/Verdvana/Verdvana.github.io/master/_posts/Design%20Compiler%E7%BB%BC%E5%90%88%E6%93%8D%E4%BD%9C/2.png)
+![2](./Design%20Compiler%E7%BB%BC%E5%90%88%E6%93%8D%E4%BD%9C/2.png)
 
 
 ----
