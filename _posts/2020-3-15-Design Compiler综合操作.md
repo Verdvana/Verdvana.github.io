@@ -9,6 +9,7 @@ tags:
 ---
 
 -------
+
 ## 1 前言 
 
 &#160; &#160; &#160; &#160; 以综合AXI4_Interconnect为例，记录综合全过程。
@@ -17,6 +18,7 @@ tags:
 	* Design Compiler 2016
 * 操作系统：
 	* Ubuntu 18.04 LTS
+
 ----
 
 ## 2 前期准备
@@ -309,7 +311,7 @@ set_fix_multiple_port_nets  -all                        -buffer_constants
 
 &#160; &#160; &#160; &#160; 综合命令就一条，但是有很多不同的附加指令：
 
-```
+```tcl
 #compile
 compile     -map_effort high    -area_effort    high 
 #compile     -map_effort high    -area_effort    medium
