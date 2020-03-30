@@ -11,7 +11,7 @@ title: Home
   - **+86 18703416745** 
 - 邮箱：
   - **jyyan_9@stu.xidian.edu.cn**
-  - **1306024218@st.nuc.edu.cn**   
+  - **verdvana@outlook.com**   
   - **verdvana@foxmail.com**  
   - **verdvana@gmail.com**  
 - 微信：
