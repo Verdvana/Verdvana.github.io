@@ -125,9 +125,23 @@ tags:
 
 &#160; &#160; &#160; &#160; 同时使用analyze和elaborate指令:
 * analyze：分析HDL的源程序并将分析产生的中间文件存于work（或用户指定）的目录下；
+    ```shell
+    analyze -format sverilog {a.sv b.sv chip_top.sv}
+    ```
 * elaborate：在产生的中间文件中生成verilog的模块或VHDL的实体，缺省状态下读取的是work目录中的文件。
+    ```shell
+    elaborate   chip_top
+    ```
 
 &#160; &#160; &#160; &#160; analyze&elaborate允许设计者在设计的GTECH建立之前，首先分析设计的语法错误和进行HDL代码转换。analyze做语法检查，产生“.syn”文件存储在work路径下的定义设计库内，可供elaborate使用，不必重复分析；read不行。
+
+&#160; &#160; &#160; &#160; analyze&elaborate之后没必要设置顶层文件，也没必要进行link操作。
+
+&#160; &#160; &#160; &#160; 另外只有elaborate可以设定顶层文件的parameter：
+```shell
+elaborate   chip_top -parameter "DATA_WIDTH = 8,ADDR_WIDTH = 8"
+```
+
 
 #### 3.3 连接
 
