@@ -50,7 +50,7 @@ jekyll-theme-WuK: # 用了wu-kan的主题，自定义样式都在这个命名空
       archive:
         enable: true
         href: /archive
-        alert: posts in total ...
+        alert: 篇博客......
   page404:
     append_to_head:
       - | # 腾讯公益
