@@ -60,7 +60,7 @@ title: Home
 - 2016年电子科学与技术专业实训
   - [![Star](https://img.shields.io/github/stars/Verdvana/Bus_Type_Greenhouse_Monitoring_System.svg)](https://github.com/Verdvana/Bus_Type_Greenhouse_Monitoring_System) [![Fork](https://img.shields.io/github/forks/Verdvana/Bus_Type_Greenhouse_Monitoring_System.svg)](https://github.com/Verdvana/Bus_Type_Greenhouse_Monitoring_System) [总线型温室大棚监控系统](https://github.com/Verdvana/Bus_Type_Greenhouse_Monitoring_System)
 
-- 2016年山西省大学设电子设计竞赛
+- 2016年山西省大学生电子设计竞赛
   - 带啸叫检测与抑制的功率放大电路
 
 - 2015年全国大学生电子设计竞赛  `三等奖`
