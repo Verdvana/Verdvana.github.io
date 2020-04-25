@@ -73,9 +73,9 @@ title: Home
 
 ## 专业技能
 
-* 单片机/FPGA相关电路原理图与PCB设计   `Altium Designer`  `Cadence`
+* FPGA/单片机及相关电路原理图与PCB设计   `Altium Designer`
+* FPGA逻辑设计、仿真与调试  `Quartus Prime` `ModelSim`  `VCS`
 * 数模电路设计、仿真与调试  `Altium Designer` `Multisim`
-* FPGA逻辑设计、仿真与调试  `Quartus Prime` `ModelSim`
 * 数字IC综合与约束  `Design Compiler`
 
 * 单片机驱动编写及程序设计  `Keil`
