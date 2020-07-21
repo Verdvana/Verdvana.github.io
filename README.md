@@ -10,7 +10,6 @@ title: Home
   - **+86 15698343510**
   - **+86 18703416745** 
 - 邮箱：
-  - **jyyan_9@stu.xidian.edu.cn**
   - **verdvana@outlook.com**   
   - **verdvana@foxmail.com**  
   - **verdvana@gmail.com**  
@@ -34,15 +33,14 @@ title: Home
 
 ----
 
-## 工作经历
+## 工作/实习经历
+
+#### __[Qualcomm Technologies, Inc.](https://www.qualcomm.cn/)__ `2020.6.8 - `
+- ASIC Design Intern
 
 #### __[山西中谷科技股份有限公司](http://www.zgkj00.cn/)__ `2018.4 - 2018.8`
 - 硬件工程师
 
-## 实习经历
-
-#### __[Qualcomm Technologies, Inc.](https://www.qualcomm.cn/)__ `2020.6.8 - `
-- ASIC Design
 
 ----
 
@@ -78,6 +76,7 @@ title: Home
 
 ## 专业技能
 
+* ASIC设计与调试
 * FPGA/单片机及相关电路原理图与PCB设计   `Altium Designer`
 * FPGA逻辑设计、仿真与调试  `Quartus Prime` `ModelSim`  `VCS`
 * 数模电路设计、仿真与调试  `Altium Designer` `Multisim`
