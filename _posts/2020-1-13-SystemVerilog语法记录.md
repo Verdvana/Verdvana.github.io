@@ -12,6 +12,19 @@ tags:
 
 &#160; &#160; &#160; &#160; SystemVerilog完全兼容Verilog HDL，还加入了类似C++的语法用于验证。总之一句话，用TMD！
 
+&#160; &#160; &#160; &#160; SystemVerilog在硬件设计中有助于编写可综合硬件模型方面对Verilog HDL的增强部分如下：
+* 设计内部的封装通信和协议检查的接口；
+* 类似于C语言的数据类型；
+* 用户自定义类型；
+* 枚举类型；
+* 类型转换；
+* 结构体和联合体；
+* 可被多个设计快共享的定义包（package）；
+* 外部编译单元区域（scope）声明；
+* ++，--，+=以及其他赋值操作；
+* 显式过程块；
+* 优先级（priority）和唯一（unique）修饰符；
+* 编程语句增强。
 
 ----
 
@@ -784,6 +797,215 @@ endmodule
 
 ----
 
+## 14 包（package）
+
+### 14.1 定义
+
+&#160; &#160; &#160; &#160; 为了使多个模块共享用户定义类型的定义，SystemVerilog语言增加了包，与VHDL类似，包在package和endpackage之间定义。
+
+&#160; &#160; &#160; &#160; 包中可以包含的可综合的结构有：
+* parameter和localparam常量定义；
+* const变量定义；
+* typedef用户定义类型；
+* 全自动task和function定义；
+* 从其他包中import语句；
+* 操作符重载定义。
+
+
+&#160; &#160; &#160; &#160; 在包中还可以进行全局变量声明、静态任务定义和静态函数定义，但这些是**不可综合的**。
+
+&#160; &#160; &#160; &#160; 包是一个独立的声明空间，不需要包含在Verilog模块中。举例：
+
+```verilog
+package definitions;
+    parameter   VERSION = "1.1";
+
+    typedef emnum {ADD,SUB,MUL} opcodes_t;
+
+    typedef struct{
+        logic [31:0]    a,b;
+        opcodes_t       opcode;
+    }instruction_t;
+
+    function automatic [31:0] multiplier (input [31:0] a,b);
+        //用户定义的32位乘法代码从这开始
+        return a*b；
+    endfunction
+endpackage
+```
+
+&#160; &#160; &#160; &#160; 包中可能包含parameter、localparam和const等常量定义。在Verilog中，module的每个实例可以对parameter常量重新定义，但不能对localparam直接重定义，但宝中的parameter不能被重定义，因为它不是模块实例的一部分，**在包中，parameter和localparam是相同的**。
+
+### 14.2 引用包的内容
+
+&#160; &#160; &#160; &#160; 模块和接口可以用四种方式引用包中的定义和声明：
+* 用范围解析操作符直接引用；
+* 将包中特定子项导入到模块或接口中；
+* 用通配符导入包中的子项到模块或接口中；
+* 将包中子项导入到$unit声明域中。
+
+&#160; &#160; &#160; &#160; 相对于Verilog，SystemVerilog增加了**作用域解析操作符**“：：”。这一操作符允许通过包的名称直接引用包，然后选择包中特定的定义或声明。包名和包中子项名用双冒号“：：”隔开。例如，SystemVerilog的端口可定义为instruction_t类型（之前的例子），举例：
+
+```verilog
+module ALU(
+    input   definitions::instruction_t  IW,
+    input   logic                       clock,
+    output  logic [31:0]                result
+);
+
+    always_ff@(posedge clock)begin
+        case(IW.opcode)
+            definitions::ADD :  result  <= IW.a + IW.b;
+            definitions::SUB :  result  <= IW.a - IW.b;
+            definitions::MUL :  result  <= definitions::multiplier(IW.a, IW.b);
+        endcase
+    end
+endmodule
+```
+
+&#160; &#160; &#160; &#160; 显式地引用包中的内容有助于提高设计的源代码的可读性，但是当包中的一项或多项需要在模块中多次引用时，每次显示地引用包的名称则太过麻烦，所以希望将包中子项导入到设计块中。
+
+
+&#160; &#160; &#160; &#160; SystemVerilog中允许用import语句**将包中特定子项导入到模块中**。当包定义或声明导入到模块或接口中时，该子项在模块或接口内是可见的，就好像它是该模块或接口中的一个局部定义名一样，这样就不需要每次引用包中子项时都显式引用包名。将上面的例子修改为以下代码，使用导入语句使枚举类型的元素成为模块内的局部名称，然后case语句就可以引用这些名称而不用每次都显式的使用包名：
+
+```verilog
+module ALU(
+    input   definitions::instruction_t  IW,
+    input   logic                       clock,
+    output  logic [31:0]                result
+);
+
+    import  definitions::ADD;
+    import  definitions::SUB;
+    import  definitions::MUL;
+    import  definitions::multiplier;
+
+    always_comb begin
+        case(IW.opcode)
+            ADD :  result  <= IW.a + IW.b;
+            SUB :  result  <= IW.a - IW.b;
+            MUL :  result  <= multiplier(IW.a, IW.b);
+        endcase
+    end
+endmodule
+```
+
+&#160; &#160; &#160; &#160; 导入枚举类型定义并不导入那个定义使用的元素，在上面的例子中，下面的导入语句不会起作用：
+
+```verilog
+    import  definations::opcode_t;
+```
+
+&#160; &#160; &#160; &#160; 这个导入语句会使用户定义的类型opcode_t在模块中可见，但它不会使opcode_t中使用的枚举元素可见。为使元素在模块内成为可见的局部名称，每个枚举元素必须显式导入，当有许多子项需要从包中导入时，使用通配符导入更实用。
+
+&#160; &#160; &#160; &#160; SystemVerilog允许包中子项**使用通配符导入**，而不用指定包中子项名称。通配符记号是一个星号（*），例如：
+
+```verilog
+    import  definations::*;
+```
+
+&#160; &#160; &#160; &#160; 通配符导入并不能自动导入包中的所有内容，只有在模块或接口中实际使用的子项才会被真正导入，没被引用的包中的定义和声明不会被导入。
+
+&#160; &#160; &#160; &#160; 模块或接口内的局部定义和声明优先于通配符导入。包中指定子项名称的导入也优选于通配符导入。从设计者的角度来看，通配符导入只是简单地将包添加到标识符（identifier）搜索规则中。EDA软件将先搜索局部声明（遵循Verilog在模块内的搜索规则），然后在通配符导入的包中搜索，最后将在&unit声明域中搜索。
+
+&#160; &#160; &#160; &#160; 下面的例子中使用通配符导入语句，实际上是把包添加到标识符搜索路径中。当case语句引用ADD、SUB和MUL及函数multiplier等枚举元素时，就会在dufinitions包中查找这些名称的定义：
+
+```verilog
+module ALU(
+    input   definitions::instruction_t  IW,
+    input   logic                       clock,
+    output  logic [31:0]                result
+);
+
+    import  definitions::*;     //通配符导入
+
+    always_comb begin
+        case(IW.opcode)
+            ADD :  result  <= IW.a + IW.b;
+            SUB :  result  <= IW.a - IW.b;
+            MUL :  result  <= multiplier(IW.a, IW.b);
+        endcase
+    end    
+endmodule
+```
+
+&#160; &#160; &#160; &#160; 在以上例子中，对于模块端口IW，包名仍需显式引用，因为不能在关键字module和模块端口定义之间加入一个import语句。但是使用$unit声明域可以避免在端口列表中显式引用包名称。
+
+
+### 14.3 可综合性
+
+&#160; &#160; &#160; &#160; 当模块引用一个包中定义的任务或函数时，综合会复制该任务或函数的功能并把它看作是已经在模块中定义了的。
+
+&#160; &#160; &#160; &#160; 为了能够综合，**包中定义的任务和函数必须声明为automatic，并且不能包含静态变量**。因为自动任务或函数的存储区在每次调用时才会分配。这就保证了综合前对包中任务或函数引用的仿真行为与综合后的行为相同。综合后，这些任务或函数的功能就在引用的一个或多个模块中实现。
+
+&#160; &#160; &#160; &#160; 由于类似的原因，综合不支持包中的变量声明。仿真时，包中的变量会被导入该变量的所有模块共享。一个模块向变量写值，另一个模块看到的就将是新值。这类不通过模块端口传递数据的模块间通信是不可综合的。
+
+----
+
+## 15 $unit编译单元声明
+
+### 15.1 定义
+
+&#160; &#160; &#160; &#160; 相比Verilog，SystemVerilog增加了编译单元的概念。编译单元是同时编译所有源文件。编译单元为软件工具提供了一种对于整个设计的各个子块单独编译的方法。一个子块可能包含一个或多个module，这些module可能包含在一个或多个文件中。设计的子块还可能包含接口块和测试程序块。
+
+&#160; &#160; &#160; &#160; SystemVerilog允许在包、模块、接口和程序块的外部进行声明，这些外部声明在“编译单元域”中都是可见的，并且对所有同时编译的模块都是可见的。
+
+&#160; &#160; &#160; &#160; 编译单元域可以包含：
+* 时间单位和精度声明；
+* 变量声明；
+* net声明；
+* 常量声明；
+* 用户定义数据类型，使用typedef、enum或class；
+* 任务和函数定义。
+
+&#160; &#160; &#160; &#160; 举例：
+
+```verilog
+/****************************外部声明****************************/
+parameter   VERSION = "1.2a"    //外部常量
+reg         resetN  = 1;        //外部变量，低有效
+typedef     struct  packed{
+    reg [31:0]  address;
+    reg [31:0]  data;
+    reg [31:0]  opcode;
+}instruction_word_t;
+
+function automatic int log2(input int n);   //外部函数
+    if(n<=1)return(1);
+    log2    = 0;
+    while(n>1)begin
+        n   = n/2;
+        log2++;
+    end
+    return(log2)
+endfunction
+
+/****************************模块声明****************************/
+//用外部声明定义端口类型
+module register (
+    output  instruction_word_t  q,
+    input   instruction_word_t  d,
+    input   wire                clock
+);
+
+    always_ff@(posedge clock, negedge resetN)
+        if(!resetN) q <= 0;
+        else        q <= d;
+
+endmodule
+```
+
+&#160; &#160; &#160; &#160; **外部编译单元域声明不是全局的，只作用于同时编译的源文件，每次编译源文件，就创建一个唯一仅针对此次变异的编译单元域。**
+
+#### 15.2 编码指导
+
+* 不要在$unit空间进行任何声明，所有的声明都要在命名包内进行；
+* 必要时可以将包导入到$unit中。这在模块或接口的多个端口使用用户自定义类型，而这个类型定义又在包中时非常有用。
+
+<div style='display: none'>
+
+----
+
 ## 14 结构体
 
 ### 14.1 结构体的使用
@@ -885,7 +1107,7 @@ end
 &#160; &#160; &#160; &#160; 在上面的例子中，animal中有的成员变量对于外部来说都可见的，所以在initial语句中可以直接使用直接引用的方式对其进行赋值。这种直接引用的方式在某种情况下是危险的。当不小心将它们改变后，那么可能会因为会引起致命的问题，者有点类似于全局变量。由于对全局变量是可见的，所有全局变量的值可能被程序的任意部分改变，从而导致一系列的问题。
 
  
-
+</div>
 
 
 
