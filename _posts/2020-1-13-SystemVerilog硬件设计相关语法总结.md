@@ -1,6 +1,6 @@
 ---
 layout: post
-title:  "SystemVerilog语法总结"
+title:  "SystemVerilog硬件设计相关语法总结"
 date:   2020-1-13 22:19:10 +0700
 tags:
   - SystemVerilog
@@ -997,10 +997,86 @@ endmodule
 
 &#160; &#160; &#160; &#160; **外部编译单元域声明不是全局的，只作用于同时编译的源文件，每次编译源文件，就创建一个唯一仅针对此次变异的编译单元域。**
 
-#### 15.2 编码指导
+### 15.2 编码指导
 
 * 不要在$unit空间进行任何声明，所有的声明都要在命名包内进行；
 * 必要时可以将包导入到$unit中。这在模块或接口的多个端口使用用户自定义类型，而这个类型定义又在包中时非常有用。
+
+### 15.3 SystemVerilog标识符搜索规则
+
+&#160; &#160; &#160; &#160; 编译单元域中的任何声明可以再组成编译单元的模块的任何层次引用。
+
+&#160; &#160; &#160; &#160; SystemVerilog定义了简单直观的搜索规则来引用标识符：
+* 搜索那些按IEEE 1364 Verilog标准定义的局部声明；
+* 搜索通配符导入到当前作用域的包中的声明；
+* 搜索编译单元域中的声明；
+* 搜索设计层次中的声明，遵循IEEE 1364 Verilog搜索规则。
+
+
+&#160; &#160; &#160; &#160; SystemVerilog搜索规则保证了SystemVerilog完全向后兼容。
+
+### 15.4 源代码顺序
+
+&#160; &#160; &#160; &#160; 数据标识符和类型标识符必须在引用前声明。未声明的标识符假定为net类型（通常为wire类型）。EDA工具必须在标识符引用之前找到外部声明，否则，这个名称将被看做未声明的标识符并遵守Verilog隐式类型的规则。举例：
+
+```verilog
+module parity_gen (
+    input   wire [63:0] data
+);
+    assign  parity  = ^data;    //parity是一个隐式局部net
+endmodule
+
+reg parity;                     //因为声明在被parity_gen引用之后出现
+                                //因此外部声明没被模块parity_gen使用
+module parity_check(
+    input   wire [63:0] data,
+    output  logic       err
+);
+    assign  err = (^data != parity);    //parity是$unit变量
+endmodule
+```
+
+### 15.5 将包导入$unit的编码规则
+
+&#160; &#160; &#160; &#160; SystemVerilog允许将模块端口声明为用户定义类型。如之前的例子：
+```verilog
+module ALU(
+    input   definitions::instruction_t  IW,
+    input   logic                       clock,
+    output  logic [31:0]                result
+);
+```
+
+&#160; &#160; &#160; &#160; 当许多模块端口都是用户自定义类型时，像上面那样显式的引用包就会显得繁琐。一种可选择的风格是在模块声明之前将包导入到$unit编译单元域中。这样用户定义类型的定义在SystemVerilog搜索序列中可见，例如：
+
+```verilog
+//将包中特定子项导入到$unit中
+import  definitions::instruction_t;
+
+module ALU(
+    input   instruction_t   IW,
+    input   logic           clock,
+    output  logic [31:0]    result
+);
+endmodule
+```
+
+&#160; &#160; &#160; &#160; 包还可以通过通配符导入到$unit域中，注意通配符导入实际上不能导入包中所有子项。它只能将包加到SystemVerilog源路径中：
+
+```verilog
+//将包中特定子项导入到$unit中
+import  definitions::*;
+
+module ALU(
+    input   instruction_t   IW,
+    input   logic           clock,
+    output  logic [31:0]    result
+);
+endmodule
+```
+
+
+
 
 <div style='display: none'>
 
