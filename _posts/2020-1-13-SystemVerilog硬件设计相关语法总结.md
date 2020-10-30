@@ -46,7 +46,9 @@ tags:
 
 ## 3 新添加的数据类型
 
-&#160; &#160; &#160; &#160; 有四态，两态和实型三种数据类型，其中两态和实型不适合RTL设计。
+&#160; &#160; &#160; &#160; Verilog HDLde reg、integer和time变量的每一位都有四种逻辑；wire、wor、wand和其他线网（net）类型的每一位有120种植（四态逻辑加上多个强度级）及专用线逻辑决断函数。
+
+&#160; &#160; &#160; &#160; Systemverilog有四态，两态和实型三种数据类型，其中两态和实型不适合RTL设计。
 
 ### 3.1 Logic
 
@@ -1075,7 +1077,143 @@ module ALU(
 endmodule
 ```
 
+&#160; &#160; &#160; &#160; 每个需要保重定义的设计或测试平台都应该将package文件包含在文件的开始：
 
+```verilog
+`include "xxx.pkg"
+```
+
+&#160; &#160; &#160; &#160; 如果包已经编译并导入到当前$unit域中，该文件的编译将被忽略。
+
+----
+
+## 16 仿真时间单位和精度
+
+### 16.1 包含时间单位的时间值
+
+&#160; &#160; &#160; &#160; Verilog HDL不在时间值中指定时间的单位，SystemVerilog可以给时间值指定时间单位。允许的时间单位如下表：
+
+| 单位 | 描述 |
+| --- | --- |
+| s | 秒 |
+| ms | 毫秒 |
+| us | 微秒 |
+| ns | 纳秒 |
+| ps | 皮秒 |
+| fs | 飞秒 |
+| step | 软件工具使用的最小时间单位 |
+
+
+&#160; &#160; &#160; &#160; **时间值和单位值之间不允许有空格**。
+
+### 16.2 范围级（scope-level）时间单位和精度
+
+&#160; &#160; &#160; &#160; SystemVerilog允许指定局部性的时间单位和精度，作为模块、接口或程序块的一部分，而不是作为软件工具的指令。
+
+&#160; &#160; &#160; &#160; 在SystemVerilog中，通过使用关键字“timeunit”和“timeprecision”进一步增强了时间单位的说明，这些关键字作为模块定义的一部分，用来指定模块内的时间单位和精度信息，且必须在其他任何声明或语句之前、紧随模块、接口或程序的声明之后指定。例如：
+
+```verilog
+module adder(
+    input   wire [63:0] a,b,
+    output  reg  [63:0] sum,
+    output  reg         carry
+);
+    timeunit        1ns;  
+    timeprecision   10ps;
+
+endmodule
+```
+
+### 16.3 编译单元的时间单位和精度
+
+&#160; &#160; &#160; &#160; SystemVerilog中，时间单位和精度值可以在很多地方指定。SystemVerilog定义了一个搜索法则来确定时间值的单位和精度：
+* 如果时间值带单位，则使用指定的单位；
+* 否则，使用在模块、接口和程序块内部指定的时间单位和精度；
+* 否则，如果模块或接口声明嵌入到其他的模块和接口内，使用父模块接口或接口指定的时间单位和精度。
+* 否则，使用模块编译时，有效的`timeacale时间单位和精度；
+* 否则，使用在编译单元域中定义的时间单位和精度；
+* 否则，使用仿真器默认的时间单位和精度。
+
+&#160; &#160; &#160; &#160; 举例说明：
+
+```verilog
+timeunit        1ns;        //外部声明的时间单位和精度
+timeprecision   1ns;
+
+module my_chip(...);
+
+    timeprecision   1ps;    //局部精度（优先于外部精度）
+
+    always@(posedge data_request)begin
+        #2.5    send_packet;//使用外部单位和局部精度
+        #3.7ns  check_crc;  //使用指定的单位
+    end
+
+    task send_packet();
+        ...
+    endtask
+
+    task check_crc();
+        ...
+    endtask
+
+endmodule
+
+
+
+`timescale  1ps/1ps         //`timescale指令指定的单位和精度，优于外部声明
+
+module FSM(...)
+    timeunit    1ns;        //局部声明优于`timescale的指定
+
+    always@(state)begin
+        #1.2    case(state) //使用局部声明的单位和`timescale指定的精度
+            WAITE:  #20ps;  //使用此处指定的单位
+            ...
+        endcase
+    end
+endmodule
+```
+
+----
+
+## 17 `define增强
+
+### 17.1 字符串内的宏变量替换
+
+&#160; &#160; &#160; &#160; Verilog HDL的\`define宏中使用的双引号内的文本变成了文本串，不能在字符串中嵌入宏变量的文本替换宏创建字符串。而SystemVerilog可以进行宏文本字符串内的变量替换，这是通过在形成字符串的引号前加重音号“\`”来实现。例如：
+
+```verilog
+`define print(v)    $display(`"variable v = %h`" ,v);
+
+`print(data);
+```
+
+### 17.2 通过宏建立标识符名
+
+&#160; &#160; &#160; &#160; Verilog HDL的\`define宏不能通过连接两个或多个文本宏来建立一个新标识符，SystemVerilog提供了一个不引入空格的方法，使用两个连接的重音符号“`”，使两个或多个文本宏连接成一个新名字。
+
+&#160; &#160; &#160; &#160; 在无文本替换的源文件中，是这样声明：
+
+```verilog
+bit d00_bit;    wand d00_net = d00_bit;
+bit d01_bit;    wand d01_net = d01_bit;
+... //对每一位都重复60多次
+bit d62_bit;    wand d62_net = d62_bit;
+bit d63_bit;    wand d63_net = d63_bit;
+```
+
+&#160; &#160; &#160; &#160; 使用SystemVerilog对`define的增强，代码可简化为：
+
+```verilog
+`define TWO_STATE_NET(name) bit name``_bit;  wand name``_net  = name``_bit;
+
+`TWO_STATE_NET(dOO);
+`TWO_STATE_NET(dO1);
+...
+`TWO_STATE_NET(d62);
+`TWO_STATE_NET(d63);
+```
 
 
 <div style='display: none'>
