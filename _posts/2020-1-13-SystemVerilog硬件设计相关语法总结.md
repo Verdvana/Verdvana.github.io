@@ -107,6 +107,9 @@ tags:
 endif
 ```
 
+&#160; &#160; &#160; &#160; 用户自定义类型可以在局部定义，也可以在编译单元域进行外部定义。局部定义的类型声明写在module内，外部定义的类型声明写在package内。
+
+
 &#160; &#160; &#160; &#160; 只要用typedef就能很容易的在4态和2态逻辑仿真之间切换以加快仿真速度。
 
 ### 3.10 枚举——enum
@@ -157,6 +160,30 @@ endmodule
 ```
 
 &#160; &#160; &#160; &#160; 另外，枚举类型变量可以使用“.name”显示字符。
+
+
+&#160; &#160; &#160; &#160; 当枚举类型从包中导入时，**只有类型名被导入，枚举列表中的数值标签不会被导入**，因此不会在枚举类型名导入的命名范围中可见。下面的代码将不会正确工作：
+
+```verilog
+package chip_types;
+    typedef enum {WAITE,LOAD,READY} states_t;
+endpackage
+
+module chip(...);
+    import  chip_types::states_t;   //只导入typedef名
+    states_t state,next_state;
+
+    always_ff@(posedge clk, negedge resetN)begin
+        if(!resetN)
+            state   <= WAITE;       //错误，“WAITE”还未导入
+        else
+            state   <= next_state;
+    end
+...
+endmodule
+```
+
+&#160; &#160; &#160; &#160; 为了使枚举类型标签可见，可以显式导入每个标签，或用通配符导入整个包。通配符导入将使枚举类型名和枚举值标签在import语句作用域内都可见。
 
 ----
 
