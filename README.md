@@ -23,7 +23,7 @@ title: Home
 
 ## 教育背景
 
-#### __西安电子科技大学__ `2018.9 - `
+#### __西安电子科技大学__ `2018.9 - 2021.7`
 
 - 电子与通信工程 __硕士__
 
@@ -34,6 +34,9 @@ title: Home
 ----
 
 ## 工作/实习经历
+
+#### __[Qualcomm Technologies, Inc.](https://www.qualcomm.cn/)__ `2021.7 - `
+- ASIC Design
 
 #### __[Qualcomm Technologies, Inc.](https://www.qualcomm.cn/)__ `2020.6 - 2020.9`
 - ASIC Design Intern
