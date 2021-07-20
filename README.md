@@ -35,10 +35,10 @@ title: Home
 
 ## 工作/实习经历
 
-#### __[Qualcomm Technologies, Inc.](https://www.qualcomm.cn/)__ `2021.7 - `
+#### __[Qualcomm (Shanghai) Co., Ltd.](https://www.qualcomm.cn/)__ `2021.6 - `
 - ASIC Design
 
-#### __[Qualcomm Technologies, Inc.](https://www.qualcomm.cn/)__ `2020.6 - 2020.9`
+#### __[Qualcomm (Shanghai) Co., Ltd.](https://www.qualcomm.cn/)__ `2020.6 - 2020.9`
 - ASIC Design Intern
 
 #### __[山西中谷科技股份有限公司](http://www.zgkj00.cn/)__ `2018.4 - 2018.8`
