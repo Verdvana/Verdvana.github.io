@@ -1,6 +1,6 @@
 ---
 layout: post
-title:  "VS Code环境下克隆GiHub仓库"
+title:  "WSL2与图形化界面安装"
 date:   2021-7-25 12:36:10 +0700
 tags:
   - Others
