@@ -49,7 +49,9 @@ git config --global user.email "<邮箱>"
 git clone <仓库地址>
 ```
 
-&#160; &#160; &#160; &#160; 但有时候通过这种方式clone下来的仓库在同步时会出现“Time out”之类的错误。因此采用
+&#160; &#160; &#160; &#160; 但有时候通过这种方式clone下来的仓库在同步时会出现“Time out”之类的错误。采用图形化界面lone好像可以解决。在VSCode左侧的“源代码管理”标签里打开“更多操作”：
+
+
 
 
 
@@ -66,7 +68,6 @@ git config --global --unset http.proxy
 git config --global --unset https.proxy
 ```
 
-ff
 
 ----
 &#160; &#160; &#160; &#160; 告辞。
