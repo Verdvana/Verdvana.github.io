@@ -30,7 +30,7 @@ sudo ifconfig eth0 hw ether XX:XX:XX:XX:XX:XX
 sudo ifconfig eth0 up
 ```
 
-&#160; &#160; &#160; &#160; 可以把这段设置为开机启动。
+&#160; &#160; &#160; &#160; 但是，修改完之后会无法联网。
 
 
 
@@ -51,7 +51,7 @@ No protocol specified E233: cannot open display
 xhost +
 ```
 
-&#160; &#160; &#160; &#160; 这不影响当前用户使用图形化界面，因此可以把这句添加到“~/.bashrc”里。
+&#160; &#160; &#160; &#160; 这需要在开启xrdp服务之后再运行。
 
  
 ----
