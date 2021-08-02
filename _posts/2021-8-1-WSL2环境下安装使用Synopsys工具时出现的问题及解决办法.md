@@ -53,6 +53,66 @@ xhost +
 
 &#160; &#160; &#160; &#160; 这需要在开启xrdp服务之后再运行。
 
- 
+## 4 dc命令找不到
+
+&#160; &#160; &#160; &#160; 跑VCS编译的时候会报错：
+
+```sh
+/bin/vcs: line 2402: dc: command not found
+```
+
+&#160; &#160; &#160; &#160; 虽然编译还是能完成，但是看着很不爽。所以用以下命令安装bc来解决：
+
+```sh
+sudo apt-get install bc
+```
+
+&#160; &#160; &#160; &#160; 然后在root用户模式下的环境变量（Ubuntu为：“/root/.bashrc”）中添加如下内容：
+
+```sh
+export PATH="/usr/local/sbin:/usr/local/bin:/sbin:/bin:/usr/sbin:/usr/bin:/root/bin:"$PATH
+```
+
+----
+
+## 5 sh连接到dash
+
+
+&#160; &#160; &#160; &#160; Ubuntu环境中sh时默认连接到dash的，所以会在运行VCS编译时报错：
+
+```sh
+/bin/sh illegal option -h
+```
+
+&#160; &#160; &#160; &#160; 可以取消他们之间的连接来解决：
+
+```sh
+sudo rm -f /bin/sh
+sudo ln -s /bin/bash /bin/sh
+```
+
+----
+
+## 6 python的安装和版本
+
+&#160; &#160; &#160; &#160; 在VCS仿真阶段会遇到如下错误：
+
+```sh
+/usr/bin/env: 'python': No such file or directory
+```
+
+&#160; &#160; &#160; &#160; 这是由于没有安装python，它需要的时python2.3版本，如果安装的是比如3.8版本，则会报错：
+
+```sh
+profrpt requires 2.3.0 <= Python version < 3.0.0 to run
+```
+
+&#160; &#160; &#160; &#160; 所以要安装python2.x版本：
+
+```sh
+sudo apt install python
+```
+
+
 ----
 &#160; &#160; &#160; &#160; 告辞。
