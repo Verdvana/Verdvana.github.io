@@ -5,14 +5,13 @@ title: Home
 ## 联系方式
 
 - 地址：
-  - **陕西省 西安市 雁塔区 太白南路2号 西安电子科技大学**
+  - **上海市 浦东新区 碧波路690号 张江微电子港9号楼 Qualcomm**
 - 电话：
   - **+86 15698343510**
   - **+86 18703416745** 
 - 邮箱：
   - **verdvana@outlook.com**   
-  - **verdvana@foxmail.com**  
-  - **verdvana@gmail.com**  
+  - **verdvana@foxmail.com** 
 - 微信：
   - **[verdvana](./static/img/wechat.jpg)**  
 - 站点：
@@ -23,7 +22,7 @@ title: Home
 
 ## 教育背景
 
-#### __西安电子科技大学__ `2018.9 - 2021.7`
+#### __西安电子科技大学__ `2018.9 - 2021.6`
 
 - 电子与通信工程 __硕士__
 
