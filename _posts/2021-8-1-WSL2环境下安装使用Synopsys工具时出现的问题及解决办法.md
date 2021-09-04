@@ -113,6 +113,29 @@ profrpt requires 2.3.0 <= Python version < 3.0.0 to run
 sudo apt install python
 ```
 
+----
+
+## 7 gcc++-4.8命令找不到
+
+&#160; &#160; &#160; &#160; 错误提示：
+
+```sh
+make[1]: g++-4.8: Command not found
+```
+
+
+&#160; &#160; &#160; &#160; 安装gcc4.8和g++4.8，并提高4.8版本的优先级：
+
+```sh
+sudo apt-get install gcc-4.8 g++-4.8										# 安装
+sudo update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-4.8 100	# 提升优先级
+```
+
+&#160; &#160; &#160; &#160; 之后可以用如下命令查看gcc默认版本：
+
+```
+sudo update-alternatives --config gcc
+```
 
 ----
 &#160; &#160; &#160; &#160; 告辞。
