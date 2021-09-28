@@ -133,7 +133,7 @@ sudo update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-4.8 100	# 提�
 
 &#160; &#160; &#160; &#160; 之后可以用如下命令查看gcc默认版本：
 
-```
+```sh
 sudo update-alternatives --config gcc
 ```
 
