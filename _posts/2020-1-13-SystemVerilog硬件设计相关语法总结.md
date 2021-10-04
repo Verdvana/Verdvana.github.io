@@ -104,7 +104,7 @@ tags:
     typedef bit bit_t;  //2态
 `else
     typedef logic bit_t;//4态
-endif
+`endif
 ```
 
 &#160; &#160; &#160; &#160; 用户自定义类型可以在局部定义，也可以在编译单元域进行外部定义。局部定义的类型声明写在module内，外部定义的类型声明写在package内。
@@ -833,7 +833,7 @@ endmodule
 &#160; &#160; &#160; &#160; 为了使多个模块共享用户定义类型的定义，SystemVerilog语言增加了包，与VHDL类似，包在package和endpackage之间定义。
 
 &#160; &#160; &#160; &#160; 包中可以包含的可综合的结构有：
-* parameter和localparam常量定义；
+* parameter和localparam常量定义（这俩在package里是一样的）；
 * const变量定义；
 * typedef用户定义类型；
 * 全自动task和function定义；
