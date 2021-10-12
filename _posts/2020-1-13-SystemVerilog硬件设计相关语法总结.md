@@ -112,6 +112,55 @@ tags:
 
 &#160; &#160; &#160; &#160; 只要用typedef就能很容易的在4态和2态逻辑仿真之间切换以加快仿真速度。
 
+&#160; &#160; &#160; &#160; 可以直接从package中引用自定义类型：
+
+```verilog
+package chip_types;
+    `ifdef TWO_STATE
+        typedef bit dtype_t;
+    `else
+        typedef logic dtype_t;
+    `endif
+endpackage
+
+module counter(
+    output  chip_types::dtype_t[15:0]   count,
+    input   chip_types::dtype_t         clock,resetN
+);
+always_ff@(posedge clock, negedge resetN)begin
+    if(!resetN) count <= 0;
+    else        count <= count + 1;
+end
+endmodule
+```
+
+&#160; &#160; &#160; &#160; 如果觉得这样每个端口都需要引用包名很繁琐，也可以将包定义导入到$unit编译单元域中：
+
+```verilog
+package chip_types;
+    `ifdef TWO_STATE
+        typedef bit dtype_t;
+    `else
+        typedef logic dtype_t;
+    `endif
+endpackage
+
+import chip_types::dtype_t;
+
+module counter(
+    output dtype_t [15:0]   count,
+    input  dtype_t          clock,resetN 
+);
+always_ff@(posedge clock, negedge resetN)begin
+    if(!resetN) count <= 0;
+    else        count <= count + 1;
+end
+endmodule
+```
+
+
+
+
 ### 3.10 枚举——enum
 
 &#160; &#160; &#160; &#160; 缺省状态下为2态整型（int）变量：
