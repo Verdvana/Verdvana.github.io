@@ -841,6 +841,15 @@ module for4a(
 endmodule
 ```
 
+&#160; &#160; &#160; &#160; SystemVerilog还增加了数组循环方式：
+```verilog
+logic value [5];
+foreach (value[i]) begin
+    value[i] = ...;
+end
+```
+
+
 ----
 
 ## 11 断言
