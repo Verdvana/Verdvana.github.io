@@ -351,5 +351,10 @@ source  ../script/AXI4_Interconnect.tcl
 ![2](./Design%20Compiler%E7%BB%BC%E5%90%88%E6%93%8D%E4%BD%9C/2.png)
 
 
+&#160; &#160; &#160; &#160; 要启动图形界面的话在dc_shell里输入：
+```sh
+gui_start
+```
+
 ----
 &#160; &#160; &#160; &#160; 告辞
