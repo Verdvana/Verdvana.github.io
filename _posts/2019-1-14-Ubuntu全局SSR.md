@@ -3,7 +3,7 @@ layout: post
 title:  "Ubuntu 18.04 LTS 系统下SSR全局代理"
 date:   2019-1-14 11:59:10 +0700
 tags:
-  - Others
+  - Linux
 ---
 
 -------
