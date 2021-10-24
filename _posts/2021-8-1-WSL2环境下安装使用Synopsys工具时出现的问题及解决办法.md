@@ -3,7 +3,7 @@ layout: post
 title:  "WSL2环境下安装使用Synopsys工具时出现的问题及解决办法"
 date:   2021-8-1 17:27:10 +0700
 tags:
-  - Others
+  - Linux
 ---
 
 
