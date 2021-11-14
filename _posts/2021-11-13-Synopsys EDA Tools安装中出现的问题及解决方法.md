@@ -1,6 +1,6 @@
 ---
 layout: post
-title:  "Synopsys EDA Tools安装中出现的问题及解决方法"
+title:  "Synopsys EDA Tools安装和使用过程中出现的问题及解决方法"
 date:   2021-11-13 13:22:20 +0700
 tags:
   - Linux
@@ -51,8 +51,6 @@ Explain Error：No such file or directory
 ```sh
 sudo apt-get install csh
 ```
-
----
 
 
 ### 2.2 运行lmstat时找不到文件或路径
