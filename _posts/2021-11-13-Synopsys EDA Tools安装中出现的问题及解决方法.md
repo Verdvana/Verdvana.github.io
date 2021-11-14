@@ -4,6 +4,7 @@ title:  "Synopsys EDA Tools安装中出现的问题及解决方法"
 date:   2021-11-13 13:22:20 +0700
 tags:
   - Linux
+  - Digital IC Design
 ---
 
 
@@ -11,9 +12,20 @@ tags:
 
 ## 1 前言
 
-&#160; &#160; &#160; &#160; 想找到一种最方便的IC开发调试环境，于是多次在虚拟机或物理机的Ubuntu、WSL、SLES、OpenSUSE上安装了Synopsys 2016和2018两个版本的Tools，就积（chāo）累（xí）了很多遇到的错误和解决方法。安装过程网上已经有比较完善的文章了，但安装过程中问题的解决却零零散散还不好找，所以就整理记录一下。
+&#160; &#160; &#160; &#160; 想找到一种最方便的IC开发调试环境，于是多次在虚拟机或物理机的Ubuntu、WSL2、SLES、OpenSUSE上安装了Synopsys 2016和2018两个版本的Tools，就积（chāo）累（xí）了很多遇到的错误和解决方法。安装过程网上已经有比较完善的文章了，但安装过程中问题的解决却零零散散还不好找，所以就整理记录一下。
 
-
+* 操作系统：
+  * Ubuntu 20.04.3 LTS
+  * Windows Subsystem for Linux 2
+  * SUSE Linux Enterprise Server 15 SP3
+  * OpenSUSE Leap 15.3
+* 开发环境：
+  * ic_compiler_vO-2018.06-SP1
+  * ppower_vO-2018.06-SP3
+  * pt_vO-2018.06-SP1
+  * syn_vO-2018.06-SP5-5
+  * vcs_vO-2018.09-SP2
+  * verdi_vO-2018.09-SP2-11
 
 ----
 
@@ -30,7 +42,7 @@ tags:
 
 &#160; &#160; &#160; &#160; 启动时会报错：
 
-```
+```sh
 Explain Error：No such file or directory
 ```
 
@@ -102,7 +114,30 @@ sudo touch /usr/tmp/.flexlm
 
 ### 3.2 缺少库文件
 
-&#160; &#160; &#160; &#160; 
+&#160; &#160; &#160; &#160; 在Ubuntu、WSL2中可能缺失的库：
+* libjpeg.so.62: 
+  ```sh
+  sudo apt-get install libjpeg62
+  ```
+* libtiff.so.3:
+  ```sh
+  cd /usr/lib/x86_64-linux-gnu/
+  sudo cp libtiff.so.5 /usr/lib/
+  cd /usr/lib
+  sudo ln -s libtiff.so.5 libtiff.so.3
+  ```
+* libmng.so.1:
+  ```sh
+  sudo apt-get install libmng2
+  cd /usr/lib/x86_64-linux-gnu
+  sudo cp libmng.so.2 /usr/lib/
+  cd /usr/lib
+  sudo ln -s libmng.so.2 libmng.so.1
+  ```
+* libpng12.so.0:
+  
+  下载一个复制到`/usr/lib`：[libpng12.so.0]()
+  
 
 
 
