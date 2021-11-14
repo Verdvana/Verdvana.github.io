@@ -394,7 +394,22 @@ sudo update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-4.8 100	# 提�
 sudo update-alternatives --config gcc
 ```
 
-### 4.3 dc_shell或pt_shell中方向键或制表键无法使用
+### 4.3 gcc++-4.8命令找不到（OpenSUSE）
+
+&#160; &#160; &#160; &#160; 在2018版本的VCS仿真阶段会遇到如下错误：
+
+```sh
+make[1]: g++: Command not found
+```
+
+&#160; &#160; &#160; &#160; 安装g++：
+
+```sh
+sudo zypper install gcc-c++
+```
+
+
+### 4.4 dc_shell或pt_shell中方向键或制表键无法使用
 
 &#160; &#160; &#160; &#160; 启动dc_shell或pt_shell后，提示警告：
 ```sh
