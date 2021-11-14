@@ -91,51 +91,7 @@ sudo rm -f /bin/sh
 sudo ln -s /bin/bash /bin/sh
 ```
 
-----
 
-## 6 python的安装和版本
-
-&#160; &#160; &#160; &#160; 在VCS仿真阶段会遇到如下错误：
-
-```sh
-/usr/bin/env: 'python': No such file or directory
-```
-
-&#160; &#160; &#160; &#160; 这是由于没有安装python，它需要的时python2.3版本，如果安装的是比如3.8版本，则会报错：
-
-```sh
-profrpt requires 2.3.0 <= Python version < 3.0.0 to run
-```
-
-&#160; &#160; &#160; &#160; 所以要安装python2.x版本：
-
-```sh
-sudo apt install python
-```
-
-----
-
-## 7 gcc++-4.8命令找不到
-
-&#160; &#160; &#160; &#160; 错误提示：
-
-```sh
-make[1]: g++-4.8: Command not found
-```
-
-
-&#160; &#160; &#160; &#160; 安装gcc4.8和g++4.8，并提高4.8版本的优先级：
-
-```sh
-sudo apt-get install gcc-4.8 g++-4.8										# 安装
-sudo update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-4.8 100	# 提升优先级
-```
-
-&#160; &#160; &#160; &#160; 之后可以用如下命令查看gcc默认版本：
-
-```sh
-sudo update-alternatives --config gcc
-```
 
 ----
 &#160; &#160; &#160; &#160; 告辞。
