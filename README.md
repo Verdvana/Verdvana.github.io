@@ -34,7 +34,7 @@ title: Home
 
 ## 工作/实习经历
 
-#### __[Qualcomm (Shanghai) Co., Ltd.](https://www.qualcomm.cn/)__ `2021.6 - `
+#### __[Qualcomm (Shanghai) Co., Ltd.](https://www.qualcomm.cn/)__ `2021.6 - 至今`
 - ASICs Engineering Engineer
 
 #### __[Qualcomm (Shanghai) Co., Ltd.](https://www.qualcomm.cn/)__ `2020.6 - 2020.9`
