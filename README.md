@@ -10,12 +10,9 @@ title: Home
   - **+86 15698343510**
   - **+86 18703416745** 
 - 邮箱：
-  - **verdvana@outlook.com**   
-  - **verdvana@foxmail.com** 
+  - **verdvana@outlook.com**
 - 微信：
-  - **[verdvana](./static/img/wechat.jpg)**  
-- 站点：
-  - [verdvana.cn](https://verdvana.cn)
+  - **[verdvana](./static/img/wechat.jpg)**
 
 
 ----
