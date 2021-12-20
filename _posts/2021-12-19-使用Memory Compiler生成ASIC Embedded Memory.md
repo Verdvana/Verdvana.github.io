@@ -74,7 +74,7 @@ tags:
   ```sh
   python3 $OPENRAM_HOME/openram.py myconfig
   ```
-* 运行工具，之后可以在`<output_path>`里得到生成的文件。
+* 运行之后可以在`<output_path>`里得到生成的文件。
 
 &#160; &#160; &#160; &#160; 这样可以得到memory的库文件、仿真文件。
 
