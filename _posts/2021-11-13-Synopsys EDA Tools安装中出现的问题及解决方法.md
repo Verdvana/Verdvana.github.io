@@ -133,7 +133,7 @@ sudo touch /usr/tmp/.flexlm
   sudo ln -s libmng.so.2 libmng.so.1
   ```
 * libpng12.so.0：
-  * 下载一个复制到`/usr/lib`：[libpng12.so.0](https://github.com/Verdvana/Verdvana.github.io/blob/master/_posts/Synopsys%20EDA%20Tools%E5%AE%89%E8%A3%85%E4%B8%AD%E5%87%BA%E7%8E%B0%E7%9A%84%E9%97%AE%E9%A2%98%E5%8F%8A%E8%A7%A3%E5%86%B3%E6%96%B9%E6%B3%95/libpng12.so.0)
+  * 下载一个复制到`/usr/lib`或`/usr/lib64`：[libpng12.so.0](https://github.com/Verdvana/Verdvana.github.io/blob/master/_posts/Synopsys%20EDA%20Tools%E5%AE%89%E8%A3%85%E4%B8%AD%E5%87%BA%E7%8E%B0%E7%9A%84%E9%97%AE%E9%A2%98%E5%8F%8A%E8%A7%A3%E5%86%B3%E6%96%B9%E6%B3%95/libpng12.so.0)
 * libstdc++.so.6：
   ```sh
   sudo apt-get install lib32stdc++6
@@ -217,7 +217,7 @@ sudo kill -9 <PID>
 
 &#160; &#160; &#160; &#160; 说启动了多个snpslmd，但是又kill不掉。
 
-&#160; &#160; &#160; &#160; 首先去snpslmd所在目录`scl/amd64/bin/`下新建文件“[gen-snpslmd-hack.c](https://github.com/Verdvana/Verdvana.github.io/blob/master/_posts/Synopsys%20EDA%20Tools%E5%AE%89%E8%A3%85%E4%B8%AD%E5%87%BA%E7%8E%B0%E7%9A%84%E9%97%AE%E9%A2%98%E5%8F%8A%E8%A7%A3%E5%86%B3%E6%96%B9%E6%B3%95/gen-snpslmd-hack.c)”，文件内容为：
+&#160; &#160; &#160; &#160; 首先去snpslmd所在目录`scl/linux64/bin/`下新建文件“[gen-snpslmd-hack.c](https://github.com/Verdvana/Verdvana.github.io/blob/master/_posts/Synopsys%20EDA%20Tools%E5%AE%89%E8%A3%85%E4%B8%AD%E5%87%BA%E7%8E%B0%E7%9A%84%E9%97%AE%E9%A2%98%E5%8F%8A%E8%A7%A3%E5%86%B3%E6%96%B9%E6%B3%95/gen-snpslmd-hack.c)”，文件内容为：
 ```c
 #define _GNU_SOURCE
 #include <stdio.h>
