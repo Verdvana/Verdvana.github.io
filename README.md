@@ -10,7 +10,7 @@ title: Home
   - **+86 15698343510**
   - **+86 18703416745** 
 - 邮箱：
-  - **verdvana@outlook.com**
+  - **[verdvana@outlook.com](verdvana@outlook.com)**
 - 微信：
   - **[verdvana](./static/img/wechat.jpg)**
 
@@ -29,7 +29,7 @@ title: Home
 
 ----
 
-## 工作/实习经历
+## 工作经历
 
 #### __[Qualcomm (Shanghai) Co., Ltd.](https://www.qualcomm.cn/)__ `2021.6 - 至今`
 - ASICs Engineering Engineer
@@ -68,21 +68,27 @@ title: Home
 - 2015年全国大学生电子设计竞赛  `三等奖`
   - [![Star](https://img.shields.io/github/stars/Verdvana/Wind_Pendulum.svg)](https://github.com/Verdvana/Wind_Pendulum) [![Fork](https://img.shields.io/github/forks/Verdvana/Wind_Pendulum.svg)](https://github.com/Verdvana/Wind_Pendulum) [风力摆](https://github.com/Verdvana/Wind_Pendulum)
 
+<!-- 
 - 2014年山西省大学生电子设计竞赛  `二等奖`
   - [![Star](https://img.shields.io/github/stars/Verdvana/Electric_Fire_Truck.svg)](https://github.com/Verdvana/Electric_Fire_Truck) [![Fork](https://img.shields.io/github/forks/Verdvana/Electric_Fire_Truck.svg)](https://github.com/Verdvana/Electric_Fire_Truck) [电动消防车](https://github.com/Verdvana/Electric_Fire_Truck)
+-->
 
 ----
 
 ## 专业技能
 
-* ASIC设计与调试
-* FPGA/单片机及相关电路原理图与PCB设计   `Altium Designer`
-* FPGA逻辑设计、仿真与调试  `Quartus Prime` `ModelSim`  `VCS`
-* 数模电路设计、仿真与调试  `Altium Designer` `Multisim`
-* 数字IC综合与约束  `Design Compiler`
+* ASIC Design
+  * Verilog / SystemVerilog / Perl / Tcl
+  * VCS / Verdi / Design Compiler
+* FPGA Development
+  * Verilog / SystemVerilog / C
+  * Vivado / Quartus Prime / NiosⅡ SBT for Eclipse / ModelSim
+* Hardware Development
+  * Altium Designer / Allego
+* MCU Development
+  * C
+  * Keil5
 
-* 单片机驱动编写及程序设计  `Keil`
-* NiosⅡ软核系统搭建与程序设计 `NiosⅡ SBT for Eclipse`
 
 
 ----
