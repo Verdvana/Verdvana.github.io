@@ -46,7 +46,7 @@ jekyll-theme-WuK: # 用了wu-kan的主题，自定义样式都在这个命名空
     recent:
       enable: true
       title: 最新博文
-      limit: 100
+      limit: 10
       archive:
         enable: true
         href: /archive
