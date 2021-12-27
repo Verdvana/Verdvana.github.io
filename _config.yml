@@ -1,10 +1,9 @@
 title: VERDVANA'S BLOG # 站点标题
 tagline: Verdvana
 description: | # 头像背后的信息，<br/>代表换行
-  数字IC设计<br/>
+  ASIC<br/>
   FPGA<br/>
-  PCB Layout<br/>
-  耳机<br/>
+  Hardware<br/>
   <a href="/static/img/wechat.jpg" title="微信">
     <i class="fab fa-weixin"></i>
   </a>
