@@ -60,7 +60,7 @@ tags:
   # Voltage corners to characterize
   # supply_voltages = [ 3.0, 3.3, 3.5 ]
   # Temperature corners to characterize
-  # temperatures = [ 0, 25 100]
+  # temperatures = [ 0, 25, 100]
 
   # Output directory for the results
   output_path = "temp"
