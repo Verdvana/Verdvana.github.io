@@ -39,7 +39,7 @@ tags:
 * 解压下载好的OpenRAM；
 * 在OpenRAM根目录下运行：
   ```sh
-  pip install -r requirements.txt
+  sudo pip install -r requirements.txt
   ```
 * source `setpaths.csh`文件或`setpaths.sh`文件，以添加环境变量；
 * OpenRAM根目录下建立`myconfig.py`，内容为SRAM的设置：
