@@ -77,8 +77,8 @@ title: Home
 ## 专业技能
 
 * ASIC Design
-  * Verilog / SystemVerilog / Perl / Tcl
-  * VCS / Verdi / Design Compiler
+  * `Verilog` `SystemVerilog` `Perl` `Tcl`
+  * `VCS` / `Verdi` / `Design Compiler`
 * Hardware Development
   * Altium Designer / Allego
 * FPGA Development
