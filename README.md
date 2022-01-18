@@ -76,17 +76,17 @@ title: Home
 
 ## 专业技能
 
-* ASIC Design
-  * `Verilog` `SystemVerilog` `Perl` `Tcl`
-  * `VCS` / `Verdi` / `Design Compiler`
-* Hardware Development
-  * Altium Designer / Allego
-* FPGA Development
-  * Verilog / SystemVerilog / C
-  * Vivado / Quartus Prime / NiosⅡ SBT for Eclipse / ModelSim
-* MCU Development
-  * C
-  * Keil5
+* **ASIC Design**
+  * [Verilog](https://web.archive.org/web/20120716210757/http://www.verilog.com/IEEEVerilog.html) / [SystemVerilog](https://standards.ieee.org/standard/1800-2009.html) / [Perl](https://www.perl.org/) / [Tcl](https://www.tcl.tk/)
+  * [VCS](https://www.synopsys.com/zh-cn/verification/simulation/vcs.html) / [Verdi](https://www.synopsys.com/zh-cn/verification/debug/verdi.html) / [Design Compiler](https://www.synopsys.com/implementation-and-signoff/rtl-synthesis-test/design-compiler-graphical.html)
+* **Hardware Development**
+  * [Altium Designer](https://www.altium.com/altium-designer) / [OrCAD Capture](https://www.orcad.com/products/orcad-capture/overview) / [Allegro PCB Editor](https://www.cadence.com/en_US/home/tools/pcb-design-and-analysis/pcb-layout/allegro-pcb-designer.html) / [Multisim](https://www.ni.com/zh-tw/shop/electronic-test-instrumentation/application-software-for-electronic-test-and-instrumentation-category/what-is-multisim.html)
+* **FPGA Development**
+  * [Verilog](https://web.archive.org/web/20120716210757/http://www.verilog.com/IEEEVerilog.html) / [SystemVerilog](https://standards.ieee.org/standard/1800-2009.html) / [C](https://www.intel.cn/content/dam/altera-www/global/zh_CN/pdfs/literature/hb/nios2/edh_ed51004.pdf)
+  * [Vivado](https://www.xilinx.com/products/design-tools/vivado.html) / [Quartus Prime](https://www.intel.com.tw/content/www/tw/zh/software/programmable/quartus-prime/overview.html) / [NiosⅡ SBT for Eclipse](https://www.intel.com/content/www/us/en/products/details/fpga/nios-processor/ii/article.html) / [ModelSim](https://www.intel.com.tw/content/www/tw/zh/software/programmable/quartus-prime/model-sim.html)
+* **MCU Development**
+  * [C](https://www.keil.com/arm/gnu.asp)
+  * [Keil MDK](https://www2.keil.com/mdk5/) / [Keil C51](https://www.keil.com/c51/) / [Proteus](https://www.labcenter.com/vsmstudio/)
 
 
 
