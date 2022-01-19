@@ -46,7 +46,7 @@ title: Home
 ## 工程项目
 
 
-- [![Star](https://img.shields.io/github/stars/Verdvana/Integrated_Platform_Controller.svg)](https://github.com/Verdvana/Integrated_Platform_Controller) [![Fork](https://img.shields.io/github/forks/Verdvana/Integrated_Platform_Controller.svg)](https://github.com/Verdvana/Integrated_Platform_Controller) [微波智能感知平台](https://github.com/Verdvana/Integrated_Platform_Controller) `2019.03-2021.04`
+- [![Star](https://img.shields.io/github/stars/Verdvana/Microwave_Intelligent_Perception_Platform.svg)](https://github.com/Verdvana/Microwave_Intelligent_Perception_Platform) [![Fork](https://img.shields.io/github/forks/Verdvana/Microwave_Intelligent_Perception_Platform.svg)](https://github.com/Verdvana/Microwave_Intelligent_Perception_Platform) [微波智能感知平台](https://github.com/Verdvana/Microwave_Intelligent_Perception_Platform) `2019.03-2021.04`
 
 - [![Star](https://img.shields.io/github/stars/Verdvana/FAMS.svg)](https://github.com/Verdvana/FAMS) [![Fork](https://img.shields.io/github/forks/Verdvana/FAMS.svg)](https://github.com/Verdvana/FAMS) [消防员辅助监控系统](https://github.com/Verdvana/FAMS) `2018.11-2019.07`
 
