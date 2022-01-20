@@ -5,7 +5,6 @@ description: | # 头像背后的信息，<br/>代表换行
   Hardware<br/>
   FPGA<br/>
   MCU<br/>
-   <br/>
   <a href="/static/img/wechat.jpg" title="微信">
     <i class="fab fa-weixin"></i>
   </a>
@@ -18,6 +17,7 @@ description: | # 头像背后的信息，<br/>代表换行
   <a href="https://www.zhihu.com/people/verdvana/activities" title="知乎">
     <i class="fab fa-zhihu"></i>
   </a>
+   <br/>
    <br/>
   <iframe
     src="https://music.163.com/outchain/player?type=2&id=1842801328&auto=1&height=32"
@@ -72,8 +72,8 @@ jekyll-theme-WuK: # 用了wu-kan的主题，自定义样式都在这个命名空
           var myname = "Verdvana";
           var profile = "https://raw.githubusercontent.com/Verdvana/Verdvana.github.io/master/static/img/avatar.jpg";
           var multilingual = true;
-          var myname_hans = "闫金崟";
-          var myname_hant = "闫金崟";
+          var myname_hans = "Verdvana";
+          var myname_hant = "Verdvana";
           var myname_eng = "Verdvana";
           var title = "选择你的支付方式";
           var subtitle = "向" + myname + "打赏";
