@@ -55,7 +55,7 @@ title: Home
 - 基于FPGA的圆形光电探测阵列数据采集系统 `2018.10-2019.05`
 
 
-- [![Star](https://img.shields.io/github/stars/Verdvana/Low_Power_Methane_Detector.svg)](https://github.com/Verdvana/Low_Power_Methane_Detectory) [![Fork](https://img.shields.io/github/forks/Verdvana/Low_Power_Methane_Detector.svg)](https://github.com/Verdvana/Low_Power_Methane_Detector) [低功耗甲烷检测系统](https://github.com/Verdvana/Low_Power_Methane_Detector) `2016.06-2017.08`
+- [![Star](https://img.shields.io/github/stars/Verdvana/Low_Power_Methane_Detector.svg)](https://github.com/Verdvana/Low_Power_Methane_Detectory) [![Fork](https://img.shields.io/github/forks/Verdvana/Low_Power_Methane_Detector.svg)](https://github.com/Verdvana/Low_Power_Methane_Detector) [低功耗甲烷检测系统](https://github.com/Verdvana/Low_Power_Methane_Detector) `2018.06-2018.08`
 - [![Star](https://img.shields.io/github/stars/Verdvana/ZG1001-A_V4-1_LowPower.svg)](https://github.com/Verdvana/ZG1001-A_V4-1_LowPower) [![Fork](https://img.shields.io/github/forks/Verdvana/ZG1001-A_V4-1_LowPower.svg)](https://github.com/Verdvana/ZG1001-A_V4-1_LowPower) [单总线多点温度检测器](https://github.com/Verdvana/ZG1001-A_V4-1_LowPower) `2018.04-2018.07`
 
 
