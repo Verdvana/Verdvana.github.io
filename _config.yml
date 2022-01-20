@@ -82,7 +82,7 @@ jekyll-theme-WuK: # 用了wu-kan的主题，自定义样式都在这个命名空
           var alipay = "https://qr.alipay.com/fkx12869jxrthplaqunbf48";
           var paypal = "https://paypal.me/verdvana?country.x=C2&locale.x=zh_XC";
           var myname = "Verdvana";
-          var profile = "https://raw.githubusercontent.com/Verdvana/Verdvana.github.io/master/static/img/avatar.jpg";
+          var profile = "/static/img/avatar.jpg";
           var multilingual = true;
           var myname_hans = "Verdvana";
           var myname_hant = "Verdvana";
