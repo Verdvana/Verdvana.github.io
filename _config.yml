@@ -5,16 +5,16 @@ description: | # 头像背后的信息，<br/>代表换行
   Hardware<br/>
   FPGA<br/>
   MCU<br/>
-  <a href="/static/img/wechat.jpg">
+  <a href="/static/img/wechat.jpg" title="WeChat">
     <i class="fab fa-weixin"></i>
   </a>
-  <a href="mailto:verdvana@outlook.com">
+  <a href="mailto:verdvana@outlook.com" title="Mail">
     <i class="fas fa-envelope"></i>
   </a>
-  <a href="https://github.com/verdvana">
+  <a href="https://github.com/verdvana" title="Github">
     <i class="fab fa-github"></i>
   </a>
-  <a href="https://www.zhihu.com/people/verdvana/activities">
+  <a href="https://www.zhihu.com/people/verdvana/activities" title="知乎">
     <i class="fab fa-zhihu"></i>
   </a>
   <br/>
