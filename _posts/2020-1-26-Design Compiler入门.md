@@ -242,7 +242,7 @@ dc_shell-t> set_max_area 100
     * Clock pin of Flip-Flop or register；
 * 終點：
     * Output Port；
-    * 除了时钟pin以外的input pin。
+    * No clock pin of Flip-Flop or register。
 
 
 &#160; &#160; &#160; &#160; 定义时钟：
