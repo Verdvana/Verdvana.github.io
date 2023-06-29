@@ -1,7 +1,7 @@
 ---
 layout: post
-title:  "SystemVerilog硬件设计相关语法总结"
-date:   2020-1-13 22:19:10 +0700
+title:  "SystemVerilog可综合硬件设计"
+date:   2023-6-28 22:19:10 +0700
 tags:
   - SystemVerilog
 ---
@@ -10,7 +10,7 @@ tags:
 
 ## 1 前言
 
-&#160; &#160; &#160; &#160; SystemVerilog完全兼容Verilog HDL，还加入了类似C++的语法用于验证。总之一句话，用TMD！
+&#160; &#160; &#160; &#160; SystemVerilog完全兼容Verilog HDL，还加入了类似C++的语法用于验证。
 
 &#160; &#160; &#160; &#160; SystemVerilog在硬件设计中有助于编写可综合硬件模型方面对Verilog HDL的增强部分如下：
 * 设计内部的封装通信和协议检查的接口；
