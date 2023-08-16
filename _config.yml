@@ -44,7 +44,7 @@ jekyll-theme-WuK: # 用了wu-kan的主题，自定义样式都在这个命名空
     recent:
       enable: true
       title: 最新博文
-      limit: 10
+      limit: 15
       archive:
         enable: true
         href: /archive
@@ -226,7 +226,7 @@ jekyll-theme-WuK: # 用了wu-kan的主题，自定义样式都在这个命名空
         - | # Copyright
           <div>
             <i class="fas fa-copyright fa-fw"></i>
-            2018-2022 Verdvana
+            2018-2023 Verdvana
           </div>
         - |
           <div>
