@@ -26,6 +26,7 @@ tags:
   * syn_vO-2018.06-SP5-5
   * vcs_vO-2018.09-SP2
   * verdi_vO-2018.09-SP2-11
+  * spyglass_vO-2018.09-SP2-11
 
 ----
 
@@ -342,6 +343,167 @@ setenv  DISPLAY :0    #tcsh\csh
 export DISPLAY=:0     #bash
 ```
 ----
+
+### 3.8 SPYGLASS启动报错
+
+&#160; &#160; &#160; &#160; 确保正确设置SPYGLASS环境变量：
+
+```bash
+export  SPYGLASS_HOME=.../SPYGLASSxxx.xx-SPx/SPYGLASS_HOME
+export  PATH=$PATH:$SPYGLASS_HOME/bin
+alias   sg='.../SPYGLASSxxxx.xx-SPx/SPYGLASS_HOME/bin/spyglass'
+```
+
+&#160; &#160; &#160; &#160; 但还会报如下错误：
+
+```bash
+spyglass: INTERNAL-ERROR, the VALUE OF `$SPYGLASS_HOME' (an internal variable) was not intuited correctly.
+spyglass:                 The value guessed was: `SPYGLASS_HOME=.../SPYGLASSxxx.xx-SPx/SPYGLASS_HOME'
+spyglass: INTERNAL-ERROR, the Perl 5 installation within `$SPYGLASS_HOME' could not be validated.
+spyglass:                 A perl installation was expected at: `.../SPYGLASSxxx.xx-SPx/SPYGLASS_HOME/lib/multi-perl'
+spyglass:                 either `$SPYGLASS_HOME' was guessed incorrectly or the installation is corrupted.
+spyglass: NOTE, the caller's environment variable `$SPYGLASS_HOME' was ignored in this process.
+```
+
+&#160; &#160; &#160; &#160; 这是因为缺失了系统对应的分支。OpenSUSE Leap 15.3的内核版本是5.x，因此在如下文件中加入系统分支：
+
+
+&#160; &#160; &#160; &#160; 在/SPYGLASS_HOME/lib/SpyGlass/standard-environment.sh中确认有以下行：
+
+```bash
+     Linux-3*)
+            if [ X"$switch32bit" = "Xyes" ]; then
+                echo "Linux2"
+            elif  [ X"$switch64bit" = "Xyes" ]; then
+                PROCNAME=`uname -p`
+                if [ "X$PROCNAME" = "Xunknown" ]; then
+                    PROCNAME=`uname -m`
+                fi
+                if [ X"$PROCNAME" = "Xx86_64" ]; then
+                    echo "Linux4"
+                else
+                    echo "Linux2"
+                fi
+            else
+                PROCNAME=`uname -p`
+                if [ "X$PROCNAME" = "Xunknown" ]; then
+                    PROCNAME=`uname -m`
+                fi
+                if [ X"$PROCNAME" = "Xx86_64" ]; then
+                    if [ X"$defExeOn64Bit" = "X32" ]; then
+                        echo "Linux2"
+                    else
+                        echo "Linux4"
+                    fi
+                else
+                    echo "Linux2"
+                fi
+            fi
+            ;;
+Linux-4*)
+            if [ X"$switch32bit" = "Xyes" ]; then
+                echo "Linux2"
+            elif  [ X"$switch64bit" = "Xyes" ]; then
+                PROCNAME=`uname -p`
+                if [ "X$PROCNAME" = "Xunknown" ]; then
+                    PROCNAME=`uname -m`
+                fi
+                if [ X"$PROCNAME" = "Xx86_64" ]; then
+                    echo "Linux4"
+                else
+                    echo "Linux2"
+                fi
+            else
+                PROCNAME=`uname -p`
+                if [ "X$PROCNAME" = "Xunknown" ]; then
+                    PROCNAME=`uname -m`
+                fi
+                if [ X"$PROCNAME" = "Xx86_64" ]; then
+                    if [ X"$defExeOn64Bit" = "X32" ]; then
+                        echo "Linux2"
+                    else
+                        echo "Linux4"
+                    fi
+                else
+                    echo "Linux2"
+                fi
+            fi
+            ;;
+Linux-5*)
+            if [ X"$switch32bit" = "Xyes" ]; then
+                echo "Linux2"
+            elif  [ X"$switch64bit" = "Xyes" ]; then
+                PROCNAME=`uname -p`
+                if [ "X$PROCNAME" = "Xunknown" ]; then
+                    PROCNAME=`uname -m`
+                fi
+                if [ X"$PROCNAME" = "Xx86_64" ]; then
+                    echo "Linux4"
+                else
+                    echo "Linux2"
+                fi
+            else
+                PROCNAME=`uname -p`
+                if [ "X$PROCNAME" = "Xunknown" ]; then
+                    PROCNAME=`uname -m`
+                fi
+                if [ X"$PROCNAME" = "Xx86_64" ]; then
+                    if [ X"$defExeOn64Bit" = "X32" ]; then
+                        echo "Linux2"
+                    else
+                        echo "Linux4"
+                    fi
+                else
+                    echo "Linux2"
+                fi
+            fi
+            ;;
+    *)             echo UNKNOWN ;;
+    esac
+}
+```
+
+
+&#160; &#160; &#160; &#160; 在SpyGlass-Lxxxx.xx/perl/bin/perl中确认有以下行：
+```bash
+     Linux-3*)      ##now we have Linux-64 bit also
+            PROCNAME=`uname -p`
+            if [ "X$PROCNAME" = "Xunknown" ]; then
+               PROCNAME=`uname -m`
+            fi
+            if [ X"$PROCNAME" = "Xx86_64" ]; then
+                       species=Linux4
+                    else
+                       species=Linux2
+                    fi
+              ;;
+     Linux-4*)      ##now we have Linux-64 bit also
+            PROCNAME=`uname -p`
+            if [ "X$PROCNAME" = "Xunknown" ]; then
+               PROCNAME=`uname -m`
+            fi
+            if [ X"$PROCNAME" = "Xx86_64" ]; then
+                       species=Linux4
+                    else
+                       species=Linux2
+                    fi
+              ;;
+     Linux-5*)      ##now we have Linux-64 bit also
+            PROCNAME=`uname -p`
+            if [ "X$PROCNAME" = "Xunknown" ]; then
+               PROCNAME=`uname -m`
+            fi
+            if [ X"$PROCNAME" = "Xx86_64" ]; then
+                       species=Linux4
+                    else
+                       species=Linux2
+                    fi
+              ;;
+
+    *)             echo "ERROR(perl): Unknown platform: $PLAT" 1>&2; exit 1;;
+esac
+```
+
 
 ## 4 EDA Tools使用过程中遇到的问题
 
