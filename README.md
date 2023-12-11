@@ -30,8 +30,10 @@ title: Home
 ----
 
 ## 工作经历
+#### __[Qualcomm (Shanghai) Co., Ltd.](https://www.qualcomm.cn/)__ `2023.12 - 至今`
+- ASICs Engineering Senior Engineer
 
-#### __[Qualcomm (Shanghai) Co., Ltd.](https://www.qualcomm.cn/)__ `2021.6 - 至今`
+#### __[Qualcomm (Shanghai) Co., Ltd.](https://www.qualcomm.cn/)__ `2021.6 - 2023.12`
 - ASICs Engineering Engineer
 
 #### __[Qualcomm (Shanghai) Co., Ltd.](https://www.qualcomm.cn/)__ `2020.6 - 2020.9`
