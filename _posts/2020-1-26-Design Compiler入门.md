@@ -156,10 +156,10 @@ elaborate   chip_top -parameter "DATA_WIDTH = 8,ADDR_WIDTH = 8"
 #### 4.1 常见库文件
 
 &#160; &#160; &#160; &#160; Design Compiler运行中要用的几种库文件：
-* 目标库（target_library）（标准单元）；
-* 链接库（link_library）（购买的付费IP、存储器、IO、PAD）；
-* 符号库（symbol_library）；
-* 算术运算库（synthetic_library）。
+* 目标库（target_library）（标准单元）（db格式）；
+* 链接库（link_library）（购买的付费IP、存储器、IO、PAD）（db，ddc格式）；
+* 符号库（symbol_library）（sdb）；
+* 算术运算库（synthetic_library）（synopsys自带的库）。
 
 #### 4.2 目标库
 
@@ -167,7 +167,7 @@ elaborate   chip_top -parameter "DATA_WIDTH = 8,ADDR_WIDTH = 8"
 
 &#160; &#160; &#160; &#160; 读入的HDL代码首先由Synopsys自带的GTECH库转成DC内部交换的格式，然后经过映射到目标库，最后生成优化的门级网表。
 
-&#160; &#160; &#160; &#160; 目标库一般是db格式，由lib格式转化而来。
+&#160; &#160; &#160; &#160; 目标库一般是db格式，由lib格式转化而来。lib库具有可读性，db库是给工具读的。
 
 &#160; &#160; &#160; &#160; 目标库包含了各个门级单元的行为、引脚、面积、时序信息等，有的还包含了功耗方面的参数。
 
@@ -362,7 +362,7 @@ set_load [expr [load_of my_lib/inv1a0/A]*3] OUT1
 
 
 &#160; &#160; &#160; &#160; 综合后的结果包括：
-* 整个工程以ddc格式保存下来以供后续查看和修改；
+* 整个工程以ddc格式保存下来以供后续查看和修改；ddc文件里包含了sdf时序信息和sdc约束信息，ddc约等于网表+sdc约束；
 * 网表netlist，用于布局布线和仿真；
 * sdf文件，标注了用到的标准单元的延迟值，后仿真也需要用到；
 * 面积报告，包含时序电路、组合电路和总电路面积；
