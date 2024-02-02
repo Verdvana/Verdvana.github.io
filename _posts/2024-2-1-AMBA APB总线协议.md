@@ -19,7 +19,8 @@ tags:
 * 低带宽；高性能；
 * 不支持pipeline、Busrst、Outstanding传输，最快只能Back to back，至少需要两个时钟周期传输；
 * 无需等待周期和回应信号；
-* 控制逻辑简单，且APB上的传输可采用状态机表示。
+* 不能读写同时传输，AHB也不行，AXI可以。
+* 不支持仲裁，因为是单主多从。
 
 &#160; &#160; &#160; &#160; 版本：
 * AMBA2 APB Specification（APB2）
