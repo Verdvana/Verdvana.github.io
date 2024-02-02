@@ -34,9 +34,16 @@ tags:
 | --- | --- | --- | --- |
 | PCLK | Clock source | Clock |The rising edge of PCLK times all transfers on the APB | 
 | PRESETn | System bus equivalent | Reset |  The APB reset signal is active LOW. This signal is normally connected directly to the system bus reset signal |
+| PADDR | APB bridge | Address | This is the APB address bus. It can be up to 32 bits wide and is driven by the peripheral bus bridge unit |
+| PSELx | APB bridge | Select | The APB bridge unit generates this signal to each peripheral bus slave.It indicates that the slave device is selected and that a data transfer is required.There is a PSELx signal for each slave |
+| PENABLE | APB bridge | Enable | This signal indicates the second and subsequent cycles of an APB transfer |
+| PWRITE | APB bridge | Direction | This signal indicates an APB write access when HIGH and an APB read access when LOW |
+| PWDATA | APB bridge | Write data | This bus is driven by the peripheral bus bridge unit during write cycles when PWRITE is HIGH. This bus can be up to 32 bits wide |
+| PRDATA | Slave interface | Read Data | The selected slave drives this bus during read cycles when |
 
 
-                        
+### 2.1 APB2 Timing
+           
 
 ```mermaid
 graph LR
