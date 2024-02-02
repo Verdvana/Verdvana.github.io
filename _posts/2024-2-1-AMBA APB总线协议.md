@@ -17,14 +17,15 @@ tags:
 
 &#160; &#160; &#160; &#160; 特点：
 * 低带宽；高性能；
-* 非流水作业，至少需要两个时钟周期传输，且数据均在时钟上升沿变化；
+* 不支持pipeline、Busrst、Outstanding传输，最快只能Back to back，至少需要两个时钟周期传输；
 * 无需等待周期和回应信号；
 * 控制逻辑简单，且APB上的传输可采用状态机表示。
 
-&#160; &#160; &#160; &#160; 更新：
-* APB2：AMBA 2 APB，基本APB协议；
-* APB3：AMBA 3 APB，比APB2多两个信号（PREADY,PSLVERR）；
-* APB4：AMBA 4 APB，比APB3多两个信号（PPROT,PSTRB）；
+&#160; &#160; &#160; &#160; 版本：
+* AMBA2 APB Specification（APB2）
+* AMBA3 APB Protocol Specification v1.0（APB3）
+* AMBA APB Protocol Specification v2.0/Issue C（APB4）
+* AMBA APB Protocol Specification Issue D/E（APB5）
 ----
 
 ## 2 APB2
