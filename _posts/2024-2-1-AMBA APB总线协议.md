@@ -45,7 +45,7 @@ tags:
   </tr>
   <tr>
     <td rowspan=2>Global</td>
-    <td rowspan=2 bgcolor=#ffffcc>APB2</td>
+    <td rowspan=2>APB2</td>
     <td>PCLK</td>
     <td>1</td>
     <td>Clock</td>
@@ -58,7 +58,7 @@ tags:
     <td>低电平有效，通常直接连接到系统总线的复位信号</td>
   </tr>
     <td rowspan=7>APB bridge</td>
-    <td rowspan=5 bgcolor=#ffffcc>APB2</td>
+    <td rowspan=5>APB2</td>
     <td>PADDR</td>
     <td>8/16/32</td>
     <td>Address</td>
@@ -96,7 +96,7 @@ tags:
     <td>指示在写传输期间，要更新哪个字节通道<br>写数据总线的每8bit对应1bitPSTRB<br>在读传输期间，PSTRB不能跳变</td>
   <tr>
     <td rowspan=3>Slave interface</td>
-    <td bgcolor=#ffffcc>APB2</td>
+    <td>APB2</td>
     <td>PRDATA</td>
     <td>8/16/32</td>
     <td>Read data</td>
@@ -112,29 +112,6 @@ tags:
     <td>1</td>
     <td>Transfer error</td>
     <td>传输失败的错误信号</td>
-  </tr>
-    <td rowspan=4>Others</td>
-    <td rowspan=4>APB5</td>
-    <td>PWAKEUP</td>
-    <td>1</td>
-    <td></td>
-    <td></td>
-  <tr>
-    <td>User</td>
-    <td></td>
-    <td></td>
-    <td></td>
-  </tr>
-    <td>Parity Protection</td>
-    <td></td>
-    <td></td>
-    <td></td>
-  <tr>
-    <td>REM</td>
-    <td></td>
-    <td></td>
-    <td></td>
-  </tr>
 </table>
 
 ----
