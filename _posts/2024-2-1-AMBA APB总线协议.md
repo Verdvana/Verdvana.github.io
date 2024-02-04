@@ -31,18 +31,60 @@ tags:
 
 ----
 
-## 2 APB2
-### 2.1 APB2 interface
+## 2 APB interface
 
+&#160; &#160; &#160; &#160; 全局信号：
 | Signal | Source | Attribute | Description |
 | --- | --- | --- | --- |
-| PCLK | Clock source | Clock |The rising edge of PCLK times all transfers on the APB | 
-| PRESETn | System bus equivalent | Reset |  The APB reset signal is active LOW. This signal is normally connected directly to the system bus reset signal |
-| PADDR | APB bridge | Address | This is the APB address bus. It can be up to 32 bits wide and is driven by the peripheral bus bridge unit |
-| PSELx | APB bridge | Select | The APB bridge unit generates this signal to each peripheral bus slave.It indicates that the slave device is selected and that a data transfer is required.There is a PSELx signal for each slave |
-| PENABLE | APB bridge | Enable | This signal indicates the second and subsequent cycles of an APB transfer |
-| PWRITE | APB bridge | Direction | This signal indicates an APB write access when HIGH and an APB read access when LOW |
-| PWDATA | APB bridge | Write data | This bus is driven by the peripheral bus bridge unit during write cycles when PWRITE is HIGH. This bus can be up to 32 bits wide |
+| PCLK | Clock source | Clock | APB的所有传输在PCLK的上升沿有效 | 
+| PRESETn | System bus equivalent | Reset |  低电平有效，通常直接连接到系统总线的复位信号 |
+
+<table>
+  <tr>
+    <th>Version</th>
+    <th>Source</th>
+    <th>Signal</th>
+    <th>Attribute</th>
+    <th>Description</th>
+  </tr>
+  <tr>
+    <td rowspan=2>APB2</td>
+    <td>Clock source</td>
+    <td>PCLK</td>
+    <td>Clock</td>
+    <td>APB的所有传输在PCLK的上升沿有效</td>
+  </tr>
+  <tr>
+    <td>System bus equivalent</td>
+    <td>PRESETn</td>
+    <td>Reset</td>
+    <td>低电平有效，通常直接连接到系统总线的复位信号</td>
+  </tr>
+  <tr>
+  </tr>
+  <tr>
+  </tr>
+  <tr>
+  </tr>
+  <tr>
+  </tr>
+  <tr>
+  </tr>
+  <tr>
+  </tr>
+</table>
+
+&#160; &#160; &#160; &#160; 来自Master的信号：
+| Signal | Source | Attribute | Description |
+| --- | --- | --- | --- |
+| PADDR[31:0] | APB bridge | Address | 最多32bit |
+| PSELx | APB bridge | Select | 每个APB Slave都有一个PSELx信号，由ABP Bridge产生 |
+| PENABLE | APB bridge | Enable | 指示APB传输的第二及后续周期 |
+| PWRITE | APB bridge | Direction | 1'b1: 写<br>1'b0: 读 |
+| PWDATA[31:0] | APB bridge | Write data | 最多32bit，PWRITE为1时由Master产生 |
+| PPROT\[2:0] |  |  |  |
+
+&#160; &#160; &#160; &#160; Slaver返回的信号：
 | PRDATA | Slave interface | Read Data | The selected slave drives this bus during read cycles when |
 
 
