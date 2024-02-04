@@ -60,7 +60,7 @@ tags:
     <td rowspan=7>APB bridge</td>
     <td rowspan=5>APB2</td>
     <td>PADDR</td>
-    <td>ADDR_WIDTH</td>
+    <td>8/16/32</td>
     <td>Address</td>
     <td>最多32bit</td>
   <tr>
@@ -80,7 +80,7 @@ tags:
     <td>1'b1: 写<br>1'b0: 读</td>
   </tr>
     <td>PWDATA</td>
-    <td>DATA_WIDTH</td>
+    <td>8/16/32</td>
     <td>Write data</td>
     <td>最多32bit，PWRITE为1时由Master产生</td>
   <tr>
@@ -91,14 +91,14 @@ tags:
     <td>PPROT[2]: 1=Instruction; 0=Data<br>PPROT[1]: 1=Nonsecure; 0=Secure<br>PPROT[0]: 1=Privileged; 0=Normal<b</td>
   </tr>
     <td>PSTRB</td>
-    <td>DATA_WIDTH/8</td>
+    <td>1/2/4</td>
     <td></td>
     <td>指示在写传输期间，要更新哪个字节通道<br>写数据总线的每8bit对应1bitPSTRB<br>在读传输期间，PSTRB不能跳变</td>
   <tr>
     <td rowspan=3>Slave interface</td>
     <td>APB2</td>
     <td>PRDATA</td>
-    <td>DATA_WIDTH</td>
+    <td>8/16/32</td>
     <td>Read data</td>
     <td>最多32bit，PWRITE为0时由Slave产生</td>
   </tr>
