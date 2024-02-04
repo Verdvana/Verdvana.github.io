@@ -33,41 +33,34 @@ tags:
 
 ## 2 APB interface
 
-&#160; &#160; &#160; &#160; 全局信号：
-
-| Signal | Source | Attribute | Description |
-| --- | --- | --- | --- |
-| PCLK | Clock source | Clock | APB的所有传输在PCLK的上升沿有效 | 
-| PRESETn | System bus equivalent | Reset |  低电平有效，通常直接连接到系统总线的复位信号 |
 
 <table>
   <tr>
-    <th>Version</th>
     <th>Source</th>
+    <th>Version</th>
     <th>Signal</th>
     <th>Width</th>
     <th>Attribute</th>
     <th>Description</th>
   </tr>
   <tr>
+    <td rowspan=2>Global</td>
     <td rowspan=2>APB2</td>
-    <td>Clock source</td>
     <td>PCLK</td>
     <td>1</td>
     <td>Clock</td>
     <td>APB的所有传输在PCLK的上升沿有效</td>
   </tr>
   <tr>
-    <td>System bus equivalent</td>
     <td>PRESETn</td>
     <td>1</td>
     <td>Reset</td>
     <td>低电平有效，通常直接连接到系统总线的复位信号</td>
   </tr>
-    <td rowspan=5>APB2</td>
     <td rowspan=7>APB bridge</td>
+    <td rowspan=5>APB2</td>
     <td>PADDR</td>
-    <td>32</td>
+    <td>ADDR_WIDTH</td>
     <td>Address</td>
     <td>最多32bit</td>
   <tr>
@@ -87,37 +80,62 @@ tags:
     <td>1'b1: 写<br>1'b0: 读</td>
   </tr>
     <td>PWDATA</td>
-    <td>32</td>
+    <td>DATA_WIDTH</td>
     <td>Write data</td>
     <td>最多32bit，PWRITE为1时由Master产生</td>
   <tr>
-    <td rowspan=2>APB3</td>
+    <td rowspan=2>APB4</td>
     <td>PPROT</td>
     <td>3</td>
-    <td>Write data</td>
-    <td>最多32bit，PWRITE为1时由Master产生</td>
+    <td></td>
+    <td>PPROT[0]:</td>
   </tr>
+    <td>PSTRB</td>
+    <td>DATA_WIDTH/8</td>
+    <td></td>
+    <td>指示在写传输期间，要更新哪个字节通道<br>写数据总线的每8bit对应1bitPSTRB<br>在读传输期间，PSTRB不能跳变</td>
   <tr>
+    <td rowspan=3>Slave interface</td>
+    <td>APB2</td>
+    <td>PRDATA</td>
+    <td>DATA_WIDTH</td>
+    <td>Read data</td>
+    <td>最多32bit，PWRITE为0时由Slave产生</td>
   </tr>
+    <td rowspan=2>APB3</td>
+    <td>PRREADY</td>
+    <td>1</td>
+    <td>Ready</td>
+    <td>表示APB传输完成</td>
   <tr>
+    <td>PSLVERR</td>
+    <td>1</td>
+    <td></td>
+    <td>传输失败的错误信号</td>
   </tr>
+    <td rowspan=4>Others</td>
+    <td rowspan=4>APB5</td>
+    <td>PWAKEUP</td>
+    <td>1</td>
+    <td></td>
+    <td></td>
   <tr>
+    <td>User</td>
+    <td></td>
+    <td></td>
+    <td></td>
+  </tr>
+    <td>Parity Protection</td>
+    <td></td>
+    <td></td>
+    <td></td>
+  <tr>
+    <td>REM</td>
+    <td></td>
+    <td></td>
+    <td></td>
   </tr>
 </table>
-
-&#160; &#160; &#160; &#160; 来自Master的信号：
-
-| Signal | Source | Attribute | Description |
-| --- | --- | --- | --- |
-| PADDR[31:0] | APB bridge | Address | 最多32bit |
-| PSELx | APB bridge | Select | 每个APB Slave都有一个PSELx信号，由ABP Bridge产生 |
-| PENABLE | APB bridge | Enable | 指示APB传输的第二及后续周期 |
-| PWRITE | APB bridge | Direction | 1'b1: 写<br>1'b0: 读 |
-| PWDATA[31:0] | APB bridge | Write data | 最多32bit，PWRITE为1时由Master产生 |
-| PPROT\[2:0] |  |  |  |
-
-&#160; &#160; &#160; &#160; Slaver返回的信号：
-| PRDATA | Slave interface | Read Data | The selected slave drives this bus during read cycles when |
 
 
 ### 2.1 APB2 Timing
