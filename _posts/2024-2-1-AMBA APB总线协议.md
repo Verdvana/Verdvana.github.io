@@ -24,10 +24,10 @@ tags:
 * 不支持仲裁，因为是单主多从。
 
 &#160; &#160; &#160; &#160; 版本：
-* AMBA2 APB Specification（APB2）
-* AMBA3 APB Protocol Specification v1.0（APB3）
-* AMBA APB Protocol Specification v2.0/Issue C（APB4）
-* AMBA APB Protocol Specification Issue D/E（APB5）
+* [AMBA2 APB Specification](https://developer.arm.com/documentation/ihi0011/a/)（APB2）
+* [AMBA3 APB Protocol Specification v1.0](https://developer.arm.com/documentation/ihi0024/b)（APB3）
+* [AMBA APB Protocol Specification v2.0/Issue C](https://developer.arm.com/documentation/ihi0024/c)（APB4）
+* [AMBA APB Protocol Specification Issue D/E](https://developer.arm.com/documentation/ihi0024/latest/)（APB5）
 
 ----
 
@@ -88,7 +88,7 @@ tags:
     <td>PPROT</td>
     <td>3</td>
     <td></td>
-    <td>PPROT[0]:</td>
+    <td>PPROT[2]: 1=Instruction; 0=Data<br>PPROT[1]: 1=Nonsecure; 0=Secure<br>PPROT[0]: 1=Privileged; 0=Normal<b</td>
   </tr>
     <td>PSTRB</td>
     <td>DATA_WIDTH/8</td>
