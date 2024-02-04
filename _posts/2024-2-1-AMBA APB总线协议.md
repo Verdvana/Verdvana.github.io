@@ -96,7 +96,7 @@ tags:
     <td>指示在写传输期间，要更新哪个字节通道<br>写数据总线的每8bit对应1bitPSTRB<br>在读传输期间，PSTRB不能跳变</td>
   <tr>
     <td rowspan=3>Slave interface</td>
-    <td>APB2</td>
+    <td bgcolor=#ffffcc>APB2</td>
     <td>PRDATA</td>
     <td>8/16/32</td>
     <td>Read data</td>
