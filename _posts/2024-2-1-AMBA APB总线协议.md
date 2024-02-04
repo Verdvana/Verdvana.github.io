@@ -20,7 +20,7 @@ tags:
 * 低带宽；高性能；
 * 不支持pipeline、Busrst、Outstanding传输，最快只能Back to back，至少需要两个时钟周期传输；
 * 无需等待周期和回应信号；
-* 不能读写同时传输，AHB也不行，AXI可以。
+* 不能读写同时传输，AHB也不行，AXI可以；
 * 不支持仲裁，因为是单主多从。
 
 &#160; &#160; &#160; &#160; 版本：
@@ -45,7 +45,7 @@ tags:
   </tr>
   <tr>
     <td rowspan=2>Global</td>
-    <td rowspan=2>APB2</td>
+    <td rowspan=2 bgcolor=#ffffcc>APB2</td>
     <td>PCLK</td>
     <td>1</td>
     <td>Clock</td>
@@ -58,7 +58,7 @@ tags:
     <td>低电平有效，通常直接连接到系统总线的复位信号</td>
   </tr>
     <td rowspan=7>APB bridge</td>
-    <td rowspan=5>APB2</td>
+    <td rowspan=5 bgcolor=#ffffcc>APB2</td>
     <td>PADDR</td>
     <td>8/16/32</td>
     <td>Address</td>
@@ -110,7 +110,7 @@ tags:
   <tr>
     <td>PSLVERR</td>
     <td>1</td>
-    <td>Instruction</td>
+    <td>Transfer error</td>
     <td>传输失败的错误信号</td>
   </tr>
     <td rowspan=4>Others</td>
