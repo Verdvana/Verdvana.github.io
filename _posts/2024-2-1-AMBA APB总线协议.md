@@ -87,12 +87,12 @@ tags:
     <td rowspan=2>APB4</td>
     <td>PPROT</td>
     <td>3</td>
-    <td></td>
+    <td>Protection type</td>
     <td>PPROT[2]: 1=Instruction; 0=Data<br>PPROT[1]: 1=Nonsecure; 0=Secure<br>PPROT[0]: 1=Privileged; 0=Normal<b</td>
   </tr>
     <td>PSTRB</td>
     <td>1/2/4</td>
-    <td></td>
+    <td>Write strobes</td>
     <td>指示在写传输期间，要更新哪个字节通道<br>写数据总线的每8bit对应1bitPSTRB<br>在读传输期间，PSTRB不能跳变</td>
   <tr>
     <td rowspan=3>Slave interface</td>
@@ -110,7 +110,7 @@ tags:
   <tr>
     <td>PSLVERR</td>
     <td>1</td>
-    <td></td>
+    <td>Instruction</td>
     <td>传输失败的错误信号</td>
   </tr>
     <td rowspan=4>Others</td>
