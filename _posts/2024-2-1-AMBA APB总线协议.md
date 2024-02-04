@@ -11,6 +11,7 @@ tags:
 ## 1 前言
 
 &#160; &#160; &#160; &#160; APB(Advanced Peripheral Bus)，高级外设总线，主要用于低带宽的周边外设之间的连接，例如UART、IIC等。它的总线架构如下图所示：
+
 ![img1][img1]
 
 &#160; &#160; &#160; &#160; 可以看出APB Bridge是AMBA APB中的唯一总线主机，APB Bridge也是AMBA中的一个从机。
@@ -27,6 +28,7 @@ tags:
 * AMBA3 APB Protocol Specification v1.0（APB3）
 * AMBA APB Protocol Specification v2.0/Issue C（APB4）
 * AMBA APB Protocol Specification Issue D/E（APB5）
+
 ----
 
 ## 2 APB2
