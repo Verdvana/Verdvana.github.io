@@ -57,32 +57,38 @@ tags:
     <td>Reset</td>
     <td>低电平有效，通常直接连接到系统总线的复位信号</td>
   </tr>
+  <tr>
     <td rowspan=7>APB bridge</td>
     <td rowspan=5>APB2</td>
     <td>PADDR</td>
     <td>8/16/32</td>
     <td>Address</td>
     <td>最多32bit</td>
+  </tr>
   <tr>
     <td>PSELx</td>
     <td>1</td>
     <td>Select</td>
     <td>每个APB Slave都有一个PSELx信号，由ABP Bridge产生</td>
   </tr>
+  <tr>
     <td>PENABLE</td>
     <td>1</td>
     <td>Enable</td>
     <td>指示APB传输的第二及后续周期</td>
+  </tr>
   <tr>
     <td>PWRITE</td>
     <td>1</td>
     <td>Direction</td>
     <td>1'b1: 写<br>1'b0: 读</td>
   </tr>
+  <tr>
     <td>PWDATA</td>
     <td>8/16/32</td>
     <td>Write data</td>
     <td>最多32bit，PWRITE为1时由Master产生</td>
+  </tr>
   <tr>
     <td rowspan=2>APB4</td>
     <td>PPROT</td>
@@ -90,10 +96,12 @@ tags:
     <td>Protection type</td>
     <td>PPROT[2]: 1=Instruction; 0=Data<br>PPROT[1]: 1=Nonsecure; 0=Secure<br>PPROT[0]: 1=Privileged; 0=Normal<b</td>
   </tr>
+  <tr>
     <td>PSTRB</td>
     <td>1/2/4</td>
     <td>Write strobes</td>
     <td>指示在写传输期间，要更新哪个字节通道<br>写数据总线的每8bit对应1bitPSTRB<br>在读传输期间，PSTRB不能跳变</td>
+  </tr>
   <tr>
     <td rowspan=3>Slave interface</td>
     <td>APB2</td>
@@ -102,16 +110,19 @@ tags:
     <td>Read data</td>
     <td>最多32bit，PWRITE为0时由Slave产生</td>
   </tr>
+  <tr>
     <td rowspan=2>APB3</td>
     <td>PREADY</td>
     <td>1</td>
     <td>Ready</td>
     <td>表示APB传输完成</td>
+  </tr>
   <tr>
     <td>PSLVERR</td>
     <td>1</td>
     <td>Transfer error</td>
     <td>传输失败的错误信号</td>
+  </tr>
 </table>
 
 ----
