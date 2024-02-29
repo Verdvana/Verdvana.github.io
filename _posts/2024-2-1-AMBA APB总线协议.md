@@ -1,7 +1,7 @@
 ---
 layout: post
 title:  "AMBA APB总线协议"
-date:   2023-8-13 11:12:10 +0700
+date:   2024-1-13 10:10:10 +0700
 tags: 
   - Digital IC Design
 ---
@@ -294,24 +294,24 @@ graph LR
 
 &#160; &#160; &#160; &#160; 设计一个16bit数据位宽、512字节（9bit地址位宽）的APB协议的SRAM。
 
-### 6.1 Interface
+### 6.1 Interface & Architecture
 
 &#160; &#160; &#160; &#160; 接口符合APB4协议。
 
-| Signal | Width | Direction | Description |
-| --- | --- | --- | --- |
-| pclk | 1 | I |  |
-| preset_n | 1 | I |  |
-| paddr | ADDR_WIDTH | I |  |
-| psel | 1 | I |  |
-| penable | 1 | I |  |
-| pwrite | 1 | I |  |
-| pwdata | DATA_WIDTH | I |  |
-| pprot | 3 | I |  |
-| pstrb | DATA_WIDTH/8 | I |  |
-| prdata | DATA_WIDTH | O |  |
-| pready | 1 | O |  |
-| pslverr | 1 | O |  |
+| Signal | Width | Direction |
+| --- | --- | --- |
+| pclk | 1 | I |
+| preset_n | 1 | I |
+| paddr | ADDR_WIDTH | I |
+| psel | 1 | I |
+| penable | 1 | I |
+| pwrite | 1 | I |
+| pwdata | DATA_WIDTH | I |
+| pprot | 3 | I |
+| pstrb | DATA_WIDTH/8 | I |
+| prdata | DATA_WIDTH | O |
+| pready | 1 | O |
+| pslverr | 1 | O |
 
 
 ### 6.2 SRAM
