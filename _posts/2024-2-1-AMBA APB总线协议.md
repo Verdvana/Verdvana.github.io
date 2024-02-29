@@ -1,6 +1,6 @@
 ---
 layout: post
-title:  "AMBA APB总线协议"
+title:  ""
 date:   2023-8-13 11:12:10 +0700
 tags: 
   - Digital IC Design
@@ -268,10 +268,23 @@ graph LR
 ### 5.2 PSLVERR
 
 
-&#160; &#160; &#160; &#160; 表示从机认为写传输有错误
+&#160; &#160; &#160; &#160; PSLVERR表示从机认为写传输有错误。时序图如下：
 
+```wavedrom
+{ signal: [
+  { name: "PCLK",  wave: "p........" },
+  { name: "PADDR", wave: "x.6......", data:"Addr1"},
+  { name: "PWRITE", wave: "x.1......" },
+  { name: "PSEL", wave: "0.1....0." },
+  { name: "PENABLE", wave: "0..1...0." },
+  { name: "PWDATA", wave: "x.6....x.", data:"Data1"},
+  { name: "PREADY", wave: "x..0..1x." },
+  { name: "PSLVERR", wave: "x.....1x." },
+  { name: "STATUS", wave: "3..4..53.", data:"IDLE S A IDLE" },
+]}
+```
 
-
+&#160; &#160; &#160; &#160; 当从机任务可以接受数据时，把PREADY拉高。同时如果之前采集PADDR、PWDATA等信号有问题，则认为写传输有误，所以在此时把PSLVERR也拉高。主机会在下一个上升沿采集到此错误信号，得知写入错误。
 
 
 ----
