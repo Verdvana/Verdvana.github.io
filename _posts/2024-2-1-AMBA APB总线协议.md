@@ -1,7 +1,7 @@
 ---
 layout: post
 title:  "AMBA APB总线协议"
-date:   2024-1-13 10:10:10 +0700
+date:   2024-2-1 10:10:10 +0700
 tags: 
   - Digital IC Design
 ---
@@ -314,9 +314,168 @@ graph LR
 | pslverr | 1 | O |
 
 
+&#160; &#160; &#160; &#160; 文件结构：
+* APB_SRAM
+  * SRAM
+    * SRAM_IP
+
 ### 6.2 SRAM
 
-### 6.3 
+&#160; &#160; &#160; &#160; 采用ARM Artisan Physical IP来生成一个8*512的单口SRAM，然后例化：
+
+```verilog
+module SPRAM #(
+	parameter  DATA_WIDTH = 8,
+                   ADDR_WIDTH = 9
+)(
+	// Clock
+        input	wire						clk,			// Clock
+        input	wire						cs_n,			// Chip select
+        input   wire                                            we_n,
+        input   wire    [ADDR_WIDTH-1:0]                        addr,
+        input   wire    [DATA_WIDTH-1:0]                        din,
+        output  logic   [DATA_WIDTH-1:0]                        dout
+);
+
+
+    SRAM_SP_512_8 u_SRAM_SP_512_8(
+        .CLK(clk),
+        .CEN(cs_n),
+        .WEN(we_n),
+        .A(addr),
+        .D(din),
+        .Q(dout),
+        .EMA(3'b000)
+    );
+
+endmodule
+```
+
+
+### 6.3 APB_SRAM
+
+&#160; &#160; &#160; &#160; 根据APB协议，把APB读写操作转化为SRAM的读写操作。
+
+```verilog
+module APB_SPRAM#(
+	parameter		DATA_WIDTH	= 8,
+					ADDR_WIDTH  = 9
+
+)(
+	// Clock and reset
+	input	wire											pclk,			// Clock
+	input	wire											preset_n,		// Async reset
+	// APB bus signal
+	input	wire	[ADDR_WIDTH-1:0]						paddr,			// Address
+	input	wire											psel,			// Select
+	input	wire											penable,		// Enable
+	input	wire											pwrite,			// Write/Read
+	input	wire	[DATA_WIDTH-1:0]						pwdata,			// Write data
+	input	wire	[2:0]									pprot,			// Protection type
+	input	wire	[(DATA_WIDTH/8)-1:0]					pstrb,			// Write storbes
+
+	output	logic	[DATA_WIDTH-1:0]						prdata,			// Read data
+	output	logic											pready,			// Read ready
+	output	logic											pslverr			// Transfer error
+);
+
+	//=========================================================================
+	// The time unit and precision of the internal declaration
+	timeunit		1ns;
+	timeprecision	1ps;
+
+
+	//=========================================================================
+	// Parameter
+	localparam		TCO			= 1.6;										// Simulate the delay of the register
+
+	//=========================================================================
+	// Signal
+	logic	[(DATA_WIDTH/8)-1:0] [7:0]	wr_mask;
+	logic	[DATA_WIDTH-1:0]	wr_data;
+	logic						sram_clk;
+	logic						sram_cs_n;
+	logic						sram_we_n;
+	logic	[ADDR_WIDTH-1:0]	sram_addr;
+	logic	[DATA_WIDTH-1:0]	sram_din;
+	logic	[DATA_WIDTH-1:0]	sram_dout;
+
+	//=========================================================================
+	// 
+	enum {
+		IDLE,
+		SETUP,
+		ACCESS
+	} curr_state,next_state;
+
+	always_ff@(posedge pclk, negedge preset_n)begin
+		if(!preset_n)
+			curr_state	<= #TCO IDLE;
+		else
+			curr_state	<= #TCO next_state;
+	end
+
+	always_comb begin
+		case(curr_state)
+			IDLE:	begin
+				if(psel && !penable)
+					next_state	= SETUP;
+				else
+					next_state	= IDLE;
+			end
+			SETUP:	begin
+				next_state	= ACCESS;
+			end
+			ACCESS: begin
+				if(!psel && !penable)
+					next_state	= IDLE;
+				else if(psel && !penable)
+					next_state	= SETUP;
+				else
+					next_state	= ACCESS;
+			end
+			default:next_state	= IDLE;
+		endcase
+	end
+
+	assign	sram_clk	= pclk;
+	assign	sram_cs_n	= !psel || penable;
+	assign	sram_we_n	= psel?~pwrite:sram_we_n;
+	assign	sram_addr	= (next_state == SETUP) ? paddr:sram_addr;
+	assign	wr_data	= (next_state == SETUP) ? pwdata:wr_data;
+	assign	prdata		= sram_dout;
+	assign	pready		= penable;
+
+	always_comb begin
+		for(int i=0;i<(DATA_WIDTH/8);i++)begin
+			if(pstrb[i])
+				wr_mask[i]	= wr_data[8*i+:8];
+			else
+				wr_mask[i]	= '0;
+		end
+	end
+
+	assign	sram_din	= wr_mask;
+
+	genvar k;
+	generate for(k=0;k<(DATA_WIDTH/8);k++)begin:inst
+		SPRAM #(
+			.DATA_WIDTH(8),
+			.ADDR_WIDTH(9)
+		) u_SPRAM_0(
+			.clk(sram_clk),		//input,	Clock
+			.cs_n(sram_cs_n),	//input,	Chip select
+			.we_n(sram_we_n),	//input,	1:read;0:write
+			.addr(sram_addr),	//input,	Address
+			.din(sram_din[k*8+:8]),		//input,	Write data
+			.dout(sram_dout[k*8+:8])	//output,	Read data
+		);
+	end
+	endgenerate
+
+endmodule
+```
+
 
 
 ----
