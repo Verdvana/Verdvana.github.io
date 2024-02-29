@@ -1,6 +1,6 @@
 ---
 layout: post
-title:  ""
+title:  "AMBA APB总线协议"
 date:   2023-8-13 11:12:10 +0700
 tags: 
   - Digital IC Design
@@ -284,7 +284,39 @@ graph LR
 ]}
 ```
 
-&#160; &#160; &#160; &#160; 当从机任务可以接受数据时，把PREADY拉高。同时如果之前采集PADDR、PWDATA等信号有问题，则认为写传输有误，所以在此时把PSLVERR也拉高。主机会在下一个上升沿采集到此错误信号，得知写入错误。
+&#160; &#160; &#160; &#160; 写传输时，当从机任务可以接受数据时，把PREADY拉高。同时如果之前采集PADDR、PWDATA等信号有问题，则认为写传输有误，所以在此时把PSLVERR也拉高。主机会在下一个上升沿采集到此错误信号，得知写入错误。
+
+&#160; &#160; &#160; &#160; 读传输也可能出现错误，表示无可读数据。
+
+----
+
+## 6 APB SRAM RTL设计
+
+&#160; &#160; &#160; &#160; 设计一个16bit数据位宽、512字节（9bit地址位宽）的APB协议的SRAM。
+
+### 6.1 Interface
+
+&#160; &#160; &#160; &#160; 接口符合APB4协议。
+
+| Signal | Width | Direction | Description |
+| --- | --- | --- | --- |
+| pclk | 1 | I |  |
+| preset_n | 1 | I |  |
+| paddr | ADDR_WIDTH | I |  |
+| psel | 1 | I |  |
+| penable | 1 | I |  |
+| pwrite | 1 | I |  |
+| pwdata | DATA_WIDTH | I |  |
+| pprot | 3 | I |  |
+| pstrb | DATA_WIDTH/8 | I |  |
+| prdata | DATA_WIDTH | O |  |
+| pready | 1 | O |  |
+| pslverr | 1 | O |  |
+
+
+### 6.2 SRAM
+
+### 6.3 
 
 
 ----
