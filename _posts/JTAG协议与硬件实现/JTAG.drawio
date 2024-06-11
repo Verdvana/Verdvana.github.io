@@ -1,6 +1,6 @@
 <mxfile host="65bd71144e">
     <diagram name="第 1 页" id="Ik-g8sNIh_6q8OoHqGbS">
-        <mxGraphModel dx="1759" dy="1545" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="827" pageHeight="1169" background="none" math="0" shadow="0">
+        <mxGraphModel dx="1718" dy="515" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="827" pageHeight="1169" background="none" math="0" shadow="0">
             <root>
                 <mxCell id="0"/>
                 <mxCell id="1" parent="0"/>
@@ -1840,7 +1840,7 @@
                 <mxCell id="hj5V9L2vQso6mufphsfm-605" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.25;entryDx=0;entryDy=0;shape=link;" parent="1" source="hj5V9L2vQso6mufphsfm-603" target="hj5V9L2vQso6mufphsfm-52" edge="1">
                     <mxGeometry relative="1" as="geometry"/>
                 </mxCell>
-                <mxCell id="hj5V9L2vQso6mufphsfm-603" value="IDCODE" style="text;strokeColor=none;align=center;fillColor=none;html=1;verticalAlign=middle;whiteSpace=wrap;rounded=0;" parent="1" vertex="1">
+                <mxCell id="hj5V9L2vQso6mufphsfm-603" value="Device ID" style="text;strokeColor=none;align=center;fillColor=none;html=1;verticalAlign=middle;whiteSpace=wrap;rounded=0;" parent="1" vertex="1">
                     <mxGeometry x="-120" y="469" width="54" height="20" as="geometry"/>
                 </mxCell>
                 <mxCell id="hj5V9L2vQso6mufphsfm-613" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0.003;entryY=0.562;entryDx=0;entryDy=0;entryPerimeter=0;fillColor=#008a00;strokeColor=#33FF33;" parent="1" target="hj5V9L2vQso6mufphsfm-220" edge="1">
