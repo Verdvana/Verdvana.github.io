@@ -6,13 +6,10 @@ title: Home
 
 - 地址：
   - **上海市 浦东新区 碧波路690号 张江微电子港9号楼 Qualcomm (Shanghai) Co., Ltd.**
-- 电话：
-  - **+86 15698343510**
-  - **+86 18703416745** 
-- 邮箱：
-  - **[verdvana@outlook.com](verdvana@outlook.com)**
-- 微信：
-  - **[verdvana](./static/img/wechat.jpg)**
+- 联系方式：
+  - 电话：**+86 15698343510**
+  - 邮箱：**[verdvana@outlook.com](verdvana@outlook.com)**
+  - 微信：**[verdvana](./static/img/wechat.jpg)**
 
 
 ----
@@ -79,7 +76,7 @@ title: Home
 ## 专业技能
 
 * **ASIC Design**
-  * [Verilog](https://web.archive.org/web/20120716210757/http://www.verilog.com/IEEEVerilog.html) / [SystemVerilog](https://standards.ieee.org/standard/1800-2009.html) / [Perl](https://www.perl.org/) / [Tcl](https://www.tcl.tk/)
+  * [Verilog](https://web.archive.org/web/20120716210757/http://www.verilog.com/IEEEVerilog.html) / [SystemVerilog](https://standards.ieee.org/standard/1800-2009.html) / [Perl](https://www.perl.org/) / [Tcl](https://www.tcl.tk/) / [Python](https://www.python.org/)
   * [VCS](https://www.synopsys.com/zh-cn/verification/simulation/vcs.html) / [Verdi](https://www.synopsys.com/zh-cn/verification/debug/verdi.html) / [Design Compiler](https://www.synopsys.com/implementation-and-signoff/rtl-synthesis-test/design-compiler-graphical.html)
 * **Hardware Development**
   * [Altium Designer](https://www.altium.com/altium-designer) / [OrCAD Capture](https://www.orcad.com/products/orcad-capture/overview) / [Allegro PCB Editor](https://www.cadence.com/en_US/home/tools/pcb-design-and-analysis/pcb-layout/allegro-pcb-designer.html) / [Multisim](https://www.ni.com/zh-tw/shop/electronic-test-instrumentation/application-software-for-electronic-test-and-instrumentation-category/what-is-multisim.html)
