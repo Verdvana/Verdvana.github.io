@@ -127,11 +127,19 @@ slew_upper_threshold_pct_rise  :70.0;  #上升沿阈值高点 D
 
 &#160; &#160; &#160; &#160; 逻辑单元的时序模型（timing model）旨在为设计中的各种单元实例（instance）提供准确的时序信息。通常会从单元的详细电路仿真中获得时序模型，用以对单元工作时的实际情况进行建模，且需要为逻辑单元的每个时序弧都建立一个时序模型。
 
-&#160; &#160; &#160; &#160; 分为线性时序模型和非线性时序模型。
+&#160; &#160; &#160; &#160; 分为线性延迟模型和非线性延迟模型。
 
-#### 3.2.1 线性时序模型
+#### 3.2.1 线性时序模型（linear delay model）
 
-&#160; &#160; &#160; &#160; 使用input transition time和output load capacitance两个参数的线性函数表示cell delay和output transition time，
+&#160; &#160; &#160; &#160; 使用input transition time和output load capacitance两个参数的线性函数表示cell delay和output transition time。计算形式如下：
+
+```tcl
+cell delay = A + B*input transition time + C*output load capacitance
+```
+
+&#160; &#160; &#160; &#160; 其中A、B、C为常数。 对于亚微米（submicron）技术，线性延迟模型在输入过渡时间和输出负载电容的范围内并不准确，因此，目前大多数单元库都使用更复杂的模型，例如非线性延迟模型。
+
+#### 3.2.2 非线性延迟模型（non-linear delay model）
 
 
 
