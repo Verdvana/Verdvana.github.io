@@ -24,10 +24,10 @@ tags:
 
 &#160; &#160; &#160; &#160; 通过设置输入/输出的上升/下降沿的阈值点来计算传播延迟。比如用以下四个变量来定义的点：
 ```tcl
-input_threshold_pct_fall  :50.0;  #输入下降沿阈值点 A
-input_threshold_pct_rise  :50.0;  #输入上升沿阈值点 B
-output_threshold_pct_fall :50.0;  #输出下降沿阈值点 C
-output_threshold_pct_rise :50.0;  #输出上升沿阈值点 D
+input_threshold_pct_fall  :40.0;  #输入下降沿阈值点 A
+input_threshold_pct_rise  :60.0;  #输入上升沿阈值点 B
+output_threshold_pct_fall :30.0;  #输出下降沿阈值点 C
+output_threshold_pct_rise :70.0;  #输出上升沿阈值点 D
 ```
 
 &#160; &#160; &#160; &#160; 下图表明传播延迟是如何根据这四个点计算的：
@@ -51,7 +51,11 @@ slew_upper_threshold_pct_rise  :70.0;  #上升沿阈值高点 D
 
 ![img2][img2]
 
-### 2.4 偏移（Skew）、抖动（Jitter）与不确定性（Uncertainty）
+### 2.5 时钟延迟（clock latency）
+
+&#160; &#160; &#160; &#160; 指从时钟源到终点所花费的总时间。
+
+### 2.6 偏移（Skew）、抖动（Jitter）与不确定性（Uncertainty）
 
 &#160; &#160; &#160; &#160; 偏移是指2个或多个信号（data或clock）之间的时序之差的最大值。
 
@@ -59,7 +63,7 @@ slew_upper_threshold_pct_rise  :70.0;  #上升沿阈值高点 D
 
 &#160; &#160; &#160; &#160; Uncertainty = Skew + Jitter + Margin。
 
-### 2.5 时序弧（Timing Arc）
+### 2.7 时序弧（Timing Arc）
 
 &#160; &#160; &#160; &#160; 分类：
 
@@ -78,11 +82,11 @@ slew_upper_threshold_pct_rise  :70.0;  #上升沿阈值高点 D
 * 非单调（Non Unate）：输入的极性变化决定不了输出极性变化，也要取决于其它输入状态，例如异或门
 
 
-### 2.6 最大和最小时序路径
+### 2.8 最大和最小时序路径
 
 &#160; &#160; &#160; &#160; 逻辑通过几条不同的路径传播到终点，每条路径的传播时间被称为路径延迟（Path Delay），这包括该路径上cell和net的总延迟。延迟最大的叫最大路径（Max Path/Late Path），延迟最小的路径叫最小路径（Min Path/Early Path）。
 
-### 2.7 时钟域（Clock Domain）
+### 2.9 时钟域（Clock Domain）
 
 &#160; &#160; &#160; &#160; 由同一个时钟驱动的触发器所在的区域为一个时钟域。
 
@@ -92,7 +96,7 @@ slew_upper_threshold_pct_rise  :70.0;  #上升沿阈值高点 D
 
 &#160; &#160; &#160; &#160; 还有一种伪路径的例子。比如通过二选一MUX选择时钟源，虽然只有一个时钟域，却有两个时钟，而这两个时钟是互斥的，因为一次只有一个时钟处于有效状态，因此这两个时钟之间不存在时序路径。
 
-### 2.8 工作条件
+### 2.10 工作条件
 
 
 &#160; &#160; &#160; &#160; 工作条件定义为工艺（Process）、电压（Voltage）和温度（Temperature）的组合，简称PVT。逻辑单元的延迟和互连走线的延迟是根据特定的PVT计算的。
@@ -103,7 +107,31 @@ slew_upper_threshold_pct_rise  :70.0;  #上升沿阈值高点 D
 
 &#160; &#160; &#160; &#160; 标准单元库包含时序信息、单元面积、功能等信息。
 
+### 3.1 引脚电容
 
+&#160; &#160; &#160; &#160; 单元的每个输入和输出都可以在引脚（pin）上指定电容。在大多数情况下，仅为单元输入引脚指定电容，而不为输出引脚指定电容，即大多数单元库中的输出引脚电容为0。
+
+```tcl
+  pin(INP1) {
+    capacitance:  0.5;
+    rise_capacitance: 0.5;
+    rise_capacitance_range: (0.48,0.52);
+    fall_capacitance: 0.45;
+    fall_capacitance_range: (0.435,0.46);
+    ...
+  }
+```
+&#160; &#160; &#160; &#160; 电容单位通常为皮法拉（pF），一般在库文件的开头指定。
+
+### 3.2 时序模型
+
+&#160; &#160; &#160; &#160; 逻辑单元的时序模型（timing model）旨在为设计中的各种单元实例（instance）提供准确的时序信息。通常会从单元的详细电路仿真中获得时序模型，用以对单元工作时的实际情况进行建模，且需要为逻辑单元的每个时序弧都建立一个时序模型。
+
+&#160; &#160; &#160; &#160; 分为线性时序模型和非线性时序模型。
+
+#### 3.2.1 线性时序模型
+
+&#160; &#160; &#160; &#160; 使用input transition time和output load capacitance两个参数的线性函数表示cell delay和output transition time，
 
 
 
