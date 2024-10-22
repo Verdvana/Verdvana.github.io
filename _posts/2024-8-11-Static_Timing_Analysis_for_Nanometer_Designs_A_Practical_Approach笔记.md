@@ -1,6 +1,6 @@
 ---
 layout: post
-title:  "《Static Timing Analysis for Nanometer Designs：A Practical Approach》笔记"
+title:  "静态时序分析笔记"
 date:   2024-8-11 9:37:10 +0700
 tags:
   - STA
