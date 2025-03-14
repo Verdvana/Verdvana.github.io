@@ -9,8 +9,9 @@ title: Home
 - 联系方式：
   - 电话：**+86 15698343510**
   - 邮箱：**[verdvana@outlook.com](verdvana@outlook.com)**
+<!-- 
   - 微信：**[verdvana](./static/img/wechat.jpg)**
-
+-->
 
 ----
 
