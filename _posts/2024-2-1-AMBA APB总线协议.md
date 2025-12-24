@@ -43,7 +43,7 @@ tags:
     <th>Description</th>
   </tr>
   <tr>
-    <td rowspan=2>Global</td>
+    <td rowspan=2 style="background:#F0E68C">Global</td>
     <td rowspan=2 style="background:#BEE6E9">APB2</td>
     <td style="background:#BEE6E9">PCLK</td>
     <td style="background:#BEE6E9">1</td>
@@ -57,7 +57,7 @@ tags:
     <td style="background:#BEE6E9">低电平有效，通常直接连接到系统总线的复位信号</td>
   </tr>
   <tr>
-    <td rowspan=8>APB bridge</td>
+    <td rowspan=8 style="background:#FFDAB9">APB bridge</td>
     <td rowspan=5 style="background:#BEE6E9">APB2</td>
     <td style="background:#BEE6E9">PADDR</td>
     <td style="background:#BEE6E9">8/16/32</td>
@@ -109,7 +109,7 @@ tags:
     <td style="background:#EBF6CB"></td>
   </tr>
   <tr>
-    <td rowspan=3>Slave interface</td>
+    <td rowspan=3 style="background:#FFE4E1">Slave interface</td>
     <td style="background:#BEE6E9">APB2</td>
     <td style="background:#BEE6E9">PRDATA</td>
     <td style="background:#BEE6E9">8/16/32</td>
