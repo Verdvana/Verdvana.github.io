@@ -44,83 +44,90 @@ tags:
   </tr>
   <tr>
     <td rowspan=2>Global</td>
-    <td rowspan=2 style="background:#fff9c4">APB2</td>
-    <td style="background:#fff9c4">PCLK</td>
-    <td style="background:#fff9c4">1</td>
-    <td style="background:#fff9c4">Clock</td>
-    <td style="background:#fff9c4">APB的所有传输在PCLK的上升沿有效</td>
+    <td rowspan=2 style="background:#BEE6E9">APB2</td>
+    <td style="background:#BEE6E9">PCLK</td>
+    <td style="background:#BEE6E9">1</td>
+    <td style="background:#BEE6E9">Clock</td>
+    <td style="background:#BEE6E9">APB的所有传输在PCLK的上升沿有效</td>
   </tr>
   <tr>
-    <td style="background:#fff9c4">PRESETn</td>
-    <td style="background:#fff9c4">1</td>
-    <td style="background:#fff9c4">Reset</td>
-    <td style="background:#fff9c4">低电平有效，通常直接连接到系统总线的复位信号</td>
+    <td style="background:#BEE6E9">PRESETn</td>
+    <td style="background:#BEE6E9">1</td>
+    <td style="background:#BEE6E9">Reset</td>
+    <td style="background:#BEE6E9">低电平有效，通常直接连接到系统总线的复位信号</td>
   </tr>
   <tr>
-    <td rowspan=7>APB bridge</td>
-    <td rowspan=5 style="background:#fff9c4">APB2</td>
-    <td style="background:#fff9c4">PADDR</td>
-    <td style="background:#fff9c4">8/16/32</td>
-    <td style="background:#fff9c4">Address</td>
-    <td style="background:#fff9c4">最多32bit</td>
+    <td rowspan=8>APB bridge</td>
+    <td rowspan=5 style="background:#BEE6E9">APB2</td>
+    <td style="background:#BEE6E9">PADDR</td>
+    <td style="background:#BEE6E9">8/16/32</td>
+    <td style="background:#BEE6E9">Address</td>
+    <td style="background:#BEE6E9">最多32bit</td>
   </tr>
   <tr>
-    <td style="background:#fff9c4">PSELx</td>
-    <td style="background:#fff9c4">1</td>
-    <td style="background:#fff9c4">Select</td>
-    <td style="background:#fff9c4">每个APB Slave都有一个PSELx信号，由ABP Bridge产生</td>
+    <td style="background:#BEE6E9">PSELx</td>
+    <td style="background:#BEE6E9">1</td>
+    <td style="background:#BEE6E9">Select</td>
+    <td style="background:#BEE6E9">每个APB Slave都有一个PSELx信号，由ABP Bridge产生</td>
   </tr>
   <tr>
-    <td style="background:#fff9c4">PENABLE</td>
-    <td style="background:#fff9c4">1</td>
-    <td style="background:#fff9c4">Enable</td>
-    <td style="background:#fff9c4">指示APB传输的第二及后续周期</td>
+    <td style="background:#BEE6E9">PENABLE</td>
+    <td style="background:#BEE6E9">1</td>
+    <td style="background:#BEE6E9">Enable</td>
+    <td style="background:#BEE6E9">指示APB传输的第二及后续周期</td>
   </tr>
   <tr>
-    <td style="background:#fff9c4">PWRITE</td>
-    <td style="background:#fff9c4">1</td>
-    <td style="background:#fff9c4">Direction</td>
-    <td style="background:#fff9c4">1'b1: 写<br>1'b0: 读</td>
+    <td style="background:#BEE6E9">PWRITE</td>
+    <td style="background:#BEE6E9">1</td>
+    <td style="background:#BEE6E9">Direction</td>
+    <td style="background:#BEE6E9">1'b1: 写<br>1'b0: 读</td>
   </tr>
   <tr>
-    <td style="background:#fff9c4">PWDATA</td>
-    <td style="background:#fff9c4">8/16/32</td>
-    <td style="background:#fff9c4">Write data</td>
-    <td style="background:#fff9c4">最多32bit，PWRITE为1时由Master产生</td>
+    <td style="background:#BEE6E9">PWDATA</td>
+    <td style="background:#BEE6E9">8/16/32</td>
+    <td style="background:#BEE6E9">Write data</td>
+    <td style="background:#BEE6E9">最多32bit，PWRITE为1时由Master产生</td>
   </tr>
   <tr>
-    <td rowspan=2 style="background:#199999">APB4</td>
-    <td style="background:#199999">PPROT</td>
-    <td style="background:#199999">3</td>
-    <td style="background:#199999">Protection type</td>
-    <td style="background:#199999">PPROT[2]: 1=Instruction; 0=Data<br>PPROT[1]: 1=Nonsecure; 0=Secure<br>PPROT[0]: 1=Privileged; 0=Normal</td>
+    <td rowspan=2 style="background:#CEEFC8">APB4</td>
+    <td style="background:#CEEFC8">PPROT</td>
+    <td style="background:#CEEFC8">3</td>
+    <td style="background:#CEEFC8">Protection type</td>
+    <td style="background:#CEEFC8">PPROT[2]: 1=Instruction; 0=Data<br>PPROT[1]: 1=Nonsecure; 0=Secure<br>PPROT[0]: 1=Privileged; 0=Normal</td>
   </tr>
   <tr>
-    <td style="background:#199999">PSTRB</td>
-    <td style="background:#199999">1/2/4</td>
-    <td style="background:#199999">Write strobes</td>
-    <td style="background:#199999">指示在写传输期间，要更新哪个字节通道<br>写数据总线的每8bit对应1bitPSTRB<br>在读传输期间，PSTRB不能跳变</td>
+    <td style="background:#CEEFC8">PSTRB</td>
+    <td style="background:#CEEFC8">1/2/4</td>
+    <td style="background:#CEEFC8">Write strobes</td>
+    <td style="background:#CEEFC8">指示在写传输期间，要更新哪个字节通道<br>写数据总线的每8bit对应1bitPSTRB<br>在读传输期间，PSTRB不能跳变</td>
+  </tr>
+  <tr>
+    <td rowspan=1 style="background:#EBF6CB">APB5</td>
+    <td style="background:#EBF6CB"></td>
+    <td style="background:#EBF6CB"></td>
+    <td style="background:#EBF6CB"></td>
+    <td style="background:#EBF6CB"></td>
   </tr>
   <tr>
     <td rowspan=3>Slave interface</td>
-    <td style="background:#fff9c4">APB2</td>
-    <td style="background:#fff9c4">PRDATA</td>
-    <td style="background:#fff9c4">8/16/32</td>
-    <td style="background:#fff9c4">Read data</td>
-    <td style="background:#fff9c4">最多32bit，PWRITE为0时由Slave产生</td>
+    <td style="background:#BEE6E9">APB2</td>
+    <td style="background:#BEE6E9">PRDATA</td>
+    <td style="background:#BEE6E9">8/16/32</td>
+    <td style="background:#BEE6E9">Read data</td>
+    <td style="background:#BEE6E9">最多32bit，PWRITE为0时由Slave产生</td>
   </tr>
   <tr>
-    <td rowspan=2 style="background:#898949">APB3</td>
-    <td style="background:#898949">PREADY</td>
-    <td style="background:#898949">1</td>
-    <td style="background:#898949">Ready</td>
-    <td style="background:#898949">表示APB传输完成</td>
+    <td rowspan=2 style="background:#C4E9D9">APB3</td>
+    <td style="background:#C4E9D9">PREADY</td>
+    <td style="background:#C4E9D9">1</td>
+    <td style="background:#C4E9D9">Ready</td>
+    <td style="background:#C4E9D9">表示APB传输完成</td>
   </tr>
   <tr>
-    <td style="background:#898949">PSLVERR</td>
-    <td style="background:#898949">1</td>
-    <td style="background:#898949">Transfer error</td>
-    <td style="background:#898949">传输失败的错误信号</td>
+    <td style="background:#C4E9D9">PSLVERR</td>
+    <td style="background:#C4E9D9">1</td>
+    <td style="background:#C4E9D9">Transfer error</td>
+    <td style="background:#C4E9D9">传输失败的错误信号</td>
   </tr>
 </table>
 
