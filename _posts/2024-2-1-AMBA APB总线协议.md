@@ -35,7 +35,7 @@ tags:
 
 <table>
   <tr>
-    <th>Source</th>
+    <th style="background:#fff9c4">Source</th>
     <th>Version</th>
     <th>Signal</th>
     <th>Width</th>
@@ -48,14 +48,12 @@ tags:
     <td rowspan=2>APB2</td>
     <td>PCLK</td>
     <td>1</td>
-    <td></td>
     <td>Clock</td>
     <td>APB的所有传输在PCLK的上升沿有效</td>
   </tr>
   <tr>
     <td>PRESETn</td>
     <td>1</td>
-    <td></td>
     <td>Reset</td>
     <td>低电平有效，通常直接连接到系统总线的复位信号</td>
   </tr>
