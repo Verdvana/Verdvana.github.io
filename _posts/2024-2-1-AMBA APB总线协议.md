@@ -185,6 +185,19 @@ graph LR
 ```
 -->
 
+```wavedrom
+{ signal: [
+  { name: "PCLK",  wave: "p....." },
+  { name: "PADDR", wave: "x.6...", data:"Addr1"},
+  { name: "PWRITE", wave: "x.1..." },
+  { name: "PSEL", wave: "0.1.0." },
+  { name: "PENABLE", wave: "0..10." },
+  { name: "PWDATA", wave: "x.6.x.", data:"Data1"},
+  { name: "PREADY", wave: "x..1xx" },
+  { name: "STATUS", wave: "3.453.", data:"IDLE S A IDLE" },
+]}
+```
+
 ![img2][img2]
 
 &#160; &#160; &#160; &#160; 第一阶段为IDLE状态。
