@@ -184,8 +184,7 @@ graph LR
 ]}
 ```
 -->
-
-```wavedrom
+<script type="WaveDrom">
 { signal: [
   { name: "PCLK",  wave: "p....." },
   { name: "PADDR", wave: "x.6...", data:"Addr1"},
@@ -196,7 +195,7 @@ graph LR
   { name: "PREADY", wave: "x..1xx" },
   { name: "STATUS", wave: "3.453.", data:"IDLE S A IDLE" },
 ]}
-```
+</script>
 
 ![img2][img2]
 
