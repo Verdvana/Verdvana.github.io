@@ -378,8 +378,16 @@ module spram (
 	timeunit        1ns;
 	timeprecision   1ps;
 
+
 	//=========================================================================
-	// Inst
+	// Parameter
+	//localparam		TCO			= 1.6;										// Simulate the delay of the register
+
+	//=========================================================================
+	// Signal
+
+	//=========================================================================
+	// 
     SRAM_SP_4096x32 u_SRAM_SP_4096x32(
         .CLK(clk),
         .CEN(cs_n),
@@ -391,7 +399,6 @@ module spram (
     );
 
 endmodule
-
 ```
 
 
@@ -441,7 +448,7 @@ module apb_spram#(
     logic       [31:0]      wdata_mask;			// Write data by PTRB mask
 
 	logic					pprot_err;			// PPROT Error
-	logic					slv_err;`			// Slave Error
+	logic					slv_err;			// Slave Error
     logic                   addr_err;			// Address Error
 
 	//=========================================================================
