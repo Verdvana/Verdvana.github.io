@@ -553,12 +553,6 @@ jekyll-theme-WuK: # 用了wu-kan的主题，自定义样式都在这个命名空
         </style>
 
 
-collections:
-  labs:
-    output: true
-    permalink: /labs/:name/
-
-
 readme_index:
   enabled: true
   with_frontmatter: true
