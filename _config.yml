@@ -105,6 +105,9 @@ jekyll-theme-WuK: # 用了wu-kan的主题，自定义样式都在这个命名空
     posts_count:
       enable: true
       alert: 篇博文
+  labs:
+    alert: <i class="fas fa-flask fa-fw"></i>
+    conut: true
   comments:
     enable: true # 需要在script中引入
     alert: |
