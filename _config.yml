@@ -188,6 +188,8 @@ jekyll-theme-WuK: # 用了wu-kan的主题，自定义样式都在这个命名空
           href: /comments/
         - title: '<i class="fas fa-coffee fa-fw"></i> 打赏'
           href: /merger/
+        - title: '<i class="fas fa-tags fa-fw"></i> 更多'
+          href: /labs/
       simple_jekyll_search:
         enable: true
         full_text_search: false # 可能导致缓慢的搜索和加载
@@ -226,7 +228,7 @@ jekyll-theme-WuK: # 用了wu-kan的主题，自定义样式都在这个命名空
         - | # Copyright
           <div>
             <i class="fas fa-copyright fa-fw"></i>
-            2018-2025 Verdvana
+            2018-2026 Verdvana
           </div>
         - |
           <div>
