@@ -188,7 +188,7 @@ jekyll-theme-WuK: # 用了wu-kan的主题，自定义样式都在这个命名空
           href: /comments/
         - title: '<i class="fas fa-coffee fa-fw"></i> 打赏'
           href: /merger/
-        - title: '<i class="fa-solid fa-angles-right"></i> 更多'
+        - title: '<i class="fas fa-flask fa-fw"></i> 更多'
           href: /labs/
       simple_jekyll_search:
         enable: true
