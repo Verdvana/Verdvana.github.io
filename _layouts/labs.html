@@ -1,0 +1,95 @@
+
+---
+layout: default
+---
+
+<style>
+  /* 简单卡片样式：不依赖主题CSS，避免冲突 */
+  .labs-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:16px;margin:18px 0}
+  .labs-card{border:1px solid rgba(0,0,0,.08);border-radius:12px;overflow:hidden;background:rgba(255,255,255,.8)}
+  .labs-thumb{width:100%;aspect-ratio:16/9;object-fit:cover;background:#f3f4f6;display:block}
+  .labs-body{padding:12px 14px}
+  .labs-title{font-size:16px;margin:0 0 6px 0;line-height:1.35}
+  .labs-desc{font-size:13px;opacity:.85;margin:0 0 8px 0;line-height:1.6}
+  .labs-tags{display:flex;flex-wrap:wrap;gap:6px}
+  .labs-tag{font-size:12px;padding:2px 8px;border-radius:999px;background:rgba(0,0,0,.06)}
+  .labs-meta{font-size:12px;opacity:.6;margin-top:8px}
+</style>
+
+<h1>{{ page.title }}</h1>
+
+{% if content and content != "" %}
+  <div class="labs-desc">{{ content }}</div>
+{% endif %}
+
+{%- comment -%}
+  方案A：扫描 /labs/ 目录下所有 .html 静态文件（URL 形如 /labs/foo.html）
+  然后用 basename（foo）去 _data/labs.yml 里找同 slug 的元信息
+{%- endcomment -%}
+
+{% assign lab_files = site.static_files
+  | where_exp: "f", "f.path contains '/labs/'"
+  | where_exp: "f", "f.extname == '.html'"
+%}
+
+{% if lab_files.size == 0 %}
+  <p>还没有发现 <code>/labs/</code> 目录下的 HTML 文件。请把实验页面放到仓库的 <code>labs/</code> 目录中。</p>
+{% else %}
+  {%- comment -%}按 data 里的 order 优先排序：我们先构造一个“按 order 输出”的列表{%- endcomment -%}
+  {% assign metas = site.data.labs | sort: "order" %}
+
+  <div class="labs-grid">
+    {%- for meta in metas -%}
+      {%- assign f = lab_files | where: "basename", meta.slug | first -%}
+      {%- if f -%}
+        <div class="labs-card">
+          {% if meta.thumb %}
+            <{ f.path | relative_url }}
+              <img class="labs-thumb" src="{{ meta.thumb | relative      {% else %}
+            <a href="{{ f.path | relative             <div class="labs-thumb"></div>
+            </a>
+          {% endif %}
+
+          <div class="labs-body">
+            <h3 class="labs-title">
+              {{ f.path | relative_url }}{{ meta.title | default: f.basename }}</a>
+            </h3>
+
+            {% if meta.desc %}
+              <p class="labs-desc">{{ meta.desc }}</p>
+            {% endif %}
+
+            {% if meta.tags %}
+              <div class="labs-tags">
+                {% for t in meta.tags %}
+                  <span class="labs-tag">{{ t }}</span>
+                {% endfor %}
+              </div>
+            {% endif %}
+
+            <div class="labs-meta">{{ f.path }}</div>
+          </div>
+        </div>
+      {%- endif -%}
+    {%- endfor -%}
+
+    {%- comment -%}
+      再把没有写进 _data/labs.yml 的 HTML 也补充展示出来（避免遗漏）
+    {%- endcomment -%}
+    {% for f in lab_files %}
+      {% assign m = site.data.labs | where: "slug", f.basename | first %}
+      {% if m == nil %}
+        <div class="labs-card">
+          {{ f.path | relative_url }}
+            <div class="labs-thumb"></div>
+          </a>
+          <div class="labs-body">
+            <h3 class="labs-title">{{ f.path | relative_url }}{{ f.basename }}</a></h3>
+            <p class="labs-desc">（未在 <code>_data/labs.yml</code> 中配置预览信息）</p>
+            <div class="labs-meta">{{ f.path }}</div>
+          </div>
+        </div>
+      {% endif %}
+    {% endfor %}
+  </div>
+{% endif %}
