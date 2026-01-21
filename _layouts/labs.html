@@ -47,12 +47,14 @@ layout: default
         <div class="labs-card">
           {% if meta.thumb %}
             {{ f.path | relative_url }}
-              <img class="labs-thumb" src="{{ meta        </a>
+              {{ meta.thumb | relative_url }}
+            </a>
           {% else %}
             {{ f.path | relative_url }}
               <div class="labs-thumb"></div>
             </a>
           {% endif %}
+        </div>
 
           <div class="labs-body">
             <h3 class="labs-title">
