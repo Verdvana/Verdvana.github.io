@@ -1,0 +1,17 @@
+
+# 每一项用 slug 对应 labs/ 目录下的 html 文件名（不含 .html）
+- slug: foo
+  title: Foo 实验：XXX
+  desc: >
+    这里写一段简介（建议 1~3 行），说明这个实验做什么、输入输出是什么、适合谁看。
+  thumb: /assets/labs/thumbs/foo.png
+  tags: [FPGA, Verilog]
+  order: 10
+
+- slug: bar
+  title: Bar 工具：YYY
+  desc: >
+    这里写简介。可以写亮点、注意事项、适用场景。
+  thumb: /assets/labs/thumbs/bar.jpg
+  tags: [脚本, 自动化]
+  order: 20
