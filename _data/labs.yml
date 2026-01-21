@@ -1,10 +1,10 @@
 # 每一项用 slug 对应 labs/ 目录下的 html 文件名（不含 .html）
-- slug: foo
-  title: Foo 实验：XXX
+- slug: mortgage_calculator
+  title: 房贷计算器
   desc: >
-    这里写一段简介（建议 1~3 行），说明这个实验做什么、输入输出是什么、适合谁看。
-  thumb: /assets/labs/thumbs/foo.png
-  tags: [FPGA, Verilog]
+    支持商贷/公积金、利率变更与提前还款的房贷计算器，秒算月供与总利息
+  thumb: /assets/labs/thumbs/mortgage_calculator.png
+  tags: [Finance]
   order: 10
 
 - slug: bar
