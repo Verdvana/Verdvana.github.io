@@ -59,16 +59,17 @@ layout: default
   - 同时也扫描 site.pages 里 /labs/*.html（万一你给实验页加了 front matter，变成了 page）
 {%- endcomment -%}
 
+
 {% assign lab_static = site.static_files
   | where_exp: "f", "f.path contains '/labs/'"
   | where_exp: "f", "f.extname == '.html'"
-  | where_exp: "f", "f.path startswith '/labs/'"
 %}
 
 {% assign lab_pages = site.pages
   | where_exp: "p", "p.url contains '/labs/'"
-  | where_exp: "p", "p.url endswith '.html'"
+  | where_exp: "p", "p.url contains '.html'"
 %}
+
 
 {% assign lab_files = lab_static | concat: lab_pages %}
 
