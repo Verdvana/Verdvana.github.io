@@ -1,10 +1,8 @@
-
 ---
 layout: default
 ---
 
 <style>
-  /* 简单卡片样式：不依赖主题CSS，避免冲突 */
   .labs-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:16px;margin:18px 0}
   .labs-card{border:1px solid rgba(0,0,0,.08);border-radius:12px;overflow:hidden;background:rgba(255,255,255,.8)}
   .labs-thumb{width:100%;aspect-ratio:16/9;object-fit:cover;background:#f3f4f6;display:block}
@@ -35,7 +33,11 @@ layout: default
 {% if lab_files.size == 0 %}
   <p>还没有发现 <code>/labs/</code> 目录下的 HTML 文件。请把实验页面放到仓库的 <code>labs/</code> 目录中。</p>
 {% else %}
-  {%- comment -%}按 data 里的 order 优先排序：我们先构造一个“按 order 输出”的列表{%- endcomment -%}
+
+  {%- comment -%}
+    读取数据文件：_data/labs.yml
+    Jekyll 会把 _data 里的 yml/json/csv 作为 site.data.* 暴露给 Liquid 使用。[3](https://geekdaxue.co/read/dooo@centos7/pfzrxk)
+  {%- endcomment -%}
   {% assign metas = site.data.labs | sort: "order" %}
 
   <div class="labs-grid">
@@ -44,9 +46,11 @@ layout: default
       {%- if f -%}
         <div class="labs-card">
           {% if meta.thumb %}
-            <{ f.path | relative_url }}
-              <img class="labs-thumb" src="{{ meta.thumb | relative      {% else %}
-            <a href="{{ f.path | relative             <div class="labs-thumb"></div>
+            {{ f.path | relative_url }}
+              <img class="labs-thumb" src="{{ meta        </a>
+          {% else %}
+            {{ f.path | relative_url }}
+              <div class="labs-thumb"></div>
             </a>
           {% endif %}
 
@@ -74,7 +78,7 @@ layout: default
     {%- endfor -%}
 
     {%- comment -%}
-      再把没有写进 _data/labs.yml 的 HTML 也补充展示出来（避免遗漏）
+      兜底：把没写进 _data/labs.yml 的 HTML 也显示出来，避免你新增页面后忘记配数据而“消失”。
     {%- endcomment -%}
     {% for f in lab_files %}
       {% assign m = site.data.labs | where: "slug", f.basename | first %}
@@ -84,12 +88,13 @@ layout: default
             <div class="labs-thumb"></div>
           </a>
           <div class="labs-body">
-            <h3 class="labs-title">{{ f.path | relative_url }}{{ f.basename }}</a></h3>
+            <h3 class="labs-title"><a href="{{ felative_url }}{{ f.basename }}</a></h3>
             <p class="labs-desc">（未在 <code>_data/labs.yml</code> 中配置预览信息）</p>
             <div class="labs-meta">{{ f.path }}</div>
           </div>
         </div>
       {% endif %}
     {% endfor %}
+
   </div>
 {% endif %}
