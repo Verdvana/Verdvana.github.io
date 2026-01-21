@@ -302,6 +302,229 @@
       font-size: 12px;
       color: var(--faint);
     }
+
+    /* ====== Theme override: manual light/dark ====== */
+    html[data-theme="dark"]{
+      --bg: #0b0f14;
+      --panel: rgba(255,255,255,0.06);
+      --panel2: rgba(255,255,255,0.08);
+      --text: rgba(255,255,255,0.92);
+      --muted: rgba(255,255,255,0.66);
+      --faint: rgba(255,255,255,0.45);
+      --border: rgba(255,255,255,0.12);
+      --shadow: 0 18px 60px rgba(0,0,0,0.45);
+      --accent: #7aa2ff;
+      --accent2:#7df0c4;
+    }
+    html[data-theme="light"]{
+      --bg:#f6f7fb;
+      --panel: rgba(0,0,0,0.04);
+      --panel2: rgba(0,0,0,0.06);
+      --text: rgba(0,0,0,0.9);
+      --muted: rgba(0,0,0,0.62);
+      --faint: rgba(0,0,0,0.42);
+      --border: rgba(0,0,0,0.10);
+      --shadow: 0 18px 50px rgba(8, 15, 35, 0.10);
+      --accent:#2b6dff;
+      --accent2:#00a37a;
+    }
+
+    /* ====== Smooth theme transition (avoid affecting input experience) ====== */
+    html.theme-transition,
+    html.theme-transition body{
+      transition: background-color .25s ease, color .25s ease;
+    }
+    html.theme-transition *:not(input):not(textarea):not(select),
+    html.theme-transition *:not(input):not(textarea):not(select)::before,
+    html.theme-transition *:not(input):not(textarea):not(select)::after{
+      transition:
+        background-color .25s ease,
+        color .25s ease,
+        border-color .25s ease,
+        box-shadow .25s ease,
+        fill .25s ease,
+        stroke .25s ease,
+        opacity .25s ease;
+    }
+    html.theme-transition input,
+    html.theme-transition textarea,
+    html.theme-transition select{
+      transition: none !important;
+    }
+
+    /* ====== iOS-like theme switch ====== */
+    .theme-switch{
+      display:flex;
+      align-items:center;
+      gap:10px;
+      user-select:none;
+    }
+    .theme-switch .label{
+      font-size:12px;
+      color: var(--muted);
+    }
+    .switch{
+      position: relative;
+      width: 44px;
+      height: 26px;
+      border-radius: 999px;
+      background: rgba(255,255,255,0.10);
+      border: 1px solid var(--border);
+      box-shadow: inset 0 0 0 1px rgba(0,0,0,0.02);
+      transition: background .2s ease, border-color .2s ease, box-shadow .2s ease;
+    }
+    @media (prefers-color-scheme: light){
+      .switch{ background: rgba(0,0,0,0.06); }
+    }
+    .switch input{
+      position:absolute;
+      inset:0;
+      opacity:0;
+      cursor:pointer;
+    }
+    .switch .knob{
+      position:absolute;
+      top: 3px;
+      left: 3px;
+      width: 20px;
+      height: 20px;
+      border-radius: 999px;
+      background: rgba(255,255,255,0.92);
+      box-shadow: 0 6px 16px rgba(0,0,0,0.22);
+      transform: translateX(0);
+      transition: transform .2s ease, background .2s ease;
+    }
+    html[data-theme="light"] .switch .knob{
+      background: rgba(255,255,255,0.98);
+    }
+    .switch input:checked ~ .knob{
+      transform: translateX(18px);
+    }
+    .switch.on{
+      background: rgba(125,240,196,0.22);
+      border-color: rgba(125,240,196,0.35);
+    }
+    .switch:focus-within{
+      box-shadow: 0 0 0 4px rgba(122,162,255,0.16);
+    }
+
+    /* ====== Floating nav buttons (OpenAI-like minimal) ====== */
+    .float-nav{
+      position: fixed;
+      right: 18px;
+      bottom: 18px;
+      display:flex;
+      flex-direction: column;
+      gap: 10px;
+      z-index: 9999;
+    }
+    .float-nav a{
+      text-decoration:none;
+    }
+    .float-btn{
+      position: relative; /* for tooltip */
+      display:flex;
+      align-items:center;
+      gap:10px;
+      padding: 10px 12px;
+      border-radius: 999px;
+      border: 1px solid var(--border);
+      background: rgba(255,255,255,0.06);
+      color: var(--text);
+      box-shadow: 0 14px 40px rgba(0,0,0,0.24);
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+      transition: transform .06s ease, background .2s ease, border-color .2s ease;
+      font-size: 13px;
+      cursor: pointer;
+    }
+    html[data-theme="light"] .float-btn{
+      background: rgba(255,255,255,0.75);
+    }
+    .float-btn:hover{
+      background: rgba(255,255,255,0.10);
+      border-color: rgba(122,162,255,0.55);
+    }
+    .float-btn:active{ transform: translateY(1px); }
+    .float-icon{
+      width: 30px;
+      height: 30px;
+      border-radius: 999px;
+      display:grid;
+      place-items:center;
+      background: rgba(122,162,255,0.18);
+      border: 1px solid rgba(122,162,255,0.22);
+    }
+    .float-btn.secondary .float-icon{
+      background: rgba(255,209,102,0.16);
+      border: 1px solid rgba(255,209,102,0.22);
+    }
+    .float-text{
+      white-space: nowrap;
+    }
+
+    /* Tooltip */
+    .float-btn[data-tip]::after{
+      content: attr(data-tip);
+      position: absolute;
+      right: calc(100% + 10px);
+      top: 50%;
+      transform: translateY(-50%) translateX(6px);
+      opacity: 0;
+      pointer-events: none;
+      padding: 8px 10px;
+      border-radius: 12px;
+      background: rgba(0,0,0,0.55);
+      color: rgba(255,255,255,0.92);
+      border: 1px solid rgba(255,255,255,0.16);
+      box-shadow: 0 18px 50px rgba(0,0,0,0.32);
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+      white-space: nowrap;
+      font-size: 12px;
+      transition: opacity .15s ease, transform .15s ease;
+    }
+    html[data-theme="light"] .float-btn[data-tip]::after{
+      background: rgba(255,255,255,0.85);
+      color: rgba(0,0,0,0.86);
+      border: 1px solid rgba(0,0,0,0.10);
+      box-shadow: 0 18px 45px rgba(8, 15, 35, 0.18);
+    }
+    .float-btn[data-tip]::before{
+      content:"";
+      position:absolute;
+      right: calc(100% + 4px);
+      top: 50%;
+      transform: translateY(-50%) translateX(6px);
+      opacity: 0;
+      pointer-events:none;
+      border: 6px solid transparent;
+      border-left-color: rgba(0,0,0,0.55);
+      transition: opacity .15s ease, transform .15s ease;
+    }
+    html[data-theme="light"] .float-btn[data-tip]::before{
+      border-left-color: rgba(255,255,255,0.85);
+    }
+    .float-btn:hover::after,
+    .float-btn:hover::before{
+      opacity: 1;
+      transform: translateY(-50%) translateX(0px);
+    }
+    @media (hover:none){
+      .float-btn[data-tip]::after,
+      .float-btn[data-tip]::before{ display:none; }
+    }
+
+    /* small screens: show icon-only */
+    @media (max-width: 520px){
+      .float-text{ display:none; }
+      .float-btn{ padding: 10px; }
+    }
+
+    /* print: hide floating UI */
+    @media print{
+      .float-nav{ display:none; }
+    }
   </style>
 </head>
 <body>
@@ -314,9 +537,20 @@
         <div class="subtitle">商贷 / 公积金 · 等额本息 / 等额本金 · 多次利率更新 · 提前还款（缩短年限 / 减少月供）</div>
       </div>
     </div>
-    <div class="pill">
-      <span>📌</span>
-      <span>规则可按你的银行口径调整</span>
+
+    <div style="display:flex; gap:12px; align-items:center; flex-wrap:wrap; justify-content:flex-end;">
+      <div class="theme-switch">
+        <span class="label" id="themeLabel">系统</span>
+        <div class="switch" id="themeSwitchWrap" title="切换明暗模式（Alt/Option 点击或长按可切回系统）">
+          <input id="themeToggle" type="checkbox" aria-label="切换明暗模式">
+          <span class="knob" aria-hidden="true"></span>
+        </div>
+      </div>
+
+      <div class="pill">
+        <span>📌</span>
+        <span>规则可按你的银行口径调整</span>
+      </div>
     </div>
   </div>
 
@@ -593,6 +827,28 @@
 
   </div>
 </div>
+
+<!-- Floating navigation -->
+
+<!-- Floating navigation -->
+<div class="float-nav" aria-label="快速导航">
+  <button class="float-btn"
+          type="button"
+          data-url="https://verdvana.cn"
+          data-tip="回到主页">
+    <span class="float-icon" aria-hidden="true">🏠</span>
+    <span class="float-text">回到主页</span>
+  </button>
+
+  <button class="float-btn secondary"
+          type="button"
+          data-url="https://verdvana.cn/labs/"
+          data-tip="回到上一层">
+    <span class="float-icon" aria-hidden="true">⬅︎</span>
+    <span class="float-text">回到上一层</span>
+  </button>
+</div>
+
 
 <script>
   // ======== 工具函数：金额/日期/格式 ========
@@ -1170,7 +1426,7 @@
   function renderLoanBlock(title, loan, baseSim, afterSim, prepayEnabled){
     if((loan.amount||0) <= 0){
       return `
-        <div class="card" style="box-shadow:none; margin-bottom:12px;">
+        <div class="card" style="box-shadow:none; margin-bottom: 12px;">
           <div class="hd">
             <div class="section-title"><div class="dot" style="background:rgba(255,255,255,0.25); box-shadow:none;"></div><h2>${title}</h2></div>
             <div class="badge"><span class="b"></span><span>未填写金额</span></div>
@@ -1366,6 +1622,86 @@
     document.getElementById("prepayAlloc").value = "proRata";
     document.getElementById("prepayMode").value = "shortenTerm";
   }
+
+  // ======== Theme: system / light / dark + smooth transition ========
+  (function initTheme(){
+    const KEY = "verdvana_theme"; // 'system' | 'light' | 'dark'
+    const html = document.documentElement;
+    const toggle = document.getElementById("themeToggle");
+    const label = document.getElementById("themeLabel");
+    const wrap = document.getElementById("themeSwitchWrap");
+
+    if(!toggle || !label || !wrap) return;
+
+    const systemPrefersDark = () =>
+      window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches;
+
+    function withTransition(fn){
+      html.classList.add("theme-transition");
+      try{ fn(); } finally{
+        window.setTimeout(()=> html.classList.remove("theme-transition"), 280);
+      }
+    }
+
+    function apply(mode){
+      // mode: 'system' | 'light' | 'dark'
+      if(mode === "system"){
+        html.removeAttribute("data-theme"); // let CSS prefers-color-scheme decide
+        toggle.checked = systemPrefersDark();
+        label.textContent = "系统";
+      }else{
+        html.setAttribute("data-theme", mode);
+        toggle.checked = (mode === "dark");
+        label.textContent = (mode === "dark") ? "深色" : "浅色";
+      }
+      if(toggle.checked) wrap.classList.add("on");
+      else wrap.classList.remove("on");
+    }
+
+    function getSaved(){
+      return localStorage.getItem(KEY) || "system";
+    }
+    function save(mode){
+      localStorage.setItem(KEY, mode);
+    }
+
+    // 初始
+    apply(getSaved());
+
+    // 监听系统主题变化：仅当当前为 system 时跟随
+    const mql = window.matchMedia("(prefers-color-scheme: dark)");
+    const onSystemChange = () => {
+      if(getSaved() === "system") withTransition(()=>apply("system"));
+    };
+    if(mql && mql.addEventListener) mql.addEventListener("change", onSystemChange);
+    else if(mql && mql.addListener) mql.addListener(onSystemChange);
+
+    // 点击开关：浅色 ↔ 深色；按住 Alt/Option 点击 -> 切回 system
+    toggle.addEventListener("click", (e) => {
+      const alt = e.altKey;
+      if(alt){
+        save("system");
+        withTransition(()=>apply("system"));
+        return;
+      }
+      const next = toggle.checked ? "dark" : "light";
+      save(next);
+      withTransition(()=>apply(next));
+    });
+
+    // 长按（移动端）也切回 system：800ms
+    let pressTimer = null;
+    wrap.addEventListener("pointerdown", () => {
+      pressTimer = setTimeout(() => {
+        save("system");
+        withTransition(()=>apply("system"));
+        wrap.title = "已切回：系统";
+        setTimeout(()=> wrap.title = "切换明暗模式（Alt/Option 点击或长按可切回系统）", 1200);
+      }, 800);
+    });
+    wrap.addEventListener("pointerup", () => { if(pressTimer) clearTimeout(pressTimer); });
+    wrap.addEventListener("pointercancel", () => { if(pressTimer) clearTimeout(pressTimer); });
+  })();
 
   // 初始化：默认不加节点
   // addRateRow('biz'); addRateRow('gjj'); // 如你想默认一行可取消注释
