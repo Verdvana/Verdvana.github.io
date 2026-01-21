@@ -418,9 +418,11 @@
       gap: 10px;
       z-index: 9999;
     }
+/*    
     .float-nav a{
       text-decoration:none;
     }
+*/
     .float-btn{
       position: relative; /* for tooltip */
       display:flex;
@@ -437,6 +439,15 @@
       transition: transform .06s ease, background .2s ease, border-color .2s ease;
       font-size: 13px;
       cursor: pointer;
+      appearance: none;
+      -webkit-appearance: none;
+      border: 1px solid var(--border);
+      outline: none;
+      font: inherit;
+    }
+    
+    .float-btn:focus-visible{
+      box-shadow: 0 0 0 4px rgba(122,162,255,0.18);
     }
     html[data-theme="light"] .float-btn{
       background: rgba(255,255,255,0.75);
@@ -505,11 +516,15 @@
     html[data-theme="light"] .float-btn[data-tip]::before{
       border-left-color: rgba(255,255,255,0.85);
     }
+
     .float-btn:hover::after,
-    .float-btn:hover::before{
+    .float-btn:hover::before,
+    .float-btn:focus-visible::after,
+    .float-btn:focus-visible::before{
       opacity: 1;
       transform: translateY(-50%) translateX(0px);
     }
+
     @media (hover:none){
       .float-btn[data-tip]::after,
       .float-btn[data-tip]::before{ display:none; }
@@ -1701,6 +1716,46 @@
     });
     wrap.addEventListener("pointerup", () => { if(pressTimer) clearTimeout(pressTimer); });
     wrap.addEventListener("pointercancel", () => { if(pressTimer) clearTimeout(pressTimer); });
+  })();
+
+  
+  // ======== Floating nav fix: robust navigation ========
+  (function bindFloatingNav(){
+    const buttons = document.querySelectorAll(".float-nav .float-btn[data-url]");
+    if(!buttons.length) return;
+
+    function go(url){
+      try{
+        // 优先当前窗口跳转
+        window.location.assign(url);
+      }catch(e){
+        // 若在 iframe/受限环境，尝试顶层窗口
+        try{
+          window.top.location.assign(url);
+        }catch(e2){
+          // 最后兜底：新开标签
+          window.open(url, "_blank", "noopener");
+        }
+      }
+    }
+
+    buttons.forEach(btn => {
+      btn.addEventListener("click", (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        const url = btn.getAttribute("data-url");
+        if(url) go(url);
+      });
+
+      // 键盘支持：Enter / Space
+      btn.addEventListener("keydown", (e) => {
+        if(e.key === "Enter" || e.key === " "){
+          e.preventDefault();
+          const url = btn.getAttribute("data-url");
+          if(url) go(url);
+        }
+      });
+    });
   })();
 
   // 初始化：默认不加节点
