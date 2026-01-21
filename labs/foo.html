@@ -1,0 +1,146 @@
+
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Foo 实验：示例页面</title>
+  <meta name="description" content="一个示例实验页面：展示目标、使用方法、截图与结果。" />
+  <style>
+    :root{
+      --bg:#0b1020;
+      --card:rgba(255,255,255,.06);
+      --text:rgba(255,255,255,.92);
+      --muted:rgba(255,255,255,.68);
+      --line:rgba(255,255,255,.12);
+      --accent:#62d6ff;
+    }
+    body{
+      margin:0;
+      font-family: system-ui, -apple-system, "Segoe UI", Roboto, "PingFang SC",
+                   "Hiragino Sans GB", "Microsoft YaHei", Arial, sans-serif;
+      background: radial-gradient(1200px 600px at 10% 0%, #16224a 0%, var(--bg) 60%),
+                  radial-gradient(900px 500px at 90% 10%, #123a2f 0%, transparent 60%),
+                  var(--bg);
+      color:var(--text);
+      line-height:1.65;
+    }
+    .wrap{max-width:980px;margin:0 auto;padding:28px 18px 60px;}
+    a{color:var(--accent);text-decoration:none}
+    a:hover{text-decoration:underline}
+    .topbar{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:14px;}
+    .badge{font-size:12px;color:var(--muted);border:1px solid var(--line);padding:4px 10px;border-radius:999px;}
+    .hero{
+      border:1px solid var(--line);
+      background: linear-gradient(180deg, rgba(255,255,255,.08), rgba(255,255,255,.04));
+      border-radius:16px;
+      padding:18px 18px 14px;
+      margin:12px 0 18px;
+    }
+    h1{margin:0 0 8px;font-size:26px}
+    .muted{color:var(--muted)}
+    .grid{display:grid;grid-template-columns:1.2fr .8fr;gap:14px;margin-top:14px}
+    .card{
+      border:1px solid var(--line);
+      background:var(--card);
+      border-radius:14px;
+      padding:14px 14px 12px;
+    }
+    .card h2{margin:0 0 6px;font-size:16px}
+    ul{margin:8px 0 0 20px}
+    code, pre{
+      background:rgba(0,0,0,.35);
+      border:1px solid rgba(255,255,255,.08);
+      border-radius:10px;
+    }
+    code{padding:1px 6px}
+    pre{padding:10px 12px;overflow:auto}
+    .shot{
+      width:100%;
+      aspect-ratio:16/9;
+      border-radius:12px;
+      border:1px dashed rgba(255,255,255,.22);
+      background: rgba(0,0,0,.25);
+      display:flex;align-items:center;justify-content:center;
+      color:rgba(255,255,255,.55);
+      font-size:13px;
+      margin-top:8px;
+    }
+    .footer{margin-top:22px;color:var(--muted);font-size:13px}
+    @media (max-width:860px){.grid{grid-template-columns:1fr}}
+  </style>
+</head>
+
+<body>
+  <div class="wrap">
+    <div class="topbar">
+      /labs/← 返回 /labs/</a>
+      <span class="badge">demo · labs/foo.html</span>
+    </div>
+
+    <div class="hero">
+      <h1>Foo 实验：示例页面</h1>
+      <div class="muted">
+        这是一个最小可用的实验页面模板：包含介绍、步骤、截图占位、以及结果/备注。
+        你可以复制这份作为所有实验页的起点。
+      </div>
+
+      <div class="grid">
+        <div class="card">
+          <h2>🎯 实验目标</h2>
+          <ul>
+            <li>展示一个实验页的基本结构</li>
+            <li>提供“复现步骤 + 参数 + 输出”</li>
+            <li>能在 /labs/ 列表页里通过卡片跳转打开</li>
+          </ul>
+
+          <h2 style="margin-top:12px">🧪 使用步骤</h2>
+          <ol style="margin:8px 0 0 20px">
+            <li>准备输入数据（示例：sample.json）</li>
+            <li>运行脚本/工具：<code>python run.py --mode foo</code></li>
+            <li>查看输出：生成的图或日志</li>
+          </ol>
+
+          <h2 style="margin-top:12px">⚙️ 参数示例</h2>
+          <pre><code># 示例命令
+python run.py --mode foo --alpha 0.8 --seed 42
+
+# 预期输出
+out/foo_result.png
+out/foo_log.txt</code></pre>
+        </div>
+
+        <div class="card">
+          <h2>🖼️ 截图 / 预览</h2>
+
+          <!-- 方案1：先用占位框，后续换成真正截图 -->
+          <div class="shot">截图占位：assets/labs/thumbs/foo.png</div>
+
+          <!-- 方案2：你有截图后，改用 <img>：
+          <img class="shot" style="border-style:solid" src="/assets/labs/thumbs/foo.png"x">✅ 结果 & 结论</h2>
+          <ul>
+            <li>本示例页已能独立访问：<code>/labs/foo.html</code></li>
+            <li>建议：每个实验页都保留“目标/步骤/截图/结果”四段</li>
+          </ul>
+
+          <h2 style="margin-top:12px">🧷 相关链接</h2>
+          <ul>
+            <li>/labs/实验室首页</a></li>
+            <li>/站点首页</a></li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <div class="footer">
+      <div>维护建议：把“标题/描述/缩略图”放在 <code>_data/labs.yml</code>，页面正文放在本文件中。</div>
+      <div>更新时间：<span id="t"></span></div>
+    </div>
+  </div>
+
+  <script>
+    // 仅用于展示：自动填充当前时间
+    document.getElementById('t').textContent = new Date().toLocaleString();
+  </script>
+</body>
+</html>
