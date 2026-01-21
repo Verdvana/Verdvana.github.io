@@ -98,7 +98,7 @@
             <p style="margin:4px 0 0; opacity: 0.5; font-size: 13px;">Base64 · 字符画 · 多位深RGB/灰度点阵</p>
         </div>
         <label class="ios-switch-label">
-            <span id="theme-text">深色模式</span>
+            <span id="theme-text">深色</span>
             <div class="switch">
                 <input type="checkbox" id="theme-toggle" onchange="toggleTheme()">
                 <span class="slider"></span>
@@ -186,7 +186,7 @@
     function toggleTheme() {
         const isDark = document.getElementById('theme-toggle').checked;
         document.body.setAttribute('data-theme', isDark ? 'dark' : 'light');
-        document.getElementById('theme-text').innerText = isDark ? '浅色模式' : '深色模式';
+        document.getElementById('theme-text').innerText = isDark ? '浅色' : '深色';
     }
 
     fileInput.addEventListener('change', e => {
