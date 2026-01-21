@@ -1,11 +1,13 @@
+
 ---
 layout: default
 ---
 
 <style>
-  /* === Labs index styles (self-contained, minimal conflict) === */
   .labs-intro{opacity:.85;margin:8px 0 14px;line-height:1.7}
   .labs-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:16px;margin:18px 0}
+
+  /* Card as <a> so whole card is clickable */
   .labs-card{
     display:block;
     color:inherit;
@@ -21,6 +23,7 @@ layout: default
     box-shadow:0 10px 28px rgba(0,0,0,.12);
     border-color:rgba(0,0,0,.18);
   }
+
   .labs-thumb{
     width:100%;
     aspect-ratio:16/9;
@@ -35,12 +38,14 @@ layout: default
     color:rgba(0,0,0,.45);
     font-size:12px;
   }
+
   .labs-body{padding:12px 14px}
   .labs-title{font-size:16px;margin:0 0 6px 0;line-height:1.35}
   .labs-desc{font-size:13px;opacity:.85;margin:0 0 8px 0;line-height:1.6}
   .labs-tags{display:flex;flex-wrap:wrap;gap:6px}
   .labs-tag{font-size:12px;padding:2px 8px;border-radius:999px;background:rgba(0,0,0,.06)}
   .labs-meta{font-size:12px;opacity:.6;margin-top:8px;word-break:break-all}
+
   .labs-warn{padding:10px 12px;border:1px dashed rgba(0,0,0,.25);border-radius:10px;background:rgba(255,255,255,.65)}
 </style>
 
@@ -51,22 +56,19 @@ layout: default
 {% endif %}
 
 {%- comment -%}
-  说明：
-  1) 方案A：实验页放在 /labs/*.html，且不要写 front matter（---），这样它们属于静态文件，出现在 site.static_files 中。[1](https://www.jekyll.com.cn/docs/includes/)
-  2) 生成链接/图片地址时用 relative_url，自动拼接 baseurl，避免部署子路径时资源/链接失效。[2](https://jekyllrb.com/docs/permalinks/)
-
-  兼容处理：
-  - 同时也扫描 site.pages 里 /labs/*.html（万一你给实验页加了 front matter，变成了 page）
+  方案A：实验页放 /labs/*.html 且不写 front matter(---)，会作为静态文件出现在 site.static_files，且具有 path/basename/extname 等字段。[2](https://www.jekyll.com.cn/docs/includes/)
+  兼容：若实验页写了 front matter，会从 static_files 变成 pages，因此同时扫描 site.pages。[2](https://www.jekyll.com.cn/docs/includes/)
+  链接/资源：使用 relative_url 自动拼接 baseurl，避免部署在子路径时链接失效。[1](https://jekyllrb.com/docs/permalinks/)[3](http://jekyllcn.com/docs/collections/)
 {%- endcomment -%}
 
 {% assign lab_static = site.static_files
-  | where_exp: "f", "f.path contains '/labs/'"
   | where_exp: "f", "f.extname == '.html'"
-  | where_exp: "f", "f.path startswith '/labs/'"
+  | where_exp: "f", "(f.path | slice: 0, 6) == '/labs/'"
 %}
 
 {% assign lab_pages = site.pages
-  | where_exp: "p", "p.url contains '/labs/'"
+  | where_exp: "p", "p.url != nil"
+  | where_exp: "p", "(p.url | slice: 0, 6) == '/labs/'"
   | where_exp: "p", "p.url endswith '.html'"
 %}
 
@@ -82,19 +84,14 @@ layout: default
 
   {% assign metas = site.data.labs | sort: "order" %}
 
-  {%- comment -%}
-    可选：让卡片点击在新标签页打开
-    在 labs.md 里加： new_tab: true
-  {%- endcomment -%}
-
   <div class="labs-grid">
-    {%- comment -%}
-      先按 _data/labs.yml 输出（可控标题/描述/缩略图/排序）
-    {%- endcomment -%}
+    {%- comment -%} 先按 _data/labs.yml 输出（有标题/描述/缩略图/排序） {%- endcomment -%}
     {%- for meta in metas -%}
-
       {%- assign found = nil -%}
 
+      {%- comment -%}
+        在 lab_files 里找 basename==slug（static_files 有 basename；page 也通常有 basename/name）
+      {%- endcomment -%}
       {%- for x in lab_files -%}
         {%- assign xslug = x.basename | default: x.name | remove: '.html' -%}
         {%- if xslug == meta.slug -%}
@@ -107,10 +104,9 @@ layout: default
 
         <a class="labs-card"
            href="{{ href | relative_url }}"
-           {% if page.new_tab %}target="_blank"c="{{ meta.thumb | relative_url }}"
-                 alt="{{ meta.title | escape     {% endif %}
-
-          <div class="labs-body">
+           {% if page.new_tab %}target="_blank" rel="noopener"{% endif %}>
+                 alt="{{ meta.title | escape }}">
+                       <div class="labs-body">
             <h3 class="labs-title">{{ meta.title | default: meta.slug }}</h3>
 
             {% if meta.desc %}
@@ -132,7 +128,7 @@ layout: default
     {%- endfor -%}
 
     {%- comment -%}
-      再把“没写进 _data/labs.yml 的实验页”也兜底显示出来，避免新增页面后漏配置就消失。
+      兜底：把没有写进 _data/labs.yml 的实验页也显示出来
     {%- endcomment -%}
     {% for f in lab_files %}
       {% assign slug = f.basename | default: f.name | remove: '.html' %}
@@ -142,14 +138,13 @@ layout: default
 
         <a class="labs-card"
            href="{{ href | relative_url }}"
-           {% if page.new_tab %}target="_blank" rel="noopener
-            <h3 class="labs-title">{{ slug }}</h3>
+           {% if page.new_tab %}target="_blank" rel="noopener"{%          <h3 class="labs-title">{{ slug }}</h3>
             <p class="labs-desc">（未在 <code>_data/labs.yml</code> 中配置预览信息）</p>
             <div class="labs-meta">{{ href }}</div>
           </div>
         </a>
       {% endif %}
     {% endfor %}
-
   </div>
+
 {% endif %}
