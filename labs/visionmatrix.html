@@ -1,0 +1,310 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VisionMatrix 视觉阵列转换器</title>
+    <style>
+        :root {
+            --primary-color: #007aff;
+            --bg-gradient: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            --card-bg: rgba(255, 255, 255, 0.72);
+            --text-color: #1d1d1f;
+            --border-color: rgba(255, 255, 255, 0.4);
+            --shadow: 0 10px 40px rgba(31, 38, 135, 0.1);
+            --switch-bg: #e9e9ea;
+        }
+
+        [data-theme="dark"] {
+            --primary-color: #0a84ff;
+            --bg-gradient: linear-gradient(135deg, #1a1a1a 0%, #2c3e50 100%);
+            --card-bg: rgba(28, 28, 30, 0.75);
+            --text-color: #f5f5f7;
+            --border-color: rgba(255, 255, 255, 0.1);
+            --shadow: 0 10px 40px rgba(0, 0, 0, 0.4);
+            --switch-bg: #39393d;
+        }
+
+        * { box-sizing: border-box; transition: background 0.3s, color 0.3s; }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background: var(--bg-gradient); background-attachment: fixed;
+            color: var(--text-color); margin: 0; padding: 20px;
+            min-height: 100vh; display: flex; justify-content: center;
+        }
+
+        .container { width: 100%; max-width: 900px; z-index: 1; }
+
+        /* iOS Switch */
+        header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px; }
+        .ios-switch-label { display: flex; align-items: center; gap: 12px; cursor: pointer; font-size: 14px; font-weight: 500; }
+        .switch { position: relative; width: 51px; height: 31px; }
+        .switch input { opacity: 0; width: 0; height: 0; }
+        .slider {
+            position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0;
+            background-color: var(--switch-bg); transition: .4s; border-radius: 34px;
+        }
+        .slider:before {
+            position: absolute; content: ""; height: 27px; width: 27px; left: 2px; bottom: 2px;
+            background-color: white; transition: .4s; border-radius: 50%; box-shadow: 0 3px 8px rgba(0,0,0,0.15);
+        }
+        input:checked + .slider { background-color: #34c759; }
+        input:checked + .slider:before { transform: translateX(20px); }
+
+        /* Card Style */
+        .card {
+            background: var(--card-bg); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+            border: 1px solid var(--border-color); border-radius: 20px;
+            padding: 24px; box-shadow: var(--shadow); margin-bottom: 24px;
+        }
+
+        .section-title { font-size: 1.1rem; font-weight: 600; margin-bottom: 16px; display: flex; justify-content: space-between; align-items: center; }
+
+        .upload-area { border: 2px dashed var(--primary-color); border-radius: 16px; padding: 40px; text-align: center; cursor: pointer; }
+        
+        .controls { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 15px; margin-bottom: 15px; }
+        .control-group { display: flex; flex-direction: column; gap: 6px; }
+        label { font-size: 12px; opacity: 0.6; font-weight: 600; text-transform: uppercase; }
+        
+        select, input[type="range"] { accent-color: var(--primary-color); }
+        select { background: var(--card-bg); color: var(--text-color); border: 1px solid var(--border-color); padding: 8px; border-radius: 10px; font-size: 13px; }
+
+        textarea {
+            width: 100%; height: 100px; background: rgba(0,0,0,0.05); border: 1px solid var(--border-color);
+            border-radius: 12px; color: var(--text-color); padding: 12px; font-family: 'SF Mono', monospace; font-size: 11px; resize: none;
+        }
+
+        button { background: var(--primary-color); color: white; border: none; padding: 10px 16px; border-radius: 10px; cursor: pointer; font-weight: 600; }
+        button.secondary { background: rgba(142, 142, 147, 0.2); color: var(--text-color); }
+
+        .preview-container { background: #000; border-radius: 12px; padding: 15px; margin-bottom: 15px; display: flex; justify-content: center; overflow: hidden; }
+        canvas { max-width: 100%; height: auto; image-rendering: pixelated; }
+
+        #ascii-preview { background: #000; color: #fff; padding: 15px; border-radius: 12px; overflow-x: auto; white-space: pre; font-family: 'Courier New', monospace; line-height: 1; font-size: 8px; text-align: center; }
+        .hidden { display: none; }
+        .blob { position: fixed; width: 400px; height: 400px; background: var(--primary-color); filter: blur(100px); border-radius: 50%; z-index: -1; opacity: 0.1; }
+    </style>
+</head>
+<body>
+
+<div class="blob" style="top: -150px; left: -100px;"></div>
+<div class="blob" style="bottom: -150px; right: -100px; background: #ff3b30;"></div>
+
+<div class="container">
+    <header>
+        <div>
+            <h1 style="margin:0; font-size: 24px; letter-spacing: -0.5px;">VisionMatrix 视觉阵列转换器</h1>
+            <p style="margin:4px 0 0; opacity: 0.5; font-size: 13px;">专业级图像转代码工具，支持字符画与多位深硬件点阵生成</p>
+        </div>
+        <label class="ios-switch-label">
+            <span id="theme-text">深色模式</span>
+            <div class="switch">
+                <input type="checkbox" id="theme-toggle" onchange="toggleTheme()">
+                <span class="slider"></span>
+            </div>
+        </label>
+    </header>
+
+    <div class="card">
+        <div class="upload-area" onclick="document.getElementById('fileInput').click()">
+            <p id="upload-text" style="margin:0">点击或拖拽图片到此区域</p>
+            <input type="file" id="fileInput" accept="image/*" style="display:none">
+        </div>
+    </div>
+
+    <div id="result-container" class="hidden">
+        <div class="card">
+            <div class="section-title">Base64 编码 <button onclick="copyText('base64-output')">复制</button></div>
+            <textarea id="base64-output" readonly></textarea>
+        </div>
+
+        <div class="card">
+            <div class="section-title">ASCII 字符画 <button onclick="copyText('ascii-preview', true)">复制</button></div>
+            <div class="controls">
+                <div class="control-group">
+                    <label>宽度: <span id="ascii-w-val">100</span></label>
+                    <input type="range" id="ascii-w" min="40" max="250" value="100" oninput="updateAll()">
+                </div>
+                <div class="control-group">
+                    <label>操作</label>
+                    <button class="secondary" onclick="document.getElementById('ascii-preview').style.filter = (document.getElementById('ascii-preview').style.filter === 'invert(1)') ? 'invert(0)' : 'invert(1)'">反相显示</button>
+                </div>
+            </div>
+            <div id="ascii-preview"></div>
+        </div>
+
+        <div class="card">
+            <div class="section-title">灰度亮点矩阵 <button onclick="copyText('gray-code')">复制代码</button></div>
+            <div class="preview-container"><canvas id="gray-canvas"></canvas></div>
+            <div class="controls">
+                <div class="control-group">
+                    <label>宽度: <span id="gray-w-val">32</span></label>
+                    <input type="range" id="gray-w" min="8" max="128" value="32" oninput="updateAll()">
+                </div>
+                <div class="control-group">
+                    <label>位深 (Bit)</label>
+                    <select id="gray-bit" onchange="updateAll()">
+                        <option value="1">1-bit (黑白)</option>
+                        <option value="2">2-bit (4级灰度)</option>
+                        <option value="4" selected>4-bit (16级灰度)</option>
+                        <option value="8">8-bit (256级灰度)</option>
+                    </select>
+                </div>
+            </div>
+            <textarea id="gray-code" readonly placeholder="C语言代码..."></textarea>
+        </div>
+
+        <div class="card">
+            <div class="section-title">RGB 亮点矩阵 <button onclick="copyText('rgb-code')">复制代码</button></div>
+            <div class="preview-container"><canvas id="rgb-canvas"></canvas></div>
+            <div class="controls" style="grid-template-columns: repeat(4, 1fr);">
+                <div class="control-group"><label>宽度: <span id="rgb-w-val">32</span></label><input type="range" id="rgb-w" min="8" max="128" value="32" oninput="updateAll()"></div>
+                <div class="control-group"><label>R 位</label><select id="r-bit" onchange="updateAll()"></select></div>
+                <div class="control-group"><label>G 位</label><select id="g-bit" onchange="updateAll()"></select></div>
+                <div class="control-group"><label>B 位</label><select id="b-bit" onchange="updateAll()"></select></div>
+            </div>
+            <textarea id="rgb-code" readonly placeholder="C语言代码..."></textarea>
+        </div>
+    </div>
+</div>
+
+<script>
+    const fileInput = document.getElementById('fileInput');
+    let originalImg = new Image();
+
+    // 初始化 RGB 下拉框
+    ['r-bit', 'g-bit', 'b-bit'].forEach((id, idx) => {
+        const s = document.getElementById(id);
+        for(let i=1; i<=8; i++) {
+            let o = new Option(i + ' bit', i);
+            if((idx===0 && i===5) || (idx===1 && i===6) || (idx===2 && i===5)) o.selected = true;
+            s.add(o);
+        }
+    });
+
+    function toggleTheme() {
+        const isDark = document.getElementById('theme-toggle').checked;
+        document.body.setAttribute('data-theme', isDark ? 'dark' : 'light');
+        document.getElementById('theme-text').innerText = isDark ? '浅色模式' : '深色模式';
+    }
+
+    fileInput.addEventListener('change', e => {
+        const file = e.target.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = e => {
+            originalImg.src = e.target.result;
+            document.getElementById('base64-output').value = e.target.result;
+            document.getElementById('result-container').classList.remove('hidden');
+        };
+        reader.readAsDataURL(file);
+    });
+
+    originalImg.onload = updateAll;
+
+    function updateAll() {
+        if(!originalImg.src) return;
+        renderAscii();
+        renderGray();
+        renderRGB();
+    }
+
+    function renderAscii() {
+        const w = parseInt(document.getElementById('ascii-w').value);
+        document.getElementById('ascii-w-val').innerText = w;
+        const ctx = getResizedCtx(w, true);
+        const data = ctx.getImageData(0, 0, w, ctx.canvas.height).data;
+        const chars = "@%#*+=-:. ";
+        let res = "";
+        for (let i = 0; i < data.length; i += 4) {
+            const gray = 0.21*data[i] + 0.72*data[i+1] + 0.07*data[i+2];
+            res += chars[Math.floor((gray/256)*chars.length)];
+            if(((i/4)+1) % w === 0) res += "\n";
+        }
+        document.getElementById('ascii-preview').innerText = res;
+    }
+
+    function renderGray() {
+        const w = parseInt(document.getElementById('gray-w').value);
+        document.getElementById('gray-w-val').innerText = w;
+        const bit = parseInt(document.getElementById('gray-bit').value);
+        const ctx = getResizedCtx(w, false);
+        const data = ctx.getImageData(0, 0, w, ctx.canvas.height).data;
+        const canvas = document.getElementById('gray-canvas');
+        
+        let hexArr = [];
+        drawMatrix(canvas, w, ctx.canvas.height, (x, y) => {
+            const i = (y * w + x) * 4;
+            const gray = 0.21*data[i] + 0.72*data[i+1] + 0.07*data[i+2];
+            const val = Math.floor((gray / 256) * Math.pow(2, bit));
+            hexArr.push(val);
+            const brightness = (val / (Math.pow(2, bit) - 1)) * 255;
+            return `rgb(${brightness},${brightness},${brightness})`;
+        });
+
+        document.getElementById('gray-code').value = generateCode(hexArr, bit, w, "gray");
+    }
+
+    function renderRGB() {
+        const w = parseInt(document.getElementById('rgb-w').value);
+        document.getElementById('rgb-w-val').innerText = w;
+        const rB = parseInt(document.getElementById('r-bit').value), 
+              gB = parseInt(document.getElementById('g-bit').value), 
+              bB = parseInt(document.getElementById('b-bit').value);
+        const ctx = getResizedCtx(w, false);
+        const data = ctx.getImageData(0, 0, w, ctx.canvas.height).data;
+        const canvas = document.getElementById('rgb-canvas');
+        
+        let hexArr = [];
+        drawMatrix(canvas, w, ctx.canvas.height, (x, y) => {
+            const i = (y * w + x) * 4;
+            const r = data[i] >> (8-rB), g = data[i+1] >> (8-gB), b = data[i+2] >> (8-bB);
+            hexArr.push((r << (gB+bB)) | (g << bB) | b);
+            return `rgb(${r << (8-rB)},${g << (8-gB)},${b << (8-bB)})`;
+        });
+
+        document.getElementById('rgb-code').value = generateCode(hexArr, rB+gB+bB, w, "rgb");
+    }
+
+    function drawMatrix(canvas, w, h, colorFn) {
+        const dot = 6, gap = 2;
+        canvas.width = w * (dot+gap); canvas.height = h * (dot+gap);
+        const ctx = canvas.getContext('2d');
+        for(let y=0; y<h; y++) {
+            for(let x=0; x<w; x++) {
+                ctx.fillStyle = colorFn(x, y);
+                ctx.beginPath();
+                ctx.arc(x*(dot+gap)+dot/2, y*(dot+gap)+dot/2, dot/2, 0, Math.PI*2);
+                ctx.fill();
+            }
+        }
+    }
+
+    function generateCode(arr, bits, w, name) {
+        const type = bits <= 8 ? 'uint8_t' : (bits <= 16 ? 'uint16_t' : 'uint32_t');
+        let code = `const ${type} img_${name}_data[] = {\n    `;
+        arr.forEach((v, i) => {
+            code += "0x" + v.toString(16).toUpperCase().padStart(Math.ceil(bits/4), '0') + (i===arr.length-1 ? "" : ", ");
+            if((i+1)%8 === 0) code += "\n    ";
+        });
+        return code + "\n};";
+    }
+
+    function getResizedCtx(w, isAscii) {
+        const canvas = document.createElement('canvas');
+        const h = Math.floor(originalImg.height * (w / originalImg.width) * (isAscii ? 0.5 : 1));
+        canvas.width = w; canvas.height = h;
+        const ctx = canvas.getContext('2d', { willReadFrequently: true });
+        ctx.drawImage(originalImg, 0, 0, w, h);
+        return ctx;
+    }
+
+    async function copyText(id, isInner) {
+        const val = isInner ? document.getElementById(id).innerText : document.getElementById(id).value;
+        await navigator.clipboard.writeText(val);
+        alert("已复制到剪贴板");
+    }
+</script>
+</body>
+</html>

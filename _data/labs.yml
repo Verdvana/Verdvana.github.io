@@ -7,10 +7,10 @@
   tags: [Finance]
   order: 10
 
-- slug: bar
-  title: Bar 工具：YYY
+- slug: visionmatrix
+  title: 视觉阵列转换器
   desc: >
-    这里写简介。可以写亮点、注意事项、适用场景。
-  thumb: /assets/labs/thumbs/bar.jpg
-  tags: [脚本, 自动化]
+    专为嵌入式开发打造的视觉资产转换工具，集成 Base64、字符画及多位深 RGB/灰度点阵生成。支持 iOS 风毛玻璃 UI 与实时仿真预览，助您一键完成图像到硬件代码的高效转换
+  thumb: /assets/labs/thumbs/visionmatrix.jpg
+  tags: [Hardware, Image Processing]
   order: 20
