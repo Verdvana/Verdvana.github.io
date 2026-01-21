@@ -1,5 +1,5 @@
 ---
 layout: labs
-title: 更多
+title: Labs
 permalink: /labs/
 ---
