@@ -1,4 +1,3 @@
-
 <!doctype html>
 <html lang="zh-CN">
 <head>
@@ -7,9 +6,9 @@
   <title>随机抽取器（三种输入方式 / 去重 / 不放回）</title>
 
   <!-- 与附件一致：FontAwesome -->
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" referrerpolicy="no-referrer"CSS：完全来自附件
-      （包含主题、卡片、按钮、sidebar、theme switch 等）
-       ========================= */
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" referrerpolicy="no-referrer" />
+
+  <style>
     :root{
       --bg: #0b0f14;
       --panel: rgba(255,255,255,0.06);
@@ -54,270 +53,62 @@
     }
     a{ color: var(--accent); text-decoration: none; }
     a:hover{ text-decoration: underline; }
-    .wrap{
-      max-width: 1160px;
-      margin: 0 auto;
-      padding: 28px 18px 80px;
-    }
-    .topbar{
-      display:flex;
-      align-items:flex-start;
-      justify-content:space-between;
-      gap: 16px;
-      margin-bottom: 18px;
-    }
-    .brand{
-      display:flex;
-      gap:12px;
-      align-items:center;
-    }
-    .logo{
-      width: 40px; height: 40px;
-      border-radius: 12px;
-      background: linear-gradient(135deg, rgba(122,162,255,0.95), rgba(125,240,196,0.85));
-      box-shadow: 0 10px 30px rgba(0,0,0,0.22);
-    }
-    h1{
-      font-size: 18px;
-      margin:0;
-      letter-spacing: 0.2px;
-    }
-    .subtitle{
-      margin:2px 0 0;
-      color: var(--muted);
-      font-size: 13px;
-    }
-    .pill{
-      display:inline-flex;
-      gap:8px;
-      align-items:center;
-      border:1px solid var(--border);
-      background: rgba(255,255,255,0.02);
-      padding:8px 12px;
-      border-radius: 999px;
-      color: var(--muted);
-      font-size: 12px;
-    }
-    .grid{
-      display:grid;
-      grid-template-columns: 1.05fr 0.95fr;
-      gap: 16px;
-    }
-    @media (max-width: 980px){
-      .grid{ grid-template-columns: 1fr; }
-    }
-    .card{
-      border: 1px solid var(--border);
-      background: linear-gradient(180deg, rgba(255,255,255,0.05), rgba(255,255,255,0.03));
-      border-radius: var(--radius);
-      box-shadow: var(--shadow);
-      overflow: hidden;
-    }
-    .card .hd{
-      padding: 16px 18px;
-      border-bottom: 1px solid var(--border);
-      display:flex;
-      align-items:center;
-      justify-content:space-between;
-      gap:12px;
-    }
-    .card .hd h2{
-      font-size: 14px;
-      margin:0;
-      letter-spacing: 0.2px;
-    }
+
+    .wrap{ max-width: 1160px; margin: 0 auto; padding: 28px 18px 80px; }
+    .topbar{ display:flex; align-items:flex-start; justify-content:space-between; gap: 16px; margin-bottom: 18px; }
+    .brand{ display:flex; gap:12px; align-items:center; }
+    .logo{ width: 40px; height: 40px; border-radius: 12px; background: linear-gradient(135deg, rgba(122,162,255,0.95), rgba(125,240,196,0.85)); box-shadow: 0 10px 30px rgba(0,0,0,0.22); }
+    h1{ font-size: 18px; margin:0; letter-spacing: 0.2px; }
+    .subtitle{ margin:2px 0 0; color: var(--muted); font-size: 13px; }
+    .pill{ display:inline-flex; gap:8px; align-items:center; border:1px solid var(--border); background: rgba(255,255,255,0.02); padding:8px 12px; border-radius: 999px; color: var(--muted); font-size: 12px; }
+
+    .grid{ display:grid; grid-template-columns: 1.05fr 0.95fr; gap: 16px; }
+    @media (max-width: 980px){ .grid{ grid-template-columns: 1fr; } }
+
+    .card{ border: 1px solid var(--border); background: linear-gradient(180deg, rgba(255,255,255,0.05), rgba(255,255,255,0.03)); border-radius: var(--radius); box-shadow: var(--shadow); overflow: hidden; }
+    .card .hd{ padding: 16px 18px; border-bottom: 1px solid var(--border); display:flex; align-items:center; justify-content:space-between; gap:12px; }
+    .card .hd h2{ font-size: 14px; margin:0; letter-spacing: 0.2px; }
     .card .bd{ padding: 16px 18px; }
-    .section-title{
-      display:flex;
-      align-items:center;
-      gap:10px;
-    }
-    .dot{
-      width:10px;height:10px;border-radius:99px;
-      background: var(--accent);
-      box-shadow: 0 0 0 4px rgba(122,162,255,0.18);
-    }
-    .dot.green{
-      background: var(--accent2);
-      box-shadow: 0 0 0 4px rgba(125,240,196,0.16);
-    }
-    .row{
-      display:grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 12px;
-      margin-bottom: 12px;
-    }
-    @media (max-width: 640px){
-      .row{ grid-template-columns: 1fr; }
-    }
-    label{
-      display:block;
-      font-size: 12px;
-      color: var(--muted);
-      margin-bottom: 6px;
-    }
-    input, select, button, textarea{
-      font-family: var(--sans);
-    }
-    input, select{
-      width:100%;
-      padding: 10px 12px;
-      border-radius: 12px;
-      border: 1px solid var(--border);
-      outline: none;
-      background: rgba(255,255,255,0.03);
-      color: var(--text);
-    }
-    textarea{
-      width:100%;
-      padding: 10px 12px;
-      border-radius: 12px;
-      border: 1px solid var(--border);
-      outline: none;
-      background: rgba(255,255,255,0.03);
-      color: var(--text);
-      min-height: 120px;
-      resize: vertical;
-    }
-    input::placeholder{ color: var(--faint); }
-    textarea::placeholder{ color: var(--faint); }
-    input:focus, select:focus, textarea:focus{
-      border-color: rgba(122,162,255,0.6);
-      box-shadow: 0 0 0 4px rgba(122,162,255,0.14);
-    }
-    .hint{
-      font-size: 12px;
-      color: var(--faint);
-      margin-top: 6px;
-    }
-    .toolbar{
-      display:flex;
-      flex-wrap:wrap;
-      gap:10px;
-      margin-top: 10px;
-    }
-    button{
-      border: 1px solid var(--border);
-      background: rgba(255,255,255,0.03);
-      color: var(--text);
-      padding: 10px 12px;
-      border-radius: 12px;
-      cursor: pointer;
-      transition: transform .04s ease, background .2s ease, border-color .2s ease;
-    }
-    button:hover{
-      background: rgba(255,255,255,0.07);
-      border-color: rgba(122,162,255,0.55);
-    }
+
+    .section-title{ display:flex; align-items:center; gap:10px; }
+    .dot{ width:10px;height:10px;border-radius:99px; background: var(--accent); box-shadow: 0 0 0 4px rgba(122,162,255,0.18); }
+    .dot.green{ background: var(--accent2); box-shadow: 0 0 0 4px rgba(125,240,196,0.16); }
+
+    .row{ display:grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 12px; }
+    @media (max-width: 640px){ .row{ grid-template-columns: 1fr; } }
+
+    label{ display:block; font-size: 12px; color: var(--muted); margin-bottom: 6px; }
+    input, select, button, textarea{ font-family: var(--sans); }
+    input, select, textarea{ width:100%; padding: 10px 12px; border-radius: 12px; border: 1px solid var(--border); outline: none; background: rgba(255,255,255,0.03); color: var(--text); }
+    textarea{ min-height: 120px; resize: vertical; }
+    input::placeholder, textarea::placeholder{ color: var(--faint); }
+    input:focus, select:focus, textarea:focus{ border-color: rgba(122,162,255,0.6); box-shadow: 0 0 0 4px rgba(122,162,255,0.14); }
+
+    .hint{ font-size: 12px; color: var(--faint); margin-top: 6px; }
+    .toolbar{ display:flex; flex-wrap:wrap; gap:10px; margin-top: 10px; }
+    button{ border: 1px solid var(--border); background: rgba(255,255,255,0.03); color: var(--text); padding: 10px 12px; border-radius: 12px; cursor: pointer; transition: transform .04s ease, background .2s ease, border-color .2s ease; }
+    button:hover{ background: rgba(255,255,255,0.07); border-color: rgba(122,162,255,0.55); }
     button:active{ transform: translateY(1px); }
-    .primary{
-      background: linear-gradient(135deg, rgba(122,162,255,0.95), rgba(125,240,196,0.75));
-      border: none;
-      color: rgba(0,0,0,0.78);
-      font-weight: 650;
-    }
+    .primary{ background: linear-gradient(135deg, rgba(122,162,255,0.95), rgba(125,240,196,0.75)); border: none; color: rgba(0,0,0,0.78); font-weight: 650; }
     .primary:hover{ filter: brightness(1.02); }
-    .danger{
-      border-color: rgba(255,107,107,0.45);
-      color: rgba(255,107,107,0.92);
-    }
+    .danger{ border-color: rgba(255,107,107,0.45); color: rgba(255,107,107,0.92); }
     .danger:hover{ background: rgba(255,107,107,0.08); }
-    .table{
-      width:100%;
-      border-collapse: collapse;
-      overflow: hidden;
-      border-radius: 14px;
-      border: 1px solid var(--border);
-      background: rgba(255,255,255,0.02);
-      margin-top: 10px;
-    }
-    .table th, .table td{
-      padding: 9px 10px;
-      border-bottom: 1px solid var(--border);
-      font-size: 12px;
-      vertical-align: middle;
-    }
-    .table th{
-      color: var(--muted);
-      font-weight: 600;
-      text-align: left;
-      background: rgba(255,255,255,0.04);
-    }
-    .table tr:last-child td{ border-bottom: none; }
-    .td-actions{
-      display:flex; gap:8px; align-items:center;
-    }
-    .mini{
-      padding: 7px 10px;
-      border-radius: 10px;
-      font-size: 12px;
-    }
-    .muted{ color: var(--muted); }
-    .kpi{
-      display:grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 10px;
-    }
-    @media (max-width: 640px){
-      .kpi{ grid-template-columns: 1fr; }
-    }
-    .kpi .box{
-      border: 1px solid var(--border);
-      border-radius: 14px;
-      padding: 12px 12px;
-      background: rgba(255,255,255,0.03);
-    }
+    .mini{ padding: 7px 10px; border-radius: 10px; font-size: 12px; }
+
+    .kpi{ display:grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+    @media (max-width: 640px){ .kpi{ grid-template-columns: 1fr; } }
+    .kpi .box{ border: 1px solid var(--border); border-radius: 14px; padding: 12px 12px; background: rgba(255,255,255,0.03); }
     .kpi .box .t{ font-size: 12px; color: var(--muted); margin-bottom: 6px; }
     .kpi .box .v{ font-size: 16px; font-weight: 700; letter-spacing: .2px; }
     .kpi .box .s{ font-size: 12px; color: var(--faint); margin-top: 4px; }
-    .split{
-      height:1px; background: var(--border); margin: 14px 0;
-    }
-    details{
-      border: 1px solid var(--border);
-      border-radius: 14px;
-      background: rgba(255,255,255,0.02);
-      padding: 10px 12px;
-    }
-    summary{
-      cursor:pointer;
-      color: var(--muted);
-      font-size: 13px;
-      user-select:none;
-    }
-    .small{
-      font-size: 12px;
-      color: var(--muted);
-      margin-top: 8px;
-    }
-    .code{
-      font-family: var(--mono);
-      font-size: 12px;
-      color: var(--muted);
-      white-space: pre-wrap;
-      word-break: break-word;
-      background: rgba(255,255,255,0.03);
-      border: 1px solid var(--border);
-      border-radius: 12px;
-      padding: 10px 12px;
-    }
-    .badge{
-      display:inline-flex; align-items:center; gap:6px;
-      padding: 6px 10px;
-      border-radius: 999px;
-      border: 1px solid var(--border);
-      font-size: 12px;
-      color: var(--muted);
-      background: rgba(255,255,255,0.02);
-    }
+
+    .split{ height:1px; background: var(--border); margin: 14px 0; }
+
+    .code{ font-family: var(--mono); font-size: 12px; color: var(--muted); white-space: pre-wrap; word-break: break-word; background: rgba(255,255,255,0.03); border: 1px solid var(--border); border-radius: 12px; padding: 10px 12px; }
+
+    .badge{ display:inline-flex; align-items:center; gap:6px; padding: 6px 10px; border-radius: 999px; border: 1px solid var(--border); font-size: 12px; color: var(--muted); background: rgba(255,255,255,0.02); }
     .badge .b{ width:7px;height:7px;border-radius:99px;background: var(--ok); }
     .badge.warn .b{ background: var(--warn); }
-    .badge.danger .b{ background: var(--danger); }
-    .footer-note{
-      margin-top: 14px;
-      font-size: 12px;
-      color: var(--faint);
-    }
 
     /* ====== Theme override: manual light/dark ====== */
     html[data-theme="dark"]{
@@ -345,147 +136,46 @@
       --accent2:#00a37a;
     }
 
-    /* ====== Smooth theme transition (avoid affecting input experience) ====== */
-    html.theme-transition,
-    html.theme-transition body{
-      transition: background-color .25s ease, color .25s ease;
-    }
+    /* ====== Smooth theme transition ====== */
+    html.theme-transition, html.theme-transition body{ transition: background-color .25s ease, color .25s ease; }
     html.theme-transition *:not(input):not(textarea):not(select),
     html.theme-transition *:not(input):not(textarea):not(select)::before,
     html.theme-transition *:not(input):not(textarea):not(select)::after{
-      transition:
-        background-color .25s ease,
-        color .25s ease,
-        border-color .25s ease,
-        box-shadow .25s ease,
-        fill .25s ease,
-        stroke .25s ease,
-        opacity .25s ease;
+      transition: background-color .25s ease, color .25s ease, border-color .25s ease, box-shadow .25s ease, fill .25s ease, stroke .25s ease, opacity .25s ease;
     }
-    html.theme-transition input,
-    html.theme-transition textarea,
-    html.theme-transition select{
-      transition: none !important;
-    }
+    html.theme-transition input, html.theme-transition textarea, html.theme-transition select{ transition: none !important; }
 
     /* ====== iOS-like theme switch ====== */
-    .theme-switch{
-      display:flex;
-      align-items:center;
-      gap:10px;
-      user-select:none;
-    }
-    .theme-switch .label{
-      font-size:12px;
-      color: var(--muted);
-    }
-    .switch{
-      position: relative;
-      width: 44px;
-      height: 26px;
-      border-radius: 999px;
-      background: rgba(255,255,255,0.10);
-      border: 1px solid var(--border);
-      box-shadow: inset 0 0 0 1px rgba(0,0,0,0.02);
-      transition: background .2s ease, border-color .2s ease, box-shadow .2s ease;
-    }
-    @media (prefers-color-scheme: light){
-      .switch{ background: rgba(0,0,0,0.06); }
-    }
-    .switch input{
-      position:absolute;
-      inset:0;
-      opacity:0;
-      cursor:pointer;
-    }
-    .switch .knob{
-      position:absolute;
-      top: 3px;
-      left: 3px;
-      width: 20px;
-      height: 20px;
-      border-radius: 999px;
-      background: rgba(255,255,255,0.92);
-      box-shadow: 0 6px 16px rgba(0,0,0,0.22);
-      transform: translateX(0);
-      transition: transform .2s ease, background .2s ease;
-    }
-    html[data-theme="light"] .switch .knob{
-      background: rgba(255,255,255,0.98);
-    }
-    .switch input:checked ~ .knob{
-      transform: translateX(18px);
-    }
-    .switch.on{
-      background: rgba(125,240,196,0.22);
-      border-color: rgba(125,240,196,0.35);
-    }
-    .switch:focus-within{
-      box-shadow: 0 0 0 4px rgba(122,162,255,0.16);
-    }
+    .theme-switch{ display:flex; align-items:center; gap:10px; user-select:none; }
+    .theme-switch .label{ font-size:12px; color: var(--muted); }
+    .switch{ position: relative; width: 44px; height: 26px; border-radius: 999px; background: rgba(255,255,255,0.10); border: 1px solid var(--border);
+      box-shadow: inset 0 0 0 1px rgba(0,0,0,0.02); transition: background .2s ease, border-color .2s ease, box-shadow .2s ease; }
+    @media (prefers-color-scheme: light){ .switch{ background: rgba(0,0,0,0.06); } }
+    .switch input{ position:absolute; inset:0; opacity:0; cursor:pointer; }
+    .switch .knob{ position:absolute; top: 3px; left: 3px; width: 20px; height: 20px; border-radius: 999px; background: rgba(255,255,255,0.92);
+      box-shadow: 0 6px 16px rgba(0,0,0,0.22); transform: translateX(0); transition: transform .2s ease, background .2s ease; }
+    html[data-theme="light"] .switch .knob{ background: rgba(255,255,255,0.98); }
+    .switch input:checked ~ .knob{ transform: translateX(18px); }
+    .switch.on{ background: rgba(125,240,196,0.22); border-color: rgba(125,240,196,0.35); }
+    .switch:focus-within{ box-shadow: 0 0 0 4px rgba(122,162,255,0.16); }
 
-    /* ====== Left sidebar (OpenAI-like) + overlay ====== */
-    .layout{
-      display:flex;
-      min-height: 100vh;
-    }
-    .sidebar{
-      --sb-w: 64px; /* collapsed width */
-      width: var(--sb-w);
-      flex: 0 0 var(--sb-w);
-      height: 100vh;
-      position: sticky;
-      top: 0;
-      z-index: 9998;
-      border-right: 1px solid var(--border);
-      background: rgba(255,255,255,0.04);
-      backdrop-filter: blur(12px);
-      -webkit-backdrop-filter: blur(12px);
-      display:flex;
-      flex-direction: column;
-      padding: 10px 10px;
-      gap: 10px;
-      transition: width .18s ease, flex-basis .18s ease;
-    }
-    html[data-theme="light"] .sidebar{
-      background: rgba(255,255,255,0.72);
-    }
+    /* ====== Left sidebar + overlay ====== */
+    .layout{ display:flex; min-height: 100vh; }
+    .sidebar{ --sb-w: 64px; width: var(--sb-w); flex: 0 0 var(--sb-w); height: 100vh; position: sticky; top: 0; z-index: 9998;
+      border-right: 1px solid var(--border); background: rgba(255,255,255,0.04); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+      display:flex; flex-direction: column; padding: 10px 10px; gap: 10px; transition: width .18s ease, flex-basis .18s ease; }
+    html[data-theme="light"] .sidebar{ background: rgba(255,255,255,0.72); }
     .sidebar.is-expanded{ --sb-w: 252px; }
     .main{ flex: 1 1 auto; min-width: 0; }
     .sb-top{ display:flex; align-items:center; gap: 10px; }
-    .sb-toggle{
-      width: 40px; height: 40px;
-      border-radius: 12px;
-      padding: 0;
-      display:grid; place-items:center;
-      border: 1px solid var(--border);
-      background: rgba(255,255,255,0.03);
-    }
+    .sb-toggle{ width: 40px; height: 40px; border-radius: 12px; padding: 0; display:grid; place-items:center; border: 1px solid var(--border); background: rgba(255,255,255,0.03); }
     .sb-toggle:hover{ background: rgba(255,255,255,0.07); border-color: rgba(122,162,255,0.55); }
     .sb-toggle i{ font-size: 16px; }
-    .sb-logo{
-      width: 40px; height: 40px;
-      border-radius: 14px;
-      overflow:hidden;
-      border: 1px solid var(--border);
-      flex: 0 0 auto;
-      display:block;
-    }
+    .sb-logo{ width: 40px; height: 40px; border-radius: 14px; overflow:hidden; border: 1px solid var(--border); flex: 0 0 auto; display:block; }
     .sb-logo img{ width:100%; height:100%; object-fit: cover; display:block; }
     .sb-nav{ display:flex; flex-direction: column; gap: 6px; padding-top: 6px; }
-    .sb-item{
-      display:flex; align-items:center; gap: 12px;
-      width: 100%;
-      border-radius: 12px;
-      padding: 10px 10px;
-      border: 1px solid transparent;
-      color: var(--text);
-      background: transparent;
-      text-decoration: none;
-      cursor: pointer;
-      user-select: none;
-      transition: background .16s ease, border-color .16s ease, transform .04s ease;
-    }
+    .sb-item{ display:flex; align-items:center; gap: 12px; width: 100%; border-radius: 12px; padding: 10px 10px; border: 1px solid transparent; color: var(--text);
+      background: transparent; text-decoration: none; cursor: pointer; user-select: none; transition: background .16s ease, border-color .16s ease, transform .04s ease; }
     .sb-item:hover{ background: rgba(255,255,255,0.06); border-color: rgba(122,162,255,0.25); }
     .sb-item:active{ transform: translateY(1px); }
     .sb-item i{ width: 20px; text-align:center; opacity: 0.92; }
@@ -497,128 +187,80 @@
     .sb-bottom{ margin-top: auto; padding-top: 6px; }
     .sb-back{ border: 1px solid var(--border); background: rgba(255,255,255,0.03); }
     .sb-back:hover{ border-color: rgba(255,209,102,0.35); background: rgba(255,209,102,0.10); }
-    .sb-backdrop{
-      position: fixed;
-      inset: 0;
-      background: rgba(0,0,0,0.35);
-      opacity: 0;
-      pointer-events: none;
-      transition: opacity .16s ease;
-      z-index: 9997;
-    }
+
+    .sb-backdrop{ position: fixed; inset: 0; background: rgba(0,0,0,0.35); opacity: 0; pointer-events: none; transition: opacity .16s ease; z-index: 9997; }
     .sb-backdrop.is-active{ opacity: 1; pointer-events: auto; }
+
     @media (max-width: 720px){
       .sidebar{ position: fixed; left: 0; top: 0; }
       .main{ margin-left: 64px; }
       .sidebar.is-expanded{ box-shadow: 0 18px 60px rgba(0,0,0,0.35); }
       body.sb-lock-scroll{ overflow: hidden; }
     }
-    @media print{
-      .sidebar, .sb-backdrop{ display:none; }
-      .main{ margin-left: 0; }
-    }
+    @media print{ .sidebar, .sb-backdrop{ display:none; } .main{ margin-left: 0; } }
 
-    /* =========================
-       App 增量样式（不影响 sidebar 一致性）
-       ========================= */
-    .mode-tabs{
-      display:flex;
-      gap:10px;
-      flex-wrap:wrap;
-    }
-    .tab{
-      display:inline-flex;
-      gap:8px;
-      align-items:center;
-      border:1px solid var(--border);
-      background: rgba(255,255,255,0.02);
-      padding:8px 10px;
-      border-radius: 999px;
-      color: var(--muted);
-      font-size: 12px;
-      cursor:pointer;
-      user-select:none;
-      transition: background .16s ease, border-color .16s ease;
-    }
+    /* ====== App extra ====== */
+    .mode-tabs{ display:flex; gap:10px; flex-wrap:wrap; }
+    .tab{ display:inline-flex; gap:8px; align-items:center; border:1px solid var(--border); background: rgba(255,255,255,0.02);
+      padding:8px 10px; border-radius: 999px; color: var(--muted); font-size: 12px; cursor:pointer; user-select:none;
+      transition: background .16s ease, border-color .16s ease; }
     .tab:hover{ background: rgba(255,255,255,0.06); border-color: rgba(122,162,255,0.35); }
-    .tab.is-active{
-      color: rgba(0,0,0,0.78);
-      border: none;
-      background: linear-gradient(135deg, rgba(122,162,255,0.95), rgba(125,240,196,0.75));
-      font-weight: 700;
-    }
-    .pick-display{
-      border: 1px solid var(--border);
-      border-radius: 14px;
-      padding: 14px 14px;
-      background: rgba(255,255,255,0.03);
-      position: relative;
-      overflow:hidden;
-    }
-    .pick-display .label{
-      font-size: 12px;
-      color: var(--muted);
-      margin-bottom: 6px;
-    }
-    .pick-display .value{
-      font-size: 20px;
-      font-weight: 800;
-      letter-spacing: .2px;
-      line-height: 1.35;
-      word-break: break-word;
-    }
+    .tab.is-active{ color: rgba(0,0,0,0.78); border: none; background: linear-gradient(135deg, rgba(122,162,255,0.95), rgba(125,240,196,0.75)); font-weight: 700; }
+
+    .pick-display{ border: 1px solid var(--border); border-radius: 14px; padding: 14px 14px; background: rgba(255,255,255,0.03); position: relative; overflow:hidden; }
+    .pick-display .label{ font-size: 12px; color: var(--muted); margin-bottom: 6px; }
+    .pick-display .value{ font-size: 20px; font-weight: 800; letter-spacing: .2px; line-height: 1.35; word-break: break-word; white-space: pre-wrap; }
+    #finalPick{ white-space: pre-wrap; word-break: break-word; }
     .pulse{ animation: pulseGlow .5s ease-in-out infinite alternate; }
-    @keyframes pulseGlow{
-      0%{ box-shadow: 0 0 0 0 rgba(122,162,255,0.0); }
-      100%{ box-shadow: 0 0 0 6px rgba(122,162,255,0.10); }
-    }
-    .list-mini{
-      max-height: 220px;
-      overflow:auto;
-      border: 1px solid var(--border);
-      border-radius: 14px;
-      background: rgba(255,255,255,0.02);
-      padding: 8px 10px;
-      font-size: 12px;
-      color: var(--muted);
-    }
-    .list-mini code{
-      font-family: var(--mono);
-      color: var(--text);
-      background: transparent;
-    }
+    @keyframes pulseGlow{ 0%{ box-shadow: 0 0 0 0 rgba(122,162,255,0.0); } 100%{ box-shadow: 0 0 0 6px rgba(122,162,255,0.10); } }
+
+    .list-mini{ max-height: 220px; overflow:auto; border: 1px solid var(--border); border-radius: 14px; background: rgba(255,255,255,0.02); padding: 8px 10px; font-size: 12px; color: var(--muted); }
+    .list-mini code{ font-family: var(--mono); color: var(--text); background: transparent; }
+
+    /* ===== 修复：深色模式下 <select> 下拉选项白底白字 ===== */
+    html[data-theme="dark"]{ color-scheme: dark; }
+    html[data-theme="light"]{ color-scheme: light; }
+    @media (prefers-color-scheme: dark){ html:not([data-theme]){ color-scheme: dark; } }
+    @media (prefers-color-scheme: light){ html:not([data-theme]){ color-scheme: light; } }
+
+    html[data-theme="dark"] select option{ background-color: #0b0f14; color: rgba(255,255,255,0.92); }
+    html[data-theme="light"] select option{ background-color: #ffffff; color: rgba(0,0,0,0.90); }
+    @media (prefers-color-scheme: dark){ html:not([data-theme]) select option{ background-color: #0b0f14; color: rgba(255,255,255,0.92); } }
+    @media (prefers-color-scheme: light){ html:not([data-theme]) select option{ background-color: #ffffff; color: rgba(0,0,0,0.90); } }
   </style>
 </head>
 
 <body>
 <div class="layout" id="appLayout">
 
-  <!-- =========================
-       Sidebar：与附件中的 HTML 完全一致
-       ========================= -->
+  <!-- Sidebar：与附件一致（内容/结构/样式） -->
   <aside class="sidebar" id="sidebar" aria-label="站点导航">
     <div class="sb-top">
       <button class="sb-toggle" id="sbToggle" type="button" aria-label="展开/折叠菜单" title="展开/折叠菜单">
         <i class="fa-solid fa-bars" aria-hidden="true"></i>
       </button>
-      <a class="sb-logo" href="   <img src="https://verdvana/img/avatar.jpg
+      <a class="sb-logo" href="https://verdvana.cn" title="verdvana.cn">
+        <img src="https://verdvana.cn/static/img/avatar.jpg" alt="logo" />
       </a>
     </div>
     <nav class="sb-nav" aria-label="快捷入口">
-      https://verdvana.cn
+      <a class="sb-item" href="https://verdvana.cn" title="主页">
         <i class="fa-solid fa-home" aria-hidden="true"></i><span>主页</span>
       </a>
-      <a class="sb-item" href="https://verdvana.cn/archive/" title="博ive" aria-hidden="true"></i><span>博文</span>
+      <a class="sb-item" href="https://verdvana.cn/archive/" title="博文">
+        <i class="fa-solid fa-archive" aria-hidden="true"></i><span>博文</span>
       </a>
-      <a classverdvana.cn/tags/
+      <a class="sb-item" href="https://verdvana.cn/tags/" title="分类">
         <i class="fa-solid fa-tags" aria-hidden="true"></i><span>分类</span>
       </a>
-      <a class="sb-item" href="https://verdvana.cn/comments/" titleomments" aria-hidden="true"></i><span>留言</span>
+      <a class="sb-item" href="https://verdvana.cn/comments/" title="留言">
+        <i class="fa-solid fa-comments" aria-hidden="true"></i><span>留言</span>
       </a>
-      <atps://verdvana.cn/merger/
+      <a class="sb-item" href="https://verdvana.cn/merger/" title="打赏">
         <i class="fa-solid fa-coffee" aria-hidden="true"></i><span>打赏</span>
       </a>
-      <a class="sb-item" href="https://verdvana.cn/labslid fa-flask" aria-hidden="true"></i><span>更多</span>
+      <a class="sb-item" href="https://verdvana.cn/labs/" title="更多">
+        <i class="fa-solid fa-flask" aria-hidden="true"></i><span>更多</span>
       </a>
       <div class="sb-sep" role="separator" aria-hidden="true"></div>
     </nav>
@@ -639,12 +281,11 @@
           <div class="logo" aria-hidden="true"></div>
           <div>
             <h1>随机抽取器（输入去重 / 开始停止 / 不放回可选）</h1>
-            <div class="subtitle">输入框 / CSV 行模式 / CSV 列模式（列聚合；内部逗号分隔转空格）</div>
+            <div class="subtitle">支持：输入框 / CSV 行模式 / CSV 列模式（列聚合；单元格内逗号片段转空格）</div>
           </div>
         </div>
 
         <div style="display:flex; gap:12px; align-items:center; flex-wrap:wrap; justify-content:flex-end;">
-          <!-- Theme switch：与附件一致 -->
           <div class="theme-switch">
             <span class="label" id="themeLabel">系统</span>
             <div class="switch" id="themeSwitchWrap" title="切换明暗模式（Alt/Option 点击或长按可切回系统）">
@@ -652,11 +293,7 @@
               <span class="knob" aria-hidden="true"></span>
             </div>
           </div>
-
-          <div class="pill">
-            <span>🎲</span>
-            <span>逗号可用 <span style="font-family:var(--mono);">\,</span> 转义</span>
-          </div>
+          <div class="pill"><span>🎲</span><span>逗号可用 <span style="font-family:var(--mono);">\,</span> 转义</span></div>
         </div>
       </div>
 
@@ -664,10 +301,7 @@
         <!-- 左：输入 -->
         <div class="card">
           <div class="hd">
-            <div class="section-title">
-              <div class="dot"></div>
-              <h2>输入与解析</h2>
-            </div>
+            <div class="section-title"><div class="dot"></div><h2>输入与解析</h2></div>
             <div class="badge warn"><span class="b"></span><span>解析后全量去重</span></div>
           </div>
           <div class="bd">
@@ -680,14 +314,12 @@
 
             <div class="split"></div>
 
-            <!-- 模式1：输入框 -->
             <div id="mode_text" class="mode-panel">
               <label>输入元素（逗号分隔；元素内部逗号用 \, 转义）</label>
               <textarea id="textInput" placeholder="例如：张三,李四,hello\,world,王五&#10;说明：\\ 表示字面反斜杠"></textarea>
-              <div class="hint">解析规则：逗号分隔；<code>\,</code> 表示字面逗号；<code>\\</code> 表示字面反斜杠。</div>
+              <div class="hint">解析：逗号分隔；<code>\,</code> 表示字面逗号；<code>\\</code> 表示字面反斜杠。</div>
             </div>
 
-            <!-- 模式2：CSV 行模式 -->
             <div id="mode_csvRow" class="mode-panel" style="display:none;">
               <label>上传 CSV（行模式：每一行按“逗号分隔 + \, 转义”解析）</label>
               <input id="csvRowFile" type="file" accept=".csv,text/csv,.txt,text/plain" />
@@ -710,9 +342,8 @@
               </div>
             </div>
 
-            <!-- 模式3：CSV 列模式 -->
             <div id="mode_csvCol" class="mode-panel" style="display:none;">
-              <label>上传 CSV（列模式：每一列聚合为一个元素；单元格内多个逗号分隔片段转空格连接）</label>
+              <label>上传 CSV（列模式：每一列聚合为一个元素；单元格内逗号分隔片段转空格连接）</label>
               <input id="csvColFile" type="file" accept=".csv,text/csv,.txt,text/plain" />
               <div class="row" style="margin-top:12px;">
                 <div>
@@ -731,9 +362,7 @@
                   </select>
                 </div>
               </div>
-              <div class="hint" style="margin-top:10px;">
-                例：第一列三行分别是 <code>a,b</code> / <code>c</code> / <code>d\,e</code> → 列元素为 <code>a b c d,e</code>
-              </div>
+              <div class="hint" style="margin-top:10px;">例：第一列三行分别是 <code>a,b</code> / <code>c</code> / <code>d\,e</code> → 列元素为 <code>a b c d,e</code></div>
             </div>
 
             <div class="toolbar">
@@ -773,20 +402,18 @@
 
             <div class="small">解析预览（前 50 个）</div>
             <div class="list-mini" id="previewList">—</div>
+
           </div>
         </div>
 
         <!-- 右：抽取 -->
         <div class="card">
           <div class="hd">
-            <div class="section-title">
-              <div class="dot green"></div>
-              <h2>随机抽取</h2>
-            </div>
+            <div class="section-title"><div class="dot green"></div><h2>随机抽取</h2></div>
             <div class="badge"><span class="b"></span><span>开始滚动，停止定格</span></div>
           </div>
-
           <div class="bd">
+
             <div class="pick-display" id="displayWrap">
               <div class="label">当前抽到</div>
               <div class="value" id="currentPick">—</div>
@@ -810,6 +437,18 @@
               </div>
             </div>
 
+            <div class="row">
+              <div>
+                <label>每次抽取数量</label>
+                <select id="drawCount"></select>
+                <div class="hint">范围：1 ~ min(50, 去重后元素总数)。</div>
+              </div>
+              <div>
+                <label>说明</label>
+                <div class="code" style="margin:0;">每次滚动会展示一组结果；停止后定格本组为最终结果。</div>
+              </div>
+            </div>
+
             <div class="toolbar">
               <button class="primary" id="btnStart"><i class="fa-solid fa-play"></i> 开始抽取</button>
               <button class="danger" id="btnStop"><i class="fa-solid fa-stop"></i> 停止</button>
@@ -826,236 +465,258 @@
                 <div class="s" id="finalHint">点击“停止”后生成</div>
               </div>
               <div class="box">
-                <div class="t">最近 10 次滚动记录</div>
+                <div class="t">最近 10 次滚动记录（组）</div>
                 <div class="code" id="historyBox" style="margin:0; max-height:140px; overflow:auto;">—</div>
               </div>
             </div>
 
             <div class="split"></div>
-            <div class="code" style="margin:0;">
-快捷键：
+            <div class="code" style="margin:0;">快捷键：
 Space：开始/停止
 R：重新开始滚动
-Esc：停止
-            </div>
+Esc：停止</div>
+
           </div>
         </div>
-      </div>
 
+      </div>
     </div>
   </main>
 </div>
 
 <script>
-  /* ========== 工具：逗号分割（支持反斜杠转义） ========== */
+  // ======== 工具：逗号分割（支持反斜杠转义） ========
   function splitByUnescapedComma(str){
     const out = [];
     let buf = "";
     let esc = false;
     for(let i=0;i<str.length;i++){
       const ch = str[i];
-      if(esc){
-        buf += ch;
-        esc = false;
-        continue;
-      }
-      if(ch === "\\"){
-        esc = true;
-        continue;
-      }
-      if(ch === ","){
-        out.push(buf);
-        buf = "";
-        continue;
-      }
+      if(esc){ buf += ch; esc = false; continue; }
+      if(ch === "\\"){ esc = true; continue; }
+      if(ch === ","){ out.push(buf); buf = ""; continue; }
       buf += ch;
     }
     if(esc) buf += "\\";
     out.push(buf);
     return out;
   }
-  function normalizeToken(t){ return (t ?? "").trim(); }
-
+  const norm = (s)=>String(s ?? "").trim();
   function parseElementsFromText(text){
-    const parts = splitByUnescapedComma(String(text ?? "").replace(/\r\n/g, "\n"));
-    return parts.map(normalizeToken).filter(x => x.length > 0);
+    return splitByUnescapedComma(String(text ?? "").replace(/\r\n/g, "\n")).map(norm).filter(x=>x.length>0);
   }
 
   async function readFileAsText(file, encoding){
     const buf = await file.arrayBuffer();
-    try{
-      const dec = new TextDecoder(encoding, {fatal:false});
-      return dec.decode(buf);
-    }catch(e){
-      const dec = new TextDecoder("utf-8", {fatal:false});
-      return dec.decode(buf);
-    }
+    try{ return new TextDecoder(encoding, {fatal:false}).decode(buf); }
+    catch{ return new TextDecoder('utf-8', {fatal:false}).decode(buf); }
   }
 
   function parseCSVRowMode(fileText, ignoreEmpty=true){
     const lines = String(fileText ?? "").replace(/\r\n/g,"\n").split("\n");
-    const all = [];
+    const out = [];
     for(const line of lines){
       const raw = line.trimEnd();
       if(ignoreEmpty && raw.trim().length===0) continue;
-      all.push(...parseElementsFromText(raw));
+      out.push(...parseElementsFromText(raw));
     }
-    return all;
+    return out;
   }
 
   function parseCSVColumnMode(fileText, joiner=" "){
-    const lines = String(fileText ?? "").replace(/\r\n/g,"\n").split("\n").filter(l => l.length>0);
-    const rows = lines.map(line => splitByUnescapedComma(line).map(s => s.trim()));
-    const colCount = rows.reduce((m,r)=>Math.max(m,r.length),0);
-    const colParts = Array.from({length: colCount}, () => []);
+    const lines = String(fileText ?? "").replace(/\r\n/g,"\n").split("\n").filter(l=>l.length>0);
+    const rows = lines.map(line => splitByUnescapedComma(line).map(s=>s.trim()));
+    const colCount = rows.reduce((m,r)=>Math.max(m,r.length), 0);
+    const cols = Array.from({length: colCount}, ()=>[]);
     for(const r of rows){
       for(let c=0;c<colCount;c++){
         const cell = (r[c] ?? "").trim();
         if(!cell) continue;
-        const inner = splitByUnescapedComma(cell).map(normalizeToken).filter(x=>x.length>0);
-        if(inner.length) colParts[c].push(inner.join(joiner));
+        const inner = splitByUnescapedComma(cell).map(norm).filter(x=>x.length>0);
+        if(inner.length) cols[c].push(inner.join(joiner));
       }
     }
-    return colParts.map(parts => normalizeToken(parts.join(joiner))).filter(x=>x.length>0);
+    return cols.map(parts => norm(parts.join(joiner))).filter(x=>x.length>0);
   }
 
-  /* ========== 状态 ========== */
-  let mode = "text";
-  let masterItems = [];   // 去重后的全集
-  let poolItems = [];     // 不放回抽取池
-  let pickedItems = [];   // 不放回已抽中
+  // ======== 状态 ========
+  let mode = 'text';
+  let masterItems = [];
+  let poolItems = [];
+  let pickedItems = [];
   let running = false;
   let timer = null;
-  let current = "";
-  let finalValue = "";
+  let currentGroup = [];
+  let finalGroup = [];
   let history = [];
 
   const $ = (id)=>document.getElementById(id);
-  const tabs = Array.from(document.querySelectorAll("#modeTabs .tab"));
+  const tabs = Array.from(document.querySelectorAll('#modeTabs .tab'));
 
   function escapeHTML(s){
-    return String(s).replace(/[&<>"']/g, (c)=>({
-      "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"
-    }[c]));
+    return String(s).replace(/[&<>"']/g, (c)=>({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[c]));
+  }
+
+  function setState(title, sub){
+    $('kpiState').textContent = title;
+    $('kpiStateS').textContent = sub;
   }
 
   function setMode(next){
     mode = next;
-    tabs.forEach(t => t.classList.toggle("is-active", t.dataset.mode === next));
-    $("mode_text").style.display = (next==="text") ? "" : "none";
-    $("mode_csvRow").style.display = (next==="csvRow") ? "" : "none";
-    $("mode_csvCol").style.display = (next==="csvCol") ? "" : "none";
-    setState("待解析", "请选择输入并点击“解析并去重”");
+    tabs.forEach(t => t.classList.toggle('is-active', t.dataset.mode === next));
+    $('mode_text').style.display = (next==='text') ? '' : 'none';
+    $('mode_csvRow').style.display = (next==='csvRow') ? '' : 'none';
+    $('mode_csvCol').style.display = (next==='csvCol') ? '' : 'none';
+    setState('待解析', '请选择输入并点击“解析并去重”');
   }
 
-  function setState(title, sub){
-    $("kpiState").textContent = title;
-    $("kpiStateS").textContent = sub;
+  function isNoReplaceEnabled(){ return $('noReplace').value === 'on'; }
+  function effectiveList(){ return isNoReplaceEnabled() ? poolItems : masterItems; }
+
+  function getDrawCount(){
+    const v = Number($('drawCount').value || 1);
+    return Math.max(1, Math.floor(v));
   }
 
-  function isNoReplaceEnabled(){ return $("noReplace").value === "on"; }
-
-  function effectiveList(){
-    return isNoReplaceEnabled() ? poolItems : masterItems;
+  function updateDrawCountOptions(){
+    const sel = $('drawCount');
+    const maxN = Math.max(1, Math.min(50, masterItems.length || 1));
+    const prev = Number(sel.value || 1);
+    sel.innerHTML = '';
+    for(let i=1;i<=maxN;i++){
+      const opt = document.createElement('option');
+      opt.value = String(i);
+      opt.textContent = String(i);
+      sel.appendChild(opt);
+    }
+    const next = Math.min(prev, maxN);
+    sel.value = String(next);
   }
 
   function updateRemainingUI(){
     if(!masterItems.length){
-      $("remainingBox").value = "—";
-      $("pickedList").textContent = "—";
+      $('remainingBox').value = '—';
+      $('pickedList').textContent = '—';
       return;
     }
     if(isNoReplaceEnabled()){
-      $("remainingBox").value = `${poolItems.length} / ${masterItems.length}`;
-      $("pickedList").textContent = pickedItems.length
-        ? pickedItems.map((x,i)=>`${i+1}. ${x}`).join("\n")
-        : "—";
+      $('remainingBox').value = `${poolItems.length} / ${masterItems.length}`;
+      $('pickedList').textContent = pickedItems.length ? pickedItems.map((x,i)=>`${i+1}. ${x}`).join('\n') : '—';
     }else{
-      $("remainingBox").value = `（放回模式）${masterItems.length}`;
-      $("pickedList").textContent = "—";
+      $('remainingBox').value = `（放回模式）${masterItems.length}`;
+      $('pickedList').textContent = '—';
     }
   }
 
   function updateCount(){
-    $("kpiCount").textContent = masterItems.length ? String(masterItems.length) : "—";
-    $("kpiCountS").textContent = masterItems.length ? "已去重，可开始抽取" : "尚无可抽取元素";
+    $('kpiCount').textContent = masterItems.length ? String(masterItems.length) : '—';
+    $('kpiCountS').textContent = masterItems.length ? '已去重，可开始抽取' : '尚无可抽取元素';
     updateRemainingUI();
+    updateDrawCountOptions();
   }
 
   function updatePreview(){
-    if(!masterItems.length){
-      $("previewList").textContent = "—";
-      return;
-    }
+    if(!masterItems.length){ $('previewList').textContent = '—'; return; }
     const first = masterItems.slice(0, 50);
-    const more = masterItems.length > 50 ? `\n…（还有 ${masterItems.length-50} 个）` : "";
-    $("previewList").innerHTML =
-      first.map((x,i)=>`${i+1}. <code>${escapeHTML(x)}</code>`).join("<br>") + more;
+    const more = masterItems.length > 50 ? `\n…（还有 ${masterItems.length-50} 个）` : '';
+    $('previewList').innerHTML = first.map((x,i)=>`${i+1}. <code>${escapeHTML(x)}</code>`).join('<br>') + more;
   }
 
-  function pickOnce(){
-    const list = effectiveList();
-    if(!list.length) return "";
-    const idx = Math.floor(Math.random() * list.length);
-    return list[idx];
+  function formatGroup(arr){
+    if(!arr || !arr.length) return '—';
+    return arr.join('\n');
   }
 
-  function renderCurrent(v){ $("currentPick").textContent = v || "—"; }
-
-  function pushHistory(v){
-    if(!v) return;
-    history.unshift(v);
+  function pushHistory(group){
+    if(!group || !group.length) return;
+    history.unshift(group.slice());
     history = history.slice(0, 10);
-    $("historyBox").textContent = history.length ? history.map((x,i)=>`${i+1}. ${x}`).join("\n") : "—";
+    $('historyBox').textContent = history.length
+      ? history.map((g,i)=>`${i+1}. ${g.join(' / ')}`).join('\n')
+      : '—';
+  }
+
+  function renderCurrentGroup(g){
+    $('currentPick').textContent = formatGroup(g);
+  }
+
+  function renderFinalGroup(g){
+    $('finalPick').textContent = formatGroup(g);
+  }
+
+  function sampleKUnique(arr, k){
+    const n = arr.length;
+    if(n === 0) return [];
+    k = Math.min(k, n);
+    // Fisher-Yates partial shuffle on indices
+    const idx = Array.from({length:n}, (_,i)=>i);
+    for(let i=0;i<k;i++){
+      const j = i + Math.floor(Math.random() * (n - i));
+      const tmp = idx[i]; idx[i] = idx[j]; idx[j] = tmp;
+    }
+    return idx.slice(0,k).map(i=>arr[i]);
+  }
+
+  function computeCurrentGroup(){
+    const list = effectiveList();
+    if(!list.length) return [];
+    const kWanted = getDrawCount();
+    const k = Math.min(kWanted, list.length);
+    return sampleKUnique(list, k);
   }
 
   function startRolling(){
     if(running) return;
     if(!effectiveList().length){
       alert(isNoReplaceEnabled()
-        ? "不放回模式下已无剩余元素：点击“恢复全部”或重新解析输入。"
-        : "请先解析输入，确保有可抽取元素。");
+        ? '不放回模式下已无剩余元素：点击“恢复全部”或重新解析输入。'
+        : '请先解析输入，确保有可抽取元素。');
       return;
     }
-    const speed = Math.max(10, Number($("speedInput").value || 80));
+    const speed = Math.max(10, Number($('speedInput').value || 80));
     running = true;
-    $("displayWrap").classList.add("pulse");
-    setState("抽取中…", `速度：${speed}ms/次（Space 或 Esc 可停止）`);
+    $('displayWrap').classList.add('pulse');
+    setState('抽取中…', `速度：${speed}ms/次（Space 或 Esc 可停止）`);
     timer = setInterval(()=>{
-      current = pickOnce();
-      renderCurrent(current);
-      pushHistory(current);
+      currentGroup = computeCurrentGroup();
+      renderCurrentGroup(currentGroup);
+      pushHistory(currentGroup);
     }, speed);
   }
 
   function stopRolling(){
     if(timer){ clearInterval(timer); timer = null; }
-    if(!running && !current) return;
-
+    if(!running && (!currentGroup || !currentGroup.length)) return;
     running = false;
-    $("displayWrap").classList.remove("pulse");
+    $('displayWrap').classList.remove('pulse');
 
-    const list = effectiveList();
-    finalValue = current || (list.length ? pickOnce() : "");
+    if(!currentGroup || !currentGroup.length){
+      currentGroup = computeCurrentGroup();
+    }
+    finalGroup = currentGroup.slice();
+    renderFinalGroup(finalGroup);
+    $('finalHint').textContent = finalGroup.length ? '已停止并定格当前值' : '—';
 
-    $("finalPick").textContent = finalValue || "—";
-    $("finalHint").textContent = finalValue ? "已停止并定格当前值" : "—";
-
-    // 不放回：只在停止时移除最终结果
-    if(finalValue && isNoReplaceEnabled()){
-      const idx = poolItems.indexOf(finalValue);
-      if(idx >= 0){
-        poolItems.splice(idx, 1);
-        pickedItems.push(finalValue);
+    if(finalGroup.length && isNoReplaceEnabled()){
+      // remove all picked from pool (unique already)
+      for(const v of finalGroup){
+        const idx = poolItems.indexOf(v);
+        if(idx >= 0) poolItems.splice(idx, 1);
       }
+      pickedItems.push(...finalGroup);
       updateRemainingUI();
-      if(poolItems.length === 0){
-        setState("已停止（池已抽空）", "不放回模式：剩余 0，可点击“恢复全部”继续");
-      }else{
-        setState("已停止", `不放回模式：已移除该结果，剩余 ${poolItems.length} 个`);
+      if(poolItems.length === 0) setState('已停止（池已抽空）', '不放回模式：剩余 0，可点击“恢复全部”继续');
+      else setState('已停止', `不放回模式：已移除本组结果，剩余 ${poolItems.length} 个`);
+
+      // 若当前选择数量大于剩余池，停止后自动缩到可用范围（只调整 value，不改可选范围）
+      const sel = $('drawCount');
+      const want = getDrawCount();
+      if(poolItems.length > 0 && want > poolItems.length){
+        sel.value = String(Math.max(1, poolItems.length));
       }
     }else{
-      setState("已停止", finalValue ? "最终结果已生成，可复制" : "无可用元素");
+      setState('已停止', finalGroup.length ? '最终结果已生成，可复制' : '无可用元素');
     }
   }
 
@@ -1063,212 +724,191 @@ Esc：停止
     poolItems = masterItems.slice();
     pickedItems = [];
     updateRemainingUI();
-    setState("已恢复抽取池", isNoReplaceEnabled() ? "不放回模式：已恢复全部元素" : "放回模式无需恢复");
+    setState('已恢复抽取池', isNoReplaceEnabled() ? '不放回模式：已恢复全部元素' : '放回模式无需恢复');
   }
 
   function resetAll(){
     stopRolling();
-    masterItems = [];
-    poolItems = [];
-    pickedItems = [];
-    current = "";
-    finalValue = "";
-    history = [];
-    renderCurrent("");
-    $("finalPick").textContent = "—";
-    $("finalHint").textContent = "点击“停止”后生成";
-    $("historyBox").textContent = "—";
-    $("previewList").textContent = "—";
-    $("textInput").value = "";
-    $("csvRowFile").value = "";
-    $("csvColFile").value = "";
+    masterItems = []; poolItems = []; pickedItems = [];
+    currentGroup = []; finalGroup = []; history = [];
+    renderCurrentGroup([]);
+    renderFinalGroup([]);
+    $('finalHint').textContent = '点击“停止”后生成';
+    $('historyBox').textContent = '—';
+    $('previewList').textContent = '—';
+    $('textInput').value = '';
+    $('csvRowFile').value = '';
+    $('csvColFile').value = '';
     updateCount();
-    setState("待解析", "请先解析输入");
+    setState('待解析', '请先解析输入');
   }
 
   async function parseAndDedup(){
     stopRolling();
     let items = [];
     try{
-      if(mode === "text"){
-        items = parseElementsFromText($("textInput").value || "");
-      }else if(mode === "csvRow"){
-        const file = $("csvRowFile").files[0];
-        if(!file){ alert("请先选择 CSV 文件。"); return; }
-        const encoding = $("csvRowEncoding").value || "utf-8";
-        const ignoreEmpty = $("csvRowIgnoreEmpty").value === "yes";
-        const txt = await readFileAsText(file, encoding);
-        items = parseCSVRowMode(txt, ignoreEmpty);
+      if(mode === 'text'){
+        items = parseElementsFromText($('textInput').value || '');
+      }else if(mode === 'csvRow'){
+        const file = $('csvRowFile').files[0];
+        if(!file){ alert('请先选择 CSV 文件。'); return; }
+        const enc = $('csvRowEncoding').value || 'utf-8';
+        const ignore = $('csvRowIgnoreEmpty').value === 'yes';
+        const txt = await readFileAsText(file, enc);
+        items = parseCSVRowMode(txt, ignore);
       }else{
-        const file = $("csvColFile").files[0];
-        if(!file){ alert("请先选择 CSV 文件。"); return; }
-        const encoding = $("csvColEncoding").value || "utf-8";
-        const joiner = $("csvColJoiner").value ?? " ";
-        const txt = await readFileAsText(file, encoding);
+        const file = $('csvColFile').files[0];
+        if(!file){ alert('请先选择 CSV 文件。'); return; }
+        const enc = $('csvColEncoding').value || 'utf-8';
+        const joiner = $('csvColJoiner').value ?? ' ';
+        const txt = await readFileAsText(file, enc);
         items = parseCSVColumnMode(txt, joiner);
       }
     }catch(e){
       console.error(e);
-      alert("解析失败：" + (e?.message || e));
+      alert('解析失败：' + (e?.message || e));
       return;
     }
 
     const set = new Set();
-    for(const it of items){
-      const t = normalizeToken(it);
-      if(t) set.add(t);
-    }
+    for(const it of items){ const t = norm(it); if(t) set.add(t); }
     masterItems = Array.from(set);
     poolItems = masterItems.slice();
     pickedItems = [];
+    history = [];
+    $('historyBox').textContent = '—';
 
     updateCount();
     updatePreview();
 
     if(masterItems.length){
-      setState("已解析", `已获得 ${masterItems.length} 个去重元素，可开始抽取`);
-      current = pickOnce();
-      renderCurrent(current);
-      pushHistory(current);
-      $("finalPick").textContent = "—";
-      $("finalHint").textContent = "点击“停止”后生成";
+      setState('已解析', `已获得 ${masterItems.length} 个去重元素，可开始抽取`);
+      currentGroup = computeCurrentGroup();
+      renderCurrentGroup(currentGroup);
+      pushHistory(currentGroup);
+      renderFinalGroup([]);
+      $('finalHint').textContent = '点击“停止”后生成';
     }else{
-      setState("解析结果为空", "请检查输入或文件内容");
-      renderCurrent("");
+      setState('解析结果为空', '请检查输入或文件内容');
+      renderCurrentGroup([]);
+      renderFinalGroup([]);
     }
   }
 
   function loadDemo(){
-    setMode("text");
-    $("textInput").value = "张三,李四,hello\\,world,王五,张三,C\\\\C,包含\\,逗号\\,的元素";
+    setMode('text');
+    $('textInput').value = '张三,李四,hello\\,world,王五,张三,C\\\\C,包含\\,逗号\\,的元素,再来一个';
     parseAndDedup();
   }
 
-  // 事件绑定
-  tabs.forEach(t => t.addEventListener("click", ()=>setMode(t.dataset.mode)));
-  $("btnParse").addEventListener("click", parseAndDedup);
-  $("btnClear").addEventListener("click", resetAll);
-  $("btnLoadDemo").addEventListener("click", loadDemo);
-  $("btnStart").addEventListener("click", startRolling);
-  $("btnStop").addEventListener("click", stopRolling);
-  $("btnResetPool").addEventListener("click", ()=>{
-    if(!masterItems.length){ alert("还没有解析任何元素，无法恢复。"); return; }
-    resetPool();
-  });
-  $("noReplace").addEventListener("change", ()=>{
-    if(isNoReplaceEnabled()){
-      if(poolItems.length === 0 && masterItems.length){
-        poolItems = masterItems.slice();
-        pickedItems = [];
-      }
-    }
+  // ======== 事件绑定 ========
+  tabs.forEach(t => t.addEventListener('click', ()=>setMode(t.dataset.mode)));
+  $('btnParse').addEventListener('click', parseAndDedup);
+  $('btnClear').addEventListener('click', resetAll);
+  $('btnLoadDemo').addEventListener('click', loadDemo);
+  $('btnStart').addEventListener('click', startRolling);
+  $('btnStop').addEventListener('click', stopRolling);
+  $('btnResetPool').addEventListener('click', ()=>{ if(!masterItems.length){ alert('还没有解析任何元素，无法恢复。'); return; } resetPool(); });
+  $('noReplace').addEventListener('change', ()=>{
+    if(isNoReplaceEnabled() && poolItems.length===0 && masterItems.length){ poolItems = masterItems.slice(); pickedItems = []; }
     updateRemainingUI();
+    // 若切到不放回且剩余小于当前抽取数量，自动缩小
+    const sel = $('drawCount');
+    if(isNoReplaceEnabled() && poolItems.length>0 && getDrawCount()>poolItems.length){ sel.value = String(Math.max(1, poolItems.length)); }
   });
 
-  $("btnCopy").addEventListener("click", async ()=>{
-    const text = $("finalPick").textContent || "";
-    if(!text || text==="—"){ alert("还没有最终结果：请先开始并停止一次抽取。"); return; }
-    try{
-      await navigator.clipboard.writeText(text);
-      $("finalHint").textContent = "已复制到剪贴板 ✅";
-      setTimeout(()=> $("finalHint").textContent = "已停止并定格当前值", 1200);
-    }catch(e){
-      const ta = document.createElement("textarea");
+  $('drawCount').addEventListener('change', ()=>{
+    // 更新当前展示
+    if(masterItems.length){
+      currentGroup = computeCurrentGroup();
+      renderCurrentGroup(currentGroup);
+      pushHistory(currentGroup);
+    }
+  });
+
+  $('btnCopy').addEventListener('click', async ()=>{
+    const text = Array.isArray(finalGroup) && finalGroup.length ? finalGroup.join('\n') : '';
+    if(!text){ alert('还没有最终结果：请先开始并停止一次抽取。'); return; }
+    try{ await navigator.clipboard.writeText(text); $('finalHint').textContent = '已复制到剪贴板 ✅'; setTimeout(()=> $('finalHint').textContent = '已停止并定格当前值', 1200); }
+    catch{
+      const ta = document.createElement('textarea');
       ta.value = text;
       document.body.appendChild(ta);
       ta.select();
-      document.execCommand("copy");
+      document.execCommand('copy');
       ta.remove();
-      $("finalHint").textContent = "已复制到剪贴板 ✅";
-      setTimeout(()=> $("finalHint").textContent = "已停止并定格当前值", 1200);
+      $('finalHint').textContent = '已复制到剪贴板 ✅';
+      setTimeout(()=> $('finalHint').textContent = '已停止并定格当前值', 1200);
     }
   });
 
-  window.addEventListener("keydown", (e)=>{
-    if(e.key === " "){
-      e.preventDefault();
-      running ? stopRolling() : startRolling();
-    }else if(e.key.toLowerCase() === "r"){
-      e.preventDefault();
-      stopRolling(); startRolling();
-    }else if(e.key === "Escape"){
-      stopRolling();
-    }
+  window.addEventListener('keydown', (e)=>{
+    if(e.key === ' '){ e.preventDefault(); running ? stopRolling() : startRolling(); }
+    else if(e.key.toLowerCase() === 'r'){ e.preventDefault(); stopRolling(); startRolling(); }
+    else if(e.key === 'Escape'){ stopRolling(); }
   });
 
-  /* =========================
-     Theme：与附件一致（原样复制）
-     ========================= */
+  // ======== Theme（与附件一致） ========
   (function initTheme(){
-    const KEY = "verdvana_theme"; // 'system' | 'light' | 'dark'
+    const KEY = 'verdvana_theme';
     const html = document.documentElement;
-    const toggle = document.getElementById("themeToggle");
-    const label = document.getElementById("themeLabel");
-    const wrap = document.getElementById("themeSwitchWrap");
+    const toggle = document.getElementById('themeToggle');
+    const label = document.getElementById('themeLabel');
+    const wrap = document.getElementById('themeSwitchWrap');
     if(!toggle || !label || !wrap) return;
 
-    const systemPrefersDark = () =>
-      window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches;
+    const systemPrefersDark = () => window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
 
     function withTransition(fn){
-      html.classList.add("theme-transition");
-      try{ fn(); } finally{
-        window.setTimeout(()=> html.classList.remove("theme-transition"), 280);
-      }
+      html.classList.add('theme-transition');
+      try{ fn(); } finally{ window.setTimeout(()=> html.classList.remove('theme-transition'), 280); }
     }
+
     function apply(mode){
-      if(mode === "system"){
-        html.removeAttribute("data-theme");
+      if(mode === 'system'){
+        html.removeAttribute('data-theme');
         toggle.checked = systemPrefersDark();
-        label.textContent = "系统";
+        label.textContent = '系统';
       }else{
-        html.setAttribute("data-theme", mode);
-        toggle.checked = (mode === "dark");
-        label.textContent = (mode === "dark") ? "深色" : "浅色";
+        html.setAttribute('data-theme', mode);
+        toggle.checked = (mode === 'dark');
+        label.textContent = (mode === 'dark') ? '深色' : '浅色';
       }
-      if(toggle.checked) wrap.classList.add("on");
-      else wrap.classList.remove("on");
+      if(toggle.checked) wrap.classList.add('on');
+      else wrap.classList.remove('on');
     }
-    function getSaved(){ return localStorage.getItem(KEY) || "system"; }
-    function save(mode){ localStorage.setItem(KEY, mode); }
+
+    const getSaved = ()=> localStorage.getItem(KEY) || 'system';
+    const save = (mode)=> localStorage.setItem(KEY, mode);
 
     apply(getSaved());
 
-    const mql = window.matchMedia("(prefers-color-scheme: dark)");
-    const onSystemChange = () => {
-      if(getSaved() === "system") withTransition(()=>apply("system"));
-    };
-    if(mql && mql.addEventListener) mql.addEventListener("change", onSystemChange);
+    const mql = window.matchMedia('(prefers-color-scheme: dark)');
+    const onSystemChange = ()=>{ if(getSaved() === 'system') withTransition(()=>apply('system')); };
+    if(mql && mql.addEventListener) mql.addEventListener('change', onSystemChange);
     else if(mql && mql.addListener) mql.addListener(onSystemChange);
 
-    toggle.addEventListener("click", (e) => {
-      const alt = e.altKey;
-      if(alt){
-        save("system");
-        withTransition(()=>apply("system"));
-        return;
-      }
-      const next = toggle.checked ? "dark" : "light";
+    toggle.addEventListener('click', (e)=>{
+      if(e.altKey){ save('system'); withTransition(()=>apply('system')); return; }
+      const next = toggle.checked ? 'dark' : 'light';
       save(next);
       withTransition(()=>apply(next));
     });
 
     let pressTimer = null;
-    wrap.addEventListener("pointerdown", () => {
-      pressTimer = setTimeout(() => {
-        save("system");
-        withTransition(()=>apply("system"));
-        wrap.title = "已切回：系统";
-        setTimeout(()=> wrap.title = "切换明暗模式（Alt/Option 点击或长按可切回系统）", 1200);
+    wrap.addEventListener('pointerdown', ()=>{
+      pressTimer = setTimeout(()=>{
+        save('system');
+        withTransition(()=>apply('system'));
+        wrap.title = '已切回：系统';
+        setTimeout(()=> wrap.title = '切换明暗模式（Alt/Option 点击或长按可切回系统）', 1200);
       }, 800);
     });
-    wrap.addEventListener("pointerup", () => { if(pressTimer) clearTimeout(pressTimer); });
-    wrap.addEventListener("pointercancel", () => { if(pressTimer) clearTimeout(pressTimer); });
+    wrap.addEventListener('pointerup', ()=>{ if(pressTimer) clearTimeout(pressTimer); });
+    wrap.addEventListener('pointercancel', ()=>{ if(pressTimer) clearTimeout(pressTimer); });
   })();
 
-  /* =========================
-     Sidebar：与附件一致（原样复制）
-     ========================= */
+  // ======== Sidebar（与附件一致） ========
   (function initSidebar(){
     const sb = document.getElementById('sidebar');
     const btn = document.getElementById('sbToggle');
@@ -1283,57 +923,40 @@ Esc：停止
     function setIcon(){
       const icon = btn.querySelector('i');
       if(!icon) return;
-      icon.className = sb.classList.contains('is-expanded')
-        ? 'fa-solid fa-chevron-left'
-        : 'fa-solid fa-bars';
+      icon.className = sb.classList.contains('is-expanded') ? 'fa-solid fa-chevron-left' : 'fa-solid fa-bars';
     }
+
     function syncOverlay(){
       const active = sb.classList.contains('is-expanded') && isMobile();
       if(backdrop) backdrop.classList.toggle('is-active', active);
       document.body.classList.toggle('sb-lock-scroll', active);
     }
-    function collapse(){
-      sb.classList.remove('is-expanded');
-      setIcon();
-      syncOverlay();
-    }
+
+    function collapse(){ sb.classList.remove('is-expanded'); setIcon(); syncOverlay(); }
+
     setIcon();
     syncOverlay();
 
-    btn.addEventListener('click', () => {
-      sb.classList.toggle('is-expanded');
-      setIcon();
-      syncOverlay();
-    });
+    btn.addEventListener('click', ()=>{ sb.classList.toggle('is-expanded'); setIcon(); syncOverlay(); });
 
     if(backdrop){
       backdrop.addEventListener('click', collapse);
       backdrop.addEventListener('touchstart', collapse, {passive:true});
     }
-    window.addEventListener('keydown', (e) => {
-      if(e.key === 'Escape' && sb.classList.contains('is-expanded') && isMobile()) collapse();
-    });
+
+    window.addEventListener('keydown', (e)=>{ if(e.key === 'Escape' && sb.classList.contains('is-expanded') && isMobile()) collapse(); });
     window.addEventListener('resize', syncOverlay);
     if(mq && mq.addEventListener) mq.addEventListener('change', syncOverlay);
     else if(mq && mq.addListener) mq.addListener(syncOverlay);
 
     if(back){
-      back.addEventListener('click', () => {
-        try{
-          if(history.length > 1){
-            history.back();
-            return;
-          }
-        }catch(e){}
+      back.addEventListener('click', ()=>{
+        try{ if(history.length > 1){ history.back(); return; } }catch(e){}
         try{
           const u = new URL(window.location.href);
           let p = u.pathname.replace(/\/+$/, '');
           const idx = p.lastIndexOf('/');
-          if(idx > 0){
-            u.pathname = p.slice(0, idx + 1);
-            window.location.assign(u.toString());
-            return;
-          }
+          if(idx > 0){ u.pathname = p.slice(0, idx + 1); window.location.assign(u.toString()); return; }
         }catch(e){}
         window.location.assign('https://verdvana.cn/labs/');
       });
@@ -1341,9 +964,10 @@ Esc：停止
   })();
 
   // init
-  setMode("text");
+  setMode('text');
   updateCount();
-  renderCurrent("");
+  renderCurrentGroup([]);
+  renderFinalGroup([]);
 </script>
 </body>
 </html>
