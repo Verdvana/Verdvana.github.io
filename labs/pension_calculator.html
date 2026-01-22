@@ -1,0 +1,1215 @@
+
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>城镇职工养老估算（含基数上下限+起始个人账户余额）- 单文件无外链</title>
+  <style>
+    :root{
+      --bg:#0b1220;
+      --muted:#9fb2d0;
+      --text:#e9f0ff;
+      --accent:#4aa3ff;
+      --good:#25d695;
+      --warn:#ffcc66;
+      --border:rgba(255,255,255,.10);
+      --shadow: 0 12px 30px rgba(0,0,0,.35);
+      --radius:14px;
+      --mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+      --sans: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, "Helvetica Neue", Arial, "Noto Sans", "PingFang SC", "Hiragino Sans GB", "Microsoft Yahei", sans-serif;
+    }
+    html, body{
+      height:100%;
+      background: radial-gradient(1200px 800px at 15% 15%, #132a5a 0%, var(--bg) 40%, #070c16 100%);
+      color:var(--text);
+      font-family:var(--sans);
+    }
+    body{ margin:0; }
+    .wrap{ max-width:1200px; margin:0 auto; padding:22px 16px 28px; }
+    .top{ display:flex; gap:14px; align-items:flex-start; justify-content:space-between; flex-wrap:wrap; margin-bottom:14px; }
+    h1{ font-size:20px; margin:0; letter-spacing:.3px; }
+    .sub{ color:var(--muted); font-size:12px; margin-top:6px; line-height:1.6; }
+    .badge{
+      display:inline-flex; align-items:center; gap:8px;
+      padding:8px 10px; border-radius:999px;
+      background: rgba(74,163,255,.12); border:1px solid rgba(74,163,255,.25);
+      color:#d9ecff; font-size:12px;
+      box-shadow: 0 10px 20px rgba(0,0,0,.18);
+    }
+    .grid{ display:grid; grid-template-columns: 1.05fr 1fr; gap:14px; }
+    @media (max-width: 980px){ .grid{ grid-template-columns:1fr; } }
+
+    .panel{
+      background: linear-gradient(180deg, rgba(255,255,255,.06), rgba(255,255,255,.04));
+      border:1px solid var(--border);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      overflow:hidden;
+    }
+    .panel .hd{
+      padding:12px 14px;
+      border-bottom:1px solid rgba(255,255,255,.08);
+      display:flex; align-items:center; justify-content:space-between; gap:10px; flex-wrap:wrap;
+    }
+    .panel .hd .title{ display:flex; flex-direction:column; gap:2px; }
+    .panel .hd .title b{ font-size:14px; }
+    .panel .hd .title span{ font-size:12px; color:var(--muted); }
+    .panel .bd{ padding:14px; }
+
+    .row{ display:grid; grid-template-columns: 190px 1fr; gap:10px; align-items:center; margin:10px 0; }
+    .row label{ color:#cfe0ff; font-size:12px; }
+    .row .hint{ color:var(--muted); font-size:11px; margin-top:5px; line-height:1.55; }
+
+    input[type="number"], select{
+      width:100%; box-sizing:border-box;
+      background: rgba(0,0,0,.22);
+      border:1px solid rgba(255,255,255,.12);
+      color:var(--text);
+      padding:9px 10px;
+      border-radius:10px;
+      outline:none;
+    }
+    input[type="range"]{ width:100%; }
+    input[type="checkbox"]{ transform: scale(1.05); }
+
+    .inline{ display:flex; gap:10px; align-items:center; flex-wrap:wrap; }
+    .kpi{ display:grid; grid-template-columns: repeat(3, 1fr); gap:10px; margin-top:10px; }
+    .card{
+      background: rgba(255,255,255,.05);
+      border: 1px solid rgba(255,255,255,.10);
+      border-radius: 12px;
+      padding:10px 10px;
+    }
+    .card .name{ font-size:12px; color:var(--muted); }
+    .card .val{ margin-top:6px; font-weight:700; font-size:15px; letter-spacing:.2px; }
+    .card .small{ margin-top:6px; font-size:11px; color:var(--muted); line-height:1.5; }
+    .val.good{ color: var(--good); }
+    .val.base{ color: var(--accent); }
+    .val.warn{ color: var(--warn); }
+
+    .charts{ display:grid; grid-template-columns:1fr; gap:14px; }
+    canvas{
+      width:100%; height:320px;
+      display:block;
+      background: rgba(0,0,0,.18);
+      border:1px solid rgba(255,255,255,.10);
+      border-radius: 12px;
+    }
+
+    .footer{
+      margin-top:14px;
+      color:var(--muted);
+      font-size:12px; line-height:1.65;
+      background: rgba(255,255,255,.03);
+      border:1px dashed rgba(255,255,255,.14);
+      border-radius: 12px;
+      padding:12px 12px;
+    }
+
+    .tabs{ display:flex; gap:8px; flex-wrap:wrap; }
+    .tab{
+      padding:7px 10px; border-radius:999px; cursor:pointer; user-select:none;
+      background: rgba(255,255,255,.06); border:1px solid rgba(255,255,255,.10);
+      font-size:12px; color:#dbe8ff;
+    }
+    .tab.active{
+      background: rgba(74,163,255,.18);
+      border-color: rgba(74,163,255,.35);
+      box-shadow: 0 10px 22px rgba(0,0,0,.22);
+    }
+
+    .mono{ font-family: var(--mono); }
+    .divider{ height:1px; background: rgba(255,255,255,.08); margin:12px 0; }
+    .note{ font-size:11px; color:var(--muted); line-height:1.55; margin-top:8px; }
+
+    .btn{
+      border:1px solid rgba(255,255,255,.16);
+      background: rgba(255,255,255,.06);
+      color:var(--text);
+      padding:8px 10px; border-radius:10px;
+      cursor:pointer;
+    }
+    .btn.primary{
+      border-color: rgba(74,163,255,.35);
+      background: rgba(74,163,255,.16);
+    }
+    @media (max-width: 520px){
+      .row{ grid-template-columns: 1fr; }
+      .kpi{ grid-template-columns:1fr; }
+    }
+    .tooltip{
+      position: fixed; z-index: 9999;
+      pointer-events:none;
+      background: rgba(0,0,0,.75);
+      border:1px solid rgba(255,255,255,.18);
+      color:#f2f6ff;
+      padding:8px 10px;
+      border-radius:10px;
+      font-size:12px;
+      transform: translate(12px, 12px);
+      max-width: 360px;
+      backdrop-filter: blur(6px);
+      display:none;
+      box-shadow: 0 12px 30px rgba(0,0,0,.35);
+    }
+    .pill{
+      display:inline-flex; align-items:center; gap:6px;
+      padding:6px 8px; border-radius:999px;
+      background: rgba(255,255,255,.06);
+      border:1px solid rgba(255,255,255,.10);
+      font-size:12px; color:#dbe8ff;
+    }
+    .two-col{ display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+    @media (max-width: 720px){ .two-col{ grid-template-columns:1fr; } }
+  </style>
+</head>
+
+<body>
+<div class="wrap">
+  <div class="top">
+    <div>
+      <h1>城镇职工养老估算器（太原/上海｜三情景｜无外链）</h1>
+      <div class="sub">
+        ✅ 已加入：<b>缴费基数上下限钳制</b>（社平×0.6~3.0）与 <b>已累计个人账户余额</b>（从非0起算）。<br/>
+        三情景：保守/基准/乐观（以基准为中值，默认±2个百分点）<br/>
+        输出：① 退休前个人账户余额曲线 ② 退休后领取期现金流曲线（每月可领）
+      </div>
+    </div>
+    <div class="badge">⚠️ 简化估算：适合做敏感性分析与对比</div>
+  </div>
+
+  <div class="grid">
+    <!-- LEFT -->
+    <div class="panel">
+      <div class="hd">
+        <div class="title">
+          <b>输入与参数（职工养老）</b>
+          <span>基数增长独立于工资；支持断缴、缴费年限、基数上下限钳制与起始余额</span>
+        </div>
+        <div class="tabs" id="scenarioTabs"></div>
+      </div>
+
+      <div class="bd">
+        <div class="row">
+          <label>地区</label>
+          <div class="inline">
+            <select id="region">
+              <option value="shanghai">上海</option>
+              <option value="taiyuan">太原</option>
+            </select>
+            <span class="pill" id="regionHint">—</span>
+          </div>
+        </div>
+
+        <div class="row">
+          <label>当前年龄 <span class="mono" id="ageLabel"></span></label>
+          <div>
+            <input id="age" type="range" min="20" max="50" step="1" value="30"/>
+            <div class="hint">范围：20–50 岁</div>
+          </div>
+        </div>
+
+        <div class="row">
+          <label>退休年龄（可填写）</label>
+          <div class="inline">
+            <input type="number" id="retireAge" min="45" max="70" step="1" value="60"/>
+            <span class="mono" style="color:var(--muted); font-size:12px;">岁（45–70）</span>
+          </div>
+        </div>
+
+        <div class="row">
+          <label>预测终点年龄</label>
+          <div class="inline">
+            <input type="number" id="endAge" min="70" max="100" step="1" value="90"/>
+            <span class="mono" style="color:var(--muted); font-size:12px;">岁</span>
+          </div>
+        </div>
+
+        <div class="divider"></div>
+
+        <div class="row">
+          <label>参保身份</label>
+          <div>
+            <select id="insuredIdentity">
+              <option value="employee" selected>单位职工（个人8%入个人账户，单位缴费另计）</option>
+              <option value="flex">灵活就业（常见总缴费20%，其中8%入个人账户）</option>
+              <option value="selfbiz">个体工商户（通常参照灵活就业）</option>
+              <option value="public">机关事业单位（个人8%入个人账户，单位另计）</option>
+              <option value="custom">其他/自定义（自行填写比例）</option>
+            </select>
+            <div class="hint">
+              本模型：个人账户入账按“入个人账户比例”计；单位缴费进入统筹（不计入个人账户余额）。基础养老金用简化指数法估算。
+            </div>
+          </div>
+        </div>
+
+        <div class="row">
+          <label>入个人账户比例</label>
+          <div class="inline">
+            <input type="number" id="accountRate" min="0" max="20" step="0.1" value="8.0"/>
+            <span class="mono" style="color:var(--muted); font-size:12px;">%（入账到个人账户）</span>
+          </div>
+        </div>
+
+        <div class="row">
+          <label>总缴费比例（仅展示成本）</label>
+          <div class="inline">
+            <input type="number" id="totalRate" min="0" max="40" step="0.1" value="24.0"/>
+            <span class="mono" style="color:var(--muted); font-size:12px;">%</span>
+          </div>
+        </div>
+
+        <div class="divider"></div>
+
+        <div class="row">
+          <label>当前月工资（税前）</label>
+          <div class="inline">
+            <input type="number" id="monthlyWage" min="0" step="100" value="15000"/>
+            <span class="mono" style="color:var(--muted); font-size:12px;">元/月</span>
+          </div>
+        </div>
+
+        <div class="row">
+          <label>缴费基数系数（推导当前基数）</label>
+          <div>
+            <input type="range" id="baseFactor" min="0.6" max="3" step="0.05" value="1.0"/>
+            <div class="hint">
+              当前缴费基数 = 当前月工资 × 系数；之后按“<b>基数年增长率</b>”独立增长。当前：<span class="mono" id="baseFactorLabel"></span>
+            </div>
+          </div>
+        </div>
+
+        <div class="row">
+          <label>当地社平月工资（当前）</label>
+          <div class="inline">
+            <input type="number" id="socialAvgWage" min="0" step="100" value="12000"/>
+            <span class="mono" style="color:var(--muted); font-size:12px;">元/月</span>
+          </div>
+        </div>
+
+        <!-- 新增：起始个人账户余额 -->
+        <div class="row">
+          <label>当前个人账户余额（起始）</label>
+          <div class="inline">
+            <input type="number" id="initialAccount" min="0" step="1000" value="0"/>
+            <span class="mono" style="color:var(--muted); font-size:12px;">元</span>
+          </div>
+        </div>
+
+        <div class="divider"></div>
+
+        <!-- 新增：基数上下限钳制 -->
+        <div class="row">
+          <label>启用基数上下限钳制</label>
+          <div>
+            <div class="inline">
+              <label class="inline" style="gap:8px;">
+                <input type="checkbox" id="clampEnabled" checked />
+                <span>按社平倍数限制缴费基数</span>
+              </label>
+            </div>
+            <div class="two-col" style="margin-top:8px;">
+              <div class="inline">
+                <span class="mono" style="color:var(--muted); font-size:12px;">下限倍数</span>
+                <input type="number" id="clampLow" min="0" max="3" step="0.05" value="0.6"/>
+              </div>
+              <div class="inline">
+                <span class="mono" style="color:var(--muted); font-size:12px;">上限倍数</span>
+                <input type="number" id="clampHigh" min="0.6" max="10" step="0.1" value="3.0"/>
+              </div>
+            </div>
+            <div class="hint">
+              钳制规则：每月缴费基数将被限制在 <span class="mono">[社平×下限倍数, 社平×上限倍数]</span>。<br/>
+              ※ 现实中常按年度核定且有更多细则，此处用“逐月钳制”近似，便于模拟对比。
+            </div>
+          </div>
+        </div>
+
+        <div class="divider"></div>
+
+        <div class="row">
+          <label>已缴费年限（过去累计）</label>
+          <div class="inline">
+            <input type="number" id="pastYears" min="0" max="45" step="0.5" value="0"/>
+            <span class="mono" style="color:var(--muted); font-size:12px;">年</span>
+          </div>
+        </div>
+
+        <div class="row">
+          <label>未来断缴总月数</label>
+          <div>
+            <div class="inline">
+              <input type="number" id="gapMonths" min="0" max="600" step="1" value="0"/>
+              <span class="mono" style="color:var(--muted); font-size:12px;">月</span>
+              <select id="gapMode">
+                <option value="even" selected>均匀分布（简化）</option>
+                <option value="front">前置断缴（简化）</option>
+              </select>
+            </div>
+            <div class="hint">
+              断缴月：个人账户仍计息但不入账；缴费年限减少。分布方式用于近似。
+            </div>
+          </div>
+        </div>
+
+        <div class="divider"></div>
+
+        <!-- 增长/收益（基准） -->
+        <div class="row">
+          <label>基准：工资年增长预期</label>
+          <div class="inline">
+            <input type="number" id="wageGrowthBase" min="0" max="20" step="0.1" value="5.0"/>
+            <span class="mono" style="color:var(--muted); font-size:12px;">%/年</span>
+          </div>
+        </div>
+
+        <div class="row">
+          <label>基准：缴费基数年增长预期</label>
+          <div class="inline">
+            <input type="number" id="baseGrowthBase" min="0" max="20" step="0.1" value="5.0"/>
+            <span class="mono" style="color:var(--muted); font-size:12px;">%/年</span>
+          </div>
+        </div>
+
+        <div class="row">
+          <label>基准：社平年增长预期</label>
+          <div class="inline">
+            <input type="number" id="socialGrowthBase" min="0" max="20" step="0.1" value="5.0"/>
+            <span class="mono" style="color:var(--muted); font-size:12px;">%/年</span>
+          </div>
+        </div>
+
+        <div class="row">
+          <label>基准：个人账户年化收益</label>
+          <div class="inline">
+            <input type="number" id="investReturnBase" min="-5" max="20" step="0.1" value="4.0"/>
+            <span class="mono" style="color:var(--muted); font-size:12px;">%/年</span>
+          </div>
+        </div>
+
+        <div class="row">
+          <label>退休后养老金调增（基准）</label>
+          <div class="inline">
+            <input type="number" id="pensionAdjBase" min="0" max="20" step="0.1" value="2.0"/>
+            <span class="mono" style="color:var(--muted); font-size:12px;">%/年</span>
+          </div>
+        </div>
+
+        <div class="row">
+          <label>通胀（用于现值折算）</label>
+          <div class="inline">
+            <input type="number" id="inflation" min="0" max="20" step="0.1" value="2.0"/>
+            <span class="mono" style="color:var(--muted); font-size:12px;">%/年</span>
+          </div>
+        </div>
+
+        <div class="row">
+          <label>基础养老金计发系数（简化）</label>
+          <div class="inline">
+            <input type="number" id="basicAccrual" min="0" max="5" step="0.05" value="1.0"/>
+            <span class="mono" style="color:var(--muted); font-size:12px;">%/年</span>
+          </div>
+        </div>
+
+        <div class="note">
+          <b>三情景生成：</b>以“基准预期”为中值，默认保守=基准-2个百分点，乐观=基准+2个百分点（不小于0）。<br/>
+          <b>基数钳制：</b>启用后，每月缴费基数会自动落在社平倍数区间内，影响个人账户入账与个人指数。
+        </div>
+
+        <div class="divider"></div>
+
+        <div class="row">
+          <label>快速操作</label>
+          <div class="inline">
+            <button class="btn primary" id="recalcBtn">重新计算</button>
+            <button class="btn" id="resetBtn">恢复默认</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- RIGHT -->
+    <div class="panel">
+      <div class="hd">
+        <div class="title">
+          <b>结果与曲线</b>
+          <span>三情景对比：退休首月可领、退休前余额曲线、退休后现金流曲线</span>
+        </div>
+        <div class="badge" id="headlineBadge">—</div>
+      </div>
+
+      <div class="bd">
+        <div class="kpi" id="kpi"></div>
+
+        <div class="charts">
+          <div class="card">
+            <div class="name">① 退休前：个人账户余额曲线（年龄→余额）</div>
+            <div class="small">余额=起始余额 + 按月入账 × 收益滚存；断缴月不入账但计息。</div>
+            <canvas id="balanceCanvas"></canvas>
+          </div>
+          <div class="card">
+            <div class="name">② 退休后：领取期现金流曲线（年龄→每月可领）</div>
+            <div class="small">每月养老金=基础养老金+个人账户养老金；个人账户按计发月数近似均摊。</div>
+            <canvas id="cashflowCanvas"></canvas>
+          </div>
+        </div>
+
+        <div class="footer">
+          <b>提示：</b><br/>
+          1) 本工具为<strong>简化估算</strong>，适合敏感性对比（基数增长/社平增长/收益/断缴/缴费年限）。<br/>
+          2) 若你希望更“政策口径化”，下一步可加：年度核定基数、历史缴费明细回放、过渡性养老金/视同缴费等。
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="tooltip" id="tooltip"></div>
+
+<script>
+/** ===========================
+ *  轻量 Canvas 绘图引擎 (无外链)
+ * =========================== */
+class MiniCanvasChart {
+  constructor(canvas, tooltipEl){
+    this.canvas = canvas;
+    this.ctx = canvas.getContext('2d');
+    this.tooltipEl = tooltipEl;
+    this.dpr = Math.max(1, window.devicePixelRatio || 1);
+    this.padding = {l:48, r:18, t:18, b:38};
+    this.series = [];
+    this.xLabel = '年龄（岁）';
+    this.yLabel = '';
+    this.grid = true;
+    this._bind();
+    this.resize();
+  }
+  _bind(){
+    this._onMove = (e)=>this._handleMove(e);
+    this._onLeave = ()=>this._hideTip();
+    this.canvas.addEventListener('mousemove', this._onMove);
+    this.canvas.addEventListener('mouseleave', this._onLeave);
+    window.addEventListener('resize', ()=>this.resize());
+  }
+  resize(){
+    const rect = this.canvas.getBoundingClientRect();
+    const w = Math.floor(rect.width * this.dpr);
+    const h = Math.floor(rect.height * this.dpr);
+    if (this.canvas.width !== w || this.canvas.height !== h){
+      this.canvas.width = w;
+      this.canvas.height = h;
+    }
+    this.render();
+  }
+  setOptions({xLabel, yLabel, grid=true}){
+    this.xLabel = xLabel || this.xLabel;
+    this.yLabel = yLabel || this.yLabel;
+    this.grid = grid;
+    this.render();
+  }
+  setSeries(series){
+    this.series = series || [];
+    this.render();
+  }
+  _niceNum(range, round){
+    const exp = Math.floor(Math.log10(range));
+    const f = range / Math.pow(10, exp);
+    let nf;
+    if (round){
+      if (f < 1.5) nf = 1;
+      else if (f < 3) nf = 2;
+      else if (f < 7) nf = 5;
+      else nf = 10;
+    } else {
+      if (f <= 1) nf = 1;
+      else if (f <= 2) nf = 2;
+      else if (f <= 5) nf = 5;
+      else nf = 10;
+    }
+    return nf * Math.pow(10, exp);
+  }
+  _computeBounds(){
+    let xs=[], ys=[];
+    for (const s of this.series){
+      for (const p of s.data){
+        if (Number.isFinite(p.x) && Number.isFinite(p.y)){
+          xs.push(p.x); ys.push(p.y);
+        }
+      }
+    }
+    if (!xs.length) return {xmin:0,xmax:1,ymin:0,ymax:1};
+    let xmin = Math.min(...xs), xmax = Math.max(...xs);
+    let ymin = Math.min(...ys), ymax = Math.max(...ys);
+    if (xmin === xmax){ xmax = xmin + 1; }
+    if (ymin === ymax){ ymax = ymin + 1; }
+    const yr = ymax - ymin;
+    ymin = Math.max(0, ymin - yr*0.08);
+    ymax = ymax + yr*0.10;
+    return {xmin,xmax,ymin,ymax};
+  }
+  _mapX(x, b, plotW){ return this.padding.l + (x - b.xmin) / (b.xmax - b.xmin) * plotW; }
+  _mapY(y, b, plotH){ return this.padding.t + (b.ymax - y) / (b.ymax - b.ymin) * plotH; }
+  _formatMoney(v){
+    if (v >= 1e8) return (v/1e8).toFixed(2) + '亿';
+    if (v >= 1e4) return (v/1e4).toFixed(2) + '万';
+    return Math.round(v).toString();
+  }
+  render(){
+    const ctx = this.ctx;
+    const w = this.canvas.width, h = this.canvas.height;
+    ctx.clearRect(0,0,w,h);
+    ctx.fillStyle = 'rgba(0,0,0,.10)';
+    ctx.fillRect(0,0,w,h);
+
+    const b = this._computeBounds();
+    const plotW = w - this.padding.l - this.padding.r;
+    const plotH = h - this.padding.t - this.padding.b;
+
+    const xRange = b.xmax - b.xmin;
+    const yRange = b.ymax - b.ymin;
+    const xTick = this._niceNum(xRange/6, true);
+    const yTick = this._niceNum(yRange/5, true);
+
+    const xStart = Math.floor(b.xmin / xTick) * xTick;
+    const xEnd   = Math.ceil(b.xmax / xTick) * xTick;
+    const yStart = Math.floor(b.ymin / yTick) * yTick;
+    const yEnd   = Math.ceil(b.ymax / yTick) * yTick;
+
+    ctx.save();
+
+    if (this.grid){
+      ctx.strokeStyle = 'rgba(255,255,255,.08)';
+      ctx.lineWidth = 1;
+      for (let xv = xStart; xv <= xEnd + 1e-9; xv += xTick){
+        const px = this._mapX(xv, b, plotW);
+        ctx.beginPath(); ctx.moveTo(px, this.padding.t); ctx.lineTo(px, this.padding.t + plotH); ctx.stroke();
+      }
+      for (let yv = yStart; yv <= yEnd + 1e-9; yv += yTick){
+        const py = this._mapY(yv, b, plotH);
+        ctx.beginPath(); ctx.moveTo(this.padding.l, py); ctx.lineTo(this.padding.l + plotW, py); ctx.stroke();
+      }
+    }
+
+    ctx.strokeStyle = 'rgba(255,255,255,.14)';
+    ctx.strokeRect(this.padding.l, this.padding.t, plotW, plotH);
+
+    ctx.fillStyle = 'rgba(233,240,255,.92)';
+    ctx.font = `${12*this.dpr}px system-ui, -apple-system, Segoe UI, Roboto, Arial`;
+    ctx.textAlign = 'center';
+    ctx.fillText(this.xLabel, this.padding.l + plotW/2, h - 10*this.dpr);
+
+    ctx.save();
+    ctx.translate(14*this.dpr, this.padding.t + plotH/2);
+    ctx.rotate(-Math.PI/2);
+    ctx.textAlign = 'center';
+    ctx.fillText(this.yLabel, 0, 0);
+    ctx.restore();
+
+    ctx.fillStyle = 'rgba(159,178,208,.95)';
+    ctx.font = `${11*this.dpr}px ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace`;
+
+    ctx.textAlign = 'center';
+    for (let xv = xStart; xv <= xEnd + 1e-9; xv += xTick){
+      const px = this._mapX(xv, b, plotW);
+      ctx.fillText(String(Math.round(xv)), px, (this.padding.t + plotH + 18*this.dpr));
+    }
+    ctx.textAlign = 'right';
+    for (let yv = yStart; yv <= yEnd + 1e-9; yv += yTick){
+      const py = this._mapY(yv, b, plotH);
+      ctx.fillText(this._formatMoney(yv), (this.padding.l - 8*this.dpr), py + 4*this.dpr);
+    }
+
+    for (const s of this.series){
+      ctx.strokeStyle = s.color || '#4aa3ff';
+      ctx.lineWidth = (s.width || 2.2) * this.dpr;
+      ctx.lineJoin = 'round';
+      ctx.lineCap = 'round';
+      ctx.beginPath();
+      let started=false;
+      for (const p of s.data){
+        const px = this._mapX(p.x, b, plotW);
+        const py = this._mapY(p.y, b, plotH);
+        if (!started){ ctx.moveTo(px, py); started=true; }
+        else ctx.lineTo(px, py);
+      }
+      ctx.stroke();
+    }
+
+    const legendX = this.padding.l + 8*this.dpr;
+    let legendY = this.padding.t + 8*this.dpr;
+    ctx.font = `${11*this.dpr}px system-ui, -apple-system, Segoe UI, Roboto, Arial`;
+    ctx.textAlign = 'left';
+    for (const s of this.series){
+      ctx.fillStyle = s.color || '#4aa3ff';
+      ctx.fillRect(legendX, legendY - 8*this.dpr, 10*this.dpr, 10*this.dpr);
+      ctx.fillStyle = 'rgba(233,240,255,.95)';
+      ctx.fillText(s.name || '—', legendX + 14*this.dpr, legendY);
+      legendY += 16*this.dpr;
+    }
+
+    ctx.restore();
+    this._bounds = b;
+    this._plot = {w: plotW, h: plotH};
+  }
+  _handleMove(e){
+    if (!this.series.length) return;
+    const rect = this.canvas.getBoundingClientRect();
+    const mx = (e.clientX - rect.left) * this.dpr;
+    const my = (e.clientY - rect.top) * this.dpr;
+    const plotX0 = this.padding.l, plotY0 = this.padding.t;
+    const plotX1 = plotX0 + this._plot.w, plotY1 = plotY0 + this._plot.h;
+    if (mx < plotX0 || mx > plotX1 || my < plotY0 || my > plotY1){
+      this._hideTip(); return;
+    }
+    const b = this._bounds;
+    const xVal = b.xmin + (mx - plotX0) / this._plot.w * (b.xmax - b.xmin);
+    const xRound = Math.round(xVal);
+
+    const lines = [];
+    for (const s of this.series){
+      let best=null, bestDx=1e9;
+      for (const p of s.data){
+        const dx = Math.abs(p.x - xRound);
+        if (dx < bestDx){ bestDx = dx; best = p; }
+      }
+      if (best) lines.push({name:s.name, color:s.color, x:best.x, y:best.y});
+    }
+    if (!lines.length) return;
+
+    this.render();
+    const ctx = this.ctx;
+    const px = this._mapX(lines[0].x, b, this._plot.w);
+    ctx.save();
+    ctx.strokeStyle = 'rgba(255,255,255,.20)';
+    ctx.lineWidth = 1*this.dpr;
+    ctx.beginPath(); ctx.moveTo(px, plotY0); ctx.lineTo(px, plotY1); ctx.stroke();
+    ctx.restore();
+
+    const tipLines = lines.map(l => `<span style="color:${l.color}">●</span> ${l.name}：<b>${this._formatMoney(l.y)}</b>`);
+    const html = `<div style="margin-bottom:4px;">年龄：<b>${lines[0].x}</b></div>${tipLines.join('<br/>')}`;
+    this._showTip(e.clientX, e.clientY, html);
+  }
+  _showTip(clientX, clientY, html){
+    const el = this.tooltipEl;
+    el.innerHTML = html;
+    el.style.left = clientX + 'px';
+    el.style.top = clientY + 'px';
+    el.style.display = 'block';
+  }
+  _hideTip(){ this.tooltipEl.style.display = 'none'; }
+}
+
+/** ===========================
+ *  养老金简化模型（职工）
+ * =========================== */
+
+// 计发月数（简化表）
+const annuityMonthsTable = {55:170,56:164,57:158,58:152,59:145,60:139,61:132,62:125,63:117,64:109,65:101};
+function getAnnuityMonths(retireAge){
+  if (annuityMonthsTable[retireAge]) return annuityMonthsTable[retireAge];
+  const ages = Object.keys(annuityMonthsTable).map(Number).sort((a,b)=>a-b);
+  if (retireAge <= ages[0]) return annuityMonthsTable[ages[0]];
+  if (retireAge >= ages[ages.length-1]) return annuityMonthsTable[ages[ages.length-1]];
+  for (let i=0;i<ages.length-1;i++){
+    const a0=ages[i], a1=ages[i+1];
+    if (retireAge>=a0 && retireAge<=a1){
+      const m0=annuityMonthsTable[a0], m1=annuityMonthsTable[a1];
+      const t=(retireAge-a0)/(a1-a0);
+      return Math.round(m0 + (m1-m0)*t);
+    }
+  }
+  return 139;
+}
+
+function clamp(x,a,b){ return Math.max(a, Math.min(b, x)); }
+function fmtYuan(v){ return Math.round(v).toLocaleString('zh-CN'); }
+
+// 地区默认（示例）
+const regionDefaults = {
+  shanghai: { monthlyWage: 15000, socialAvgWage: 12000, hint:'示例默认值：请按你的实际缴费基数/社平修正' },
+  taiyuan:  { monthlyWage: 8000,  socialAvgWage: 8000,  hint:'示例默认值：请按你的实际缴费基数/社平修正' }
+};
+
+// 参保身份默认（可调）
+const identityDefaults = {
+  employee: { accountRate: 8.0, totalRate: 24.0 },
+  flex:     { accountRate: 8.0, totalRate: 20.0 },
+  selfbiz:  { accountRate: 8.0, totalRate: 20.0 },
+  public:   { accountRate: 8.0, totalRate: 24.0 },
+  custom:   { accountRate: 8.0, totalRate: 20.0 }
+};
+
+// 由“基准预期”生成三情景：±2个百分点
+function buildScenarios(base){
+  const delta = 2.0;
+  const con = (x)=> Math.max(0, x - delta);
+  const opt = (x)=> Math.max(0, x + delta);
+  return [
+    { key:'con',  name:'保守', color:'#ffcc66',
+      wageGrowth:con(base.wageGrowth), baseGrowth:con(base.baseGrowth), socialWageGrowth:con(base.socialGrowth),
+      investReturn:con(base.investReturn), pensionAdj:con(base.pensionAdj) },
+    { key:'base', name:'基准', color:'#4aa3ff',
+      wageGrowth:base.wageGrowth, baseGrowth:base.baseGrowth, socialWageGrowth:base.socialGrowth,
+      investReturn:base.investReturn, pensionAdj:base.pensionAdj },
+    { key:'opt',  name:'乐观', color:'#25d695',
+      wageGrowth:opt(base.wageGrowth), baseGrowth:opt(base.baseGrowth), socialWageGrowth:opt(base.socialGrowth),
+      investReturn:opt(base.investReturn), pensionAdj:opt(base.pensionAdj) }
+  ];
+}
+
+// 断缴月份分布：返回 Set(monthIndex) 表示哪些月不缴费
+function buildGapSet(totalMonths, gapMonths, mode){
+  const set = new Set();
+  gapMonths = Math.min(gapMonths, totalMonths);
+  if (gapMonths <= 0) return set;
+
+  if (mode === 'front'){
+    for (let m=0; m<gapMonths; m++) set.add(m);
+    return set;
+  }
+  // even：均匀散布
+  const step = Math.max(1, Math.floor(totalMonths / gapMonths));
+  let m = 0, used = 0;
+  while (used < gapMonths && m < totalMonths){
+    set.add(m); used++; m += step;
+  }
+  let tail = totalMonths - 1;
+  while (used < gapMonths && tail >= 0){
+    if (!set.has(tail)){ set.add(tail); used++; }
+    tail--;
+  }
+  return set;
+}
+
+/**
+ * 核心模拟（含 1+2）：
+ * - 起始个人账户余额 initialAccount
+ * - 缴费基数 base 独立增长，并可按社平倍数做上下限钳制
+ * - 入账与个人指数使用“钳制后的缴费基数”
+ */
+function simulateEmployee(input, scenario){
+  const {
+    ageNow, retireAge, endAge,
+    monthlyWageNow, baseFactor,
+    accountRate, totalRate,
+    socialAvgWageNow, basicAccrual,
+    pastYears, gapMonths, gapMode,
+    inflation,
+    initialAccount,
+    clampEnabled, clampLow, clampHigh
+  } = input;
+
+  const monthsToRetire = Math.max(1, Math.round((retireAge - ageNow) * 12));
+  const monthsAfter = Math.max(1, Math.round((endAge - retireAge) * 12));
+  const annuityMonths = getAnnuityMonths(retireAge);
+
+  const gapSet = buildGapSet(monthsToRetire+1, gapMonths, gapMode);
+
+  // 工资路径（展示/对比）
+  let wage = monthlyWageNow;
+
+  // 缴费基数路径（核心：入账与指数用它）
+  let base = monthlyWageNow * baseFactor;
+
+  // 社平路径
+  let socialWage = socialAvgWageNow;
+
+  // 起始个人账户余额（新增）
+  let account = Math.max(0, initialAccount || 0);
+
+  const balanceCurve = [];
+  const cashflowCurve = [];
+
+  const wageGrowM   = Math.pow(1+scenario.wageGrowth/100, 1/12) - 1;
+  const baseGrowM   = Math.pow(1+scenario.baseGrowth/100, 1/12) - 1;
+  const socialGrowM = Math.pow(1+scenario.socialWageGrowth/100, 1/12) - 1;
+  const invM        = Math.pow(1+scenario.investReturn/100, 1/12) - 1;
+
+  let contribMonthsFuture = 0;
+
+  for (let m=0; m<=monthsToRetire; m++){
+    const age = ageNow + m/12;
+
+    // 更新前先计算本月钳制（以当前社平为基准）
+    let baseForMonth = base;
+    if (clampEnabled){
+      const lo = Math.max(0, clampLow) * socialWage;
+      const hi = Math.max(lo, Math.max(0.01, clampHigh) * socialWage);
+      baseForMonth = clamp(baseForMonth, lo, hi);
+    }
+
+    const isGap = gapSet.has(m);
+    if (!isGap){
+      const contribToAccount = baseForMonth * (accountRate/100);
+      account = (account + contribToAccount) * (1 + invM);
+      contribMonthsFuture++;
+    } else {
+      account = account * (1 + invM);
+    }
+
+    balanceCurve.push({x: Math.round(age*12)/12, y: account});
+
+    // 更新：工资、原始基数、社平 各自增长（下月再钳制）
+    wage *= (1 + wageGrowM);
+    base *= (1 + baseGrowM);
+    socialWage *= (1 + socialGrowM);
+  }
+
+  const contribYears = pastYears + contribMonthsFuture / 12.0;
+
+  // 退休时的钳制后基数（用于指数）
+  let baseAtRetire = base;
+  if (clampEnabled){
+    const lo = Math.max(0, clampLow) * socialWage;
+    const hi = Math.max(lo, Math.max(0.01, clampHigh) * socialWage);
+    baseAtRetire = clamp(baseAtRetire, lo, hi);
+  }
+
+  // 个人指数：使用（退休时钳制后基数 / 退休时社平），并做 0.6~3 逻辑钳制（可理解为制度中的指数区间）
+  const index = clamp((baseAtRetire / socialWage), 0.6, 3.0);
+
+  // 基础养老金（简化）
+  const basicMonthlyAtRetire = socialWage * (1 + index) / 2 * contribYears * (basicAccrual/100);
+
+  const accountAtRetire = account;
+  const personalMonthlyAtRetire = accountAtRetire / annuityMonths;
+
+  // 退休后现金流
+  let basicP = basicMonthlyAtRetire;
+  let accountRemain = accountAtRetire;
+
+  const pensionAdjM = Math.pow(1+scenario.pensionAdj/100, 1/12) - 1;
+  const invM2 = Math.pow(1+scenario.investReturn/100, 1/12) - 1;
+
+  for (let m=0; m<=monthsAfter; m++){
+    const age = retireAge + m/12;
+
+    const personalP = (m < annuityMonths && accountRemain > 0) ? (accountAtRetire / annuityMonths) : 0;
+    accountRemain = Math.max(0, accountRemain * (1 + invM2) - personalP);
+
+    if (m>0) basicP *= (1 + pensionAdjM);
+    cashflowCurve.push({x: Math.round(age*12)/12, y: basicP + personalP});
+  }
+
+  const firstMonthPension = basicMonthlyAtRetire + personalMonthlyAtRetire;
+  const yearsToRetire = retireAge - ageNow;
+  const realFactor = Math.pow(1+inflation/100, yearsToRetire);
+  const firstMonthPensionReal = firstMonthPension / realFactor;
+
+  // 当前月成本：使用“当前基数（含钳制）”
+  let currentBase = monthlyWageNow * baseFactor;
+  let currentSocial = socialAvgWageNow;
+  if (clampEnabled){
+    const lo = Math.max(0, clampLow) * currentSocial;
+    const hi = Math.max(lo, Math.max(0.01, clampHigh) * currentSocial);
+    currentBase = clamp(currentBase, lo, hi);
+  }
+  const currentTotalCost = currentBase * (totalRate/100);
+
+  return {
+    accountAtRetire, annuityMonths,
+    basicMonthlyAtRetire, personalMonthlyAtRetire,
+    firstMonthPension, firstMonthPensionReal,
+    contribYears, contribMonthsFuture,
+    currentTotalCost,
+    balanceCurve, cashflowCurve
+  };
+}
+
+/** ===========================
+ *  UI
+ * =========================== */
+const el = (id)=>document.getElementById(id);
+const ui = {
+  region: el('region'),
+  regionHint: el('regionHint'),
+  age: el('age'),
+  ageLabel: el('ageLabel'),
+  retireAge: el('retireAge'),
+  endAge: el('endAge'),
+
+  insuredIdentity: el('insuredIdentity'),
+  accountRate: el('accountRate'),
+  totalRate: el('totalRate'),
+
+  monthlyWage: el('monthlyWage'),
+  baseFactor: el('baseFactor'),
+  baseFactorLabel: el('baseFactorLabel'),
+  socialAvgWage: el('socialAvgWage'),
+  initialAccount: el('initialAccount'),
+
+  clampEnabled: el('clampEnabled'),
+  clampLow: el('clampLow'),
+  clampHigh: el('clampHigh'),
+
+  pastYears: el('pastYears'),
+  gapMonths: el('gapMonths'),
+  gapMode: el('gapMode'),
+
+  wageGrowthBase: el('wageGrowthBase'),
+  baseGrowthBase: el('baseGrowthBase'),
+  socialGrowthBase: el('socialGrowthBase'),
+  investReturnBase: el('investReturnBase'),
+  pensionAdjBase: el('pensionAdjBase'),
+  inflation: el('inflation'),
+  basicAccrual: el('basicAccrual'),
+
+  kpi: el('kpi'),
+  headlineBadge: el('headlineBadge'),
+  scenarioTabs: el('scenarioTabs'),
+  recalcBtn: el('recalcBtn'),
+  resetBtn: el('resetBtn')
+};
+
+const tooltip = el('tooltip');
+const balanceChart = new MiniCanvasChart(el('balanceCanvas'), tooltip);
+const cashflowChart = new MiniCanvasChart(el('cashflowCanvas'), tooltip);
+balanceChart.setOptions({xLabel:'年龄（岁）', yLabel:'个人账户余额（元）', grid:true});
+cashflowChart.setOptions({xLabel:'年龄（岁）', yLabel:'每月养老金（元/月）', grid:true});
+
+let activeScenarioKey = 'base';
+let scenarios = [];
+
+function readBaseExpectations(){
+  return {
+    wageGrowth: parseFloat(ui.wageGrowthBase.value || '5'),
+    baseGrowth: parseFloat(ui.baseGrowthBase.value || '5'),
+    socialGrowth: parseFloat(ui.socialGrowthBase.value || '5'),
+    investReturn: parseFloat(ui.investReturnBase.value || '4'),
+    pensionAdj: parseFloat(ui.pensionAdjBase.value || '2')
+  };
+}
+
+function buildScenarioTabs(){
+  ui.scenarioTabs.innerHTML = '';
+  for (const s of scenarios){
+    const div = document.createElement('div');
+    div.className = 'tab' + (s.key===activeScenarioKey ? ' active' : '');
+    div.textContent = s.name;
+    div.onclick = ()=>{
+      activeScenarioKey = s.key;
+      buildScenarioTabs();
+      render();
+    };
+    ui.scenarioTabs.appendChild(div);
+  }
+}
+
+function applyRegionDefaults(){
+  const r = ui.region.value;
+  const d = regionDefaults[r];
+  ui.monthlyWage.value = d.monthlyWage;
+  ui.socialAvgWage.value = d.socialAvgWage;
+  ui.regionHint.textContent = d.hint || '—';
+}
+
+function applyIdentityDefaults(){
+  const k = ui.insuredIdentity.value;
+  const d = identityDefaults[k] || identityDefaults.employee;
+  ui.accountRate.value = d.accountRate.toFixed(1);
+  ui.totalRate.value = d.totalRate.toFixed(1);
+}
+
+function sanitizeAndClampUI(){
+  const ageNow = parseInt(ui.age.value, 10);
+  let retireAge = parseInt(ui.retireAge.value, 10);
+  let endAge = parseInt(ui.endAge.value, 10);
+
+  retireAge = clamp(retireAge, 45, 70);
+  retireAge = Math.max(retireAge, ageNow + 1);
+  endAge = clamp(endAge, 70, 100);
+  endAge = Math.max(endAge, retireAge + 5);
+
+  ui.retireAge.value = String(retireAge);
+  ui.endAge.value = String(endAge);
+
+  const monthsToRetire = Math.round((retireAge - ageNow) * 12);
+  let gap = parseInt(ui.gapMonths.value, 10);
+  gap = clamp(gap, 0, Math.max(0, monthsToRetire));
+  ui.gapMonths.value = String(gap);
+
+  // clamp倍数合法性
+  let lo = parseFloat(ui.clampLow.value);
+  let hi = parseFloat(ui.clampHigh.value);
+  if (!Number.isFinite(lo)) lo = 0.6;
+  if (!Number.isFinite(hi)) hi = 3.0;
+  lo = clamp(lo, 0, 10);
+  hi = clamp(hi, 0.01, 20);
+  if (hi < lo) hi = lo;
+  ui.clampLow.value = lo.toFixed(2);
+  ui.clampHigh.value = hi.toFixed(2);
+}
+
+function readInput(){
+  sanitizeAndClampUI();
+  const ageNow = parseInt(ui.age.value, 10);
+  const retireAge = parseInt(ui.retireAge.value, 10);
+  const endAge = parseInt(ui.endAge.value, 10);
+
+  return {
+    ageNow, retireAge, endAge,
+    monthlyWageNow: parseFloat(ui.monthlyWage.value),
+    baseFactor: parseFloat(ui.baseFactor.value),
+    accountRate: parseFloat(ui.accountRate.value),
+    totalRate: parseFloat(ui.totalRate.value),
+    socialAvgWageNow: parseFloat(ui.socialAvgWage.value),
+
+    initialAccount: parseFloat(ui.initialAccount.value || '0'),
+
+    clampEnabled: !!ui.clampEnabled.checked,
+    clampLow: parseFloat(ui.clampLow.value),
+    clampHigh: parseFloat(ui.clampHigh.value),
+
+    pastYears: parseFloat(ui.pastYears.value),
+    gapMonths: parseInt(ui.gapMonths.value, 10),
+    gapMode: ui.gapMode.value,
+
+    inflation: parseFloat(ui.inflation.value),
+    basicAccrual: parseFloat(ui.basicAccrual.value)
+  };
+}
+
+function render(){
+  ui.ageLabel.textContent = `${ui.age.value} 岁`;
+  ui.baseFactorLabel.textContent = ui.baseFactor.value;
+
+  scenarios = buildScenarios(readBaseExpectations());
+  buildScenarioTabs();
+
+  const input = readInput();
+
+  const results = {};
+  for (const s of scenarios){
+    results[s.key] = simulateEmployee(input, s);
+  }
+
+  const active = results[activeScenarioKey];
+  const activeScenario = scenarios.find(x=>x.key===activeScenarioKey);
+
+  ui.headlineBadge.textContent =
+    `${activeScenario.name}｜退休首月预计：${fmtYuan(active.firstMonthPension)} 元/月（按当前价约 ${fmtYuan(active.firstMonthPensionReal)}）`;
+
+  ui.kpi.innerHTML = '';
+  const order = ['con','base','opt'];
+  const classMap = {con:'warn', base:'base', opt:'good'};
+
+  for (const key of order){
+    const s = scenarios.find(x=>x.key===key);
+    const r = results[key];
+
+    const card = document.createElement('div');
+    card.className = 'card';
+    card.innerHTML = `
+      <div class="name">
+        ${s.name}（收益 ${s.investReturn.toFixed(1)}%｜工资 ${s.wageGrowth.toFixed(1)}%｜基数 ${s.baseGrowth.toFixed(1)}%｜社平 ${s.socialWageGrowth.toFixed(1)}%）
+      </div>
+      <div class="val ${classMap[key]}">退休首月：${fmtYuan(r.firstMonthPension)} 元/月</div>
+      <div class="small">
+        退休时个人账户：<b>${fmtYuan(r.accountAtRetire)}</b> 元<br/>
+        个人账户月领（起始）：<b>${fmtYuan(r.personalMonthlyAtRetire)}</b> 元/月<br/>
+        基础养老金（起始）：<b>${fmtYuan(r.basicMonthlyAtRetire)}</b> 元/月<br/>
+        缴费年限（估算）：<b>${r.contribYears.toFixed(1)}</b> 年（未来缴费月：${r.contribMonthsFuture}）<br/>
+        当前月缴费成本（展示）：<b>${fmtYuan(r.currentTotalCost)}</b> 元/月<br/>
+        计发月数（近似）：<span class="mono">${r.annuityMonths}</span>
+      </div>
+    `;
+    ui.kpi.appendChild(card);
+  }
+
+  const balSeries = order.map(key=>{
+    const s = scenarios.find(x=>x.key===key);
+    const r = results[key];
+    const data = r.balanceCurve.filter((_,i)=> i%2===0);
+    return {name:s.name, color:s.color, data, width: (key===activeScenarioKey ? 3.0 : 2.1)};
+  });
+
+  const cfSeries = order.map(key=>{
+    const s = scenarios.find(x=>x.key===key);
+    const r = results[key];
+    const data = r.cashflowCurve.filter((_,i)=> i%3===0);
+    return {name:s.name, color:s.color, data, width: (key===activeScenarioKey ? 3.0 : 2.1)};
+  });
+
+  balanceChart.setSeries(balSeries);
+  cashflowChart.setSeries(cfSeries);
+}
+
+// Events
+ui.region.addEventListener('change', ()=>{ applyRegionDefaults(); render(); });
+ui.age.addEventListener('input', render);
+ui.retireAge.addEventListener('change', render);
+ui.endAge.addEventListener('change', render);
+
+ui.insuredIdentity.addEventListener('change', ()=>{ applyIdentityDefaults(); render(); });
+ui.accountRate.addEventListener('change', render);
+ui.totalRate.addEventListener('change', render);
+
+ui.monthlyWage.addEventListener('change', render);
+ui.baseFactor.addEventListener('input', render);
+ui.socialAvgWage.addEventListener('change', render);
+ui.initialAccount.addEventListener('change', render);
+
+ui.clampEnabled.addEventListener('change', render);
+ui.clampLow.addEventListener('change', render);
+ui.clampHigh.addEventListener('change', render);
+
+ui.pastYears.addEventListener('change', render);
+ui.gapMonths.addEventListener('change', render);
+ui.gapMode.addEventListener('change', render);
+
+ui.wageGrowthBase.addEventListener('change', render);
+ui.baseGrowthBase.addEventListener('change', render);
+ui.socialGrowthBase.addEventListener('change', render);
+ui.investReturnBase.addEventListener('change', render);
+ui.pensionAdjBase.addEventListener('change', render);
+ui.inflation.addEventListener('change', render);
+ui.basicAccrual.addEventListener('change', render);
+
+ui.recalcBtn.addEventListener('click', render);
+
+ui.resetBtn.addEventListener('click', ()=>{
+  ui.region.value = 'shanghai';
+  ui.age.value = '30';
+  ui.retireAge.value = '60';
+  ui.endAge.value = '90';
+
+  ui.insuredIdentity.value = 'employee';
+  ui.accountRate.value = '8.0';
+  ui.totalRate.value = '24.0';
+
+  ui.monthlyWage.value = regionDefaults.shanghai.monthlyWage;
+  ui.baseFactor.value = '1.0';
+  ui.socialAvgWage.value = regionDefaults.shanghai.socialAvgWage;
+
+  ui.initialAccount.value = '0';
+
+  ui.clampEnabled.checked = true;
+  ui.clampLow.value = '0.60';
+  ui.clampHigh.value = '3.00';
+
+  ui.pastYears.value = '0';
+  ui.gapMonths.value = '0';
+  ui.gapMode.value = 'even';
+
+  ui.wageGrowthBase.value = '5.0';
+  ui.baseGrowthBase.value = '5.0';
+  ui.socialGrowthBase.value = '5.0';
+  ui.investReturnBase.value = '4.0';
+  ui.pensionAdjBase.value = '2.0';
+  ui.inflation.value = '2.0';
+  ui.basicAccrual.value = '1.0';
+
+  applyRegionDefaults();
+  applyIdentityDefaults();
+  activeScenarioKey = 'base';
+  render();
+});
+
+// init
+applyRegionDefaults();
+applyIdentityDefaults();
+render();
+</script>
+</body>
+</html>

@@ -21,4 +21,12 @@
     多功能随机抽取工具，支持名单抽取、抽取个数自定义及结果去重
   thumb: /assets/labs/thumbs/random_picker.png
   tags: [Others]
+  order: 4
+
+- slug: pension_calculator
+  title: 养老金测算
+  desc: >
+    预测中国大陆地区城镇职工养老的退休后每月领取金额，支持太原和上海地区选择，自动生成保守、基准、乐观三种情景下的账户余额曲线与退休后现金流曲线
+  thumb: /assets/labs/thumbs/pension_calculator.png
+  tags: [Finance]
   order: 3
