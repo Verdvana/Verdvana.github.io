@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>VisionMatrix 视觉阵列转换器</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" referrerpolicy="no-referrer" />
     <style>
         :root {
             --primary-color: #007aff;
@@ -85,6 +86,14 @@
         .hidden { display: none; }
         .blob { position: fixed; width: 400px; height: 400px; background: var(--primary-color); filter: blur(100px); border-radius: 50%; z-index: -1; opacity: 0.1; }
     </style>
+
+<style id="vv-sidebar-compat">
+/* When Verdvana sidebar is mounted, let main handle centering/padding */
+body.vv-has-sidebar{ display:block; justify-content: initial; padding:0; }
+body.vv-has-sidebar .vv-main{ padding:20px; display:flex; justify-content:center; }
+body.vv-has-sidebar .vv-main > .container{ width:100%; max-width:900px; }
+</style>
+
 </head>
 <body>
 
@@ -306,5 +315,307 @@
         alert("已复制到剪贴板");
     }
 </script>
+
+
+
+<script>
+/*! Verdvana Sidebar Pack (Inject Mode / 方式B) */
+(function () {
+  const CONFIG = {
+    logoUrl: "https://verdvana.cn/static/img/avatar.jpg",
+    homeUrl: "https://verdvana.cn",
+    fallbackBackUrl: "https://verdvana.cn/labs/",
+    rememberState: false,
+    storageKey: "vv_sidebar_expanded",
+    collapsedWidth: 64,
+    expandedWidth: 252,
+    // 若本页主体容器固定，可指定：
+    // targetSelector: ".container",
+    items: [
+      { text: "主页", href: "https://verdvana.cn",           icon: "fa-home" },
+      { text: "博文", href: "https://verdvana.cn/archive/",  icon: "fa-archive" },
+      { text: "分类", href: "https://verdvana.cn/tags/",     icon: "fa-tags" },
+      { text: "留言", href: "https://verdvana.cn/comments/", icon: "fa-comments" },
+      { text: "打赏", href: "https://verdvana.cn/merger/",   icon: "fa-coffee" },
+      { text: "更多", href: "https://verdvana.cn/labs/",     icon: "fa-flask" }
+    ]
+  };
+
+  function ensureFontAwesome() {
+    const id = "vv-fa-css";
+    if (document.getElementById(id)) return;
+    const already = [...document.querySelectorAll('link[rel="stylesheet"]')]
+      .some(l => (l.href || "").includes("font-awesome") || (l.href || "").includes("all.min.css"));
+    if (already) return;
+    const link = document.createElement("link");
+    link.id = id;
+    link.rel = "stylesheet";
+    link.href = "https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css";
+    link.referrerPolicy = "no-referrer";
+    document.head.appendChild(link);
+  }
+
+  function injectCSS() {
+    const id = "vv-sidebar-style";
+    if (document.getElementById(id)) return;
+    const style = document.createElement("style");
+    style.id = id;
+    style.textContent = `
+/* ===== Verdvana Sidebar (Inject) ===== */
+.vv-layout{ display:flex; min-height:100vh; }
+.vv-sidebar{
+  --vv-sb-w: ${CONFIG.collapsedWidth}px;
+  width: var(--vv-sb-w);
+  flex: 0 0 var(--vv-sb-w);
+  height: 100vh;
+  position: sticky;
+  top: 0;
+  z-index: 9998;
+  border-right: 1px solid var(--border-color, rgba(255,255,255,0.25));
+  background: rgba(255,255,255,0.35);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  display:flex;
+  flex-direction: column;
+  padding: 10px;
+  gap: 10px;
+  transition: width .18s ease, flex-basis .18s ease;
+}
+[data-theme="dark"] .vv-sidebar{ background: rgba(28,28,30,0.55); }
+.vv-sidebar.is-expanded{ --vv-sb-w: ${CONFIG.expandedWidth}px; }
+.vv-main{ flex: 1 1 auto; min-width:0; }
+
+.vv-sb-top{ display:flex; align-items:center; gap:10px; }
+.vv-sb-toggle{
+  width: 40px; height: 40px;
+  border-radius: 12px;
+  padding: 0;
+  display:grid; place-items:center;
+  border: 1px solid var(--border-color, rgba(255,255,255,0.25));
+  background: rgba(255,255,255,0.20);
+  color: var(--text-color, #1d1d1f);
+  cursor: pointer;
+}
+[data-theme="dark"] .vv-sb-toggle{ background: rgba(255,255,255,0.08); color: var(--text-color, #f5f5f7); }
+.vv-sb-toggle:hover{ border-color: rgba(122,162,255,0.55); }
+
+.vv-sb-logo{
+  width: 40px; height: 40px;
+  border-radius: 14px;
+  overflow:hidden;
+  border: 1px solid var(--border-color, rgba(255,255,255,0.25));
+  display:block;
+}
+.vv-sb-logo img{ width:100%; height:100%; object-fit:cover; display:block; }
+
+.vv-sb-nav{ display:flex; flex-direction:column; gap:6px; padding-top:6px; }
+.vv-sb-item{
+  display:flex; align-items:center; gap:12px;
+  width:100%;
+  border-radius: 12px;
+  padding: 10px 10px;
+  border: 1px solid transparent;
+  color: var(--text-color, #1d1d1f);
+  background: transparent;
+  text-decoration:none;
+  cursor:pointer;
+  user-select:none;
+  transition: background .16s ease, border-color .16s ease, transform .04s ease;
+}
+[data-theme="dark"] .vv-sb-item{ color: var(--text-color, #f5f5f7); }
+.vv-sb-item:hover{ background: rgba(255,255,255,0.20); border-color: rgba(122,162,255,0.25); }
+[data-theme="dark"] .vv-sb-item:hover{ background: rgba(255,255,255,0.08); }
+.vv-sb-item:active{ transform: translateY(1px); }
+.vv-sb-item i{ width: 20px; text-align:center; opacity:.92; }
+.vv-sb-item span{ white-space:nowrap; font-size:13px; }
+
+.vv-sidebar:not(.is-expanded) .vv-sb-item span{ display:none; }
+.vv-sidebar:not(.is-expanded) .vv-sb-top{ flex-direction: column; align-items: stretch; }
+
+.vv-sb-sep{ height:1px; background: var(--border-color, rgba(255,255,255,0.25)); margin:6px 2px; }
+.vv-sb-bottom{ margin-top:auto; padding-top:6px; }
+.vv-sb-back{ border: 1px solid var(--border-color, rgba(255,255,255,0.25)); background: rgba(255,255,255,0.18); }
+[data-theme="dark"] .vv-sb-back{ background: rgba(255,255,255,0.08); }
+
+@media (max-width: 720px){
+  .vv-sidebar{ position: fixed; left: 0; top: 0; }
+  .vv-main{ margin-left: ${CONFIG.collapsedWidth}px; }
+  .vv-sidebar.is-expanded{ box-shadow: 0 18px 60px rgba(0,0,0,0.35); }
+}
+@media print{ .vv-sidebar{ display:none; } .vv-main{ margin-left:0; } }
+`;
+    document.head.appendChild(style);
+  }
+
+  function buildSidebar() {
+    const layout = document.createElement("div");
+    layout.className = "vv-layout";
+    layout.id = "vvLayout";
+
+    const sidebar = document.createElement("aside");
+    sidebar.className = "vv-sidebar";
+    sidebar.id = "vvSidebar";
+    sidebar.setAttribute("aria-label", "站点导航");
+
+    const top = document.createElement("div");
+    top.className = "vv-sb-top";
+
+    const toggle = document.createElement("button");
+    toggle.className = "vv-sb-toggle";
+    toggle.id = "vvSbToggle";
+    toggle.type = "button";
+    toggle.setAttribute("aria-label", "展开/折叠菜单");
+    toggle.title = "展开/折叠菜单";
+    toggle.innerHTML = `<i class="fa-solid fa-bars" aria-hidden="true"></i>`;
+
+    const logo = document.createElement("a");
+    logo.className = "vv-sb-logo";
+    logo.href = CONFIG.homeUrl;
+    logo.title = "verdvana.cn";
+    logo.innerHTML = `<img src="${CONFIG.logoUrl}" alt="logo">`;
+
+    top.appendChild(toggle);
+    top.appendChild(logo);
+
+    const nav = document.createElement("nav");
+    nav.className = "vv-sb-nav";
+    nav.setAttribute("aria-label", "快捷入口");
+
+    CONFIG.items.forEach(it => {
+      const a = document.createElement("a");
+      a.className = "vv-sb-item";
+      a.href = it.href;
+      a.title = it.text;
+      a.innerHTML = `<i class="fa-solid ${it.icon}" aria-hidden="true"></i><span>${it.text}</span>`;
+      nav.appendChild(a);
+    });
+
+    const sep = document.createElement("div");
+    sep.className = "vv-sb-sep";
+    sep.setAttribute("role", "separator");
+    sep.setAttribute("aria-hidden", "true");
+    nav.appendChild(sep);
+
+    const bottom = document.createElement("div");
+    bottom.className = "vv-sb-bottom";
+
+    const back = document.createElement("button");
+    back.className = "vv-sb-item vv-sb-back";
+    back.id = "vvSbBack";
+    back.type = "button";
+    back.title = "返回上一级";
+    back.innerHTML = `<i class="fa-solid fa-arrow-left" aria-hidden="true"></i><span>返回上一级</span>`;
+
+    bottom.appendChild(back);
+
+    sidebar.appendChild(top);
+    sidebar.appendChild(nav);
+    sidebar.appendChild(bottom);
+
+    const main = document.createElement("main");
+    main.className = "vv-main";
+    main.id = "vvMain";
+
+    layout.appendChild(sidebar);
+    layout.appendChild(main);
+
+    return { layout, sidebar, main, toggle, back };
+  }
+
+  function moveContentIntoMain(main) {
+    const body = document.body;
+    const currentScript = document.currentScript;
+
+    if (CONFIG.targetSelector) {
+      const target = document.querySelector(CONFIG.targetSelector);
+      if (target) main.appendChild(target);
+      return;
+    }
+
+    const nodes = [...body.childNodes];
+    nodes.forEach(node => {
+      if (node === currentScript) return;
+      if (node.nodeType === 1) {
+        const tag = node.tagName.toLowerCase();
+        if (tag === "script" || tag === "style" || tag === "link") return;
+      }
+      if (node.nodeType === 3 && !node.nodeValue.trim()) {
+        node.parentNode && node.parentNode.removeChild(node);
+        return;
+      }
+      // Avoid moving our injected layout if rerun
+      if (node.nodeType === 1 && node.id === 'vvLayout') return;
+      main.appendChild(node);
+    });
+  }
+
+  function bindBehavior(sidebar, toggleBtn, backBtn) {
+    if (CONFIG.rememberState) {
+      try {
+        const saved = localStorage.getItem(CONFIG.storageKey);
+        if (saved === "1") sidebar.classList.add("is-expanded");
+      } catch (e) {}
+    } else {
+      sidebar.classList.remove("is-expanded");
+    }
+
+    function setIcon() {
+      const icon = toggleBtn.querySelector("i");
+      if (!icon) return;
+      icon.className = sidebar.classList.contains("is-expanded")
+        ? "fa-solid fa-chevron-left"
+        : "fa-solid fa-bars";
+    }
+    setIcon();
+
+    toggleBtn.addEventListener("click", () => {
+      sidebar.classList.toggle("is-expanded");
+      setIcon();
+      if (CONFIG.rememberState) {
+        try {
+          localStorage.setItem(CONFIG.storageKey, sidebar.classList.contains("is-expanded") ? "1" : "0");
+        } catch (e) {}
+      }
+    });
+
+    backBtn.addEventListener("click", () => {
+      try {
+        if (history.length > 1) { history.back(); return; }
+      } catch (e) {}
+      try {
+        const u = new URL(window.location.href);
+        let p = u.pathname.replace(/\/+$/, "");
+        const idx = p.lastIndexOf("/");
+        if (idx > 0) {
+          u.pathname = p.slice(0, idx + 1);
+          window.location.assign(u.toString());
+          return;
+        }
+      } catch (e) {}
+      window.location.assign(CONFIG.fallbackBackUrl);
+    });
+  }
+
+  function mount() {
+    // mark body for compat overrides
+    document.body.classList.add('vv-has-sidebar');
+
+    ensureFontAwesome();
+    injectCSS();
+
+    const { layout, sidebar, main, toggle, back } = buildSidebar();
+    document.body.insertBefore(layout, document.body.firstChild);
+    moveContentIntoMain(main);
+    bindBehavior(sidebar, toggle, back);
+  }
+
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", mount);
+  } else {
+    mount();
+  }
+})();
+</script>
+
 </body>
 </html>
