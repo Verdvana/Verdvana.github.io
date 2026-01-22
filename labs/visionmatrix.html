@@ -329,6 +329,8 @@ body.vv-has-sidebar .vv-main > .container{ width:100%; max-width:900px; }
     storageKey: "vv_sidebar_expanded",
     collapsedWidth: 64,
     expandedWidth: 252,
+    mobileBreakpoint: 720,
+    overlayOpacity: 0.35,
     // 若本页主体容器固定，可指定：
     // targetSelector: ".container",
     items: [
@@ -437,12 +439,25 @@ body.vv-has-sidebar .vv-main > .container{ width:100%; max-width:900px; }
 .vv-sb-back{ border: 1px solid var(--border-color, rgba(255,255,255,0.25)); background: rgba(255,255,255,0.18); }
 [data-theme="dark"] .vv-sb-back{ background: rgba(255,255,255,0.08); }
 
-@media (max-width: 720px){
+/* Backdrop (overlay) - activated on mobile when sidebar expanded */
+.vv-backdrop{
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0, ${CONFIG.overlayOpacity});
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity .16s ease;
+  z-index: 9997;
+}
+.vv-backdrop.is-active{ opacity: 1; pointer-events: auto; }
+
+@media (max-width: ${CONFIG.mobileBreakpoint}px){
   .vv-sidebar{ position: fixed; left: 0; top: 0; }
   .vv-main{ margin-left: ${CONFIG.collapsedWidth}px; }
   .vv-sidebar.is-expanded{ box-shadow: 0 18px 60px rgba(0,0,0,0.35); }
+  body.vv-lock-scroll{ overflow: hidden; }
 }
-@media print{ .vv-sidebar{ display:none; } .vv-main{ margin-left:0; } }
+@media print{ .vv-sidebar, .vv-backdrop{ display:none; } .vv-main{ margin-left:0; } }
 `;
     document.head.appendChild(style);
   }
@@ -512,14 +527,20 @@ body.vv-has-sidebar .vv-main > .container{ width:100%; max-width:900px; }
     sidebar.appendChild(nav);
     sidebar.appendChild(bottom);
 
+    const backdrop = document.createElement('div');
+    backdrop.className = 'vv-backdrop';
+    backdrop.id = 'vvBackdrop';
+    backdrop.setAttribute('aria-hidden', 'true');
+
     const main = document.createElement("main");
     main.className = "vv-main";
     main.id = "vvMain";
 
     layout.appendChild(sidebar);
+    layout.appendChild(backdrop);
     layout.appendChild(main);
 
-    return { layout, sidebar, main, toggle, back };
+    return { layout, sidebar, main, toggle, back, backdrop };
   }
 
   function moveContentIntoMain(main) {
@@ -543,13 +564,16 @@ body.vv-has-sidebar .vv-main > .container{ width:100%; max-width:900px; }
         node.parentNode && node.parentNode.removeChild(node);
         return;
       }
-      // Avoid moving our injected layout if rerun
-      if (node.nodeType === 1 && node.id === 'vvLayout') return;
+      if (node.nodeType === 1 && (node.id === 'vvLayout' || node.id === 'vvSidebar' || node.id === 'vvMain' || node.id === 'vvBackdrop')) return;
       main.appendChild(node);
     });
   }
 
-  function bindBehavior(sidebar, toggleBtn, backBtn) {
+  function isMobile() {
+    return window.matchMedia && window.matchMedia(`(max-width: ${CONFIG.mobileBreakpoint}px)`).matches;
+  }
+
+  function bindBehavior(sidebar, toggleBtn, backBtn, backdrop) {
     if (CONFIG.rememberState) {
       try {
         const saved = localStorage.getItem(CONFIG.storageKey);
@@ -566,17 +590,47 @@ body.vv-has-sidebar .vv-main > .container{ width:100%; max-width:900px; }
         ? "fa-solid fa-chevron-left"
         : "fa-solid fa-bars";
     }
+
+    function syncOverlay() {
+      const expanded = sidebar.classList.contains('is-expanded');
+      const mobile = isMobile();
+      if (backdrop) backdrop.classList.toggle('is-active', expanded && mobile);
+      document.body.classList.toggle('vv-lock-scroll', expanded && mobile);
+    }
+
+    function collapse() {
+      sidebar.classList.remove('is-expanded');
+      setIcon();
+      syncOverlay();
+      if (CONFIG.rememberState) {
+        try { localStorage.setItem(CONFIG.storageKey, "0"); } catch(e) {}
+      }
+    }
+
     setIcon();
+    syncOverlay();
 
     toggleBtn.addEventListener("click", () => {
       sidebar.classList.toggle("is-expanded");
       setIcon();
+      syncOverlay();
       if (CONFIG.rememberState) {
         try {
           localStorage.setItem(CONFIG.storageKey, sidebar.classList.contains("is-expanded") ? "1" : "0");
         } catch (e) {}
       }
     });
+
+    if (backdrop) {
+      backdrop.addEventListener('click', collapse);
+      backdrop.addEventListener('touchstart', collapse, {passive:true});
+    }
+
+    window.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && sidebar.classList.contains('is-expanded') && isMobile()) collapse();
+    });
+
+    window.addEventListener('resize', syncOverlay);
 
     backBtn.addEventListener("click", () => {
       try {
@@ -597,16 +651,13 @@ body.vv-has-sidebar .vv-main > .container{ width:100%; max-width:900px; }
   }
 
   function mount() {
-    // mark body for compat overrides
     document.body.classList.add('vv-has-sidebar');
-
     ensureFontAwesome();
     injectCSS();
-
-    const { layout, sidebar, main, toggle, back } = buildSidebar();
+    const { layout, sidebar, main, toggle, back, backdrop } = buildSidebar();
     document.body.insertBefore(layout, document.body.firstChild);
     moveContentIntoMain(main);
-    bindBehavior(sidebar, toggle, back);
+    bindBehavior(sidebar, toggle, back, backdrop);
   }
 
   if (document.readyState === "loading") {
