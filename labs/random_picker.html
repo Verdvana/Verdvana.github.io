@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>随机抽取器（三种输入方式 / 去重 / 不放回）</title>
+  <title>随机抽取器（三种输入方式 / 去重 / 支持不放回）</title>
 
   <!-- 与附件一致：FontAwesome -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" referrerpolicy="no-referrer" />
@@ -217,7 +217,15 @@
     .list-mini{ max-height: 220px; overflow:auto; border: 1px solid var(--border); border-radius: 14px; background: rgba(255,255,255,0.02); padding: 8px 10px; font-size: 12px; color: var(--muted); }
     .list-mini code{ font-family: var(--mono); color: var(--text); background: transparent; }
 
-    /* ===== 修复：深色模式下 <select> 下拉选项白底白字 ===== */
+    
+
+/* ====== CSV 示例表格（行聚合/扁平拆分） ====== */
+.demo-table{ width:100%; border-collapse: collapse; font-size: 12px; background: rgba(255,255,255,0.02); border: 1px solid var(--border); border-radius: 12px; overflow:hidden; }
+.demo-table th, .demo-table td{ padding: 6px 8px; border-bottom: 1px solid var(--border); border-right: 1px solid var(--border); }
+.demo-table th{ text-align:left; color: var(--muted); font-weight: 600; background: rgba(255,255,255,0.03); }
+.demo-table th:last-child, .demo-table td:last-child{ border-right: none; }
+.demo-table tr:last-child td{ border-bottom: none; }
+/* ===== 修复：深色模式下 <select> 下拉选项白底白字 ===== */
     html[data-theme="dark"]{ color-scheme: dark; }
     html[data-theme="light"]{ color-scheme: light; }
     @media (prefers-color-scheme: dark){ html:not([data-theme]){ color-scheme: dark; } }
@@ -281,7 +289,7 @@
           <div class="logo" aria-hidden="true"></div>
           <div>
             <h1>随机抽取器（输入去重 / 开始停止 / 不放回可选）</h1>
-            <div class="subtitle">支持：输入框 / CSV 行模式 / CSV 列模式（列聚合；单元格内逗号片段转空格）</div>
+            <div class="subtitle">输入框模式 / CSV 扁平拆分模式 / CSV 行聚合模式（每行一个元素；逗号列转空格；\, 转义为字面逗号）</div>
           </div>
         </div>
 
@@ -308,8 +316,8 @@
 
             <div class="mode-tabs" id="modeTabs" aria-label="输入方式">
               <div class="tab is-active" data-mode="text"><i class="fa-regular fa-keyboard"></i> 输入框模式</div>
-              <div class="tab" data-mode="csvRow"><i class="fa-regular fa-file-lines"></i> CSV 行模式</div>
-              <div class="tab" data-mode="csvCol"><i class="fa-regular fa-file"></i> CSV 列模式</div>
+              <div class="tab" data-mode="csvRow"><i class="fa-regular fa-file-lines"></i> CSV 扁平拆分</div>
+              <div class="tab" data-mode="csvCol"><i class="fa-regular fa-file"></i> CSV 行聚合</div>
             </div>
 
             <div class="split"></div>
@@ -321,7 +329,7 @@
             </div>
 
             <div id="mode_csvRow" class="mode-panel" style="display:none;">
-              <label>上传 CSV（行模式：每一行按“逗号分隔 + \, 转义”解析）</label>
+              <label>上传 CSV（扁平拆分：全文件按未转义逗号拆分为元素；\, 转义为字面逗号；忽略空元素）</label>
               <input id="csvRowFile" type="file" accept=".csv,text/csv,.txt,text/plain" />
               <div class="row" style="margin-top:12px;">
                 <div>
@@ -340,10 +348,30 @@
                   </select>
                 </div>
               </div>
+
+              <div class="hint" style="margin-top:10px;">
+                <div style="margin-bottom:8px;">示例（3 列 CSV）：</div>
+                <div style="overflow:auto;">
+                  <table class="demo-table" aria-label="CSV 扁平拆分示例">
+                    <thead>
+                      <tr><th>第 1 列</th><th>第 2 列</th><th>第 3 列</th></tr>
+                    </thead>
+                    <tbody>
+                      <tr><td>张三</td><td>研发组</td><td>上海</td></tr>
+                      <tr><td>hello\,world</td><td>测试组</td><td></td></tr>
+                      <tr><td>A</td><td></td><td>B,C</td></tr>
+                    </tbody>
+                  </table>
+                </div>
+                <div style="margin-top:8px;">
+                  解析结果（全文件扁平拆分为元素；忽略空元素；<code>\,</code> → <code>,</code>）：<br>
+                  <code>张三</code>，<code>研发组</code>，<code>上海</code>，<code>hello,world</code>，<code>测试组</code>，<code>A</code>，<code>B</code>，<code>C</code>
+                </div>
+              </div>
             </div>
 
             <div id="mode_csvCol" class="mode-panel" style="display:none;">
-              <label>上传 CSV（列模式：每一列聚合为一个元素；单元格内逗号分隔片段转空格连接）</label>
+              <label>上传 CSV（行聚合：每一行视为一个元素；逗号分隔列 → 空格连接；\, 转义为字面逗号；忽略空列）</label>
               <input id="csvColFile" type="file" accept=".csv,text/csv,.txt,text/plain" />
               <div class="row" style="margin-top:12px;">
                 <div>
@@ -354,7 +382,7 @@
                   </select>
                 </div>
                 <div>
-                  <label>列聚合连接符（默认空格）</label>
+                  <label>列连接符（默认空格）</label>
                   <select id="csvColJoiner">
                     <option value=" " selected>空格</option>
                     <option value="  ">两个空格</option>
@@ -362,7 +390,27 @@
                   </select>
                 </div>
               </div>
-              <div class="hint" style="margin-top:10px;">例：第一列三行分别是 <code>a,b</code> / <code>c</code> / <code>d\,e</code> → 列元素为 <code>a b c d,e</code></div>
+              <div class="hint" style="margin-top:10px;">
+  <div style="margin-bottom:8px;">示例（3 列 CSV）：</div>
+  <div style="overflow:auto;">
+    <table class="demo-table" aria-label="CSV 行聚合示例">
+      <thead>
+        <tr><th>第 1 列</th><th>第 2 列</th><th>第 3 列</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>张三</td><td>研发组</td><td>上海</td></tr>
+        <tr><td>hello\,world</td><td>测试组</td><td></td></tr>
+        <tr><td>A</td><td></td><td>B,C</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <div style="margin-top:8px;">
+    解析结果（每行一个元素；忽略空列；逗号分隔列 → 空格；<code>\,</code> → <code>,</code>）：<br>
+    <code>张三 研发组 上海</code><br>
+    <code>hello,world 测试组</code><br>
+    <code>A B C</code>
+  </div>
+</div>
             </div>
 
             <div class="toolbar">
@@ -523,21 +571,21 @@ Esc：停止</div>
     return out;
   }
 
-  function parseCSVColumnMode(fileText, joiner=" "){
-    const lines = String(fileText ?? "").replace(/\r\n/g,"\n").split("\n").filter(l=>l.length>0);
-    const rows = lines.map(line => splitByUnescapedComma(line).map(s=>s.trim()));
-    const colCount = rows.reduce((m,r)=>Math.max(m,r.length), 0);
-    const cols = Array.from({length: colCount}, ()=>[]);
-    for(const r of rows){
-      for(let c=0;c<colCount;c++){
-        const cell = (r[c] ?? "").trim();
-        if(!cell) continue;
-        const inner = splitByUnescapedComma(cell).map(norm).filter(x=>x.length>0);
-        if(inner.length) cols[c].push(inner.join(joiner));
-      }
-    }
-    return cols.map(parts => norm(parts.join(joiner))).filter(x=>x.length>0);
+  function parseCSVColumnMode(fileText, joiner=" " ){
+  const lines = String(fileText ?? "").replace(/\r\n/g, "\n").split("\n");
+  const out = [];
+  for(const line of lines){
+    const raw = String(line ?? "").trimEnd();
+    if(raw.trim().length===0) continue; // 忽略空行
+    // 每一行视为一个元素：按未转义逗号切列；忽略空列；用 joiner 拼接
+    const cells = splitByUnescapedComma(raw).map(s => String(s ?? "").trim());
+    const parts = cells.map(norm).filter(x => x.length>0);
+    if(!parts.length) continue;
+    out.push(norm(parts.join(joiner)));
   }
+  return out;
+}
+
 
   // ======== 状态 ========
   let mode = 'text';
@@ -595,19 +643,34 @@ Esc：停止</div>
   }
 
   function updateRemainingUI(){
-    if(!masterItems.length){
-      $('remainingBox').value = '—';
-      $('pickedList').textContent = '—';
-      return;
-    }
-    if(isNoReplaceEnabled()){
-      $('remainingBox').value = `${poolItems.length} / ${masterItems.length}`;
-      $('pickedList').textContent = pickedItems.length ? pickedItems.map((x,i)=>`${i+1}. ${x}`).join('\n') : '—';
-    }else{
-      $('remainingBox').value = `（放回模式）${masterItems.length}`;
-      $('pickedList').textContent = '—';
-    }
+  if(!masterItems.length){
+    $('remainingBox').value = '—';
+    $('pickedList').textContent = '—';
+    return;
   }
+
+  // 已抽取列表：放回/不放回都记录（放回允许重复）
+  // 为避免列表过长导致页面卡顿：最多保留 5000 条记录；界面仅展示最近 200 条
+  const MAX_KEEP = 5000;
+  const MAX_SHOW = 200;
+  if(pickedItems.length > MAX_KEEP){
+    pickedItems.splice(0, pickedItems.length - MAX_KEEP);
+  }
+  const show = pickedItems.slice(-MAX_SHOW);
+  const head = pickedItems.length > MAX_SHOW
+    ? `…（已记录 ${pickedItems.length} 条，仅显示最近 ${MAX_SHOW} 条）\n`
+    : '';
+  $('pickedList').textContent = show.length
+    ? head + show.map((x,i)=>`${pickedItems.length - show.length + i + 1}. ${x}`).join('\n')
+    : '—';
+
+  if(isNoReplaceEnabled()){
+    $('remainingBox').value = `${poolItems.length} / ${masterItems.length}`;
+  }else{
+    $('remainingBox').value = `（放回模式）${masterItems.length}`;
+  }
+}
+
 
   function updateCount(){
     $('kpiCount').textContent = masterItems.length ? String(masterItems.length) : '—';
@@ -698,13 +761,18 @@ Esc：停止</div>
     renderFinalGroup(finalGroup);
     $('finalHint').textContent = finalGroup.length ? '已停止并定格当前值' : '—';
 
+    // 记录已抽取：放回/不放回都记录（放回允许重复）
+    if(finalGroup.length){
+      pickedItems.push(...finalGroup);
+    }
+
     if(finalGroup.length && isNoReplaceEnabled()){
       // remove all picked from pool (unique already)
       for(const v of finalGroup){
         const idx = poolItems.indexOf(v);
         if(idx >= 0) poolItems.splice(idx, 1);
       }
-      pickedItems.push(...finalGroup);
+      
       updateRemainingUI();
       if(poolItems.length === 0) setState('已停止（池已抽空）', '不放回模式：剩余 0，可点击“恢复全部”继续');
       else setState('已停止', `不放回模式：已移除本组结果，剩余 ${poolItems.length} 个`);
@@ -716,7 +784,8 @@ Esc：停止</div>
         sel.value = String(Math.max(1, poolItems.length));
       }
     }else{
-      setState('已停止', finalGroup.length ? '最终结果已生成，可复制' : '无可用元素');
+    setState('已停止', finalGroup.length ? '最终结果已生成，可复制' : '无可用元素');
+    updateRemainingUI();
     }
   }
 
@@ -724,7 +793,7 @@ Esc：停止</div>
     poolItems = masterItems.slice();
     pickedItems = [];
     updateRemainingUI();
-    setState('已恢复抽取池', isNoReplaceEnabled() ? '不放回模式：已恢复全部元素' : '放回模式无需恢复');
+    setState('已恢复抽取池', isNoReplaceEnabled() ? '不放回模式：已恢复全部元素，并清空已抽取列表' : '放回模式：已清空已抽取列表');
   }
 
   function resetAll(){
