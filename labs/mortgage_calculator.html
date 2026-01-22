@@ -5,6 +5,7 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>房贷计算器（商贷 / 公积金 / 利率变更 / 提前还款）</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" referrerpolicy="no-referrer" />
   <style>
     :root{
       --bg: #0b0f14;
@@ -408,141 +409,197 @@
       box-shadow: 0 0 0 4px rgba(122,162,255,0.16);
     }
 
-    /* ====== Floating nav buttons (OpenAI-like minimal) ====== */
-    .float-nav{
-      position: fixed;
-      right: 18px;
-      bottom: 18px;
-      display:flex;
-      flex-direction: column;
-      gap: 10px;
-      z-index: 9999;
-    }
-/*    
-    .float-nav a{
-      text-decoration:none;
-    }
-*/
-    .float-btn{
-      position: relative; /* for tooltip */
-      display:flex;
-      align-items:center;
-      gap:10px;
-      padding: 10px 12px;
-      border-radius: 999px;
-      border: 1px solid var(--border);
-      background: rgba(255,255,255,0.06);
-      color: var(--text);
-      box-shadow: 0 14px 40px rgba(0,0,0,0.24);
-      backdrop-filter: blur(10px);
-      -webkit-backdrop-filter: blur(10px);
-      transition: transform .06s ease, background .2s ease, border-color .2s ease;
-      font-size: 13px;
-      cursor: pointer;
-      appearance: none;
-      -webkit-appearance: none;
-      border: 1px solid var(--border);
-      outline: none;
-      font: inherit;
-    }
-    
-    .float-btn:focus-visible{
-      box-shadow: 0 0 0 4px rgba(122,162,255,0.18);
-    }
-    html[data-theme="light"] .float-btn{
-      background: rgba(255,255,255,0.75);
-    }
-    .float-btn:hover{
-      background: rgba(255,255,255,0.10);
-      border-color: rgba(122,162,255,0.55);
-    }
-    .float-btn:active{ transform: translateY(1px); }
-    .float-icon{
-      width: 30px;
-      height: 30px;
-      border-radius: 999px;
-      display:grid;
-      place-items:center;
-      background: rgba(122,162,255,0.18);
-      border: 1px solid rgba(122,162,255,0.22);
-    }
-    .float-btn.secondary .float-icon{
-      background: rgba(255,209,102,0.16);
-      border: 1px solid rgba(255,209,102,0.22);
-    }
-    .float-text{
-      white-space: nowrap;
-    }
+    /* ====== Left sidebar (OpenAI-like) ====== */
+.layout{
+  display:flex;
+  min-height: 100vh;
+}
+.sidebar{
+  --sb-w: 64px; /* collapsed width */
+  width: var(--sb-w);
+  flex: 0 0 var(--sb-w);
+  height: 100vh;
+  position: sticky;
+  top: 0;
+  z-index: 9998;
+  border-right: 1px solid var(--border);
+  background: rgba(255,255,255,0.04);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  display:flex;
+  flex-direction: column;
+  padding: 10px 10px;
+  gap: 10px;
+  transition: width .18s ease, flex-basis .18s ease;
+}
+html[data-theme="light"] .sidebar{
+  background: rgba(255,255,255,0.72);
+}
+.sidebar.is-expanded{
+  --sb-w: 252px; /* expanded width */
+}
+.main{
+  flex: 1 1 auto;
+  min-width: 0;
+}
 
-    /* Tooltip */
-    .float-btn[data-tip]::after{
-      content: attr(data-tip);
-      position: absolute;
-      right: calc(100% + 10px);
-      top: 50%;
-      transform: translateY(-50%) translateX(6px);
-      opacity: 0;
-      pointer-events: none;
-      padding: 8px 10px;
-      border-radius: 12px;
-      background: rgba(0,0,0,0.55);
-      color: rgba(255,255,255,0.92);
-      border: 1px solid rgba(255,255,255,0.16);
-      box-shadow: 0 18px 50px rgba(0,0,0,0.32);
-      backdrop-filter: blur(10px);
-      -webkit-backdrop-filter: blur(10px);
-      white-space: nowrap;
-      font-size: 12px;
-      transition: opacity .15s ease, transform .15s ease;
-    }
-    html[data-theme="light"] .float-btn[data-tip]::after{
-      background: rgba(255,255,255,0.85);
-      color: rgba(0,0,0,0.86);
-      border: 1px solid rgba(0,0,0,0.10);
-      box-shadow: 0 18px 45px rgba(8, 15, 35, 0.18);
-    }
-    .float-btn[data-tip]::before{
-      content:"";
-      position:absolute;
-      right: calc(100% + 4px);
-      top: 50%;
-      transform: translateY(-50%) translateX(6px);
-      opacity: 0;
-      pointer-events:none;
-      border: 6px solid transparent;
-      border-left-color: rgba(0,0,0,0.55);
-      transition: opacity .15s ease, transform .15s ease;
-    }
-    html[data-theme="light"] .float-btn[data-tip]::before{
-      border-left-color: rgba(255,255,255,0.85);
-    }
+.sb-top{
+  display:flex;
+  align-items:center;
+  gap: 10px;
+}
+.sb-toggle{
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+  padding: 0;
+  display:grid;
+  place-items:center;
+  border: 1px solid var(--border);
+  background: rgba(255,255,255,0.03);
+}
+.sb-toggle:hover{ background: rgba(255,255,255,0.07); border-color: rgba(122,162,255,0.55); }
+.sb-toggle i{ font-size: 16px; }
 
-    .float-btn:hover::after,
-    .float-btn:hover::before,
-    .float-btn:focus-visible::after,
-    .float-btn:focus-visible::before{
-      opacity: 1;
-      transform: translateY(-50%) translateX(0px);
-    }
+.sb-logo{
+  width: 40px;
+  height: 40px;
+  border-radius: 14px;
+  overflow:hidden;
+  border: 1px solid var(--border);
+  flex: 0 0 auto;
+  display:block;
+}
+.sb-logo img{
+  width:100%;
+  height:100%;
+  object-fit: cover;
+  display:block;
+}
 
-    @media (hover:none){
-      .float-btn[data-tip]::after,
-      .float-btn[data-tip]::before{ display:none; }
-    }
+.sb-nav{
+  display:flex;
+  flex-direction: column;
+  gap: 6px;
+  padding-top: 6px;
+}
 
-    /* small screens: show icon-only */
-    @media (max-width: 520px){
-      .float-text{ display:none; }
-      .float-btn{ padding: 10px; }
-    }
+.sb-item{
+  display:flex;
+  align-items:center;
+  gap: 12px;
+  width: 100%;
+  border-radius: 12px;
+  padding: 10px 10px;
+  border: 1px solid transparent;
+  color: var(--text);
+  background: transparent;
+  text-decoration: none;
+  cursor: pointer;
+  user-select: none;
+  transition: background .16s ease, border-color .16s ease, transform .04s ease;
+}
+.sb-item:hover{
+  background: rgba(255,255,255,0.06);
+  border-color: rgba(122,162,255,0.25);
+}
+.sb-item:active{ transform: translateY(1px); }
+.sb-item i{
+  width: 20px;
+  text-align:center;
+  opacity: 0.92;
+}
+.sb-item span{
+  white-space: nowrap;
+  font-size: 13px;
+  color: var(--text);
+}
 
-    /* print: hide floating UI */
-    @media print{
-      .float-nav{ display:none; }
-    }
-  </style>
+.sidebar:not(.is-expanded) .sb-item span{
+  display:none;
+}
+.sidebar:not(.is-expanded) .sb-top{
+  flex-direction: column;
+  align-items: stretch;
+  justify-content: flex-start;
+}
+.sidebar:not(.is-expanded) .sb-logo{
+  display:block;
+}
+.sb-sep{
+  height: 1px;
+  background: var(--border);
+  margin: 6px 2px;
+}
+.sb-bottom{
+  margin-top: auto;
+  padding-top: 6px;
+}
+.sb-back{
+  border: 1px solid var(--border);
+  background: rgba(255,255,255,0.03);
+}
+.sb-back:hover{ border-color: rgba(255,209,102,0.35); background: rgba(255,209,102,0.10); }
+
+/* Mobile: sidebar overlays content when expanded */
+@media (max-width: 720px){
+  .sidebar{ position: fixed; left: 0; top: 0; }
+  .main{ margin-left: 64px; }
+  .sidebar.is-expanded{ box-shadow: 0 18px 60px rgba(0,0,0,0.35); }
+}
+
+@media print{
+  .sidebar{ display:none; }
+  .main{ margin-left: 0; }
+}
+
+</style>
 </head>
 <body>
+
+<div class="layout" id="appLayout">
+  <aside class="sidebar" id="sidebar" aria-label="站点导航">
+    <div class="sb-top">
+      <button class="sb-toggle" id="sbToggle" type="button" aria-label="展开/折叠菜单" title="展开/折叠菜单">
+        <i class="fa-solid fa-bars" aria-hidden="true"></i>
+      </button>
+      <a class="sb-logo" href="https://verdvana.cn" title="verdvana.cn">
+        <img src="https://verdvana.cn/static/img/avatar.jpg" alt="logo" />
+      </a>
+    </div>
+
+    <nav class="sb-nav" aria-label="快捷入口">
+      <a class="sb-item" href="https://verdvana.cn" title="主页">
+        <i class="fa-solid fa-home" aria-hidden="true"></i><span>主页</span>
+      </a>
+      <a class="sb-item" href="https://verdvana.cn/archive/" title="博文">
+        <i class="fa-solid fa-archive" aria-hidden="true"></i><span>博文</span>
+      </a>
+      <a class="sb-item" href="https://verdvana.cn/tags/" title="分类">
+        <i class="fa-solid fa-tags" aria-hidden="true"></i><span>分类</span>
+      </a>
+      <a class="sb-item" href="https://verdvana.cn/comments/" title="留言">
+        <i class="fa-solid fa-comments" aria-hidden="true"></i><span>留言</span>
+      </a>
+      <a class="sb-item" href="https://verdvana.cn/merger/" title="打赏">
+        <i class="fa-solid fa-coffee" aria-hidden="true"></i><span>打赏</span>
+      </a>
+      <a class="sb-item" href="https://verdvana.cn/labs/" title="更多">
+        <i class="fa-solid fa-flask" aria-hidden="true"></i><span>更多</span>
+      </a>
+
+      <div class="sb-sep" role="separator" aria-hidden="true"></div>
+    </nav>
+
+    <div class="sb-bottom">
+      <button class="sb-item sb-back" id="sbBack" type="button" title="返回上一级">
+        <i class="fa-solid fa-arrow-left" aria-hidden="true"></i><span>返回上一级</span>
+      </button>
+    </div>
+  </aside>
+
+  <main class="main" id="mainContent">
+
 <div class="wrap">
   <div class="topbar">
     <div class="brand">
@@ -842,28 +899,8 @@
 
   </div>
 </div>
-
-<!-- Floating navigation -->
-
-<!-- Floating navigation -->
-<div class="float-nav" aria-label="快速导航">
-  <button class="float-btn"
-          type="button"
-          data-url="https://verdvana.cn"
-          data-tip="回到主页">
-    <span class="float-icon" aria-hidden="true">🏠</span>
-    <span class="float-text">回到主页</span>
-  </button>
-
-  <button class="float-btn secondary"
-          type="button"
-          data-url="https://verdvana.cn/labs/"
-          data-tip="回到上一层">
-    <span class="float-icon" aria-hidden="true">⬅︎</span>
-    <span class="float-text">回到上一层</span>
-  </button>
+  </main>
 </div>
-
 
 <script>
   // ======== 工具函数：金额/日期/格式 ========
@@ -1719,46 +1756,57 @@
   })();
 
   
-  // ======== Floating nav fix: robust navigation ========
-  (function bindFloatingNav(){
-    const buttons = document.querySelectorAll(".float-nav .float-btn[data-url]");
-    if(!buttons.length) return;
 
-    function go(url){
+// ======== Left sidebar: collapse/expand + back ========
+(function initSidebar(){
+  const sb = document.getElementById('sidebar');
+  const btn = document.getElementById('sbToggle');
+  const back = document.getElementById('sbBack');
+  if(!sb || !btn) return;
+
+  // Default: collapsed
+  sb.classList.remove('is-expanded');
+
+  function setIcon(){
+    const icon = btn.querySelector('i');
+    if(!icon) return;
+    icon.className = sb.classList.contains('is-expanded')
+      ? 'fa-solid fa-chevron-left'
+      : 'fa-solid fa-bars';
+  }
+  setIcon();
+
+  btn.addEventListener('click', () => {
+    sb.classList.toggle('is-expanded');
+    setIcon();
+  });
+
+  // Back: prefer history; fallback to parent path; final fallback to labs
+  if(back){
+    back.addEventListener('click', () => {
       try{
-        // 优先当前窗口跳转
-        window.location.assign(url);
-      }catch(e){
-        // 若在 iframe/受限环境，尝试顶层窗口
-        try{
-          window.top.location.assign(url);
-        }catch(e2){
-          // 最后兜底：新开标签
-          window.open(url, "_blank", "noopener");
+        if(history.length > 1){
+          history.back();
+          return;
         }
-      }
-    }
-
-    buttons.forEach(btn => {
-      btn.addEventListener("click", (e) => {
-        e.preventDefault();
-        e.stopPropagation();
-        const url = btn.getAttribute("data-url");
-        if(url) go(url);
-      });
-
-      // 键盘支持：Enter / Space
-      btn.addEventListener("keydown", (e) => {
-        if(e.key === "Enter" || e.key === " "){
-          e.preventDefault();
-          const url = btn.getAttribute("data-url");
-          if(url) go(url);
+      }catch(e){}
+      try{
+        const u = new URL(window.location.href);
+        // drop trailing slash
+        let p = u.pathname.replace(/\/+$/, '');
+        const idx = p.lastIndexOf('/');
+        if(idx > 0){
+          u.pathname = p.slice(0, idx + 1);
+          window.location.assign(u.toString());
+          return;
         }
-      });
+      }catch(e){}
+      window.location.assign('https://verdvana.cn/labs/');
     });
-  })();
+  }
+})();
 
-  // 初始化：默认不加节点
+// 初始化：默认不加节点
   // addRateRow('biz'); addRateRow('gjj'); // 如你想默认一行可取消注释
 </script>
 </body>
