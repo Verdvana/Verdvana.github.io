@@ -14,3 +14,11 @@
   thumb: /assets/labs/thumbs/visionmatrix.png
   tags: [Hardware, Image Processing]
   order: 20
+
+- slug: random_picker
+  title: 随机抽取器
+  desc: >
+    多功能随机抽取工具，支持名单抽取、抽取个数自定义及结果去重
+  thumb: /assets/labs/thumbs/random_picker.png
+  tags: [Others]
+  order: 20
