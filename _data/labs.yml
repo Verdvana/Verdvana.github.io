@@ -10,7 +10,7 @@
 - slug: visionmatrix
   title: 视觉阵列转换器
   desc: >
-    专为嵌入式开发打造的视觉阵列转换工具，集成Base64、字符画及多位深RGB/灰度点阵生成。一键完成图像到硬件代码的高效转换
+    专为嵌入式开发打造的视觉阵列转换工具，集成Base64、字符画及多位深RGB/灰度点阵生成，一键完成图像到硬件代码的高效转换
   thumb: /assets/labs/thumbs/visionmatrix.png
   tags: [Hardware, Image Processing]
   order: 20
