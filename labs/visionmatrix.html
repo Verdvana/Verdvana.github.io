@@ -117,7 +117,7 @@ body.vv-has-sidebar .vv-main > .container{ width:100%; max-width:900px; }
 
     <div class="card">
         <div class="upload-area" onclick="document.getElementById('fileInput').click()">
-            <p id="upload-text" style="margin:0">点击或拖拽图片到此区域</p>
+            <p id="upload-text" style="margin:0">点击上传或拖拽图片到此区域，或直接Ctrl/Command+V粘贴</p>
             <input type="file" id="fileInput" accept="image/*" style="display:none">
         </div>
     </div>
@@ -181,6 +181,21 @@ body.vv-has-sidebar .vv-main > .container{ width:100%; max-width:900px; }
 <script>
     const fileInput = document.getElementById('fileInput');
     let originalImg = new Image();
+ const uploadArea = document.querySelector('.upload-area');
+
+ // 统一入口：选择文件/剪贴板粘贴都复用
+ function loadImageFile(file) {
+  if (!file) return;
+  if (!file.type || !file.type.startsWith('image/')) return;
+  const reader = new FileReader();
+  reader.onload = (ev) => {
+   originalImg.src = ev.target.result;
+   document.getElementById('base64-output').value = ev.target.result;
+   document.getElementById('result-container').classList.remove('hidden');
+  };
+  reader.readAsDataURL(file);
+ }
+
 
     // 初始化 RGB 下拉框
     ['r-bit', 'g-bit', 'b-bit'].forEach((id, idx) => {
@@ -198,17 +213,41 @@ body.vv-has-sidebar .vv-main > .container{ width:100%; max-width:900px; }
         document.getElementById('theme-text').innerText = isDark ? '浅色' : '深色';
     }
 
-    fileInput.addEventListener('change', e => {
-        const file = e.target.files[0];
-        if (!file) return;
-        const reader = new FileReader();
-        reader.onload = e => {
-            originalImg.src = e.target.result;
-            document.getElementById('base64-output').value = e.target.result;
-            document.getElementById('result-container').classList.remove('hidden');
-        };
-        reader.readAsDataURL(file);
-    });
+    fileInput.addEventListener('change', (e) => {
+  const file = e.target.files && e.target.files[0];
+  loadImageFile(file);
+ });
+
+ // 让上传区可聚焦：点击区域后可直接 Ctrl+V / ⌘V 粘贴
+ if (uploadArea) {
+  uploadArea.tabIndex = 0;
+  uploadArea.addEventListener('click', () => uploadArea.focus());
+ }
+
+ // 新增：全页面监听剪贴板粘贴图片
+ document.addEventListener('paste', (e) => {
+  const dt = e.clipboardData;
+  if (!dt || !dt.items) return;
+
+  const imgItem = Array.from(dt.items).find(it => it.type && it.type.startsWith('image/'));
+  if (!imgItem) return;
+
+  const file = imgItem.getAsFile();
+  if (!file) return;
+
+  // 避免图片以文本等形式插入页面
+  e.preventDefault();
+
+  loadImageFile(file);
+
+  // 轻提示：不改UI结构，仅短暂改动提示文案
+  const tip = document.getElementById('upload-text');
+  if (tip) {
+   const old = tip.innerText;
+   tip.innerText = '已从剪贴板粘贴图片';
+   setTimeout(() => (tip.innerText = old), 1200);
+  }
+ });
 
     originalImg.onload = updateAll;
 
