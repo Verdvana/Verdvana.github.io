@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>搭建 Clawdbot 指南</title>
+    <style>
+        body { font-family: sans-serif; line-height: 1.6; margin: 20px; }
+        h1, h2, h3 { color: #333; }
+        pre { background-color: #f4f4f4; padding: 10px; border-radius: 5px; overflow-x: auto; }
+        code { font-family: Consolas, Monaco, 'Andale Mono', 'Ubuntu Mono', monospace; }
+        .section { margin-bottom: 30px; }
+        .environment-options, .model-options, .chat-options { margin-left: 20px; }
+        .environment-options li, .model-options li, .chat-options li { margin-bottom: 10px; }
+    </style>
+</head>
+<body>
+    <h1>Clawdbot 搭建指南</h1>
+
+    <div class="section">
+        <h2>引言</h2>
+        <p>Clawdbot 是一个强大的助手框架，允许您集成各种AI模型和通信渠道，构建自定义的AI助手。本指南将介绍如何在您的本地环境（macOS 或 Linux）中搭建 Clawdbot，并配置您选择的模型和聊天软件。</p>
+    </div>
+
+    <div class="section">
+        <h2>一、准备工作</h2>
+        <h3>1. 系统要求</h3>
+        <p>确保您的系统满足以下要求：</p>
+        <ul>
+            <li>Node.js (推荐 LTS 版本)</li>
+            <li>npm 或 yarn 包管理器</li>
+            <li>Git</li>
+        </ul>
+        <h3>2. 安装 Node.js 和 npm/yarn</h3>
+        <p>如果您尚未安装，请根据您的操作系统进行安装。</p>
+        <ul>
+            <li><strong>macOS:</strong> 推荐使用 Homebrew: <code>brew install node</code></li>
+            <li><strong>Linux (Debian/Ubuntu):</strong> <code>sudo apt update &amp;&amp; sudo apt install nodejs npm</code></li>
+            <li><strong>Linux (Fedora):</strong> <code>sudo dnf install nodejs</code></li>
+            <li>您可以访问 <a href="https://nodejs.org/">Node.js 官网</a> 获取最新安装指南。</li>
+        </ul>
+        <h3>3. 克隆 Clawdbot 仓库</h3>
+        <p>使用 Git 克隆 Clawdbot 的官方仓库：</p>
+        <pre><code>git clone https://github.com/clawdbot/clawdbot.git
+cd clawdbot</code></pre>
+    </div>
+
+    <div class="section">
+        <h2>二、环境配置</h2>
+        <h3>1. 安装依赖</h3>
+        <p>在 Clawdbot 目录下安装项目依赖：</p>
+        <pre><code>npm install</code></pre>
+        <p>或者如果您使用 yarn：</p>
+        <pre><code>yarn install</code></pre>
+
+        <h3>2. 选择您的运行环境</h3>
+        <div class="environment-options">
+            <h4>macOS</h4>
+            <p>通常无需额外配置，Node.js 和 Git 已安装或易于安装。</p>
+            <h4>Linux</h4>
+            <p>确保已安装 Node.js 和 Git。根据您的发行版，可能需要配置 PATH 环境变量。</p>
+        </div>
+    </div>
+
+    <div class="section">
+        <h2>三、模型配置</h2>
+        <p>Clawdbot 支持多种语言模型。您需要在配置文件中指定您想要使用的模型。</p>
+        <div class="model-options">
+            <h3>可选模型:</h3>
+            <ul>
+                <li><strong>Gemini (Google):</strong> 强大的多模态模型。</li>
+                <li><strong>OpenAI (GPT系列):</strong> 广泛使用的高性能模型。</li>
+                <li><strong>Claude (Anthropic):</strong> 具有长文本处理能力的模型。</li>
+                <li><strong>本地模型 (如 Ollama):</strong> 部署在本地的开源模型。</li>
+            </ul>
+            <p>具体的模型配置方式通常涉及设置 API 密钥或本地模型服务地址。请参考 Clawdbot 的官方文档以获取详细的配置说明，通常是在 <code>.env</code> 文件或特定的配置文件中进行设置。</p>
+            <p>例如，若使用 Gemini，您可能需要设置 <code>GOOGLE_API_KEY</code>。</p>
+        </div>
+    </div>
+
+    <div class="section">
+        <h2>四、聊天软件集成</h2>
+        <p>Clawdbot 可以连接到多种聊天平台，以便您通过这些平台与助手交互。</p>
+        <div class="chat-options">
+            <h3>可选聊天软件:</h3>
+            <ul>
+                <li><strong>Telegram:</strong> 通过 BotFather 创建 Telegram Bot，获取 Bot Token。</li>
+                <li><strong>WhatsApp:</strong> 通常需要通过 Meta (Facebook) 开发者平台进行配置，可能涉及 Business API。</li>
+                <li><strong>iMessage:</strong> 在 macOS 上，Clawdbot 可能需要与系统服务集成，具体配置取决于 Clawdbot 的 iMessage 插件支持情况。</li>
+            </ul>
+            <p>您需要在 Clawdbot 的配置文件中填入相应的 API Token、Bot ID 或其他凭证。</p>
+        </div>
+    </div>
+
+    <div class="section">
+        <h2>五、启动 Clawdbot</h2>
+        <p>完成上述配置后，您可以使用以下命令启动 Clawdbot：</p>
+        <pre><code>npm start</code></pre>
+        <p>或者</p>
+        <pre><code>yarn start</code></pre>
+        <p>启动后，按照您配置的聊天软件，通过相应的客户端与 Clawdbot 进行交互。</p>
+    </div>
+
+    <div class="section">
+        <h2>六、提交文档</h2>
+        <p>将本文档保存为 <code>setup.html</code> 文件，并将其放置在指定的目录下，然后提交到 Git 仓库。</p>
+        <pre><code># 假设您已经cd到 clawdbot 仓库的根目录
+# 确保您已将上述 HTML 内容保存到 /home/verdvana/Project/Verdvana.github.io/labs/setup.html
+
+# 切换到您要提交的仓库目录 (Verdvana.github.io)
+cd /home/verdvana/Project/Verdvana.github.io
+
+# 添加新的 HTML 文件
+git add labs/setup.html
+
+# 提交更改
+git commit -m "feat: Add Clawdbot setup guide in HTML format"
+
+# (可选) 推送到远程仓库
+# git push origin main</code></pre>
+        <p>请注意：上述命令假设您当前在 Clawdbot 的根目录下，并且您需要将 <code>Verdvana.github.io</code> 仓库的内容放置在正确的位置，或者已将其克隆到该路径下。</p>
+    </div>
+
+    <footer>
+        <p>本指南仅为通用概述。请务必参考 Clawdbot 的官方文档获取最准确和最新的配置信息。</p>
+    </footer>
+</body>
+</html>
