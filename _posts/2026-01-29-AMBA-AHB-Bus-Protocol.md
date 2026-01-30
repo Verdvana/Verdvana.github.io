@@ -579,3 +579,120 @@ No journal files were found.
 -- No entries --
 
 ```
+
+```
+/home/verdvana> clawdbot logs --limit 80
+
+🦞 Clawdbot 2026.1.24-3 (885167d) — Pairing codes exist because even bots believe in consent—and good security hygiene.
+
+│
+◇  
+Log file: /tmp/clawdbot/clawdbot-2026-01-30.log
+06:47:43 info gateway/heartbeat {"subsystem":"gateway/heartbeat"} {"intervalMs":1800000} heartbeat: started
+06:47:43 info gateway {"subsystem":"gateway"} agent model: google-gemini-cli/gemini-3-pro-preview
+06:47:43 info gateway {"subsystem":"gateway"} listening on ws://127.0.0.1:18789 (PID 25048)
+06:47:43 info gateway {"subsystem":"gateway"} listening on ws://[::1]:18789
+06:47:43 info gateway {"subsystem":"gateway"} log file: /tmp/clawdbot/clawdbot-2026-01-30.log
+06:47:43 info browser/server {"subsystem":"browser/server"} Browser control listening on http://127.0.0.1:18791/
+06:47:43 info cron {"module":"cron","storePath":"/home/verdvana/.clawdbot/cron/jobs.json"} {"enabled":true,"jobs":0,"nextWakeAtMs":null} cron: started
+06:47:44 info bonjour: advertised gateway fqdn=localhost.localdomain (Clawdbot)._clawdbot-gw._tcp.local. host=localhost.local. port=18789 state=announcing
+06:47:47 info gateway/ws {"subsystem":"gateway/ws"} webchat connected conn=0546fb22-1822-42e2-8e0b-73ed1e616f2b remote=127.0.0.1 client=clawdbot-control-ui webchat vdev
+06:48:39 info gateway {"subsystem":"gateway"} signal SIGTERM received
+06:48:39 info gateway {"subsystem":"gateway"} received SIGTERM; shutting down
+06:48:39 info gmail-watcher {"subsystem":"gmail-watcher"} gmail watcher stopped
+06:48:40 info gateway/ws {"subsystem":"gateway/ws"} webchat disconnected code=1012 reason=service restart conn=0546fb22-1822-42e2-8e0b-73ed1e616f2b
+06:48:54 info gateway/canvas {"subsystem":"gateway/canvas"} canvas host mounted at http://127.0.0.1:18789/__clawdbot__/canvas/ (root /home/verdvana/clawd/canvas)
+06:48:54 info gateway/heartbeat {"subsystem":"gateway/heartbeat"} {"intervalMs":1800000} heartbeat: started
+06:48:55 info gateway {"subsystem":"gateway"} agent model: google-gemini-cli/gemini-3-pro-preview
+06:48:55 info gateway {"subsystem":"gateway"} listening on ws://127.0.0.1:18789 (PID 25115)
+06:48:55 info gateway {"subsystem":"gateway"} listening on ws://[::1]:18789
+06:48:55 info gateway {"subsystem":"gateway"} log file: /tmp/clawdbot/clawdbot-2026-01-30.log
+06:48:55 info browser/server {"subsystem":"browser/server"} Browser control listening on http://127.0.0.1:18791/
+06:48:55 info cron {"module":"cron","storePath":"/home/verdvana/.clawdbot/cron/jobs.json"} {"enabled":true,"jobs":0,"nextWakeAtMs":null} cron: started
+06:48:56 info bonjour: advertised gateway fqdn=localhost.localdomain (Clawdbot)._clawdbot-gw._tcp.local. host=localhost.local. port=18789 state=announcing
+06:48:58 info gateway/ws {"subsystem":"gateway/ws"} webchat connected conn=ecb67f31-4108-4ff2-b111-22bbebe41985 remote=127.0.0.1 client=clawdbot-control-ui webchat vdev
+06:48:59 debug skills {"subsystem":"skills"} {"rawName":"openai-image-gen","sanitized":"/openai_image_gen"} Sanitized skill command name "openai-image-gen" to "/openai_image_gen".
+06:48:59 debug skills {"subsystem":"skills"} {"rawName":"openai-whisper-api","sanitized":"/openai_whisper_api"} Sanitized skill command name "openai-whisper-api" to "/openai_whisper_api".
+06:48:59 debug skills {"subsystem":"skills"} {"rawName":"skill-creator","sanitized":"/skill_creator"} Sanitized skill command name "skill-creator" to "/skill_creator".
+06:48:59 debug diagnostic {"subsystem":"diagnostic"} lane enqueue: lane=session:agent:main:main queueSize=1
+06:48:59 debug diagnostic {"subsystem":"diagnostic"} lane dequeue: lane=session:agent:main:main waitMs=23 queueSize=0
+06:48:59 debug diagnostic {"subsystem":"diagnostic"} lane enqueue: lane=main queueSize=1
+06:48:59 debug diagnostic {"subsystem":"diagnostic"} lane dequeue: lane=main waitMs=2 queueSize=0
+06:48:59 debug agent/embedded {"subsystem":"agent/embedded"} embedded run start: runId=50d017c9-dec1-4d26-a1be-a45803a82655 sessionId=ead8dd68-3acf-46e8-b9d2-542e23fc21af provider=google-gemini-cli model=gemini-3-pro-preview thinking=low messageChannel=webchat
+06:48:59 info agent/embedded {"subsystem":"agent/embedded"} {"provider":"google-gemini-cli","toolCount":23,"tools":["0:read","1:edit","2:write","3:exec","4:process","5:browser","6:canvas","7:nodes","8:cron","9:message","10:tts","11:gateway","12:agents_list","13:sessions_list","14:sessions_history","15:sessions_send","16:sessions_spawn","17:session_status","18:web_search","19:web_fetch","20:image","21:memory_search","22:memory_get"]} google tool schema snapshot
+06:48:59 debug diagnostic {"subsystem":"diagnostic"} session state: sessionId=ead8dd68-3acf-46e8-b9d2-542e23fc21af sessionKey=unknown prev=idle new=processing reason="run_started" queueDepth=0
+06:48:59 debug diagnostic {"subsystem":"diagnostic"} run registered: sessionId=ead8dd68-3acf-46e8-b9d2-542e23fc21af totalActive=1
+06:48:59 debug agent/embedded {"subsystem":"agent/embedded"} embedded run prompt start: runId=50d017c9-dec1-4d26-a1be-a45803a82655 sessionId=ead8dd68-3acf-46e8-b9d2-542e23fc21af
+06:48:59 debug agent/embedded {"subsystem":"agent/embedded"} embedded run agent start: runId=50d017c9-dec1-4d26-a1be-a45803a82655
+06:49:12 debug agent/embedded {"subsystem":"agent/embedded"} embedded run agent end: runId=50d017c9-dec1-4d26-a1be-a45803a82655
+06:49:12 debug agent/embedded {"subsystem":"agent/embedded"} embedded run prompt end: runId=50d017c9-dec1-4d26-a1be-a45803a82655 sessionId=ead8dd68-3acf-46e8-b9d2-542e23fc21af durationMs=12915
+06:49:12 debug diagnostic {"subsystem":"diagnostic"} session state: sessionId=ead8dd68-3acf-46e8-b9d2-542e23fc21af sessionKey=unknown prev=processing new=idle reason="run_completed" queueDepth=0
+06:49:12 debug diagnostic {"subsystem":"diagnostic"} run cleared: sessionId=ead8dd68-3acf-46e8-b9d2-542e23fc21af totalActive=0
+06:49:12 debug agent/embedded {"subsystem":"agent/embedded"} embedded run done: runId=50d017c9-dec1-4d26-a1be-a45803a82655 sessionId=ead8dd68-3acf-46e8-b9d2-542e23fc21af durationMs=13074 aborted=false
+06:49:12 debug diagnostic {"subsystem":"diagnostic"} lane task done: lane=main durationMs=13091 active=0 queued=0
+06:49:12 debug diagnostic {"subsystem":"diagnostic"} lane task done: lane=session:agent:main:main durationMs=13098 active=0 queued=0
+06:49:35 info Config        : ~/.clawdbot/clawdbot.json
+06:49:35 info Agent dir     : ~/.clawdbot/agents/main/agent
+06:49:35 info Default       : google-gemini-cli/gemini-3-pro-preview
+06:49:35 info Fallbacks (0) : -
+06:49:35 info Image model   : -
+06:49:35 info Image fallbacks (0): -
+06:49:35 info Aliases (0)   : -
+06:49:35 info Configured models (1): google-gemini-cli/gemini-3-pro-preview
+06:49:35 info {"0":"","_meta":{"runtime":"node","runtimeVersion":"22.22.0","hostname":"localhost.localdomain","name":"clawdbot","date":"2026-01-30T06:49:35.738Z","logLevelId":3,"logLevelName":"INFO","path":{"fullFilePath":"file:///home/verdvana/.nvm/versions/node/v22.22.0/lib/node_modules/clawdbot/dist/logging/console.js:181:32","fileName":"console.js","fileNameWithLine":"console.js:181","fileColumn":"32","fileLine":"181","filePath":".nvm/versions/node/v22.22.0/lib/node_modules/clawdbot/dist/logging/console.js","filePathWithLine":".nvm/versions/node/v22.22.0/lib/node_modules/clawdbot/dist/logging/console.js:181","method":"console.log"}},"time":"2026-01-30T06:49:35.738Z"}
+06:49:35 info Auth overview
+06:49:35 info Auth store    : ~/.clawdbot/agents/main/agent/auth-profiles.json
+06:49:35 info Shell env     : off
+06:49:35 info Providers w/ OAuth/tokens (1): google-gemini-cli (1)
+06:49:35 info - google effective=profiles:~/.clawdbot/agents/main/agent/auth-profiles.json | profiles=1 (oauth=0, token=0, api_key=1) | google:default=AIzaSyAY...3JjRXRA8 | env=AIzaSyAY...3JjRXRA8 | source=env: GEMINI_API_KEY
+06:49:35 info - google-gemini-cli effective=profiles:~/.clawdbot/agents/main/agent/auth-profiles.json | profiles=1 (oauth=1, token=0, api_key=0) | google-gemini-cli:verdvana@gmail.com=OAuth (verdvana@gmail.com)
+06:49:35 info - openai effective=env:sk-proj-...QLZHTAsA | env=sk-proj-...QLZHTAsA | source=env: OPENAI_API_KEY
+06:49:35 info {"0":"","_meta":{"runtime":"node","runtimeVersion":"22.22.0","hostname":"localhost.localdomain","name":"clawdbot","date":"2026-01-30T06:49:35.744Z","logLevelId":3,"logLevelName":"INFO","path":{"fullFilePath":"file:///home/verdvana/.nvm/versions/node/v22.22.0/lib/node_modules/clawdbot/dist/logging/console.js:181:32","fileName":"console.js","fileNameWithLine":"console.js:181","fileColumn":"32","fileLine":"181","filePath":".nvm/versions/node/v22.22.0/lib/node_modules/clawdbot/dist/logging/console.js","filePathWithLine":".nvm/versions/node/v22.22.0/lib/node_modules/clawdbot/dist/logging/console.js:181","method":"console.log"}},"time":"2026-01-30T06:49:35.744Z"}
+06:49:35 info OAuth/token status
+06:49:37 info - google-gemini-cli usage: Pro 100% left · Flash 99% left
+06:49:37 info   - google-gemini-cli:verdvana@gmail.com (verdvana@gmail.com) expiring expires in 49m
+06:50:18 debug diagnostic {"subsystem":"diagnostic"} lane enqueue: lane=session:agent:main:main queueSize=1
+06:50:18 debug diagnostic {"subsystem":"diagnostic"} lane dequeue: lane=session:agent:main:main waitMs=18 queueSize=0
+06:50:18 debug diagnostic {"subsystem":"diagnostic"} lane enqueue: lane=main queueSize=1
+06:50:18 debug diagnostic {"subsystem":"diagnostic"} lane dequeue: lane=main waitMs=1 queueSize=0
+06:50:18 debug agent/embedded {"subsystem":"agent/embedded"} embedded run start: runId=0f82eec8-fd40-49f2-910b-11f16d29437c sessionId=ead8dd68-3acf-46e8-b9d2-542e23fc21af provider=google-gemini-cli model=gemini-3-pro-preview thinking=low messageChannel=webchat
+06:50:18 info agent/embedded {"subsystem":"agent/embedded"} {"provider":"google-gemini-cli","toolCount":23,"tools":["0:read","1:edit","2:write","3:exec","4:process","5:browser","6:canvas","7:nodes","8:cron","9:message","10:tts","11:gateway","12:agents_list","13:sessions_list","14:sessions_history","15:sessions_send","16:sessions_spawn","17:session_status","18:web_search","19:web_fetch","20:image","21:memory_search","22:memory_get"]} google tool schema snapshot
+06:50:18 debug diagnostic {"subsystem":"diagnostic"} session state: sessionId=ead8dd68-3acf-46e8-b9d2-542e23fc21af sessionKey=unknown prev=idle new=processing reason="run_started" queueDepth=0
+06:50:18 debug diagnostic {"subsystem":"diagnostic"} run registered: sessionId=ead8dd68-3acf-46e8-b9d2-542e23fc21af totalActive=1
+06:50:18 debug agent/embedded {"subsystem":"agent/embedded"} embedded run prompt start: runId=0f82eec8-fd40-49f2-910b-11f16d29437c sessionId=ead8dd68-3acf-46e8-b9d2-542e23fc21af
+06:50:18 debug agent/embedded {"subsystem":"agent/embedded"} embedded run agent start: runId=0f82eec8-fd40-49f2-910b-11f16d29437c
+06:50:31 debug agent/embedded {"subsystem":"agent/embedded"} embedded run agent end: runId=0f82eec8-fd40-49f2-910b-11f16d29437c
+06:50:31 debug agent/embedded {"subsystem":"agent/embedded"} embedded run prompt end: runId=0f82eec8-fd40-49f2-910b-11f16d29437c sessionId=ead8dd68-3acf-46e8-b9d2-542e23fc21af durationMs=12599
+06:50:31 debug diagnostic {"subsystem":"diagnostic"} session state: sessionId=ead8dd68-3acf-46e8-b9d2-542e23fc21af sessionKey=unknown prev=processing new=idle reason="run_completed" queueDepth=0
+06:50:31 debug diagnostic {"subsystem":"diagnostic"} run cleared: sessionId=ead8dd68-3acf-46e8-b9d2-542e23fc21af totalActive=0
+06:50:31 debug agent/embedded {"subsystem":"agent/embedded"} embedded run done: runId=0f82eec8-fd40-49f2-910b-11f16d29437c sessionId=ead8dd68-3acf-46e8-b9d2-542e23fc21af durationMs=12698 aborted=false
+06:50:31 debug diagnostic {"subsystem":"diagnostic"} lane task done: lane=main durationMs=12706 active=0 queued=0
+06:50:31 debug diagnostic {"subsystem":"diagnostic"} lane task done: lane=session:agent:main:main durationMs=12710 active=0 queued=0
+Log tail truncated (increase --max-bytes).
+
+/home/verdvana> clawdbot models status
+
+🦞 Clawdbot 2026.1.24-3 (885167d) — WhatsApp automation without the "please accept our new privacy policy".
+
+Config        : ~/.clawdbot/clawdbot.json
+Agent dir     : ~/.clawdbot/agents/main/agent
+Default       : google-gemini-cli/gemini-3-pro-preview
+Fallbacks (0) : -
+Image model   : -
+Image fallbacks (0): -
+Aliases (0)   : -
+Configured models (1): google-gemini-cli/gemini-3-pro-preview
+
+Auth overview
+Auth store    : ~/.clawdbot/agents/main/agent/auth-profiles.json
+Shell env     : off
+Providers w/ OAuth/tokens (1): google-gemini-cli (1)
+- google effective=profiles:~/.clawdbot/agents/main/agent/auth-profiles.json | profiles=1 (oauth=0, token=0, api_key=1) | google:default=AIzaSyAY...3JjRXRA8 | env=AIzaSyAY...3JjRXRA8 | source=env: GEMINI_API_KEY
+- google-gemini-cli effective=profiles:~/.clawdbot/agents/main/agent/auth-profiles.json | profiles=1 (oauth=1, token=0, api_key=0) | google-gemini-cli:verdvana@gmail.com=OAuth (verdvana@gmail.com)
+- openai effective=env:sk-proj-...QLZHTAsA | env=sk-proj-...QLZHTAsA | source=env: OPENAI_API_KEY
+
+OAuth/token status
+- google-gemini-cli usage: Pro 100% left · Flash 99% left
+  - google-gemini-cli:verdvana@gmail.com (verdvana@gmail.com) expiring expires in 49m
+
+```
