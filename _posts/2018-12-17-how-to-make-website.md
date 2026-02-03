@@ -91,16 +91,6 @@ tags:
 
 --------
 
-### 7.结尾
-&#160; &#160; &#160; &#160;到现在这个域名为“用户名.github.io”的博客就基本搭建完了，但为啥我的域名是自己的呢？
-
-&#160; &#160; &#160; &#160;因为我买了域名呀！
-
-![域名](https://raw.githubusercontent.com/Verdvana/Verdvana.github.io/master/_posts/how_to_make_website/domain_name.png)
-
-&#160; &#160; &#160; &#160;我也只能买得起域名了。。。。。
-
-![续费](https://raw.githubusercontent.com/Verdvana/Verdvana.github.io/master/_posts/how_to_make_website/Renewal_fee.jpg)
 
 
 &#160; &#160; &#160; &#160;告辞。
