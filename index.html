@@ -3,258 +3,357 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Verdvana | ASICs Engineering</title>
+    <title>Verdvana — ASICs Engineer</title>
+    <!-- Font Awesome for Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         :root {
-            --apple-black: #1d1d1f;
-            --apple-gray: #f5f5f7;
-            --apple-blue: #0066cc;
-            --text-dark: #1d1d1f;
-            --text-light: #86868b;
+            --bg-color: #000000;
+            --text-color: #ffffff;
+            --secondary-text: #8e8e93;
+            --accent-color: #0071e3; /* Apple/Clean Blue */
+            --border-color: #2c2c2e;
+            --card-bg: #1c1c1e;
+            --hover-bg: #2c2c2e;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
         }
 
         body {
-            margin: 0;
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-            background-color: #fff;
-            color: var(--text-dark);
-            line-height: 1.5;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            line-height: 1.6;
             -webkit-font-smoothing: antialiased;
         }
 
-        /* Navigation */
+        /* OpenAI-style Navigation */
         nav {
             position: fixed;
             top: 0;
             width: 100%;
-            height: 44px;
-            background: rgba(255, 255, 255, 0.8);
-            backdrop-filter: blur(20px);
-            z-index: 1000;
-            border-bottom: 1px solid rgba(0,0,0,0.1);
+            padding: 20px 40px;
             display: flex;
-            justify-content: center;
+            justify-content: space-between;
             align-items: center;
+            z-index: 1000;
+            background: rgba(0, 0, 0, 0.8);
+            backdrop-filter: saturate(180%) blur(20px);
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        nav .logo {
+            font-size: 20px;
+            font-weight: 700;
+            letter-spacing: -0.5px;
+            text-decoration: none;
+            color: white;
+        }
+
+        nav .nav-links {
+            display: flex;
+            gap: 30px;
         }
 
         nav a {
-            color: var(--text-dark);
             text-decoration: none;
-            font-size: 12px;
-            margin: 0 20px;
-            opacity: 0.8;
-            transition: opacity 0.3s;
+            color: var(--text-color);
+            font-size: 14px;
+            font-weight: 500;
+            transition: color 0.2s;
         }
 
-        nav a:hover { opacity: 1; }
+        nav a:hover {
+            color: var(--secondary-text);
+        }
 
         /* Hero Section */
-        .hero {
+        header.hero {
             height: 80vh;
             display: flex;
             flex-direction: column;
             justify-content: center;
-            align-items: center;
-            text-align: center;
-            background-color: var(--apple-black);
-            color: #fff;
-            padding: 0 20px;
+            padding: 0 10%;
+            border-bottom: 1px solid var(--border-color);
         }
 
-        .hero h1 {
-            font-size: 56px;
-            font-weight: 600;
-            margin: 0;
-            letter-spacing: -0.005em;
+        header.hero h1 {
+            font-size: clamp(40px, 8vw, 80px);
+            font-weight: 700;
+            line-height: 1.1;
+            margin-bottom: 20px;
+            letter-spacing: -2px;
         }
 
-        .hero p {
-            font-size: 24px;
-            margin: 10px 0;
-            color: #f5f5f7;
+        header.hero p {
+            font-size: clamp(18px, 2.5vw, 24px);
+            color: var(--secondary-text);
+            max-width: 600px;
         }
 
-        .hero .contact {
-            margin-top: 20px;
-        }
-
-        .hero .contact a {
-            color: var(--apple-blue);
-            text-decoration: none;
-            margin: 0 10px;
-        }
-
-        /* Section Styling */
+        /* Sections General */
         section {
-            padding: 100px 20px;
-            max-width: 1200px;
-            margin: 0 auto;
+            padding: 100px 10%;
+            border-bottom: 1px solid var(--border-color);
         }
 
-        .section-title {
-            font-size: 40px;
+        section h2 {
+            font-size: 32px;
             font-weight: 600;
-            text-align: center;
             margin-bottom: 60px;
+            letter-spacing: -1px;
         }
 
-        /* Experience & Education */
-        .card-container {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-            gap: 20px;
-        }
-
-        .card {
-            background: var(--apple-gray);
-            padding: 40px;
-            border-radius: 20px;
-            transition: transform 0.3s ease;
-        }
-
-        .card:hover { transform: scale(1.02); }
-
-        .card h3 { font-size: 24px; margin-top: 0; }
-        .card .date { color: var(--text-light); font-size: 14px; margin-bottom: 15px; }
-        .card .role { font-weight: 500; color: var(--apple-blue); }
-
-        /* Projects Grid */
-        .project-grid {
+        /* Entries Section (Blog & Labs) */
+        .entry-grid {
             display: grid;
             grid-template-columns: 1fr 1fr;
-            gap: 20px;
+            gap: 2px;
+            background-color: var(--border-color);
+            border: 1px solid var(--border-color);
         }
 
-        .project-item {
-            background-color: #000;
-            color: #fff;
-            height: 500px;
-            border-radius: 20px;
+        .entry-card {
+            background-color: var(--bg-color);
+            padding: 60px 40px;
+            text-decoration: none;
+            color: white;
             display: flex;
             flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            text-align: center;
-            padding: 40px;
-            overflow: hidden;
-            position: relative;
+            justify-content: space-between;
+            transition: background 0.3s;
+            min-height: 350px;
         }
 
-        .project-item h4 { font-size: 32px; margin: 0; }
-        .project-item p { color: var(--text-light); max-width: 80%; }
-        .project-item a { margin-top: 20px; color: var(--apple-blue); text-decoration: none; font-weight: 500; }
-
-        /* Skills */
-        .skills-list {
-            display: flex;
-            flex-wrap: wrap;
-            justify-content: center;
-            gap: 10px;
+        .entry-card:hover {
+            background-color: var(--hover-bg);
         }
 
-        .skill-tag {
-            background: var(--apple-gray);
-            padding: 10px 20px;
-            border-radius: 30px;
+        .entry-card .label {
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 20px;
+            color: var(--accent-color);
+        }
+
+        .entry-card h3 {
+            font-size: 36px;
+            font-weight: 600;
+            line-height: 1.2;
+        }
+
+        .entry-card .icon {
+            font-size: 24px;
+            margin-top: 40px;
+            transition: transform 0.3s;
+        }
+
+        .entry-card:hover .icon {
+            transform: translateX(10px);
+        }
+
+        /* Labs Grid */
+        .labs-list {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 20px;
+            margin-top: 40px;
+        }
+
+        .lab-item {
+            background: var(--card-bg);
+            padding: 30px;
+            border-radius: 4px;
+            text-decoration: none;
+            color: white;
+            border: 1px solid transparent;
+            transition: all 0.2s;
+        }
+
+        .lab-item:hover {
+            border-color: var(--secondary-text);
+            background: transparent;
+        }
+
+        .lab-item h4 {
+            font-size: 18px;
+            margin-bottom: 10px;
+        }
+
+        .lab-item p {
+            font-size: 14px;
+            color: var(--secondary-text);
+        }
+
+        /* Experience & Projects */
+        .content-list {
+            max-width: 800px;
+        }
+
+        .item {
+            margin-bottom: 40px;
+            padding-bottom: 40px;
+            border-bottom: 1px solid #1c1c1e;
+        }
+
+        .item:last-child {
+            border-bottom: none;
+        }
+
+        .item h4 {
+            font-size: 20px;
+            margin-bottom: 5px;
+        }
+
+        .item .meta {
+            font-size: 14px;
+            color: var(--secondary-text);
+            margin-bottom: 15px;
+        }
+
+        .item p {
+            font-size: 16px;
+            color: #d1d1d6;
+        }
+
+        /* Footer */
+        footer {
+            padding: 60px 10% 100px;
+            color: var(--secondary-text);
             font-size: 14px;
         }
 
-        footer {
-            padding: 40px 20px;
-            text-align: center;
-            color: var(--text-light);
-            font-size: 12px;
-            border-top: 1px solid var(--apple-gray);
+        .contact-links {
+            display: flex;
+            gap: 20px;
+            margin-top: 20px;
+        }
+
+        .contact-links a {
+            color: white;
+            text-decoration: none;
+            font-weight: 500;
         }
 
         @media (max-width: 768px) {
-            .hero h1 { font-size: 40px; }
-            .project-grid { grid-template-columns: 1fr; }
-            .project-item { height: 400px; }
+            .entry-grid {
+                grid-template-columns: 1fr;
+            }
+            header.hero {
+                padding: 0 5%;
+            }
+            section {
+                padding: 80px 5%;
+            }
         }
     </style>
 </head>
 <body>
 
     <nav>
-        <a href="#experience">工作经历</a>
-        <a href="#projects">项目经验</a>
-        <a href="#education">教育背景</a>
-        <a href="#skills">专业技能</a>
-    </nav>
-
-    <div class="hero">
-        <h1>Verdvana</h1>
-        <p>ASICs Engineering Senior Engineer @ Qualcomm</p>
-        <div class="contact">
-            <a href="mailto:verdvana@outlook.com">Email</a>
+        <a href="/" class="logo">VERDVANA</a>
+        <div class="nav-links">
+            <a href="/archive.html">Blog</a>
+            <a href="/labs.html">Labs</a>
             <a href="https://github.com/Verdvana">GitHub</a>
         </div>
-    </div>
+    </nav>
 
+    <header class="hero">
+        <h1>Engineering the <br>Future of Silicon.</h1>
+        <p>Verdvana is a Senior ASICs Engineer at Qualcomm specializing in IC design, FPGA systems, and high-performance hardware architecture.</p>
+    </header>
+
+    <!-- Main Navigation Entries -->
+    <section id="entries" style="padding: 0;">
+        <div class="entry-grid">
+            <a href="/archive.html" class="entry-card">
+                <div>
+                    <span class="label">Research & Thoughts</span>
+                    <h3>The Blog</h3>
+                </div>
+                <div class="icon"><i class="fa-solid fa-arrow-right"></i></div>
+            </a>
+            <a href="/labs.html" class="entry-card">
+                <div>
+                    <span class="label">Experimental Tools</span>
+                    <h3>The Labs</h3>
+                </div>
+                <div class="icon"><i class="fa-solid fa-arrow-right"></i></div>
+            </a>
+        </div>
+    </section>
+
+    <!-- Lab Featured -->
+    <section id="labs">
+        <h2>Laboratory</h2>
+        <div class="labs-list">
+            <a href="/labs/visionmatrix.html" class="lab-item">
+                <h4>VisionMatrix</h4>
+                <p>Advanced visual data processing and matrix manipulation utility.</p>
+            </a>
+            <a href="/labs/mortgage_calculator.html" class="lab-item">
+                <h4>Finance Tools</h4>
+                <p>Mortgage and pension calculators built for precision.</p>
+            </a>
+            <a href="/labs/random_picker.html" class="lab-item">
+                <h4>Random Picker</h4>
+                <p>A simple, clean utility for unbiased selection.</p>
+            </a>
+            <a href="/labs/setup.html" class="lab-item">
+                <h4>Dev Setup</h4>
+                <p>Documentation of the engineering environment.</p>
+            </a>
+        </div>
+    </section>
+
+    <!-- Experience -->
     <section id="experience">
-        <h2 class="section-title">工作经历</h2>
-        <div class="card-container">
-            <div class="card">
-                <div class="date">2023.12 - 至今</div>
-                <h3>Qualcomm</h3>
-                <p class="role">ASICs Engineering Senior Engineer</p>
+        <h2>Career</h2>
+        <div class="content-list">
+            <div class="item">
+                <h4>Qualcomm (Shanghai) Co., Ltd.</h4>
+                <div class="meta">ASICs Engineering Senior Engineer — 2023.12 - Present</div>
+                <p>Driving the development of next-generation silicon solutions as a lead engineer.</p>
             </div>
-            <div class="card">
-                <div class="date">2021.06 - 2023.12</div>
-                <h3>Qualcomm</h3>
-                <p class="role">ASICs Engineering Engineer</p>
+            <div class="item">
+                <h4>Qualcomm (Shanghai) Co., Ltd.</h4>
+                <div class="meta">ASICs Engineering Engineer — 2021.6 - 2023.12</div>
             </div>
-            <div class="card">
-                <div class="date">2018.04 - 2018.08</div>
-                <h3>山西中谷科技</h3>
-                <p class="role">硬件工程师</p>
+            <div class="item">
+                <h4>Shanxi Zhonggu Technology</h4>
+                <div class="meta">Hardware Engineer — 2018.4 - 2018.8</div>
             </div>
         </div>
     </section>
 
-    <section id="projects" style="background-color: var(--apple-gray); max-width: 100%;">
-        <div style="max-width: 1200px; margin: 0 auto;">
-            <h2 class="section-title">工程项目</h2>
-            <div class="project-grid">
-                <div class="project-item">
-                    <h4>微波智能感知平台</h4>
-                    <p>基于微波技术的智能感知系统开发</p>
-                    <a href="https://github.com/Verdvana/Microwave_Intelligent_Perception_Platform">了解更多 ></a>
-                </div>
-                <div class="project-item" style="background-color: #fff; color: #000;">
-                    <h4>消防员辅助监控系统</h4>
-                    <p>提升极端环境下的安全保障能力</p>
-                    <a href="https://github.com/Verdvana/FAMS">了解更多 ></a>
-                </div>
-                <div class="project-item" style="background-color: #f5f5f7; color: #000;">
-                    <h4>低功耗甲烷检测系统</h4>
-                    <p>面向工业安全的超低功耗传感器设计</p>
-                    <a href="https://github.com/Verdvana/Low_Power_Methane_Detector">了解更多 ></a>
-                </div>
-                <div class="project-item">
-                    <h4>带频谱显示的音频播放器</h4>
-                    <p>复古与技术的完美结合</p>
-                    <a href="https://github.com/Verdvana/Audio_Power_Amplifier_With_Spectrum_Display">了解更多 ></a>
-                </div>
+    <!-- Education -->
+    <section id="education">
+        <h2>Education</h2>
+        <div class="content-list">
+            <div class="item">
+                <h4>Xidian University</h4>
+                <div class="meta">Master of Electronic & Communication Engineering — 2021</div>
             </div>
-        </div>
-    </section>
-
-    <section id="skills">
-        <h2 class="section-title">专业技能</h2>
-        <div class="skills-list">
-            <span class="skill-tag">Verilog / SystemVerilog</span>
-            <span class="skill-tag">Perl / Tcl / Python</span>
-            <span class="skill-tag">VCS / Verdi / Design Compiler</span>
-            <span class="skill-tag">Altium Designer / Allegro</span>
-            <span class="skill-tag">Vivado / Quartus Prime</span>
-            <span class="skill-tag">Embedded C</span>
+            <div class="item">
+                <h4>North University of China</h4>
+                <div class="meta">Bachelor of Electronic Science & Technology — 2017</div>
+            </div>
         </div>
     </section>
 
     <footer>
-        <p>© 2026 Verdvana. Powered by Apple Style Design.</p>
+        <p>© 2026 Verdvana. All rights reserved.</p>
+        <div class="contact-links">
+            <a href="mailto:verdvana@outlook.com">Email</a>
+            <a href="https://github.com/Verdvana">GitHub</a>
+            <a href="/README.md">CV</a>
+        </div>
     </footer>
 
 </body>
