@@ -1,9 +1,12 @@
+---
+layout: null
+---
 <!DOCTYPE html>
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Verdvana — ASICs Engineer</title>
+    <title>Verdvana — ASICs Engineering & Hardware Design</title>
     <!-- Font Awesome for Icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
@@ -11,10 +14,10 @@
             --bg-color: #000000;
             --text-color: #ffffff;
             --secondary-text: #8e8e93;
-            --accent-color: #0071e3; /* Apple/Clean Blue */
-            --border-color: #2c2c2e;
-            --card-bg: #1c1c1e;
-            --hover-bg: #2c2c2e;
+            --accent-color: #0071e3;
+            --border-color: rgba(255, 255, 255, 0.1);
+            --card-bg: rgba(28, 28, 30, 0.7);
+            --glass: rgba(255, 255, 255, 0.05);
         }
 
         * {
@@ -29,9 +32,10 @@
             color: var(--text-color);
             line-height: 1.6;
             -webkit-font-smoothing: antialiased;
+            overflow-x: hidden;
         }
 
-        /* OpenAI-style Navigation */
+        /* Fixed Navigation */
         nav {
             position: fixed;
             top: 0;
@@ -41,17 +45,31 @@
             justify-content: space-between;
             align-items: center;
             z-index: 1000;
-            background: rgba(0, 0, 0, 0.8);
-            backdrop-filter: saturate(180%) blur(20px);
+            background: rgba(0, 0, 0, 0.7);
+            backdrop-filter: blur(20px);
             border-bottom: 1px solid var(--border-color);
         }
 
-        nav .logo {
-            font-size: 20px;
-            font-weight: 700;
-            letter-spacing: -0.5px;
+        nav .logo-area {
+            display: flex;
+            align-items: center;
+            gap: 12px;
             text-decoration: none;
             color: white;
+        }
+
+        nav .logo-area img {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            border: 1px solid var(--border-color);
+            object-fit: cover;
+        }
+
+        nav .logo {
+            font-size: 18px;
+            font-weight: 700;
+            letter-spacing: -0.5px;
         }
 
         nav .nav-links {
@@ -73,190 +91,270 @@
 
         /* Hero Section */
         header.hero {
-            height: 80vh;
+            position: relative;
+            height: 90vh;
             display: flex;
             flex-direction: column;
             justify-content: center;
             padding: 0 10%;
-            border-bottom: 1px solid var(--border-color);
+            background-image: linear-gradient(to bottom, rgba(0,0,0,0.3), rgba(0,0,0,0.9)), url('/static/img/wallpaper.jpg');
+            background-size: cover;
+            background-position: center;
+            overflow: hidden;
         }
 
         header.hero h1 {
-            font-size: clamp(40px, 8vw, 80px);
+            font-size: clamp(48px, 10vw, 96px);
             font-weight: 700;
-            line-height: 1.1;
-            margin-bottom: 20px;
-            letter-spacing: -2px;
+            line-height: 1.05;
+            margin-bottom: 24px;
+            letter-spacing: -3px;
+            background: linear-gradient(to right, #fff, #a1a1a6);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
         }
 
         header.hero p {
-            font-size: clamp(18px, 2.5vw, 24px);
-            color: var(--secondary-text);
-            max-width: 600px;
+            font-size: clamp(18px, 2.5vw, 28px);
+            color: #d1d1d6;
+            max-width: 700px;
+            font-weight: 400;
+            line-height: 1.4;
         }
 
-        /* Sections General */
-        section {
-            padding: 100px 10%;
+        /* Split Section: Blog & Labs */
+        .entries-section {
+            display: flex;
+            height: 600px;
             border-bottom: 1px solid var(--border-color);
         }
 
-        section h2 {
-            font-size: 32px;
-            font-weight: 600;
-            margin-bottom: 60px;
-            letter-spacing: -1px;
-        }
-
-        /* Entries Section (Blog & Labs) */
-        .entry-grid {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 2px;
-            background-color: var(--border-color);
-            border: 1px solid var(--border-color);
-        }
-
-        .entry-card {
-            background-color: var(--bg-color);
-            padding: 60px 40px;
+        .entry-block {
+            flex: 1;
+            position: relative;
             text-decoration: none;
             color: white;
             display: flex;
             flex-direction: column;
-            justify-content: space-between;
-            transition: background 0.3s;
-            min-height: 350px;
+            justify-content: flex-end;
+            padding: 60px;
+            overflow: hidden;
+            border-right: 1px solid var(--border-color);
         }
 
-        .entry-card:hover {
-            background-color: var(--hover-bg);
+        .entry-block:last-child { border-right: none; }
+
+        .entry-block .bg-image {
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background-size: cover;
+            background-position: center;
+            opacity: 0.5;
+            transition: opacity 0.6s ease, transform 0.8s cubic-bezier(0.16, 1, 0.3, 1);
+            transform: scale(1.05);
+            z-index: 0;
         }
 
-        .entry-card .label {
-            font-size: 12px;
+        .entry-block:hover .bg-image {
+            opacity: 0.8;
+            transform: scale(1);
+        }
+
+        .entry-block .overlay {
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: linear-gradient(to top, rgba(0,0,0,0.9) 0%, rgba(0,0,0,0.2) 100%);
+            z-index: 1;
+        }
+
+        .entry-block .content {
+            position: relative;
+            z-index: 2;
+        }
+
+        .entry-block .label {
+            font-size: 14px;
             text-transform: uppercase;
-            letter-spacing: 1px;
-            margin-bottom: 20px;
+            letter-spacing: 2px;
             color: var(--accent-color);
+            margin-bottom: 16px;
+            display: block;
         }
 
-        .entry-card h3 {
-            font-size: 36px;
-            font-weight: 600;
-            line-height: 1.2;
+        .entry-block h3 {
+            font-size: 56px;
+            font-weight: 700;
+            letter-spacing: -2px;
         }
 
-        .entry-card .icon {
-            font-size: 24px;
-            margin-top: 40px;
-            transition: transform 0.3s;
+        /* Section General Styling */
+        section {
+            padding: 120px 10%;
+            border-bottom: 1px solid var(--border-color);
         }
 
-        .entry-card:hover .icon {
-            transform: translateX(10px);
+        section h2 {
+            font-size: 42px;
+            font-weight: 700;
+            margin-bottom: 60px;
+            letter-spacing: -1.5px;
         }
 
         /* Labs Grid */
         .labs-list {
             display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-            gap: 20px;
-            margin-top: 40px;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 24px;
         }
 
         .lab-item {
-            background: var(--card-bg);
-            padding: 30px;
-            border-radius: 4px;
+            background: var(--glass);
+            padding: 40px;
+            border-radius: 12px;
             text-decoration: none;
             color: white;
-            border: 1px solid transparent;
-            transition: all 0.2s;
+            border: 1px solid var(--border-color);
+            transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
         }
 
         .lab-item:hover {
-            border-color: var(--secondary-text);
-            background: transparent;
+            background: rgba(255, 255, 255, 0.1);
+            transform: translateY(-8px);
+            border-color: rgba(255, 255, 255, 0.3);
         }
 
-        .lab-item h4 {
-            font-size: 18px;
-            margin-bottom: 10px;
+        .lab-item i {
+            font-size: 24px;
+            color: var(--accent-color);
         }
 
-        .lab-item p {
-            font-size: 14px;
+        /* Career Section with Company Logos */
+        .career-container {
+            max-width: 1000px;
+        }
+
+        .career-item {
+            display: grid;
+            grid-template-columns: 240px 1fr;
+            padding: 60px 0;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .career-item:last-child { border-bottom: none; }
+
+        .career-item .date {
             color: var(--secondary-text);
-        }
-
-        /* Experience & Projects */
-        .content-list {
-            max-width: 800px;
-        }
-
-        .item {
-            margin-bottom: 40px;
-            padding-bottom: 40px;
-            border-bottom: 1px solid #1c1c1e;
-        }
-
-        .item:last-child {
-            border-bottom: none;
-        }
-
-        .item h4 {
-            font-size: 20px;
-            margin-bottom: 5px;
-        }
-
-        .item .meta {
-            font-size: 14px;
-            color: var(--secondary-text);
-            margin-bottom: 15px;
-        }
-
-        .item p {
             font-size: 16px;
+            font-weight: 500;
+        }
+
+        .career-item .info {
+            display: flex;
+            gap: 32px;
+        }
+
+        .career-item .company-logo {
+            flex-shrink: 0;
+            width: 64px;
+            height: 64px;
+            background: white;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+            border: 1px solid var(--border-color);
+        }
+
+        .career-item .company-logo i {
+            font-size: 32px;
+            color: #333;
+        }
+
+        /* If user has actual images, they can use this */
+        .career-item .company-logo img {
+            width: 80%;
+            height: 80%;
+            object-fit: contain;
+        }
+
+        .career-item .details h4 {
+            font-size: 26px;
+            font-weight: 700;
+            margin-bottom: 4px;
+        }
+
+        .career-item .details .company-name {
+            font-size: 18px;
+            color: var(--accent-color);
+            font-weight: 500;
+            margin-bottom: 16px;
+        }
+
+        .career-item .details p {
             color: #d1d1d6;
+            font-size: 17px;
+            max-width: 600px;
         }
 
         /* Footer */
         footer {
-            padding: 60px 10% 100px;
-            color: var(--secondary-text);
-            font-size: 14px;
+            padding: 100px 10% 120px;
+            background: #000;
         }
 
-        .contact-links {
+        .footer-content {
             display: flex;
-            gap: 20px;
-            margin-top: 20px;
+            justify-content: space-between;
+            align-items: flex-end;
+            border-top: 1px solid var(--border-color);
+            padding-top: 60px;
         }
 
-        .contact-links a {
-            color: white;
+        .footer-left h2 {
+            font-size: 48px;
+            letter-spacing: -2px;
+            margin-bottom: 24px;
+        }
+
+        .contact-pills {
+            display: flex;
+            gap: 16px;
+        }
+
+        .pill {
+            padding: 12px 28px;
+            border-radius: 40px;
+            background: #fff;
+            color: #000;
             text-decoration: none;
-            font-weight: 500;
+            font-weight: 600;
+            font-size: 14px;
+            transition: all 0.2s;
         }
 
-        @media (max-width: 768px) {
-            .entry-grid {
-                grid-template-columns: 1fr;
-            }
-            header.hero {
-                padding: 0 5%;
-            }
-            section {
-                padding: 80px 5%;
-            }
+        .pill:hover { opacity: 0.8; transform: scale(1.02); }
+
+        @media (max-width: 900px) {
+            .career-item { grid-template-columns: 1fr; gap: 24px; padding: 40px 0; }
+            .career-item .info { flex-direction: column; gap: 20px; }
+            .entries-section { flex-direction: column; height: auto; }
+            .entry-block { height: 400px; padding: 40px; }
+            .entry-block h3 { font-size: 42px; }
+            header.hero { padding: 0 5%; }
         }
     </style>
 </head>
 <body>
 
     <nav>
-        <a href="/" class="logo">VERDVANA</a>
+        <a href="/" class="logo-area">
+            <img src="/static/img/avatar.jpg" alt="Verdvana">
+            <span class="logo">VERDVANA</span>
+        </a>
         <div class="nav-links">
             <a href="/archive">Blog</a>
             <a href="/labs">Labs</a>
@@ -266,93 +364,119 @@
 
     <header class="hero">
         <h1>Engineering the <br>Future of Silicon.</h1>
-        <p>Verdvana is a Senior ASICs Engineer at Qualcomm specializing in IC design, FPGA systems, and high-performance hardware architecture.</p>
+        <p>Senior ASICs Engineer at Qualcomm. <br>Architecting high-performance hardware solutions and exploring the frontiers of IC design.</p>
     </header>
 
-    <!-- Main Navigation Entries -->
-    <section id="entries" style="padding: 0;">
-        <div class="entry-grid">
-            <a href="/archive" class="entry-card">
-                <div>
-                    <span class="label">Research & Thoughts</span>
-                    <h3>The Blog</h3>
-                </div>
-                <div class="icon"><i class="fa-solid fa-arrow-right"></i></div>
-            </a>
-            <a href="/labs" class="entry-card">
-                <div>
-                    <span class="label">Experimental Tools</span>
-                    <h3>The Labs</h3>
-                </div>
-                <div class="icon"><i class="fa-solid fa-arrow-right"></i></div>
-            </a>
-        </div>
-    </section>
+    <!-- Split Section: Blog & Labs with background images -->
+    <div class="entries-section">
+        <a href="/archive" class="entry-block">
+            <div class="bg-image" style="background-image: url('/static/img/wallpaper2.jpg');"></div>
+            <div class="overlay"></div>
+            <div class="content">
+                <span class="label">Research & Thoughts</span>
+                <h3>The Blog</h3>
+            </div>
+        </a>
+        <a href="/labs" class="entry-block">
+            <div class="bg-image" style="background-image: url('/static/img/wallpaper3.jpg');"></div>
+            <div class="overlay"></div>
+            <div class="content">
+                <span class="label">Experimental Tools</span>
+                <h3>The Labs</h3>
+            </div>
+        </a>
+    </div>
 
-    <!-- Lab Featured -->
+    <!-- Labs Featured -->
     <section id="labs">
         <h2>Laboratory</h2>
         <div class="labs-list">
             <a href="/labs/visionmatrix.html" class="lab-item">
+                <i class="fa-solid fa-layer-group"></i>
                 <h4>VisionMatrix</h4>
-                <p>Advanced visual data processing and matrix manipulation utility.</p>
+                <p>Advanced visual data processing and matrix manipulation utility for modern workflows.</p>
             </a>
             <a href="/labs/mortgage_calculator.html" class="lab-item">
+                <i class="fa-solid fa-calculator"></i>
                 <h4>Finance Tools</h4>
-                <p>Mortgage and pension calculators built for precision.</p>
+                <p>High-precision mortgage and pension calculators built for financial planning.</p>
             </a>
             <a href="/labs/random_picker.html" class="lab-item">
+                <i class="fa-solid fa-dice"></i>
                 <h4>Random Picker</h4>
-                <p>A simple, clean utility for unbiased selection.</p>
+                <p>A minimalist, unbiased selection utility designed for clean user interaction.</p>
             </a>
             <a href="/labs/setup.html" class="lab-item">
-                <h4>Dev Setup</h4>
-                <p>Documentation of the engineering environment.</p>
+                <i class="fa-solid fa-terminal"></i>
+                <h4>Environment</h4>
+                <p>Documentation of the engineering setup and development toolchain.</p>
             </a>
         </div>
     </section>
 
-    <!-- Experience -->
-    <section id="experience">
+    <!-- Career with Logos -->
+    <section id="career">
         <h2>Career</h2>
-        <div class="content-list">
-            <div class="item">
-                <h4>Qualcomm (Shanghai) Co., Ltd.</h4>
-                <div class="meta">ASICs Engineering Senior Engineer — 2023.12 - Present</div>
-                <p>Driving the development of next-generation silicon solutions as a lead engineer.</p>
+        <div class="career-container">
+            <!-- Qualcomm Senior -->
+            <div class="career-item">
+                <div class="date">2023.12 — Present</div>
+                <div class="info">
+                    <div class="company-logo">
+                        <i class="fa-solid fa-microchip"></i>
+                    </div>
+                    <div class="details">
+                        <h4>Senior ASICs Engineer</h4>
+                        <div class="company-name">Qualcomm (Shanghai) Co., Ltd.</div>
+                        <p>Leading hardware development for next-generation silicon architectures, focusing on efficiency and high-performance design.</p>
+                    </div>
+                </div>
             </div>
-            <div class="item">
-                <h4>Qualcomm (Shanghai) Co., Ltd.</h4>
-                <div class="meta">ASICs Engineering Engineer — 2021.6 - 2023.12</div>
+            <!-- Qualcomm Junior -->
+            <div class="career-item">
+                <div class="date">2021.06 — 2023.12</div>
+                <div class="info">
+                    <div class="company-logo">
+                        <i class="fa-solid fa-microchip"></i>
+                    </div>
+                    <div class="details">
+                        <h4>ASICs Engineering Engineer</h4>
+                        <div class="company-name">Qualcomm (Shanghai) Co., Ltd.</div>
+                        <p>Contributed to complex IC design verification and implementation workflows.</p>
+                    </div>
+                </div>
             </div>
-            <div class="item">
-                <h4>Shanxi Zhonggu Technology</h4>
-                <div class="meta">Hardware Engineer — 2018.4 - 2018.8</div>
+            <!-- Zhonggu -->
+            <div class="career-item">
+                <div class="date">2018.04 — 2018.08</div>
+                <div class="info">
+                    <div class="company-logo">
+                        <i class="fa-solid fa-building"></i>
+                    </div>
+                    <div class="details">
+                        <h4>Hardware Engineer</h4>
+                        <div class="company-name">Shanxi Zhonggu Technology</div>
+                        <p>Focused on PCB design and low-level hardware development for industrial sensors.</p>
+                    </div>
+                </div>
             </div>
         </div>
     </section>
 
-    <!-- Education -->
-    <section id="education">
-        <h2>Education</h2>
-        <div class="content-list">
-            <div class="item">
-                <h4>Xidian University</h4>
-                <div class="meta">Master of Electronic & Communication Engineering — 2021</div>
-            </div>
-            <div class="item">
-                <h4>North University of China</h4>
-                <div class="meta">Bachelor of Electronic Science & Technology — 2017</div>
-            </div>
-        </div>
-    </section>
-
+    <!-- Footer -->
     <footer>
-        <p>© 2026 Verdvana. All rights reserved.</p>
-        <div class="contact-links">
-            <a href="mailto:verdvana@outlook.com">Email</a>
-            <a href="https://github.com/Verdvana">GitHub</a>
-            <a href="/README.md">CV</a>
+        <div class="footer-content">
+            <div class="footer-left">
+                <h2>Connect.</h2>
+                <div class="contact-pills">
+                    <a href="mailto:verdvana@outlook.com" class="pill">Contact Me</a>
+                    <a href="https://github.com/Verdvana" target="_blank" class="pill" style="background:transparent; color:#fff; border:1px solid #fff;">GitHub</a>
+                </div>
+            </div>
+            <div class="footer-right">
+                <p style="color: var(--secondary-text); margin-bottom: 8px;">© 2026 Verdvana. All rights reserved.</p>
+                <p style="color: var(--secondary-text); font-size: 12px;">Engineered with precision in Shanghai.</p>
+            </div>
         </div>
     </footer>
 
