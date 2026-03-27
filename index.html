@@ -170,6 +170,7 @@ layout: null
         .entry-block .content {
             position: relative;
             z-index: 2;
+            width: 100%;
         }
 
         .entry-block .label {
@@ -185,6 +186,48 @@ layout: null
             font-size: 56px;
             font-weight: 700;
             letter-spacing: -2px;
+            margin-bottom: 30px;
+        }
+
+        /* Recent Posts List */
+        .recent-posts {
+            list-style: none;
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 15px 40px;
+            max-width: 800px;
+        }
+
+        .post-link {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px 0;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            text-decoration: none;
+            color: #d1d1d6;
+            font-size: 16px;
+            transition: all 0.2s;
+        }
+
+        .post-link:hover {
+            color: white;
+            border-bottom-color: var(--accent-color);
+            padding-left: 5px;
+        }
+
+        .post-link .post-title {
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            margin-right: 20px;
+        }
+
+        .post-link .post-date {
+            font-family: monospace;
+            font-size: 14px;
+            color: var(--secondary-text);
+            flex-shrink: 0;
         }
 
         /* Section General Styling */
@@ -357,7 +400,6 @@ layout: null
         </a>
         <div class="nav-links">
             <a href="/archive">Blog</a>
-            <a href="/labs">Labs</a>
             <a href="https://github.com/Verdvana">GitHub</a>
         </div>
     </nav>
@@ -367,52 +409,27 @@ layout: null
         <p>Senior ASICs Engineer at Qualcomm. <br>Architecting high-performance hardware solutions and exploring the frontiers of IC design.</p>
     </header>
 
-    <!-- Split Section: Blog & Labs with background images -->
-    <div class="entries-section">
-        <a href="/archive" class="entry-block">
-            <div class="bg-image" style="background-image: url('/static/img/wallpaper2.jpg');"></div>
-            <div class="overlay"></div>
-            <div class="content">
-                <span class="label">Research & Thoughts</span>
-                <h3>The Blog</h3>
+    <!-- Blog Section -->
+    <div class="entries-section" style="height: auto; min-height: 600px; padding: 100px 10%; position: relative;">
+        <div style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: linear-gradient(to top, rgba(0,0,0,0.95) 0%, rgba(0,0,0,0.7) 100%); z-index: 1;"></div>
+        <div class="bg-image" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; background-image: url('/static/img/wallpaper2.jpg'); background-size: cover; background-position: center; opacity: 0.3; z-index: 0;"></div>
+        
+        <div class="content" style="position: relative; z-index: 2; width: 100%;">
+            <span class="label">Research & Thoughts</span>
+            <h3 style="font-size: 56px; font-weight: 700; letter-spacing: -2px; margin-bottom: 50px;">The Blog</h3>
+            
+            <div class="recent-posts">
+                {% for post in site.posts limit:8 %}
+                <a href="{{ post.url | relative_url }}" class="post-link">
+                    <span class="post-title">{{ post.title }}</span>
+                    <span class="post-date">{{ post.date | date: "%Y.%m.%d" }}</span>
+                </a>
+                {% endfor %}
             </div>
-        </a>
-        <a href="/labs" class="entry-block">
-            <div class="bg-image" style="background-image: url('/static/img/wallpaper3.jpg');"></div>
-            <div class="overlay"></div>
-            <div class="content">
-                <span class="label">Experimental Tools</span>
-                <h3>The Labs</h3>
-            </div>
-        </a>
-    </div>
-
-    <!-- Labs Featured -->
-    <section id="labs">
-        <h2>Laboratory</h2>
-        <div class="labs-list">
-            <a href="/labs/visionmatrix.html" class="lab-item">
-                <i class="fa-solid fa-layer-group"></i>
-                <h4>VisionMatrix</h4>
-                <p>Advanced visual data processing and matrix manipulation utility for modern workflows.</p>
-            </a>
-            <a href="/labs/mortgage_calculator.html" class="lab-item">
-                <i class="fa-solid fa-calculator"></i>
-                <h4>Finance Tools</h4>
-                <p>High-precision mortgage and pension calculators built for financial planning.</p>
-            </a>
-            <a href="/labs/random_picker.html" class="lab-item">
-                <i class="fa-solid fa-dice"></i>
-                <h4>Random Picker</h4>
-                <p>A minimalist, unbiased selection utility designed for clean user interaction.</p>
-            </a>
-            <a href="/labs/setup.html" class="lab-item">
-                <i class="fa-solid fa-terminal"></i>
-                <h4>Environment</h4>
-                <p>Documentation of the engineering setup and development toolchain.</p>
-            </a>
+            
+            <a href="/archive" class="pill" style="display: inline-block; margin-top: 50px; background: transparent; color: #fff; border: 1px solid #fff; text-decoration: none;">View All Posts</a>
         </div>
-    </section>
+    </div>
 
     <!-- Career with Logos -->
     <section id="career">
@@ -457,6 +474,41 @@ layout: null
                         <h4>Hardware Engineer</h4>
                         <div class="company-name">Shanxi Zhonggu Technology</div>
                         <p>Focused on PCB design and low-level hardware development for industrial sensors.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Education Section -->
+    <section id="education">
+        <h2>Education</h2>
+        <div class="career-container">
+            <!-- Xidian University -->
+            <div class="career-item">
+                <div class="date">2018.09 — 2021.06</div>
+                <div class="info">
+                    <div class="company-logo">
+                        <i class="fa-solid fa-graduation-cap"></i>
+                    </div>
+                    <div class="details">
+                        <h4>M.E. in Electronics and Communication Engineering</h4>
+                        <div class="company-name">Xidian University</div>
+                        <p>Focused on advanced digital signal processing and hardware architecture during postgraduate studies.</p>
+                    </div>
+                </div>
+            </div>
+            <!-- North University of China -->
+            <div class="career-item">
+                <div class="date">2013.09 — 2017.07</div>
+                <div class="info">
+                    <div class="company-logo">
+                        <i class="fa-solid fa-graduation-cap"></i>
+                    </div>
+                    <div class="details">
+                        <h4>B.E. in Electronic Science and Technology</h4>
+                        <div class="company-name">North University of China</div>
+                        <p>Foundational studies in semiconductor physics, circuit design, and embedded systems.</p>
                     </div>
                 </div>
             </div>
