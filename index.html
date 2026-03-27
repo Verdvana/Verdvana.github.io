@@ -123,10 +123,10 @@ layout: null
         }
 
         /* Split Section: Blog & Labs */
-        .entries-section {
+        .entries-container {
             display: flex;
-            height: 600px;
             border-bottom: 1px solid var(--border-color);
+            min-height: 600px;
         }
 
         .entry-block {
@@ -136,35 +136,37 @@ layout: null
             color: white;
             display: flex;
             flex-direction: column;
-            justify-content: flex-end;
-            padding: 60px;
+            justify-content: flex-start;
+            padding: 80px 10%;
             overflow: hidden;
             border-right: 1px solid var(--border-color);
+            background-size: cover;
+            background-position: center;
         }
 
         .entry-block:last-child { border-right: none; }
+
+        .entry-block .overlay {
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: linear-gradient(to top, rgba(0,0,0,0.95) 0%, rgba(0,0,0,0.7) 100%);
+            z-index: 1;
+        }
 
         .entry-block .bg-image {
             position: absolute;
             top: 0; left: 0; width: 100%; height: 100%;
             background-size: cover;
             background-position: center;
-            opacity: 0.5;
+            opacity: 0.3;
             transition: opacity 0.6s ease, transform 0.8s cubic-bezier(0.16, 1, 0.3, 1);
             transform: scale(1.05);
             z-index: 0;
         }
 
         .entry-block:hover .bg-image {
-            opacity: 0.8;
+            opacity: 0.5;
             transform: scale(1);
-        }
-
-        .entry-block .overlay {
-            position: absolute;
-            top: 0; left: 0; width: 100%; height: 100%;
-            background: linear-gradient(to top, rgba(0,0,0,0.9) 0%, rgba(0,0,0,0.2) 100%);
-            z-index: 1;
         }
 
         .entry-block .content {
@@ -186,23 +188,23 @@ layout: null
             font-size: 56px;
             font-weight: 700;
             letter-spacing: -2px;
-            margin-bottom: 30px;
+            margin-bottom: 50px;
         }
 
-        /* Recent Posts List */
-        .recent-posts {
+        /* Recent Posts/Labs List */
+        .recent-list {
             list-style: none;
-            display: grid;
-            grid-template-columns: repeat(2, 1fr);
-            gap: 15px 40px;
-            max-width: 800px;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            margin-bottom: 40px;
         }
 
-        .post-link {
+        .list-link {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            padding: 8px 0;
+            padding: 10px 0;
             border-bottom: 1px solid rgba(255, 255, 255, 0.1);
             text-decoration: none;
             color: #d1d1d6;
@@ -210,20 +212,20 @@ layout: null
             transition: all 0.2s;
         }
 
-        .post-link:hover {
+        .list-link:hover {
             color: white;
             border-bottom-color: var(--accent-color);
             padding-left: 5px;
         }
 
-        .post-link .post-title {
+        .list-link .item-title {
             white-space: nowrap;
             overflow: hidden;
             text-overflow: ellipsis;
             margin-right: 20px;
         }
 
-        .post-link .post-date {
+        .list-link .item-meta {
             font-family: monospace;
             font-size: 14px;
             color: var(--secondary-text);
@@ -400,6 +402,7 @@ layout: null
         </a>
         <div class="nav-links">
             <a href="/archive">Blog</a>
+            <a href="/labs">Labs</a>
             <a href="https://github.com/Verdvana">GitHub</a>
         </div>
     </nav>
@@ -409,25 +412,49 @@ layout: null
         <p>Senior ASICs Engineer at Qualcomm. <br>Architecting high-performance hardware solutions and exploring the frontiers of IC design.</p>
     </header>
 
-    <!-- Blog Section -->
-    <div class="entries-section" style="height: auto; min-height: 600px; padding: 100px 10%; position: relative;">
-        <div style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: linear-gradient(to top, rgba(0,0,0,0.95) 0%, rgba(0,0,0,0.7) 100%); z-index: 1;"></div>
-        <div class="bg-image" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; background-image: url('/static/img/wallpaper2.jpg'); background-size: cover; background-position: center; opacity: 0.3; z-index: 0;"></div>
-        
-        <div class="content" style="position: relative; z-index: 2; width: 100%;">
-            <span class="label">Research & Thoughts</span>
-            <h3 style="font-size: 56px; font-weight: 700; letter-spacing: -2px; margin-bottom: 50px;">The Blog</h3>
-            
-            <div class="recent-posts">
-                {% for post in site.posts limit:8 %}
-                <a href="{{ post.url | relative_url }}" class="post-link">
-                    <span class="post-title">{{ post.title }}</span>
-                    <span class="post-date">{{ post.date | date: "%Y.%m.%d" }}</span>
-                </a>
-                {% endfor %}
+    <!-- Blog & Labs Section -->
+    <div class="entries-container">
+        <!-- The Blog -->
+        <div class="entry-block">
+            <div class="overlay"></div>
+            <div class="bg-image" style="background-image: url('/static/img/wallpaper2.jpg');"></div>
+            <div class="content">
+                <span class="label">Research & Thoughts</span>
+                <h3>The Blog</h3>
+                
+                <div class="recent-list">
+                    {% for post in site.posts limit:8 %}
+                    <a href="{{ post.url | relative_url }}" class="list-link">
+                        <span class="item-title">{{ post.title }}</span>
+                        <span class="item-meta">{{ post.date | date: "%Y.%m.%d" }}</span>
+                    </a>
+                    {% endfor %}
+                </div>
+                
+                <a href="/archive" class="pill" style="display: inline-block; background: transparent; color: #fff; border: 1px solid #fff; text-decoration: none;">View All Posts</a>
             </div>
-            
-            <a href="/archive" class="pill" style="display: inline-block; margin-top: 50px; background: transparent; color: #fff; border: 1px solid #fff; text-decoration: none;">View All Posts</a>
+        </div>
+
+        <!-- The Labs -->
+        <div class="entry-block">
+            <div class="overlay"></div>
+            <div class="bg-image" style="background-image: url('/static/img/wallpaper3.jpg');"></div>
+            <div class="content">
+                <span class="label">Experiments & Tools</span>
+                <h3>The Labs</h3>
+                
+                <div class="recent-list">
+                    {% assign labs = site.pages | where_exp: "item", "item.path contains 'labs/' and item.path != 'labs/index.html'" %}
+                    {% for lab in labs limit:8 %}
+                    <a href="{{ lab.url | relative_url }}" class="list-link">
+                        <span class="item-title">{{ lab.title | default: lab.name }}</span>
+                        <span class="item-meta">Lab</span>
+                    </a>
+                    {% endfor %}
+                </div>
+                
+                <a href="/labs" class="pill" style="display: inline-block; background: transparent; color: #fff; border: 1px solid #fff; text-decoration: none;">Enter Labs</a>
+            </div>
         </div>
     </div>
 
