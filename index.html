@@ -445,12 +445,10 @@ layout: null
                 <h3>The Labs</h3>
                 
                 <div class="recent-list">
-                    {% assign labs = site.pages | where: "dir", "labs/" %}
-                    {% assign labs = labs | where_exp: "item", "item.path != 'labs/index.html'" %}
-                    {% for lab in labs limit:8 %}
-                    <a href="{{ lab.url | relative_url }}" class="list-link">
-                        <span class="item-title">{{ lab.title | default: lab.name }}</span>
-                        <span class="item-meta">Lab</span>
+                    {% for lab in site.data.labs limit:8 %}
+                    <a href="/labs/{{ lab.slug }}.html" class="list-link">
+                        <span class="item-title">{{ lab.title }}</span>
+                        <span class="item-meta">{{ lab.tags | first }}</span>
                     </a>
                     {% endfor %}
                 </div>

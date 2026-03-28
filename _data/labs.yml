@@ -30,3 +30,11 @@
   thumb: /assets/labs/thumbs/pension_calculator.png
   tags: [Finance]
   order: 3
+
+- slug: setup
+  title: 环境搭建
+  desc: >
+    ASIC/FPGA 相关的环境搭建说明文档，包含 EDA 工具与系统配置
+  thumb: /assets/labs/thumbs/setup.png
+  tags: [Environment]
+  order: 5
