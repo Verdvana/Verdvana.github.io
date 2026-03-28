@@ -384,12 +384,27 @@ layout: null
         .pill:hover { opacity: 0.8; transform: scale(1.02); }
 
         @media (max-width: 900px) {
+            nav { padding: 15px 20px; }
+            nav .nav-links { gap: 15px; }
+            nav .nav-links a { font-size: 13px; }
+            
+            header.hero { height: 70vh; padding: 0 8%; }
+            header.hero h1 { font-size: 42px; letter-spacing: -1.5px; }
+            header.hero p { font-size: 18px; }
+
+            .entries-container { flex-direction: column; }
+            .entry-block { padding: 60px 8%; border-right: none; border-bottom: 1px solid var(--border-color); }
+            .entry-block h3 { font-size: 36px; margin-bottom: 30px; }
+            
             .career-item { grid-template-columns: 1fr; gap: 24px; padding: 40px 0; }
+            .career-item .date { font-size: 14px; margin-bottom: 8px; }
             .career-item .info { flex-direction: column; gap: 20px; }
-            .entries-section { flex-direction: column; height: auto; }
-            .entry-block { height: 400px; padding: 40px; }
-            .entry-block h3 { font-size: 42px; }
-            header.hero { padding: 0 5%; }
+            
+            section { padding: 80px 8%; }
+            section h2 { font-size: 32px; margin-bottom: 40px; }
+            
+            .footer-content { flex-direction: column; align-items: flex-start; gap: 40px; }
+            .footer-left h2 { font-size: 36px; }
         }
     </style>
 </head>
