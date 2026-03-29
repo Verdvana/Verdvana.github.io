@@ -474,51 +474,6 @@ layout: null
         <p>Senior ASICs Engineer at Qualcomm. <br>Architecting high-performance hardware solutions and exploring the frontiers of IC design.</p>
     </header>
 
-    <!-- Blog & Labs Section -->
-    <div class="entries-container">
-        <!-- The Blog -->
-        <div class="entry-block">
-            <div class="overlay"></div>
-            <div class="bg-image" style="background-image: url('/static/img/wallpaper2.jpg');"></div>
-            <div class="content">
-                <span class="label">Research & Thoughts</span>
-                <h3>The Blog</h3>
-                
-                <div class="recent-list">
-                    {% for post in site.posts limit:8 %}
-                    <a href="{{ post.url | relative_url }}" class="list-link">
-                        <span class="item-title">{{ post.title }}</span>
-                        <span class="item-meta">{{ post.date | date: "%Y.%m.%d" }}</span>
-                    </a>
-                    {% endfor %}
-                </div>
-                
-                <a href="/archive" class="pill" style="display: inline-block; background: transparent; color: #fff; border: 1px solid #fff; text-decoration: none;">View All Posts</a>
-            </div>
-        </div>
-
-        <!-- The Labs -->
-        <div class="entry-block">
-            <div class="overlay"></div>
-            <div class="bg-image" style="background-image: url('/static/img/wallpaper3.jpg');"></div>
-            <div class="content">
-                <span class="label">Experiments & Tools</span>
-                <h3>The Labs</h3>
-                
-                <div class="recent-list">
-                    {% for lab in site.data.labs limit:8 %}
-                    <a href="/labs/{{ lab.slug }}.html" class="list-link">
-                        <span class="item-title">{{ lab.title }}</span>
-                        <span class="item-meta">{{ lab.tags | first }}</span>
-                    </a>
-                    {% endfor %}
-                </div>
-                
-                <a href="/labs" class="pill" style="display: inline-block; background: transparent; color: #fff; border: 1px solid #fff; text-decoration: none;">Enter Labs</a>
-            </div>
-        </div>
-    </div>
-
     <!-- Career with Logos -->
     <section id="career">
         <h2>Career</h2>
@@ -614,6 +569,51 @@ layout: null
             </div>
         </div>
     </section>
+
+    <!-- Blog & Labs Section -->
+    <div class="entries-container">
+        <!-- The Blog -->
+        <div class="entry-block">
+            <div class="overlay"></div>
+            <div class="bg-image" style="background-image: url('/static/img/wallpaper2.jpg');"></div>
+            <div class="content">
+                <span class="label">Research & Thoughts</span>
+                <h3>The Blog</h3>
+                
+                <div class="recent-list">
+                    {% for post in site.posts limit:8 %}
+                    <a href="{{ post.url | relative_url }}" class="list-link">
+                        <span class="item-title">{{ post.title }}</span>
+                        <span class="item-meta">{{ post.date | date: "%Y.%m.%d" }}</span>
+                    </a>
+                    {% endfor %}
+                </div>
+                
+                <a href="/archive" class="pill" style="display: inline-block; background: transparent; color: #fff; border: 1px solid #fff; text-decoration: none;">View All Posts</a>
+            </div>
+        </div>
+
+        <!-- The Labs -->
+        <div class="entry-block">
+            <div class="overlay"></div>
+            <div class="bg-image" style="background-image: url('/static/img/wallpaper3.jpg');"></div>
+            <div class="content">
+                <span class="label">Experiments & Tools</span>
+                <h3>The Labs</h3>
+                
+                <div class="recent-list">
+                    {% for lab in site.data.labs limit:8 %}
+                    <a href="/labs/{{ lab.slug }}.html" class="list-link">
+                        <span class="item-title">{{ lab.title }}</span>
+                        <span class="item-meta">{{ lab.tags | first }}</span>
+                    </a>
+                    {% endfor %}
+                </div>
+                
+                <a href="/labs" class="pill" style="display: inline-block; background: transparent; color: #fff; border: 1px solid #fff; text-decoration: none;">Enter Labs</a>
+            </div>
+        </div>
+    </div>
 
     <!-- Footer -->
     <footer>
