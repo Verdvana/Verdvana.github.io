@@ -6,7 +6,7 @@ layout: null
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Verdvana — ASICs & FPGA & MCU & Hardware Design</title>
+    <title>Verdvana — ASICs & Hardware Design</title>
     <!-- Font Awesome for Icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
@@ -503,6 +503,61 @@ layout: null
             .footer-content { flex-direction: column; align-items: flex-start; gap: 40px; }
             .footer-left h2 { font-size: 36px; }
         }
+
+        /* Skills Grid */
+        .skills-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 32px;
+        }
+
+        .skill-card {
+            background: var(--glass);
+            padding: 40px;
+            border-radius: 16px;
+            border: 1px solid var(--border-color);
+            transition: all 0.3s ease;
+        }
+
+        .skill-card:hover {
+            background: rgba(255, 255, 255, 0.08);
+            border-color: rgba(255, 255, 255, 0.2);
+            transform: translateY(-5px);
+        }
+
+        .skill-card i {
+            font-size: 28px;
+            color: var(--accent-color);
+            margin-bottom: 24px;
+            display: block;
+        }
+
+        .skill-card h3 {
+            font-size: 22px;
+            font-weight: 700;
+            margin-bottom: 20px;
+        }
+
+        .skill-tags {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+
+        .skill-tags span {
+            font-size: 13px;
+            padding: 4px 12px;
+            border-radius: 6px;
+            background: rgba(255, 255, 255, 0.05);
+            color: #d1d1d6;
+            border: 1px solid var(--border-color);
+        }
+
+        .skill-tags span.tool {
+            color: var(--accent-color);
+            border-color: rgba(0, 113, 227, 0.3);
+            background: rgba(0, 113, 227, 0.05);
+        }
     </style>
 </head>
 <body>
@@ -513,6 +568,9 @@ layout: null
             <span class="logo">VERDVANA</span>
         </a>
         <div class="nav-links">
+            <a href="#career">Career</a>
+            <a href="#education">Education</a>
+            <a href="#skills">Skills</a>
             <a href="/archive">Blog</a>
             <a href="/labs">Labs</a>
             <a href="/comments">Comments</a>
@@ -706,6 +764,44 @@ layout: null
                         <div class="company-name"><a href="https://www.nuc.edu.cn" target="_blank" style="color: var(--accent-color); text-decoration: none;">North University of China</a></div>
                         <p>Foundational studies in semiconductor physics, circuit design, and embedded systems.</p>
                     </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Skills Section -->
+    <section id="skills">
+        <h2>Skills</h2>
+        <div class="skills-grid">
+            <div class="skill-card">
+                <i class="fa-solid fa-microchip"></i>
+                <h3>ASIC Design</h3>
+                <div class="skill-tags">
+                    <span>Verilog</span><span>SystemVerilog</span><span>Perl</span><span>Tcl</span><span>Python</span>
+                    <span class="tool">VCS</span><span class="tool">Verdi</span><span class="tool">Design Compiler</span>
+                </div>
+            </div>
+            <div class="skill-card">
+                <i class="fa-solid fa-pen-ruler"></i>
+                <h3>Hardware Development</h3>
+                <div class="skill-tags">
+                    <span>Altium Designer</span><span>OrCAD Capture</span><span>Allegro PCB Editor</span><span>Multisim</span>
+                </div>
+            </div>
+            <div class="skill-card">
+                <i class="fa-solid fa-memory"></i>
+                <h3>FPGA Development</h3>
+                <div class="skill-tags">
+                    <span>Verilog</span><span>SystemVerilog</span><span>C</span>
+                    <span class="tool">Vivado</span><span class="tool">Quartus Prime</span><span class="tool">NiosⅡ</span><span class="tool">ModelSim</span>
+                </div>
+            </div>
+            <div class="skill-card">
+                <i class="fa-solid fa-terminal"></i>
+                <h3>MCU Development</h3>
+                <div class="skill-tags">
+                    <span>C</span>
+                    <span class="tool">Keil MDK</span><span class="tool">Keil C51</span><span class="tool">Proteus</span>
                 </div>
             </div>
         </div>
