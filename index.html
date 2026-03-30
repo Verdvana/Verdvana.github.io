@@ -375,10 +375,35 @@ layout: null
             padding: 12px 16px;
             border-radius: 12px;
             border: 1px solid var(--border-color);
+            display: grid;
+            grid-template-columns: 48px 1fr;
+            gap: 12px;
+            align-items: start;
+            min-height: 140px;
+        }
+
+        .project-logo {
+            width: 48px;
+            height: 48px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border: 1px solid var(--border-color);
+            overflow: hidden;
+            margin-top: 2px;
+        }
+
+        .project-logo img {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+        }
+
+        .project-content {
             display: flex;
             flex-direction: column;
-            justify-content: flex-start;
-            min-height: 140px;
         }
 
         .project-item h6 {
@@ -472,6 +497,7 @@ layout: null
             .career-item { grid-template-columns: 1fr; gap: 24px; padding: 40px 0; }
             .career-item .date { font-size: 14px; margin-bottom: 8px; }
             .career-item .info { flex-direction: column; gap: 20px; }
+            .project-item { grid-template-columns: 48px 1fr; min-height: auto; }
             .projects-area { width: 100%; padding-left: 0; border-left: none; border-top: 1px solid var(--border-color); padding-top: 24px; margin-top: 8px; }
             
             section { padding: 80px 8%; }
@@ -522,53 +548,83 @@ layout: null
                     <div class="projects-area">
                         <h5>Featured Projects</h5>
                         <div class="project-item">
-                            <h6>FastConnect 8800 <span class="process-node">6nm</span></h6>
-                            <div class="project-tags">
-                                <span class="project-tag">Wi-Fi 8 (802.11bn)</span>
-                                <span class="project-tag">Bluetooth 7.0</span>
-                                <span class="project-tag">11.6 Gbps Peak</span>
-                                <span class="project-tag">4×4 Wi-Fi</span>
-                                <span class="project-tag">UWB & Thread</span>
-                                <span class="project-tag">4k QAM & 320MHz BW</span>
+                            <div class="project-logo">
+                                <!-- <img src="/static/img/fc8800.png" alt="FC8800"> -->
+                                <i class="fa-solid fa-microchip" style="color: var(--accent-color); font-size: 20px;"></i>
+                            </div>
+                            <div class="project-content">
+                                <h6>FastConnect 8800 <span class="process-node">6nm</span></h6>
+                                <div class="project-tags">
+                                    <span class="project-tag">Wi-Fi 8 (802.11bn)</span>
+                                    <span class="project-tag">Bluetooth 7.0</span>
+                                    <span class="project-tag">11.6 Gbps Peak</span>
+                                    <span class="project-tag">4×4 Wi-Fi</span>
+                                    <span class="project-tag">UWB & Thread</span>
+                                    <span class="project-tag">4k QAM & 320MHz BW</span>
+                                </div>
                             </div>
                         </div>
                         <div class="project-item">
-                            <h6>FastConnect 8700 <span class="process-node">6nm</span></h6>
-                            <div class="project-tags">
-                                <span class="project-tag">Wi-Fi 8 (802.11bn)</span>
-                                <span class="project-tag">Bluetooth 7.0</span>
-                                <span class="project-tag">8.6 Gbps Peak</span>
-                                <span class="project-tag">Low Power HBS</span>
+                            <div class="project-logo">
+                                <!-- <img src="/static/img/fc8700.png" alt="FC8700"> -->
+                                <i class="fa-solid fa-microchip" style="color: var(--accent-color); font-size: 20px;"></i>
+                            </div>
+                            <div class="project-content">
+                                <h6>FastConnect 8700 <span class="process-node">6nm</span></h6>
+                                <div class="project-tags">
+                                    <span class="project-tag">Wi-Fi 8 (802.11bn)</span>
+                                    <span class="project-tag">Bluetooth 7.0</span>
+                                    <span class="project-tag">8.6 Gbps Peak</span>
+                                    <span class="project-tag">Low Power HBS</span>
+                                </div>
                             </div>
                         </div>
                         <div class="project-item">
-                            <h6>FastConnect 7800 <span class="process-node">14nm</span></h6>
-                            <div class="project-tags">
-                                <span class="project-tag">Wi-Fi 7 (802.11be)</span>
-                                <span class="project-tag">Bluetooth 5.4</span>
-                                <span class="project-tag">5.8 Gbps Peak</span>
-                                <span class="project-tag">Dual Bluetooth</span>
-                                <span class="project-tag">4k QAM & 320MHz BW</span>
+                            <div class="project-logo">
+                                <!-- <img src="/static/img/fc7800.png" alt="FC7800"> -->
+                                <i class="fa-solid fa-microchip" style="color: var(--accent-color); font-size: 20px;"></i>
+                            </div>
+                            <div class="project-content">
+                                <h6>FastConnect 7800 <span class="process-node">14nm</span></h6>
+                                <div class="project-tags">
+                                    <span class="project-tag">Wi-Fi 7 (802.11be)</span>
+                                    <span class="project-tag">Bluetooth 5.4</span>
+                                    <span class="project-tag">5.8 Gbps Peak</span>
+                                    <span class="project-tag">Dual Bluetooth</span>
+                                    <span class="project-tag">4k QAM & 320MHz BW</span>
+                                </div>
                             </div>
                         </div>
                         <div class="project-item">
-                            <h6>FastConnect 7700 <span class="process-node">14nm</span></h6>
-                            <div class="project-tags">
-                                <span class="project-tag">Wi-Fi 7 (802.11be)</span>
-                                <span class="project-tag">Bluetooth 5.4</span>
-                                <span class="project-tag">5.8 Gbps Peak</span>
-                                <span class="project-tag">Low Power</span>
-                                <span class="project-tag">4k QAM & 320MHz BW</span>
+                            <div class="project-logo">
+                                <!-- <img src="/static/img/fc7700.png" alt="FC7700"> -->
+                                <i class="fa-solid fa-microchip" style="color: var(--accent-color); font-size: 20px;"></i>
+                            </div>
+                            <div class="project-content">
+                                <h6>FastConnect 7700 <span class="process-node">14nm</span></h6>
+                                <div class="project-tags">
+                                    <span class="project-tag">Wi-Fi 7 (802.11be)</span>
+                                    <span class="project-tag">Bluetooth 5.4</span>
+                                    <span class="project-tag">5.8 Gbps Peak</span>
+                                    <span class="project-tag">Low Power</span>
+                                    <span class="project-tag">4k QAM & 320MHz BW</span>
+                                </div>
                             </div>
                         </div>
                         <div class="project-item">
-                            <h6>FastConnect 6400 <span class="process-node">14nm</span></h6>
-                            <div class="project-tags">
-                                <span class="project-tag">Wi-Fi 6 (802.11ax)</span>
-                                <span class="project-tag">Bluetooth 5.2</span>
-                                <span class="project-tag">1.2 Gbps Peak</span>
-                                <span class="project-tag">2x2 MIMO</span>
-                                <span class="project-tag">1024 QAM</span>
+                            <div class="project-logo">
+                                <!-- <img src="/static/img/fc6400.png" alt="FC6400"> -->
+                                <i class="fa-solid fa-microchip" style="color: var(--accent-color); font-size: 20px;"></i>
+                            </div>
+                            <div class="project-content">
+                                <h6>FastConnect 6400 <span class="process-node">14nm</span></h6>
+                                <div class="project-tags">
+                                    <span class="project-tag">Wi-Fi 6 (802.11ax)</span>
+                                    <span class="project-tag">Bluetooth 5.2</span>
+                                    <span class="project-tag">1.2 Gbps Peak</span>
+                                    <span class="project-tag">2x2 MIMO</span>
+                                    <span class="project-tag">1024 QAM</span>
+                                </div>
                             </div>
                         </div>
                     </div>
