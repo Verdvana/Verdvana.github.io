@@ -278,12 +278,12 @@ layout: null
 
         /* Career Section with Company Logos */
         .career-container {
-            max-width: 1200px;
+            max-width: 1400px;
         }
 
         .career-item {
             display: grid;
-            grid-template-columns: 240px 1fr;
+            grid-template-columns: 200px 1fr;
             padding: 60px 0;
             border-bottom: 1px solid var(--border-color);
         }
@@ -299,6 +299,11 @@ layout: null
         .career-item .info {
             display: flex;
             gap: 32px;
+            justify-content: space-between;
+        }
+
+        .career-item .details {
+            flex: 1;
         }
 
         .career-item .company-logo {
@@ -347,9 +352,13 @@ layout: null
 
         .projects-area {
             flex-shrink: 0;
-            width: 300px;
+            width: 600px;
             padding-left: 32px;
             border-left: 1px solid var(--border-color);
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+            align-content: start;
         }
 
         .projects-area h5 {
@@ -357,7 +366,8 @@ layout: null
             text-transform: uppercase;
             letter-spacing: 1px;
             color: var(--accent-color);
-            margin-bottom: 16px;
+            margin-bottom: 0;
+            grid-column: span 2;
         }
 
         .project-item {
@@ -365,12 +375,16 @@ layout: null
             padding: 12px 16px;
             border-radius: 12px;
             border: 1px solid var(--border-color);
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-start;
+            min-height: 140px;
         }
 
         .project-item h6 {
-            font-size: 15px;
+            font-size: 14px;
             font-weight: 700;
-            margin-bottom: 8px;
+            margin-bottom: 4px;
             color: #fff;
         }
 
@@ -493,7 +507,7 @@ layout: null
                     </div>
                     <div class="projects-area">
                         <h5>Featured Projects</h5>
-                        <div class="project-item" style="margin-bottom: 8px;">
+                        <div class="project-item">
                             <h6>FastConnect 8800</h6>
                             <div class="project-tags">
                                 <span class="project-tag">Wi-Fi 8 (802.11bn)</span>
@@ -503,7 +517,7 @@ layout: null
                                 <span class="project-tag">UWB & Thread</span>
                             </div>
                         </div>
-                        <div class="project-item" style="margin-bottom: 8px;">
+                        <div class="project-item">
                             <h6>FastConnect 8700</h6>
                             <div class="project-tags">
                                 <span class="project-tag">Wi-Fi 8 (802.11bn)</span>
@@ -512,7 +526,7 @@ layout: null
                                 <span class="project-tag">Low Power HBS</span>
                             </div>
                         </div>
-                        <div class="project-item" style="margin-bottom: 8px;">
+                        <div class="project-item">
                             <h6>FastConnect 7800</h6>
                             <div class="project-tags">
                                 <span class="project-tag">Wi-Fi 7 (802.11be)</span>
@@ -522,7 +536,7 @@ layout: null
                                 <span class="project-tag">320MHz BW</span>
                             </div>
                         </div>
-                        <div class="project-item" style="margin-bottom: 8px;">
+                        <div class="project-item">
                             <h6>FastConnect 7700</h6>
                             <div class="project-tags">
                                 <span class="project-tag">Wi-Fi 7 (802.11be)</span>
