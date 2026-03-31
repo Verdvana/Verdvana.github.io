@@ -293,62 +293,71 @@ layout: null
 
         .career-item:last-child { border-bottom: none; }
 
-        .career-item .date {
+        /* Career Section Refined Grid */
+        .career-container {
+            max-width: 2400px;
+        }
+
+        .career-item {
+            display: grid;
+            grid-template-columns: 240px 64px 1fr 720px; /* Date | Logo | Details | Projects */
+            gap: 40px;
+            padding: 80px 0;
+            border-bottom: 1px solid var(--border-color);
+            align-items: start;
+        }
+
+        .career-item:last-child { border-bottom: none; }
+
+        .career-date-column {
+            display: flex;
+            flex-direction: column;
+            gap: 0; /* Will align with rows via height matching */
+        }
+
+        .date-cell {
             color: var(--secondary-text);
             font-size: 16px;
             font-weight: 500;
-        }
-
-        .career-item .date-item {
-            height: 43px; /* Match h4 height (26px font + margin/padding) */
+            height: 43px; /* Match h4 line-height + margin */
             display: flex;
             align-items: center;
-            margin-bottom: 4px;
         }
 
-        .career-item .date-sub-item {
+        .date-cell.sub {
             height: 28px; /* Match position-name line-height */
-            display: flex;
-            align-items: center;
+            margin-top: 4px;
             margin-bottom: 16px;
         }
 
-        .career-item .info {
-            display: flex;
-            gap: 32px;
-            justify-content: space-between;
-        }
-
-        .career-item .details {
-            flex: 1;
-        }
-
         .career-item .company-logo {
-            flex-shrink: 0;
             width: 64px;
             height: 64px;
             display: flex;
             align-items: center;
             justify-content: center;
             overflow: hidden;
+            margin-top: -10px; /* Minor adjustment to visually center with first h4 */
         }
 
-        .career-item .company-logo i {
-            font-size: 32px;
-            color: #333;
-        }
-
-        /* If user has actual images, they can use this */
         .career-item .company-logo img {
-            width: 80%;
-            height: 80%;
+            width: 100%;
+            height: 100%;
             object-fit: contain;
+        }
+
+        .career-item .details {
+            min-width: 0; /* Prevent overflow */
         }
 
         .career-item .details h4 {
             font-size: 26px;
             font-weight: 700;
             margin-bottom: 4px;
+            line-height: 1.2;
+            height: 39px; /* Fixed height to match date-cell */
+            display: flex;
+            align-items: center;
         }
 
         .career-item .details .position-name {
@@ -356,22 +365,26 @@ layout: null
             color: var(--accent-color);
             font-weight: 500;
             margin-bottom: 16px;
+            line-height: 1.4;
+            height: 25px; /* Fixed height to match date-cell.sub */
+            display: flex;
+            align-items: center;
         }
 
         .career-item .details p {
             color: #d1d1d6;
             font-size: 17px;
-            max-width: 600px;
+            max-width: 100%;
+            margin-bottom: 12px;
         }
 
         .projects-area {
-            flex-shrink: 0;
-            width: 700px;
-            padding-left: 32px;
+            width: 720px;
+            padding-left: 40px;
             border-left: 1px solid var(--border-color);
             display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 12px;
+            grid-template-columns: 350px 350px;
+            gap: 16px;
             align-content: start;
         }
 
@@ -393,7 +406,7 @@ layout: null
             grid-template-columns: 48px 1fr;
             gap: 12px;
             align-items: start;
-            min-height: 140px;
+            min-height: 100px; /* Reduced to fit the tighter layout in the image */
         }
 
         .project-logo {
@@ -509,7 +522,8 @@ layout: null
             .entry-block h3 { font-size: 36px; margin-bottom: 30px; }
             
             .career-item { grid-template-columns: 1fr; gap: 24px; padding: 40px 0; }
-            .career-item .date { font-size: 14px; margin-bottom: 8px; }
+            .career-date-column { flex-direction: row; gap: 10px; }
+            .date-cell, .date-cell.sub { height: auto; margin: 0; }
             .career-item .info { flex-direction: column; gap: 20px; }
             .project-item { grid-template-columns: 48px 1fr; min-height: auto; }
             .projects-area { width: 100%; padding-left: 0; border-left: none; border-top: 1px solid var(--border-color); padding-top: 24px; margin-top: 8px; }
@@ -603,24 +617,22 @@ layout: null
         <div class="career-container">
             <!-- Qualcomm -->
             <div class="career-item">
-                <div class="date">
-                    <div class="date-item"> </div>
-                    <div class="date-sub-item">2023.12 — Present</div>
-                    <div class="date-sub-item">2021.06 — 2023.12</div>
+                <div class="career-date-column">
+                    <div class="date-cell"> </div> <!-- Match H4 height -->
+                    <div class="date-cell sub">2023.12 — Present</div>
+                    <div class="date-cell sub">2021.06 — 2023.12</div>
                 </div>
-                <div class="info">
-                    <div class="company-logo">
-                        <!-- <img src="/static/img/Qualcomm-Logo.svg" alt="Qualcomm"> -->
-                        <img src="/static/img/q.png" alt="Qualcomm">
-                    </div>
-                    <div class="details">
-                        <h4><a href="https://www.qualcomm.com" target="_blank" style="color: var(--accent-color); text-decoration: none;">Qualcomm (Shanghai) Co., Ltd.</a></h4>
-                        <div class="position-name" style="color: inherit;">Senior ASICs Engineer</div>
-                        <div class="position-name" style="color: inherit;">ASICs Engineer</div>
-                        <p>Leading hardware development for next-generation silicon architectures, focusing on efficiency and high-performance design.</p>
-                        <p>Contributed to complex IC design verification and implementation workflows.</p>
-                    </div>
-                    <div class="projects-area">
+                <div class="company-logo">
+                    <img src="/static/img/q.png" alt="Qualcomm">
+                </div>
+                <div class="details">
+                    <h4><a href="https://www.qualcomm.com" target="_blank" style="color: var(--accent-color); text-decoration: none;">Qualcomm (Shanghai) Co., Ltd.</a></h4>
+                    <div class="position-name" style="color: inherit;">Senior ASICs Engineer</div>
+                    <div class="position-name" style="color: inherit;">ASICs Engineer</div>
+                    <p>Leading hardware development for next-generation silicon architectures, focusing on efficiency and high-performance design.</p>
+                    <p>Contributed to complex IC design verification and implementation workflows.</p>
+                </div>
+                <div class="projects-area">
                         <h5>Featured Projects</h5>
                         <div class="project-item">
                             <div class="project-logo">
@@ -703,24 +715,21 @@ layout: null
                             </div>
                         </div>
                     </div>
-                </div>
             </div>
             <!-- Zhonggu -->
             <div class="career-item">
-                <div class="date">
-                    <div class="date-item"> </div>
-                    <div class="date-sub-item">2018.04 — 2018.08</div>
+                <div class="career-date-column">
+                    <div class="date-cell">2018.04 — 2018.08</div>
                 </div>
-                <div class="info">
-                    <div class="company-logo">
-                        <img src="/static/img/中谷.png" alt="Zhonggu">
-                    </div>
-                    <div class="details">
-                        <h4><a href="https://www.zhonggu.com" target="_blank" style="color: var(--accent-color); text-decoration: none;">Shanxi Zhonggu Technology</a></h4>
-                        <div class="position-name" style="color: inherit;">Hardware Engineer</div>
-                        <p>Focused on PCB design and low-level hardware development for industrial sensors.</p>
-                    </div>
-                    <div class="projects-area">
+                <div class="company-logo">
+                    <img src="/static/img/中谷.png" alt="Zhonggu">
+                </div>
+                <div class="details">
+                    <h4><a href="https://www.zhonggu.com" target="_blank" style="color: var(--accent-color); text-decoration: none;">Shanxi Zhonggu Technology</a></h4>
+                    <div class="position-name" style="color: inherit;">Hardware Engineer</div>
+                    <p>Focused on PCB design and low-level hardware development for industrial sensors.</p>
+                </div>
+                <div class="projects-area">
                         <h5>Featured Projects</h5>
                         <div class="project-item">
                             <div class="project-logo">
@@ -751,7 +760,6 @@ layout: null
                             </div>
                         </div>
                     </div>
-                </div>
             </div>
         </div>
     </section>
@@ -762,20 +770,18 @@ layout: null
         <div class="career-container">
             <!-- Xidian University -->
             <div class="career-item">
-                <div class="date">
-                    <div class="date-item"> </div>
-                    <div class="date-sub-item">2018.09 — 2021.06</div>
+                <div class="career-date-column">
+                    <div class="date-cell">2018.09 — 2021.06</div>
                 </div>
-                <div class="info">
-                    <div class="company-logo">
-                        <img src="/static/img/西安电子科技大学-logo.svg" alt="Xidian University">
-                    </div>
-                    <div class="details">
-                        <h4><a href="https://www.xidian.edu.cn" target="_blank" style="color: var(--accent-color); text-decoration: none;">Xidian University</a></h4>
-                        <div class="position-name" style="color: inherit;">M.E. in Electronics and Communication Engineering</div>
-                        <p>Focused on advanced digital signal processing and hardware architecture during postgraduate studies.</p>
-                    </div>
-                    <div class="projects-area">
+                <div class="company-logo">
+                    <img src="/static/img/西安电子科技大学-logo.svg" alt="Xidian University">
+                </div>
+                <div class="details">
+                    <h4><a href="https://www.xidian.edu.cn" target="_blank" style="color: var(--accent-color); text-decoration: none;">Xidian University</a></h4>
+                    <div class="position-name" style="color: inherit;">M.E. in Electronics and Communication Engineering</div>
+                    <p>Focused on advanced digital signal processing and hardware architecture during postgraduate studies.</p>
+                </div>
+                <div class="projects-area">
                         <h5>Featured Projects</h5>
                         <div class="project-item">
                             <div class="project-logo">
@@ -820,24 +826,21 @@ layout: null
                             </div>
                         </div>
                     </div>
-                </div>
             </div>
             <!-- North University of China -->
             <div class="career-item">
-                <div class="date">
-                    <div class="date-item"> </div>
-                    <div class="date-sub-item">2013.09 — 2017.07</div>
+                <div class="career-date-column">
+                    <div class="date-cell">2013.09 — 2017.07</div>
                 </div>
-                <div class="info">
-                    <div class="company-logo">
-                        <img src="/static/img/中北大学-logo.svg" alt="North University of China">
-                    </div>
-                    <div class="details">
-                        <h4><a href="https://www.nuc.edu.cn" target="_blank" style="color: var(--accent-color); text-decoration: none;">North University of China</a></h4>
-                        <div class="position-name" style="color: inherit;">B.E. in Electronic Science and Technology</div>
-                        <p>Foundational studies in semiconductor physics, circuit design, and embedded systems.</p>
-                    </div>
-                    <div class="projects-area">
+                <div class="company-logo">
+                    <img src="/static/img/中北大学-logo.svg" alt="North University of China">
+                </div>
+                <div class="details">
+                    <h4><a href="https://www.nuc.edu.cn" target="_blank" style="color: var(--accent-color); text-decoration: none;">North University of China</a></h4>
+                    <div class="position-name" style="color: inherit;">B.E. in Electronic Science and Technology</div>
+                    <p>Foundational studies in semiconductor physics, circuit design, and embedded systems.</p>
+                </div>
+                <div class="projects-area">
                         <h5>Featured Projects</h5>
                         <div class="project-item">
                             <div class="project-logo">
@@ -882,7 +885,6 @@ layout: null
                             </div>
                         </div>
                     </div>
-                </div>
             </div>
         </div>
     </section>
