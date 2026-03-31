@@ -331,8 +331,7 @@ jekyll-theme-WuK: # 用了wu-kan的主题，自定义样式都在这个命名空
           href="/static/img/avatar.jpg"
         />
         <link
-          rel="shortcut
-          icon"
+          rel="shortcut icon"
           href="/static/img/avatar.jpg"
         />
         <link
