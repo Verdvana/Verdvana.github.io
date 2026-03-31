@@ -299,6 +299,20 @@ layout: null
             font-weight: 500;
         }
 
+        .career-item .date-item {
+            height: 43px; /* Match h4 height (26px font + margin/padding) */
+            display: flex;
+            align-items: center;
+            margin-bottom: 4px;
+        }
+
+        .career-item .date-sub-item {
+            height: 28px; /* Match position-name line-height */
+            display: flex;
+            align-items: center;
+            margin-bottom: 16px;
+        }
+
         .career-item .info {
             display: flex;
             gap: 32px;
@@ -589,7 +603,11 @@ layout: null
         <div class="career-container">
             <!-- Qualcomm -->
             <div class="career-item">
-                <div class="date">2021.06 — Present</div>
+                <div class="date">
+                    <div class="date-item">2021.06 — Present</div>
+                    <div class="date-sub-item">2023.12 — Present</div>
+                    <div class="date-sub-item">2021.06 — 2023.12</div>
+                </div>
                 <div class="info">
                     <div class="company-logo">
                         <!-- <img src="/static/img/Qualcomm-Logo.svg" alt="Qualcomm"> -->
@@ -689,7 +707,10 @@ layout: null
             </div>
             <!-- Zhonggu -->
             <div class="career-item">
-                <div class="date">2018.04 — 2018.08</div>
+                <div class="date">
+                    <div class="date-item">2018.04 — 2018.08</div>
+                    <div class="date-sub-item">2018.04 — 2018.08</div>
+                </div>
                 <div class="info">
                     <div class="company-logo">
                         <img src="/static/img/中谷.png" alt="Zhonggu">
@@ -741,7 +762,10 @@ layout: null
         <div class="career-container">
             <!-- Xidian University -->
             <div class="career-item">
-                <div class="date">2018.09 — 2021.06</div>
+                <div class="date">
+                    <div class="date-item">2018.09 — 2021.06</div>
+                    <div class="date-sub-item">2018.09 — 2021.06</div>
+                </div>
                 <div class="info">
                     <div class="company-logo">
                         <img src="/static/img/西安电子科技大学-logo.svg" alt="Xidian University">
@@ -800,7 +824,10 @@ layout: null
             </div>
             <!-- North University of China -->
             <div class="career-item">
-                <div class="date">2013.09 — 2017.07</div>
+                <div class="date">
+                    <div class="date-item">2013.09 — 2017.07</div>
+                    <div class="date-sub-item">2013.09 — 2017.07</div>
+                </div>
                 <div class="info">
                     <div class="company-logo">
                         <img src="/static/img/中北大学-logo.svg" alt="North University of China">
