@@ -140,13 +140,51 @@ layout: null
             margin-bottom: 60px;
         }
 
+        .archive-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-end;
+            margin-bottom: 30px;
+            border-bottom: 1px solid var(--border-color);
+            padding-bottom: 10px;
+        }
+
         .archive-year-title {
             font-size: 32px;
             font-weight: 700;
-            margin-bottom: 30px;
             color: var(--accent-color);
-            border-bottom: 1px solid var(--border-color);
-            padding-bottom: 10px;
+            border-bottom: none;
+            margin-bottom: 0;
+            padding-bottom: 0;
+        }
+
+        .sort-controls {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 2px;
+        }
+
+        .sort-btn {
+            background: transparent;
+            border: 1px solid var(--border-color);
+            color: var(--secondary-text);
+            padding: 4px 12px;
+            border-radius: 15px;
+            font-size: 12px;
+            cursor: pointer;
+            transition: all 0.2s;
+            text-decoration: none;
+        }
+
+        .sort-btn:hover {
+            border-color: var(--accent-color);
+            color: white;
+        }
+
+        .sort-btn.active {
+            background: var(--accent-color);
+            border-color: var(--accent-color);
+            color: white;
         }
 
         .archive-item {
@@ -296,38 +334,117 @@ layout: null
 
     <section class="archive">
         <div class="archive-container">
-            {% for post in site.posts %}
-                {% assign currentdate = post.date | date: "%Y" %}
-                {% if currentdate != nextdate %}
-                    {% unless forloop.first %}</div></div>{% endunless %}
-                    <div class="archive-year-group">
-                        <h2 class="archive-year-title">{{ currentdate }}</h2>
-                        <div class="archive-list">
-                    {% assign nextdate = currentdate %}
-                {% endif %}
-                
-                <div class="archive-item">
-                    <div class="archive-info">
-                        <span class="archive-date">{{ post.date | date: "%m.%d" }}</span>
-                        <a href="{{ post.url | relative_url }}" class="archive-title">{{ post.title }}</a>
-                    </div>
-                    <div class="archive-meta">
-                        {% if post.categories.size > 0 %}
-                            {% for cat in post.categories %}
+            {% assign sort_mode = page.sort_by | default: "date" %}
+            
+            <div class="archive-header" style="border-bottom: none; margin-bottom: 40px; justify-content: flex-end;">
+                <div class="sort-controls">
+                    <a href="?sort=date" class="sort-btn {% if sort_mode == 'date' %}active{% endif %}" id="sort-date">By Date</a>
+                    <a href="?sort=category" class="sort-btn {% if sort_mode == 'category' %}active{% endif %}" id="sort-cat">By Category</a>
+                </div>
+            </div>
+
+            <div id="archive-content-date" {% if sort_mode != 'date' %}style="display:none;"{% endif %}>
+                {% for post in site.posts %}
+                    {% assign currentdate = post.date | date: "%Y" %}
+                    {% if currentdate != nextdate %}
+                        {% unless forloop.first %}</div></div>{% endunless %}
+                        <div class="archive-year-group">
+                            <h2 class="archive-year-title" style="border-bottom: 1px solid var(--border-color); margin-bottom: 30px; padding-bottom: 10px;">{{ currentdate }}</h2>
+                            <div class="archive-list">
+                        {% assign nextdate = currentdate %}
+                    {% endif %}
+                    
+                    <div class="archive-item">
+                        <div class="archive-info">
+                            <span class="archive-date">{{ post.date | date: "%m.%d" }}</span>
+                            <a href="{{ post.url | relative_url }}" class="archive-title">{{ post.title }}</a>
+                        </div>
+                        <div class="archive-meta">
+                            {% assign cats = post.categories | concat: post.tags | uniq %}
+                            {% for cat in cats limit:3 %}
                                 <span class="archive-category">{{ cat }}</span>
                             {% endfor %}
-                        {% elsif post.tags.size > 0 %}
-                            {% for tag in post.tags %}
-                                <span class="archive-category">{{ tag }}</span>
-                            {% endfor %}
-                        {% endif %}
+                        </div>
                     </div>
-                </div>
-                
-                {% if forloop.last %}</div></div>{% endif %}
-            {% endfor %}
+                    {% if forloop.last %}</div></div>{% endif %}
+                {% endfor %}
+            </div>
+
+            <div id="archive-content-category" {% if sort_mode != 'category' %}style="display:none;"{% endif %}>
+                {% assign all_cats = "" | split: "," %}
+                {% for post in site.posts %}
+                    {% assign post_cats = post.categories | concat: post.tags %}
+                    {% assign all_cats = all_cats | concat: post_cats %}
+                {% endfor %}
+                {% assign all_cats = all_cats | uniq | sort %}
+
+                {% for cat in all_cats %}
+                    <div class="archive-year-group">
+                        <h2 class="archive-year-title" style="border-bottom: 1px solid var(--border-color); margin-bottom: 30px; padding-bottom: 10px;">{{ cat }}</h2>
+                        <div class="archive-list">
+                            {% for post in site.posts %}
+                                {% assign post_cats = post.categories | concat: post.tags %}
+                                {% if post_cats contains cat %}
+                                    <div class="archive-item">
+                                        <div class="archive-info">
+                                            <a href="{{ post.url | relative_url }}" class="archive-title">{{ post.title }}</a>
+                                            <span class="archive-date" style="margin-left: auto; font-size: 14px;">{{ post.date | date: "%Y.%m.%d" }}</span>
+                                        </div>
+                                    </div>
+                                {% endif %}
+                            {% endfor %}
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
         </div>
     </section>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const dateBtn = document.getElementById('sort-date');
+            const catBtn = document.getElementById('sort-cat');
+            const dateContent = document.getElementById('archive-content-date');
+            const catContent = document.getElementById('archive-content-category');
+
+            function updateSort(mode) {
+                if (mode === 'category') {
+                    dateContent.style.display = 'none';
+                    catContent.style.display = 'block';
+                    catBtn.classList.add('active');
+                    dateBtn.classList.remove('active');
+                } else {
+                    dateContent.style.display = 'block';
+                    catContent.style.display = 'none';
+                    dateBtn.classList.add('active');
+                    catBtn.classList.remove('active');
+                }
+                // Save preference
+                localStorage.setItem('blog-sort-pref', mode);
+            }
+
+            dateBtn.addEventListener('click', function(e) {
+                e.preventDefault();
+                updateSort('date');
+            });
+
+            catBtn.addEventListener('click', function(e) {
+                e.preventDefault();
+                updateSort('category');
+            });
+
+            // Check URL or LocalStorage
+            const urlParams = new URLSearchParams(window.location.search);
+            const sortParam = urlParams.get('sort');
+            const savedPref = localStorage.getItem('blog-sort-pref');
+
+            if (sortParam) {
+                updateSort(sortParam);
+            } else if (savedPref) {
+                updateSort(savedPref);
+            }
+        });
+    </script>
 
     <footer>
         <div class="footer-content">
