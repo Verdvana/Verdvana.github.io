@@ -140,6 +140,75 @@ layout: null
             margin-bottom: 60px;
         }
 
+        /* Search & Filter Styles */
+        .archive-controls {
+            margin-bottom: 40px;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .search-container {
+            position: relative;
+            width: 100%;
+        }
+
+        .search-input {
+            width: 100%;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 14px 20px 14px 48px;
+            color: white;
+            font-size: 16px;
+            outline: none;
+            transition: all 0.2s;
+        }
+
+        .search-input:focus {
+            border-color: var(--accent-color);
+            background: rgba(255, 255, 255, 0.08);
+            box-shadow: 0 0 0 4px rgba(0, 113, 227, 0.1);
+        }
+
+        .search-icon {
+            position: absolute;
+            left: 18px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--secondary-text);
+            font-size: 18px;
+        }
+
+        .filter-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+
+        .filter-tag {
+            font-size: 12px;
+            padding: 6px 14px;
+            border-radius: 20px;
+            background: rgba(255, 255, 255, 0.05);
+            color: var(--secondary-text);
+            border: 1px solid var(--border-color);
+            cursor: pointer;
+            transition: all 0.2s;
+            user-select: none;
+        }
+
+        .filter-tag:hover {
+            color: white;
+            border-color: var(--secondary-text);
+        }
+
+        .filter-tag.active {
+            background: rgba(0, 113, 227, 0.1);
+            color: var(--accent-color);
+            border-color: var(--accent-color);
+        }
+
         .archive-header {
             display: flex;
             justify-content: space-between;
@@ -336,10 +405,33 @@ layout: null
         <div class="archive-container">
             {% assign sort_mode = page.sort_by | default: "date" %}
             
-            <div class="archive-header" style="border-bottom: none; margin-bottom: 40px; justify-content: flex-end;">
-                <div class="sort-controls">
-                    <a href="?sort=date" class="sort-btn {% if sort_mode == 'date' %}active{% endif %}" id="sort-date">By Date</a>
-                    <a href="?sort=category" class="sort-btn {% if sort_mode == 'category' %}active{% endif %}" id="sort-cat">By Category</a>
+            <div class="archive-controls">
+                <!-- Sort Control -->
+                <div class="archive-header" style="border-bottom: none; margin-bottom: 0; justify-content: flex-end;">
+                    <div class="sort-controls">
+                        <a href="?sort=date" class="sort-btn {% if sort_mode == 'date' %}active{% endif %}" id="sort-date">By Date</a>
+                        <a href="?sort=category" class="sort-btn {% if sort_mode == 'category' %}active{% endif %}" id="sort-cat">By Category</a>
+                    </div>
+                </div>
+
+                <!-- Search Input -->
+                <div class="search-container">
+                    <i class="fa-solid fa-magnifying-glass search-icon"></i>
+                    <input type="text" class="search-input" id="blog-search" placeholder="Search blog titles... (supports Regex)">
+                </div>
+
+                <!-- Category Filters -->
+                <div class="filter-container">
+                    {% assign all_filters = "" | split: "," %}
+                    {% for post in site.posts %}
+                        {% assign post_filters = post.categories | concat: post.tags %}
+                        {% assign all_filters = all_filters | concat: post_filters %}
+                    {% endfor %}
+                    {% assign all_filters = all_filters | uniq | sort %}
+                    
+                    {% for filter in all_filters %}
+                        <div class="filter-tag" data-filter="{{ filter }}">{{ filter }}</div>
+                    {% endfor %}
                 </div>
             </div>
 
@@ -348,13 +440,13 @@ layout: null
                     {% assign currentdate = post.date | date: "%Y" %}
                     {% if currentdate != nextdate %}
                         {% unless forloop.first %}</div></div>{% endunless %}
-                        <div class="archive-year-group">
+                        <div class="archive-year-group" data-year="{{ currentdate }}">
                             <h2 class="archive-year-title" style="border-bottom: 1px solid var(--border-color); margin-bottom: 30px; padding-bottom: 10px;">{{ currentdate }}</h2>
                             <div class="archive-list">
                         {% assign nextdate = currentdate %}
                     {% endif %}
                     
-                    <div class="archive-item">
+                    <div class="archive-item" data-title="{{ post.title | escape }}" data-categories="{{ post.categories | concat: post.tags | join: ',' | escape }}">
                         <div class="archive-info">
                             <span class="archive-date">{{ post.date | date: "%m.%d" }}</span>
                             <a href="{{ post.url | relative_url }}" class="archive-title">{{ post.title }}</a>
@@ -371,21 +463,14 @@ layout: null
             </div>
 
             <div id="archive-content-category" {% if sort_mode != 'category' %}style="display:none;"{% endif %}>
-                {% assign all_cats = "" | split: "," %}
-                {% for post in site.posts %}
-                    {% assign post_cats = post.categories | concat: post.tags %}
-                    {% assign all_cats = all_cats | concat: post_cats %}
-                {% endfor %}
-                {% assign all_cats = all_cats | uniq | sort %}
-
-                {% for cat in all_cats %}
-                    <div class="archive-year-group">
+                {% for cat in all_filters %}
+                    <div class="archive-year-group" data-group-cat="{{ cat }}">
                         <h2 class="archive-year-title" style="border-bottom: 1px solid var(--border-color); margin-bottom: 30px; padding-bottom: 10px;">{{ cat }}</h2>
                         <div class="archive-list">
                             {% for post in site.posts %}
                                 {% assign post_cats = post.categories | concat: post.tags %}
                                 {% if post_cats contains cat %}
-                                    <div class="archive-item">
+                                    <div class="archive-item" data-title="{{ post.title | escape }}" data-categories="{{ post_cats | join: ',' | escape }}">
                                         <div class="archive-info">
                                             <a href="{{ post.url | relative_url }}" class="archive-title">{{ post.title }}</a>
                                             <span class="archive-date" style="margin-left: auto; font-size: 14px;">{{ post.date | date: "%Y.%m.%d" }}</span>
@@ -406,8 +491,57 @@ layout: null
             const catBtn = document.getElementById('sort-cat');
             const dateContent = document.getElementById('archive-content-date');
             const catContent = document.getElementById('archive-content-category');
+            const searchInput = document.getElementById('blog-search');
+            const filterTags = document.querySelectorAll('.filter-tag');
+            
+            let activeFilters = new Set();
+            let currentSort = '{{ sort_mode }}';
+
+            function updateDisplay() {
+                const searchTerm = searchInput.value.trim();
+                let regex = null;
+                try {
+                    regex = searchTerm ? new RegExp(searchTerm, 'i') : null;
+                } catch (e) {
+                    console.error("Invalid Regex");
+                }
+
+                const containers = [dateContent, catContent];
+                
+                containers.forEach(container => {
+                    const yearGroups = container.querySelectorAll('.archive-year-group');
+                    
+                    yearGroups.forEach(group => {
+                        const items = group.querySelectorAll('.archive-item');
+                        let groupVisible = false;
+
+                        items.forEach(item => {
+                            const title = item.getAttribute('data-title');
+                            const itemCats = item.getAttribute('data-categories').split(',');
+                            
+                            const matchesSearch = !regex || regex.test(title);
+                            
+                            // Category filter logic (Intersection / AND)
+                            let matchesFilter = true;
+                            if (activeFilters.size > 0) {
+                                matchesFilter = Array.from(activeFilters).every(f => itemCats.includes(f));
+                            }
+
+                            if (matchesSearch && matchesFilter) {
+                                item.style.display = 'flex';
+                                groupVisible = true;
+                            } else {
+                                item.style.display = 'none';
+                            }
+                        });
+
+                        group.style.display = groupVisible ? 'block' : 'none';
+                    });
+                });
+            }
 
             function updateSort(mode) {
+                currentSort = mode;
                 if (mode === 'category') {
                     dateContent.style.display = 'none';
                     catContent.style.display = 'block';
@@ -419,30 +553,33 @@ layout: null
                     dateBtn.classList.add('active');
                     catBtn.classList.remove('active');
                 }
-                // Save preference
                 localStorage.setItem('blog-sort-pref', mode);
+                updateDisplay();
             }
 
-            dateBtn.addEventListener('click', function(e) {
-                e.preventDefault();
-                updateSort('date');
+            // Events
+            dateBtn.addEventListener('click', (e) => { e.preventDefault(); updateSort('date'); });
+            catBtn.addEventListener('click', (e) => { e.preventDefault(); updateSort('category'); });
+            searchInput.addEventListener('input', updateDisplay);
+
+            filterTags.forEach(tag => {
+                tag.addEventListener('click', () => {
+                    const filter = tag.getAttribute('data-filter');
+                    if (activeFilters.has(filter)) {
+                        activeFilters.delete(filter);
+                        tag.classList.remove('active');
+                    } else {
+                        activeFilters.add(filter);
+                        tag.classList.add('active');
+                    }
+                    updateDisplay();
+                });
             });
 
-            catBtn.addEventListener('click', function(e) {
-                e.preventDefault();
-                updateSort('category');
-            });
-
-            // Check URL or LocalStorage
-            const urlParams = new URLSearchParams(window.location.search);
-            const sortParam = urlParams.get('sort');
+            // Init
             const savedPref = localStorage.getItem('blog-sort-pref');
-
-            if (sortParam) {
-                updateSort(sortParam);
-            } else if (savedPref) {
-                updateSort(savedPref);
-            }
+            if (savedPref) updateSort(savedPref);
+            updateDisplay();
         });
     </script>
 
