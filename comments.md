@@ -1,4 +1,4 @@
 ---
-layout: comments
+layout: page-comments
 title: 留言
 ---
