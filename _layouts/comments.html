@@ -1,0 +1,285 @@
+---
+layout: null
+---
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Comments — VERDVANA</title>
+    <!-- Favicon -->
+    <link rel="icon" type="image/jpeg" href="/static/img/avatar.jpg">
+    <link rel="apple-touch-icon" href="/static/img/avatar.jpg">
+    <!-- Font Awesome for Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --bg-color: #000000;
+            --text-color: #ffffff;
+            --secondary-text: #8e8e93;
+            --accent-color: #0071e3;
+            --border-color: rgba(255, 255, 255, 0.1);
+            --card-bg: rgba(28, 28, 30, 0.7);
+            --glass: rgba(255, 255, 255, 0.05);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            line-height: 1.6;
+            -webkit-font-smoothing: antialiased;
+            overflow-x: hidden;
+        }
+
+        /* Fixed Navigation */
+        nav {
+            position: fixed;
+            top: 0;
+            width: 100%;
+            padding: 20px 40px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            z-index: 1000;
+            background: rgba(0, 0, 0, 0.7);
+            backdrop-filter: blur(20px);
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        nav .logo-area {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            text-decoration: none;
+            color: white;
+        }
+
+        nav .logo-area img {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            border: 1px solid var(--border-color);
+            object-fit: cover;
+        }
+
+        nav .logo {
+            font-size: 18px;
+            font-weight: 700;
+            letter-spacing: -0.5px;
+        }
+
+        nav .nav-links {
+            display: flex;
+            gap: 30px;
+        }
+
+        nav a {
+            text-decoration: none;
+            color: var(--text-color);
+            font-size: 14px;
+            font-weight: 500;
+            transition: color 0.2s;
+        }
+
+        nav a:hover {
+            color: var(--secondary-text);
+        }
+
+        /* Hero Section for Comments */
+        header.hero {
+            position: relative;
+            height: 40vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            padding: 0 10%;
+            background-image: linear-gradient(to bottom, rgba(0,0,0,0.3), rgba(0,0,0,0.9)), url('/static/img/wallpaper4.jpg');
+            background-size: cover;
+            background-position: center;
+            overflow: hidden;
+        }
+
+        header.hero h1 {
+            font-size: clamp(40px, 8vw, 72px);
+            font-weight: 700;
+            line-height: 1.05;
+            margin-bottom: 20px;
+            letter-spacing: -2px;
+            background: linear-gradient(to right, #fff, #a1a1a6);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        /* Main Content Area */
+        main {
+            padding: 80px 10%;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .comment-container {
+            background: var(--glass);
+            padding: 40px;
+            border-radius: 20px;
+            border: 1px solid var(--border-color);
+            backdrop-filter: blur(10px);
+        }
+
+        /* Valine Custom Styling to match index.html */
+        .v * {
+            color: var(--text-color) !important;
+        }
+        .v .vlist .vcard .vhead .vname {
+            color: var(--accent-color) !important;
+            font-weight: 600;
+        }
+        .v .vlist .vcard .vh {
+            border-bottom: 1px solid var(--border-color) !important;
+        }
+        .v .vbtn {
+            background: var(--accent-color) !important;
+            border: none !important;
+            color: white !important;
+            border-radius: 40px !important;
+            padding: 8px 24px !important;
+            font-weight: 600 !important;
+        }
+        .v .vlist .vcard .vcontent {
+            color: #d1d1d6 !important;
+        }
+        .v .vpanel {
+            background: rgba(255, 255, 255, 0.03) !important;
+            border: 1px solid var(--border-color) !important;
+        }
+        .v .vheader .vinput {
+            border-bottom: 1px solid var(--border-color) !important;
+        }
+        .v .vsys {
+            background: rgba(255, 255, 255, 0.05) !important;
+            color: var(--secondary-text) !important;
+        }
+        .v .vinfo {
+            border-bottom: 1px solid var(--border-color) !important;
+        }
+
+        /* Footer */
+        footer {
+            padding: 80px 10% 100px;
+            background: #000;
+        }
+
+        .footer-content {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-end;
+            border-top: 1px solid var(--border-color);
+            padding-top: 40px;
+        }
+
+        .footer-left h2 {
+            font-size: 36px;
+            letter-spacing: -1.5px;
+            margin-bottom: 20px;
+        }
+
+        .contact-pills {
+            display: flex;
+            gap: 16px;
+        }
+
+        .pill {
+            padding: 10px 24px;
+            border-radius: 40px;
+            background: #fff;
+            color: #000;
+            text-decoration: none;
+            font-weight: 600;
+            font-size: 14px;
+            transition: all 0.2s;
+        }
+
+        .pill:hover { opacity: 0.8; transform: scale(1.02); }
+
+        @media (max-width: 900px) {
+            nav { padding: 15px 20px; }
+            header.hero { height: 30vh; padding: 0 6%; }
+            header.hero h1 { font-size: 32px; }
+            main { padding: 40px 6%; }
+            .comment-container { padding: 20px; }
+            .footer-content { flex-direction: column; align-items: flex-start; gap: 30px; }
+        }
+    </style>
+</head>
+<body>
+
+    <nav>
+        <a href="/" class="logo-area">
+            <img src="/static/img/avatar.jpg" alt="Verdvana">
+            <span class="logo">VERDVANA</span>
+        </a>
+        <div class="nav-links">
+            <a href="/archive">Blog</a>
+            <a href="/labs">Labs</a>
+            <a href="/comments">Comments</a>
+            <a href="https://github.com/Verdvana">GitHub</a>
+        </div>
+    </nav>
+
+    <header class="hero">
+        <h1>Leave a Message.</h1>
+    </header>
+
+    <main>
+        <div class="comment-container">
+            <div class="v">
+                <i class="fas fa-spinner fa-pulse"></i>
+            </div>
+        </div>
+    </main>
+
+    <!-- Valine Script (Retained from original config) -->
+    <script
+        src='https://cdn.jsdelivr.net/npm/valine'
+        defer='defer'
+        onload='
+          new Valine({
+            "el": ".v",
+            "appId": "0KCYIvqG5ktP9Pw9zjIQyESV-gzGzoHsz",
+            "appKey": "hVnb4I7RVQClldY6uAIuYGrk",
+            "notify": "true",
+            "verify": "true",
+            "avatar": "identicon",
+            "placeholder": "在这里评论吧！（上面可以填写您的昵称、邮箱和网址）",
+            "visitor": true,
+            "highlight": true,
+            "avatarForce": false,
+            "recordIP": true
+          })'
+    ></script>
+
+    <!-- Footer -->
+    <footer>
+        <div class="footer-content">
+            <div class="footer-left">
+                <h2>Connect.</h2>
+                <div class="contact-pills">
+                    <a href="mailto:verdvana@outlook.com" class="pill">Contact Me</a>
+                    <a href="https://github.com/Verdvana" target="_blank" class="pill" style="background:transparent; color:#fff; border:1px solid #fff;">GitHub</a>
+                </div>
+            </div>
+            <div class="footer-right">
+                <p style="color: var(--secondary-text); margin-bottom: 8px;">© 2026 Verdvana. All rights reserved.</p>
+                <p style="color: var(--secondary-text); font-size: 12px;">Engineered with precision in Shanghai.</p>
+            </div>
+        </div>
+    </footer>
+
+</body>
+</html>
