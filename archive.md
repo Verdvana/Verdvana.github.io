@@ -1,4 +1,4 @@
 ---
 layout: blog-archive
-title: 归档
+title: Blog
 ---
