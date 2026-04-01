@@ -301,7 +301,7 @@ layout: null
         .career-item {
             display: grid;
             grid-template-columns: 160px 64px 1fr 720px; /* Further reduced date column to 160px */
-            gap: 16px; /* Further reduced gap to 16px */
+            gap: 0px; /* Further reduced gap to 16px */
             padding: 80px 0;
             border-bottom: 1px solid var(--border-color);
             align-items: start;
@@ -328,7 +328,7 @@ layout: null
 
         .date-cell.sub {
             height: 28px; 
-            margin-bottom: 16px; 
+            margin-bottom: 16px;
             display: flex;
             align-items: center;
             line-height: 1; /* Match position-name */
@@ -337,6 +337,7 @@ layout: null
         .career-item .company-logo {
             width: 64px;
             height: 64px;
+            margin-left: -90px; 
             display: flex;
             align-items: center;
             justify-content: center;
@@ -352,6 +353,7 @@ layout: null
 
         .career-item .details {
             min-width: 0;
+            margin-left: -20px; 
         }
 
         .career-item .details h4 {
@@ -779,7 +781,7 @@ layout: null
                     <img src="/static/img/中谷.png" alt="Zhonggu">
                 </div>
                 <div class="details">
-                    <h4><a href="https://www.zhonggu.com" target="_blank" style="color: var(--accent-color); text-decoration: none;">Shanxi Zhonggu Technology</a></h4>
+                    <h4><a href="https://www.zgkj00.cn" target="_blank" style="color: var(--accent-color); text-decoration: none;">Shanxi Zhonggu Technology</a></h4>
                     <div class="position-name" style="color: inherit;">Hardware Engineer</div>
                     <p>Focused on PCB design and low-level hardware development for industrial sensors.</p>
                 </div>
