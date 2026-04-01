@@ -1,0 +1,433 @@
+---
+layout: null
+---
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VERDVANA — {{ page.title }}</title>
+    <!-- Favicon -->
+    <link rel="icon" type="image/jpeg" href="/static/img/avatar.jpg">
+    <link rel="apple-touch-icon" href="/static/img/avatar.jpg">
+    <!-- Font Awesome for Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --bg-color: #000000;
+            --text-color: #ffffff;
+            --secondary-text: #8e8e93;
+            --accent-color: #0071e3;
+            --border-color: rgba(255, 255, 255, 0.1);
+            --card-bg: rgba(28, 28, 30, 0.7);
+            --glass: rgba(255, 255, 255, 0.05);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            line-height: 1.6;
+            -webkit-font-smoothing: antialiased;
+            overflow-x: hidden;
+        }
+
+        /* Fixed Navigation */
+        nav {
+            position: fixed;
+            top: 0;
+            width: 100%;
+            padding: 20px 40px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            z-index: 1000;
+            background: rgba(0, 0, 0, 0.7);
+            backdrop-filter: blur(20px);
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        nav .logo-area {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            text-decoration: none;
+            color: white;
+        }
+
+        nav .logo-area img {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            border: 1px solid var(--border-color);
+            object-fit: cover;
+        }
+
+        nav .logo {
+            font-size: 18px;
+            font-weight: 700;
+            letter-spacing: -0.5px;
+        }
+
+        nav .nav-links {
+            display: flex;
+            gap: 30px;
+        }
+
+        nav a {
+            text-decoration: none;
+            color: var(--text-color);
+            font-size: 14px;
+            font-weight: 500;
+            transition: color 0.2s;
+        }
+
+        nav a:hover {
+            color: var(--secondary-text);
+        }
+
+        /* Hero Section */
+        header.hero {
+            position: relative;
+            height: 40vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            padding: 0 10%;
+            background-image: linear-gradient(to bottom, rgba(0,0,0,0.5), rgba(0,0,0,1)), url('/static/img/wallpaper3.jpg');
+            background-size: cover;
+            background-position: center;
+            overflow: hidden;
+        }
+
+        header.hero h1 {
+            font-size: clamp(40px, 8vw, 64px);
+            font-weight: 700;
+            line-height: 1.4;
+            margin-bottom: 24px;
+            letter-spacing: -2px;
+            background: linear-gradient(to right, #fff, #a1a1a6);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        header.hero p {
+            font-size: clamp(16px, 2vw, 20px);
+            color: #d1d1d6;
+            max-width: 700px;
+            font-weight: 400;
+            line-height: 1.4;
+        }
+
+        /* Labs Section */
+        section.labs {
+            padding: 40px 10% 80px;
+            min-height: 60vh;
+        }
+
+        .archive-container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .labs-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+            gap: 24px;
+        }
+
+        .labs-card {
+            background: var(--glass);
+            border-radius: 16px;
+            border: 1px solid var(--border-color);
+            overflow: hidden;
+            text-decoration: none;
+            transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+            display: flex;
+            flex-direction: column;
+            height: 100%;
+        }
+
+        .labs-card:hover {
+            transform: translateY(-8px);
+            background: rgba(255, 255, 255, 0.08);
+            border-color: rgba(255, 255, 255, 0.2);
+        }
+
+        .labs-thumb-wrapper {
+            width: 100%;
+            aspect-ratio: 16/9;
+            overflow: hidden;
+            background: #1c1c1e;
+            position: relative;
+        }
+
+        .labs-thumb {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            transition: transform 0.6s ease;
+        }
+
+        .labs-card:hover .labs-thumb {
+            transform: scale(1.05);
+        }
+
+        .labs-thumb--empty {
+            width: 100%;
+            height: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--secondary-text);
+            font-size: 14px;
+            background: linear-gradient(45deg, #1c1c1e, #2c2c2e);
+        }
+
+        .labs-body {
+            padding: 24px;
+            display: flex;
+            flex-direction: column;
+            flex-grow: 1;
+        }
+
+        .labs-title {
+            font-size: 20px;
+            font-weight: 700;
+            color: #fff;
+            margin-bottom: 12px;
+            line-height: 1.3;
+        }
+
+        .labs-desc {
+            font-size: 14px;
+            color: #d1d1d6;
+            margin-bottom: 20px;
+            line-height: 1.6;
+            flex-grow: 1;
+        }
+
+        .labs-tags {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-bottom: 16px;
+        }
+
+        .labs-tag {
+            font-size: 11px;
+            padding: 4px 10px;
+            border-radius: 6px;
+            background: rgba(0, 113, 227, 0.1);
+            color: var(--accent-color);
+            border: 1px solid rgba(0, 113, 227, 0.2);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            font-weight: 600;
+        }
+
+        .labs-meta {
+            font-size: 12px;
+            color: var(--secondary-text);
+            font-family: monospace;
+            opacity: 0.6;
+            word-break: break-all;
+        }
+
+        .labs-warn {
+            background: rgba(255, 69, 58, 0.1);
+            border: 1px dashed rgba(255, 69, 58, 0.3);
+            padding: 24px;
+            border-radius: 12px;
+            color: #ff453a;
+            margin-bottom: 40px;
+        }
+
+        /* Footer */
+        footer {
+            padding: 80px 10% 100px;
+            background: #000;
+        }
+
+        .footer-content {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-end;
+            border-top: 1px solid var(--border-color);
+            padding-top: 60px;
+        }
+
+        .footer-left h2 {
+            font-size: 48px;
+            letter-spacing: -2px;
+            margin-bottom: 24px;
+        }
+
+        .contact-pills {
+            display: flex;
+            gap: 16px;
+        }
+
+        .pill {
+            padding: 12px 28px;
+            border-radius: 40px;
+            background: #fff;
+            color: #000;
+            text-decoration: none;
+            font-weight: 600;
+            font-size: 14px;
+            transition: all 0.2s;
+        }
+
+        .pill:hover { opacity: 0.8; transform: scale(1.02); }
+
+        .footer-right p {
+            color: var(--secondary-text);
+            margin-bottom: 8px;
+            text-align: right;
+        }
+
+        @media (max-width: 900px) {
+            nav { padding: 15px 20px; }
+            nav .nav-links { gap: 15px; }
+            
+            header.hero { height: 40vh; padding: 0 6%; }
+            header.hero h1 { font-size: 32px; }
+            
+            section.labs { padding: 40px 6%; }
+            .labs-grid { grid-template-columns: 1fr; }
+            
+            .footer-content { flex-direction: column; align-items: flex-start; gap: 30px; }
+            .footer-right p { text-align: left; }
+        }
+    </style>
+</head>
+<body>
+    <nav>
+        <a href="/" class="logo-area">
+            <img src="/static/img/avatar.jpg" alt="Verdvana">
+            <span class="logo">VERDVANA</span>
+        </a>
+        <div class="nav-links">
+            <a href="/archive">Blog</a>
+            <a href="/labs">Labs</a>
+            <a href="/comments">Comments</a>
+            <a href="https://github.com/Verdvana">GitHub</a>
+        </div>
+    </nav>
+
+    <header class="hero">
+        <h1>{{ page.title | default: "The Labs" }}</h1>
+        <p>Experiments in hardware, software, and the intersections between. A sandbox for technical curiosity.</p>
+    </header>
+
+    <section class="labs">
+        <div class="archive-container">
+            
+            {% assign lab_static = site.static_files
+              | where_exp: "f", "f.path contains '/labs/'"
+              | where_exp: "f", "f.extname == '.html'"
+            %}
+            
+            {% assign lab_pages = site.pages
+              | where_exp: "p", "p.url contains '/labs/'"
+              | where_exp: "p", "p.url contains '.html'"
+            %}
+            
+            {% assign lab_files = lab_static | concat: lab_pages %}
+            
+            {% if lab_files.size == 0 %}
+              <div class="labs-warn">
+                No laboratory experiments found in <code>/labs/</code>.
+              </div>
+            {% else %}
+            
+              {% assign metas = site.data.labs | sort: "order" %}
+            
+              <div class="labs-grid">
+                {%- comment -%} Listed from _data/labs.yml {%- endcomment -%}
+                {%- for meta in metas -%}
+                  {%- assign found = nil -%}
+                  {%- for x in lab_files -%}
+                    {%- assign xslug = x.basename | default: x.name | remove: '.html' -%}
+                    {%- if xslug == meta.slug -%}
+                      {%- assign found = x -%}
+                    {%- endif -%}
+                  {%- endfor -%}
+            
+                  {%- if found -%}
+                    {%- assign href = found.path | default: found.url -%}
+                    <a class="labs-card" href="{{ href | relative_url }}" {% if page.new_tab %}target="_blank" rel="noopener"{% endif %}>
+                      <div class="labs-thumb-wrapper">
+                        {% if meta.thumb %}
+                          <img class="labs-thumb" src="{{ meta.thumb | relative_url }}" alt="{{ meta.title | default: meta.slug | escape }}">
+                        {% else %}
+                          <div class="labs-thumb--empty">No preview</div>
+                        {% endif %}
+                      </div>
+            
+                      <div class="labs-body">
+                        <h3 class="labs-title">{{ meta.title | default: meta.slug }}</h3>
+                        {% if meta.desc %}
+                          <p class="labs-desc">{{ meta.desc }}</p>
+                        {% endif %}
+                        {% if meta.tags %}
+                          <div class="labs-tags">
+                            {% for t in meta.tags %}
+                              <span class="labs-tag">{{ t }}</span>
+                            {% endfor %}
+                          </div>
+                        {% endif %}
+                        <div class="labs-meta">{{ href }}</div>
+                      </div>
+                    </a>
+                  {%- endif -%}
+                {%- endfor -%}
+            
+                {%- comment -%} Unlisted files {%- endcomment -%}
+                {% for f in lab_files %}
+                  {% assign slug = f.basename | default: f.name | remove: '.html' %}
+                  {% assign m = site.data.labs | where: "slug", slug | first %}
+                  {% if m == nil %}
+                    {% assign href = f.path | default: f.url %}
+                    <a class="labs-card" href="{{ href | relative_url }}" {% if page.new_tab %}target="_blank" rel="noopener"{% endif %}>
+                      <div class="labs-thumb-wrapper">
+                        <div class="labs-thumb--empty">No preview</div>
+                      </div>
+                      <div class="labs-body">
+                        <h3 class="labs-title">{{ slug }}</h3>
+                        <p class="labs-desc">Unlisted experiment discovered in the laboratory directory.</p>
+                        <div class="labs-meta">{{ href }}</div>
+                      </div>
+                    </a>
+                  {% endif %}
+                {% endfor %}
+              </div>
+            {% endif %}
+
+        </div>
+    </section>
+
+    <footer>
+        <div class="footer-content">
+            <div class="footer-left">
+                <h2>Connect.</h2>
+                <div class="contact-pills">
+                    <a href="mailto:verdvana@outlook.com" class="pill">Contact Me</a>
+                    <a href="https://github.com/Verdvana" target="_blank" class="pill" style="background:transparent; color:#fff; border:1px solid #fff;">GitHub</a>
+                </div>
+            </div>
+            <div class="footer-right">
+                <p>© {{ "now" | date: "%Y" }} Verdvana. All rights reserved.</p>
+                <p style="font-size: 12px;">Engineered with precision in Shanghai.</p>
+            </div>
+        </div>
+    </footer>
+</body>
+</html>
