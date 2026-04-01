@@ -6,7 +6,7 @@ layout: null
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Comments — VERDVANA</title>
+    <title>VERDVANA — {{ page.title }}</title>
     <!-- Favicon -->
     <link rel="icon" type="image/jpeg" href="/static/img/avatar.jpg">
     <link rel="apple-touch-icon" href="/static/img/avatar.jpg">
@@ -92,7 +92,7 @@ layout: null
             color: var(--secondary-text);
         }
 
-        /* Hero Section for Comments */
+        /* Hero Section */
         header.hero {
             position: relative;
             height: 40vh;
@@ -100,31 +100,43 @@ layout: null
             flex-direction: column;
             justify-content: center;
             padding: 0 10%;
-            background-image: linear-gradient(to bottom, rgba(0,0,0,0.3), rgba(0,0,0,0.9)), url('/static/img/wallpaper4.jpg');
+            background-image: linear-gradient(to bottom, rgba(0,0,0,0.5), rgba(0,0,0,1)), url('/static/img/wallpaper2.jpg');
             background-size: cover;
             background-position: center;
             overflow: hidden;
         }
 
         header.hero h1 {
-            font-size: clamp(40px, 8vw, 72px);
+            font-size: clamp(40px, 8vw, 64px);
             font-weight: 700;
-            line-height: 1.05;
-            margin-bottom: 20px;
+            line-height: 1.4;
+            margin-bottom: 24px;
             letter-spacing: -2px;
             background: linear-gradient(to right, #fff, #a1a1a6);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
         }
 
-        /* Main Content Area */
-        main {
-            padding: 80px 10%;
+        header.hero p {
+            font-size: clamp(16px, 2vw, 20px);
+            color: #d1d1d6;
+            max-width: 700px;
+            font-weight: 400;
+            line-height: 1.4;
+        }
+
+        /* Comments Section */
+        section.comments {
+            padding: 40px 10% 80px;
+            min-height: 60vh;
+        }
+
+        .archive-container {
             max-width: 1200px;
             margin: 0 auto;
         }
 
-        .comment-container {
+        .comment-card {
             background: var(--glass);
             padding: 40px;
             border-radius: 20px;
@@ -132,7 +144,7 @@ layout: null
             backdrop-filter: blur(10px);
         }
 
-        /* Valine Custom Styling to match index.html */
+        /* Valine Custom Styling to match archive style */
         .v * {
             color: var(--text-color) !important;
         }
@@ -180,13 +192,13 @@ layout: null
             justify-content: space-between;
             align-items: flex-end;
             border-top: 1px solid var(--border-color);
-            padding-top: 40px;
+            padding-top: 60px;
         }
 
         .footer-left h2 {
-            font-size: 36px;
-            letter-spacing: -1.5px;
-            margin-bottom: 20px;
+            font-size: 48px;
+            letter-spacing: -2px;
+            margin-bottom: 24px;
         }
 
         .contact-pills {
@@ -195,7 +207,7 @@ layout: null
         }
 
         .pill {
-            padding: 10px 24px;
+            padding: 12px 28px;
             border-radius: 40px;
             background: #fff;
             color: #000;
@@ -207,18 +219,28 @@ layout: null
 
         .pill:hover { opacity: 0.8; transform: scale(1.02); }
 
+        .footer-right p {
+            color: var(--secondary-text);
+            margin-bottom: 8px;
+            text-align: right;
+        }
+
         @media (max-width: 900px) {
             nav { padding: 15px 20px; }
-            header.hero { height: 30vh; padding: 0 6%; }
+            nav .nav-links { gap: 15px; }
+            
+            header.hero { height: 40vh; padding: 0 6%; }
             header.hero h1 { font-size: 32px; }
-            main { padding: 40px 6%; }
-            .comment-container { padding: 20px; }
+            
+            section.comments { padding: 40px 6%; }
+            .comment-card { padding: 20px; }
+            
             .footer-content { flex-direction: column; align-items: flex-start; gap: 30px; }
+            .footer-right p { text-align: left; }
         }
     </style>
 </head>
 <body>
-
     <nav>
         <a href="/" class="logo-area">
             <img src="/static/img/avatar.jpg" alt="Verdvana">
@@ -233,16 +255,19 @@ layout: null
     </nav>
 
     <header class="hero">
-        <h1>Leave a Message.</h1>
+        <h1>{{ page.title | default: "Leave a Message" }}</h1>
+        <p>A space for collaboration, feedback, and open dialogue.</p>
     </header>
 
-    <main>
-        <div class="comment-container">
-            <div class="v">
-                <i class="fas fa-spinner fa-pulse"></i>
+    <section class="comments">
+        <div class="archive-container">
+            <div class="comment-card">
+                <div class="v">
+                    <i class="fas fa-spinner fa-pulse"></i>
+                </div>
             </div>
         </div>
-    </main>
+    </section>
 
     <!-- Valine Script (Retained from original config) -->
     <script
@@ -264,7 +289,6 @@ layout: null
           })'
     ></script>
 
-    <!-- Footer -->
     <footer>
         <div class="footer-content">
             <div class="footer-left">
@@ -275,11 +299,10 @@ layout: null
                 </div>
             </div>
             <div class="footer-right">
-                <p style="color: var(--secondary-text); margin-bottom: 8px;">© 2026 Verdvana. All rights reserved.</p>
-                <p style="color: var(--secondary-text); font-size: 12px;">Engineered with precision in Shanghai.</p>
+                <p>© {{ "now" | date: "%Y" }} Verdvana. All rights reserved.</p>
+                <p style="font-size: 12px;">Engineered with precision in Shanghai.</p>
             </div>
         </div>
     </footer>
-
 </body>
 </html>
