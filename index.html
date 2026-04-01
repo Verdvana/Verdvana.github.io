@@ -300,8 +300,8 @@ layout: null
 
         .career-item {
             display: grid;
-            grid-template-columns: 240px 64px 1fr 720px; /* Date | Logo | Details | Projects */
-            gap: 40px;
+            grid-template-columns: 160px 64px 1fr 720px; /* Further reduced date column to 160px */
+            gap: 16px; /* Further reduced gap to 16px */
             padding: 80px 0;
             border-bottom: 1px solid var(--border-color);
             align-items: start;
@@ -319,15 +319,19 @@ layout: null
             color: var(--secondary-text);
             font-size: 16px;
             font-weight: 500;
-            height: 43px; /* Match h4 line-height + margin */
+            height: 40px; 
             display: flex;
             align-items: center;
+            margin-bottom: 16px; 
+            line-height: 1; /* Reset line-height to ensure flex centering is consistent */
         }
 
         .date-cell.sub {
-            height: 28px; /* Match position-name line-height */
-            margin-top: 4px;
-            margin-bottom: 16px;
+            height: 28px; 
+            margin-bottom: 16px; 
+            display: flex;
+            align-items: center;
+            line-height: 1; /* Match position-name */
         }
 
         .career-item .company-logo {
@@ -337,7 +341,7 @@ layout: null
             align-items: center;
             justify-content: center;
             overflow: hidden;
-            margin-top: -10px; /* Minor adjustment to visually center with first h4 */
+            margin-top: -12px;
         }
 
         .career-item .company-logo img {
@@ -347,15 +351,15 @@ layout: null
         }
 
         .career-item .details {
-            min-width: 0; /* Prevent overflow */
+            min-width: 0;
         }
 
         .career-item .details h4 {
             font-size: 26px;
             font-weight: 700;
-            margin-bottom: 4px;
-            line-height: 1.2;
-            height: 39px; /* Fixed height to match date-cell */
+            margin-bottom: 16px; 
+            line-height: 1;
+            height: 40px; 
             display: flex;
             align-items: center;
         }
@@ -364,9 +368,9 @@ layout: null
             font-size: 18px;
             color: var(--accent-color);
             font-weight: 500;
-            margin-bottom: 16px;
-            line-height: 1.4;
-            height: 25px; /* Fixed height to match date-cell.sub */
+            margin-bottom: 16px; 
+            line-height: 1; /* Changed from 1.4 to 1 to match date-cell.sub */
+            height: 28px; 
             display: flex;
             align-items: center;
         }
@@ -380,7 +384,7 @@ layout: null
 
         .projects-area {
             width: 720px;
-            padding-left: 40px;
+            padding-left: 20px; /* Reduced from 40px to pull projects closer */
             border-left: 1px solid var(--border-color);
             display: grid;
             grid-template-columns: 350px 350px;
@@ -719,7 +723,8 @@ layout: null
             <!-- Zhonggu -->
             <div class="career-item">
                 <div class="career-date-column">
-                    <div class="date-cell">2018.04 — 2018.08</div>
+                    <div class="date-cell"> </div>
+                    <div class="date-cell sub">2018.04 — 2018.08</div>
                 </div>
                 <div class="company-logo">
                     <img src="/static/img/中谷.png" alt="Zhonggu">
@@ -771,7 +776,8 @@ layout: null
             <!-- Xidian University -->
             <div class="career-item">
                 <div class="career-date-column">
-                    <div class="date-cell">2018.09 — 2021.06</div>
+                    <div class="date-cell"> </div>
+                    <div class="date-cell sub">2018.09 — 2021.06</div>
                 </div>
                 <div class="company-logo">
                     <img src="/static/img/西安电子科技大学-logo.svg" alt="Xidian University">
@@ -830,7 +836,8 @@ layout: null
             <!-- North University of China -->
             <div class="career-item">
                 <div class="career-date-column">
-                    <div class="date-cell">2013.09 — 2017.07</div>
+                    <div class="date-cell"> </div>
+                    <div class="date-cell sub">2013.09 — 2017.07</div>
                 </div>
                 <div class="company-logo">
                     <img src="/static/img/中北大学-logo.svg" alt="North University of China">
