@@ -22,19 +22,3 @@
   thumb: /assets/labs/thumbs/random_picker.png
   tags: [Others]
   order: 4
-
-- slug: pension_calculator
-  title: 养老金测算
-  desc: >
-    预测中国大陆地区城镇职工养老的退休后每月领取金额，支持太原和上海地区选择，自动生成保守、基准、乐观三种情景下的账户余额曲线与退休后现金流曲线
-  thumb: /assets/labs/thumbs/pension_calculator.png
-  tags: [Finance]
-  order: 3
-
-- slug: setup
-  title: 环境搭建
-  desc: >
-    ASIC/FPGA 相关的环境搭建说明文档，包含 EDA 工具与系统配置
-  thumb: /assets/labs/thumbs/setup.png
-  tags: [Environment]
-  order: 5
