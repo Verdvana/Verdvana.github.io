@@ -567,27 +567,100 @@ layout: null
             nav .nav-links { gap: 15px; }
             nav .nav-links a { font-size: 13px; }
             
-            header.hero { height: 70vh; padding: 0 8%; }
-            header.hero h1 { font-size: 42px; letter-spacing: -1.5px; }
-            header.hero p { font-size: 18px; }
+            header.hero { height: 60vh; padding: 0 6%; }
+            header.hero h1 { font-size: 36px; letter-spacing: -1px; }
+            header.hero p { font-size: 16px; }
+
+            section { padding: 60px 6%; }
+            section h2 { font-size: 28px; margin-bottom: 30px; }
 
             .entries-container { flex-direction: column; }
-            .entry-block { padding: 60px 8%; border-right: none; border-bottom: 1px solid var(--border-color); }
-            .entry-block h3 { font-size: 36px; margin-bottom: 30px; }
+            .entry-block { padding: 40px 6%; border-right: none; border-bottom: 1px solid var(--border-color); min-height: auto; }
+            .entry-block h3 { font-size: 32px; margin-bottom: 20px; }
             
-            .career-item { grid-template-columns: 1fr; gap: 24px; padding: 40px 0; }
-            .career-date-column { flex-direction: row; gap: 10px; }
-            .career-date-column::after, .career-date-column::before, .date-cell.sub::after { display: none; }
-            .date-cell, .date-cell.sub { height: auto; margin: 0; }
-            .career-item .info { flex-direction: column; gap: 20px; }
-            .project-item { grid-template-columns: 48px 1fr; min-height: auto; }
-            .projects-area { width: 100%; padding-left: 0; border-left: none; border-top: 1px solid var(--border-color); padding-top: 24px; margin-top: 8px; }
+            /* Mobile Timeline Optimization */
+            .career-item { 
+                grid-template-columns: 1fr; 
+                gap: 16px; 
+                padding: 40px 0; 
+                position: relative;
+            }
+
+            .career-date-column { 
+                display: flex;
+                flex-direction: column;
+                gap: 8px;
+                margin-bottom: 0;
+            }
+
+            .career-date-column .date-cell:first-child { display: none; } /* Hide empty cell */
             
-            section { padding: 80px 8%; }
-            section h2 { font-size: 32px; margin-bottom: 40px; }
+            .date-cell, .date-cell.sub { 
+                height: auto; 
+                margin: 0; 
+                font-size: 14px;
+                color: var(--accent-color); /* Highlight dates on mobile */
+                font-weight: 600;
+            }
+
+            /* Simplified Timeline Line for Mobile */
+            .career-item .details {
+                margin-left: 0;
+                padding-left: 20px;
+                border-left: 2px solid var(--border-color);
+                position: relative;
+            }
+
+            .career-item .details h4 {
+                height: auto;
+                font-size: 22px;
+                margin-bottom: 12px;
+            }
+
+            .career-item .details .position-name {
+                height: auto;
+                font-size: 16px;
+                margin-bottom: 8px;
+                padding-left: 0;
+            }
+
+            /* Add dots to positions on mobile */
+            .career-item .details .position-name::before {
+                content: '';
+                position: absolute;
+                left: -7px;
+                width: 12px;
+                height: 12px;
+                background: var(--bg-color);
+                border: 2px solid var(--accent-color);
+                border-radius: 50%;
+            }
+
+            .career-item .company-logo {
+                margin: 0 0 16px 0;
+                width: 48px;
+                height: 48px;
+            }
+
+            .projects-area { 
+                width: 100%; 
+                padding-left: 20px; 
+                border-left: 2px solid var(--border-color); 
+                border-top: none; 
+                padding-top: 20px; 
+                margin-top: 0;
+                grid-template-columns: 1fr; /* Stack projects on mobile */
+            }
+
+            .project-item { 
+                grid-template-columns: 48px 1fr; 
+                min-height: auto; 
+            }
+
+            .career-date-column::after, .date-cell.sub::after { display: none; }
             
-            .footer-content { flex-direction: column; align-items: flex-start; gap: 40px; }
-            .footer-left h2 { font-size: 36px; }
+            .footer-content { flex-direction: column; align-items: flex-start; gap: 30px; padding-top: 40px; }
+            .footer-left h2 { font-size: 32px; }
         }
 
         /* Skills Grid */
