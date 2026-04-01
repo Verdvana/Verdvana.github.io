@@ -382,6 +382,54 @@ layout: null
             margin-bottom: 12px;
         }
 
+        /* Timeline Effect: Line only within items with multiple roles */
+        .career-item .career-date-column {
+            position: relative;
+        }
+
+        .career-item .career-date-column::after {
+            content: '';
+            position: absolute;
+            right: -9px; 
+            top: 70px; /* 40px (empty cell) + 16px (margin) + 14px (center of first dot) */
+            bottom: 30px; /* 16px (margin) + 14px (center of last dot) */
+            width: 2px;
+            background: var(--border-color);
+            z-index: 1;
+            display: none;
+        }
+
+        /* Show and override only for multi-item containers */
+        .career-item .career-date-column:has(.date-cell.sub + .date-cell.sub)::after {
+            display: block;
+        }
+
+        .date-cell.sub {
+            position: relative;
+            z-index: 2; /* Ensure dot is above the line */
+        }
+
+        .date-cell.sub::after {
+            content: '';
+            position: absolute;
+            right: -14px; /* Matches center of line at -9px */
+            top: 50%;
+            transform: translateY(-50%);
+            width: 12px;
+            height: 12px;
+            background: var(--bg-color);
+            border: 2px solid var(--secondary-text);
+            border-radius: 50%;
+            z-index: 3;
+            transition: all 0.3s ease;
+        }
+
+        .career-item:hover .date-cell.sub::after {
+            border-color: var(--accent-color);
+            background: var(--accent-color);
+            box-shadow: 0 0 10px var(--accent-color);
+        }
+
         .projects-area {
             width: 720px;
             padding-left: 20px; /* Reduced from 40px to pull projects closer */
@@ -527,6 +575,7 @@ layout: null
             
             .career-item { grid-template-columns: 1fr; gap: 24px; padding: 40px 0; }
             .career-date-column { flex-direction: row; gap: 10px; }
+            .career-date-column::after, .career-date-column::before, .date-cell.sub::after { display: none; }
             .date-cell, .date-cell.sub { height: auto; margin: 0; }
             .career-item .info { flex-direction: column; gap: 20px; }
             .project-item { grid-template-columns: 48px 1fr; min-height: auto; }
