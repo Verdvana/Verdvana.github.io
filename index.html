@@ -288,22 +288,8 @@ layout: null
 
         .career-item {
             display: grid;
-            grid-template-columns: 200px 1fr;
-            padding: 60px 0;
-            border-bottom: 1px solid var(--border-color);
-        }
-
-        .career-item:last-child { border-bottom: none; }
-
-        /* Career Section Refined Grid */
-        .career-container {
-            max-width: 2400px;
-        }
-
-        .career-item {
-            display: grid;
-            grid-template-columns: 160px 64px 1fr 2fr; /* Use ratios for columns instead of fixed pixels */
-            gap: 16px;
+            grid-template-columns: 160px 64px 1fr 720px;
+            gap: 0px;
             padding: 80px 0;
             border-bottom: 1px solid var(--border-color);
             align-items: start;
@@ -435,11 +421,11 @@ layout: null
         }
 
         .projects-area {
-            flex: 1; /* Allow it to grow/shrink based on available space */
+            width: 720px;
             padding-left: 20px;
             border-left: 1px solid var(--border-color);
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); /* Automatically switch to 1 column if space < 320px */
+            grid-template-columns: 350px 350px;
             gap: 16px;
             align-content: start;
         }
@@ -462,7 +448,7 @@ layout: null
             grid-template-columns: 48px 1fr;
             gap: 12px;
             align-items: start;
-            min-height: 100px; /* Reduced to fit the tighter layout in the image */
+            min-height: 100px;
         }
 
         .project-logo {
@@ -487,7 +473,7 @@ layout: null
         .project-content {
             display: flex;
             flex-direction: column;
-            min-width: 0; /* Important for flex child to allow wrapping of its children */
+            min-width: 0;
         }
 
         .project-item h6 {
@@ -515,6 +501,7 @@ layout: null
             display: flex;
             flex-wrap: wrap;
             gap: 6px;
+            min-width: 0;
         }
 
         .project-tag {
@@ -525,8 +512,8 @@ layout: null
             border-radius: 4px;
             font-weight: 600;
             border: 1px solid rgba(0, 113, 227, 0.2);
-            white-space: nowrap; /* Prevent tag internal text wrapping */
-            display: inline-block;
+            white-space: nowrap;
+            flex-shrink: 0;
         }
 
         /* Footer */
@@ -649,7 +636,7 @@ layout: null
 
             .projects-area { 
                 width: 100% !important; 
-                padding: 20px 0 0 20px !important; 
+                padding-left: 20px !important; 
                 border-left: 2px solid var(--border-color) !important; 
                 border-top: none !important; 
                 margin-top: 0 !important;
@@ -657,10 +644,16 @@ layout: null
                 gap: 16px !important;
             }
 
+            .projects-area h5 {
+                grid-column: 1 !important; /* Remove span 2 to allow 1-column grid */
+                margin-bottom: 12px !important;
+            }
+
             .project-item { 
-                grid-template-columns: 48px 1fr; 
-                min-height: auto; 
-                padding: 16px; /* Ensure enough internal spacing */
+                grid-template-columns: 48px 1fr !important;
+                min-height: auto !important; 
+                padding: 16px !important; 
+                width: 100% !important;
             }
 
             .project-content h6 {
@@ -672,14 +665,11 @@ layout: null
                 display: flex;
                 flex-wrap: wrap;
                 gap: 8px;
-            }
-
-            .project-tag {
-                white-space: nowrap; /* Prevent individual tags from breaking internally */
+                min-width: 0;
             }
 
             .career-date-column::after, .date-cell.sub::after { display: none; }
-            
+
             .footer-content { flex-direction: column; align-items: flex-start; gap: 30px; padding-top: 40px; }
             .footer-left h2 { font-size: 32px; }
         }
@@ -1313,6 +1303,7 @@ layout: null
                 
                 <div class="recent-list">
                     {% for post in site.posts limit:8 %}
+
                     <a href="{{ post.url | relative_url }}" class="list-link">
                         <span class="item-title">{{ post.title }}</span>
                         <span class="item-meta">{{ post.date | date: "%Y.%m.%d" }}</span>
@@ -1350,7 +1341,7 @@ layout: null
     <footer>
         <div class="footer-content">
             <div class="footer-left">
-                <h2>Connect</h2>
+                <h2>Connect.</h2>
                 <div class="contact-sections">
                     <!-- Primary Contacts -->
                     <div class="contact-group">
