@@ -219,8 +219,8 @@ layout: default
     }
 
     .copy-btn:hover {
-        background: var(--accent-color);
-        border-color: var(--accent-color);
+        background: var(--accent-color) !important;
+        border-color: var(--accent-color) !important;
     }
 
     .post-content h1, .post-content h2, .post-content h3, .post-content h4 {
@@ -401,6 +401,36 @@ layout: default
 <!-- TOC Scripts -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/tocbot/4.21.0/tocbot.min.js"></script>
 <script>
+    // 1. Mermaid Conversion (Run as early as possible)
+    function convertMermaid() {
+        document.querySelectorAll('div.language-mermaid, pre.language-mermaid, .highlight.language-mermaid').forEach((el) => {
+            if (el.hasAttribute('data-mermaid-converted')) return;
+            const code = el.querySelector('code') || el;
+            // Get text and strip any HTML that might have been injected (like line numbers)
+            let diagramText = code.textContent.trim();
+            
+            if (diagramText) {
+                const mermaidDiv = document.createElement('div');
+                mermaidDiv.className = 'mermaid';
+                mermaidDiv.textContent = diagramText;
+                mermaidDiv.setAttribute('data-mermaid-converted', 'true');
+                el.parentNode.insertBefore(mermaidDiv, el);
+                el.remove();
+                
+                if (window.mermaid) {
+                    try { window.mermaid.init(undefined, mermaidDiv); } catch(e) {}
+                }
+            }
+        });
+    }
+
+    // Run conversion immediately if DOM is ready, otherwise on DOMContentLoaded
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', convertMermaid);
+    } else {
+        convertMermaid();
+    }
+
     document.addEventListener('DOMContentLoaded', function() {
         // Init TOC
         tocbot.init({
@@ -416,20 +446,6 @@ layout: default
 
         // Add code headers and copy buttons
         function addCodeHeader() {
-            // 1. Mermaid: Convert Jekyll's .language-mermaid blocks to clean .mermaid divs
-            document.querySelectorAll('div.language-mermaid, pre.language-mermaid').forEach((el) => {
-                if (el.getAttribute('data-mermaid-converted')) return;
-                const code = el.querySelector('code') || el;
-                const diagramText = code.innerText;
-                const mermaidDiv = document.createElement('div');
-                mermaidDiv.className = 'mermaid';
-                mermaidDiv.innerText = diagramText;
-                el.parentNode.insertBefore(mermaidDiv, el);
-                el.remove();
-                mermaidDiv.setAttribute('data-mermaid-converted', 'true');
-                if (window.mermaid) window.mermaid.init(undefined, mermaidDiv);
-            });
-
             document.querySelectorAll('.post-content pre').forEach((pre) => {
                 if (pre.parentElement.classList.contains('code-block-wrapper')) return;
 
@@ -452,18 +468,14 @@ layout: default
                     if (pLangClass) lang = pLangClass.replace('language-', '').toUpperCase();
                 }
 
-                // SKIP MERMAID: Mermaid diagrams should not be wrapped in code headers
-                if (lang === 'MERMAID' || pre.classList.contains('mermaid') || (code && code.classList.contains('language-mermaid'))) {
-                    // Just ensure it has the mermaid class for the renderer
-                    pre.classList.add('mermaid');
-                    return;
-                }
+                // SKIP MERMAID: Double check to ensure we don't wrap mermaid in code headers
+                if (lang === 'MERMAID' || pre.classList.contains('mermaid')) return;
 
                 const header = document.createElement('div');
                 header.className = 'code-header';
                 header.innerHTML = `
                     <span class="code-lang">${lang}</span>
-                    <button class="copy-btn" onclick="window.copyCode(this)">COPY</button>
+                    <button class="copy-btn" onclick="window.copyCode(window.event ? window.event.target : this)">COPY</button>
                 `;
 
                 // Re-structure DOM
@@ -495,6 +507,9 @@ layout: default
         addCodeHeader();
         setTimeout(addCodeHeader, 500);
         setTimeout(addCodeHeader, 1500);
+        // Also retry mermaid conversion in case library was late
+        setTimeout(convertMermaid, 500);
+        setTimeout(convertMermaid, 1500);
     });
 </script>
 
