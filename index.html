@@ -774,6 +774,120 @@ layout: null
             background: rgba(179, 157, 219, 0.1);
             border-color: rgba(179, 157, 219, 0.4);
         }
+
+        /* Footer Redesign */
+        .footer-left h2 {
+            font-size: 48px;
+            letter-spacing: -2px;
+            margin-bottom: 40px;
+        }
+
+        .contact-sections {
+            display: flex;
+            flex-direction: column;
+            gap: 48px;
+        }
+
+        .contact-group h5 {
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            color: var(--secondary-text);
+            margin-bottom: 20px;
+        }
+
+        /* Primary Contacts */
+        .contact-pills {
+            display: flex;
+            gap: 16px;
+            flex-wrap: wrap;
+        }
+
+        .pill {
+            padding: 12px 28px;
+            border-radius: 40px;
+            background: #fff;
+            color: #000;
+            text-decoration: none;
+            font-weight: 600;
+            font-size: 14px;
+            transition: all 0.2s;
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .pill:hover { opacity: 0.8; transform: scale(1.02); }
+
+        .pill.outline {
+            background: transparent;
+            color: #fff;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+        }
+
+        .pill.outline:hover {
+            border-color: #fff;
+            background: rgba(255, 255, 255, 0.05);
+        }
+
+        /* Network Links (Low Priority) */
+        .network-links {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 24px;
+        }
+
+        .network-link {
+            font-size: 14px;
+            color: var(--secondary-text);
+            text-decoration: none;
+            transition: all 0.2s ease;
+            border-bottom: 1px solid transparent;
+        }
+
+        .network-link:hover {
+            color: #fff;
+            border-bottom-color: var(--accent-color);
+        }
+
+        /* WeChat Modal */
+        #wechat-modal {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.9);
+            z-index: 2000;
+            backdrop-filter: blur(10px);
+            justify-content: center;
+            align-items: center;
+            cursor: pointer;
+        }
+
+        .modal-content {
+            background: #1c1c1e;
+            padding: 30px;
+            border-radius: 24px;
+            text-align: center;
+            border: 1px solid var(--border-color);
+            transform: scale(0.9);
+            transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        #wechat-modal.active { display: flex; }
+        #wechat-modal.active .modal-content { transform: scale(1); }
+
+        .modal-content img {
+            width: 200px;
+            height: 200px;
+            border-radius: 12px;
+            margin-bottom: 20px;
+        }
+
+        .modal-content p {
+            color: #fff;
+            font-size: 14px;
+            font-weight: 500;
+        }
     </style>
 </head>
 <body>
@@ -1184,9 +1298,32 @@ layout: null
         <div class="footer-content">
             <div class="footer-left">
                 <h2>Connect.</h2>
-                <div class="contact-pills">
-                    <a href="mailto:verdvana@outlook.com" class="pill">Contact Me</a>
-                    <a href="https://github.com/Verdvana" target="_blank" class="pill" style="background:transparent; color:#fff; border:1px solid #fff;">GitHub</a>
+                <div class="contact-sections">
+                    <!-- Primary Contacts -->
+                    <div class="contact-group">
+                        <h5>Direct Contact</h5>
+                        <div class="contact-pills">
+                            <a href="mailto:verdvana@outlook.com" class="pill">
+                                <i class="fa-solid fa-envelope"></i> Email
+                            </a>
+                            <a href="https://github.com/Verdvana" target="_blank" class="pill outline">
+                                <i class="fa-brands fa-github"></i> GitHub
+                            </a>
+                            <a href="javascript:void(0)" onclick="toggleWeChat()" class="pill outline">
+                                <i class="fa-brands fa-weixin"></i> WeChat
+                            </a>
+                        </div>
+                    </div>
+                    
+                    <!-- Network (Secondary) -->
+                    <div class="contact-group">
+                        <h5>Friends</h5>
+                        <div class="contact-pills">
+                            <a href="https://blog/skycity11.xyz" class="pill outline">skycity</a>
+                            <!-- <a href="#" class="pill outline">Colleague 2</a> -->
+                            <!-- <a href="#" class="pill outline">Partner 3</a> -->
+                        </div>
+                    </div>
                 </div>
             </div>
             <div class="footer-right">
@@ -1195,6 +1332,21 @@ layout: null
             </div>
         </div>
     </footer>
+
+    <!-- WeChat Modal -->
+    <div id="wechat-modal" onclick="toggleWeChat()">
+        <div class="modal-content" onclick="event.stopPropagation()">
+            <img src="/static/img/wechat.jpg" alt="WeChat QR Code">
+            <p>Scan to connect</p>
+        </div>
+    </div>
+
+    <script>
+        function toggleWeChat() {
+            const modal = document.getElementById('wechat-modal');
+            modal.classList.toggle('active');
+        }
+    </script>
 
 </body>
 </html>
