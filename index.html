@@ -710,12 +710,31 @@ layout: null
             background: rgba(255, 255, 255, 0.05);
             color: #d1d1d6;
             border: 1px solid var(--border-color);
+            cursor: pointer;
+            transition: all 0.2s ease;
         }
 
         .skill-tags span.tool {
             color: var(--accent-color);
             border-color: rgba(0, 113, 227, 0.3);
             background: rgba(0, 113, 227, 0.05);
+        }
+
+        .skill-tags a {
+            text-decoration: none;
+            color: inherit;
+            display: inline-block;
+        }
+
+        .skill-tags span:hover {
+            background: rgba(255, 255, 255, 0.15);
+            border-color: rgba(255, 255, 255, 0.4);
+            transform: translateY(-2px);
+        }
+
+        .skill-tags span.tool:hover {
+            background: rgba(0, 113, 227, 0.15);
+            border-color: rgba(0, 113, 227, 0.6);
         }
     </style>
 </head>
@@ -1028,31 +1047,47 @@ layout: null
                 <i class="fa-solid fa-microchip"></i>
                 <h3>ASIC Design</h3>
                 <div class="skill-tags">
-                    <span>Verilog</span><span>SystemVerilog</span><span>Perl</span><span>Tcl</span><span>Python</span>
-                    <span class="tool">VCS</span><span class="tool">Verdi</span><span class="tool">Design Compiler</span>
+                    <a href="https://web.archive.org/web/20120716210757/http://www.verilog.com/IEEEVerilog.html" target="_blank"><span>Verilog</span></a>
+                    <a href="https://standards.ieee.org/standard/1800-2009.html" target="_blank"><span>SystemVerilog</span></a>
+                    <a href="https://www.perl.org/" target="_blank"><span>Perl</span></a>
+                    <a href="https://www.tcl.tk/" target="_blank"><span>Tcl</span></a>
+                    <a href="https://www.python.org/" target="_blank"><span>Python</span></a>
+                    <a href="https://www.synopsys.com/zh-cn/verification/simulation/vcs.html" target="_blank"><span class="tool">VCS</span></a>
+                    <a href="https://www.synopsys.com/zh-cn/verification/debug/verdi.html" target="_blank"><span class="tool">Verdi</span></a>
+                    <a href="https://www.synopsys.com/implementation-and-signoff/rtl-synthesis-test/design-compiler-graphical.html" target="_blank"><span class="tool">Design Compiler</span></a>
                 </div>
             </div>
             <div class="skill-card">
                 <i class="fa-solid fa-pen-ruler"></i>
                 <h3>Hardware Development</h3>
                 <div class="skill-tags">
-                    <span>Altium Designer</span><span>OrCAD Capture</span><span>Allegro PCB Editor</span><span>Multisim</span>
+                    <a href="https://www.altium.com/altium-designer" target="_blank"><span>Altium Designer</span></a>
+                    <a href="https://www.orcad.com/products/orcad-capture/overview" target="_blank"><span>OrCAD Capture</span></a>
+                    <a href="https://www.cadence.com/en_US/home/tools/pcb-design-and-analysis/pcb-layout/allegro-pcb-designer.html" target="_blank"><span>Allegro PCB Editor</span></a>
+                    <a href="https://www.ni.com/zh-tw/shop/electronic-test-instrumentation/application-software-for-electronic-test-and-instrumentation-category/what-is-multisim.html" target="_blank"><span>Multisim</span></a>
                 </div>
             </div>
             <div class="skill-card">
                 <i class="fa-solid fa-memory"></i>
                 <h3>FPGA Development</h3>
                 <div class="skill-tags">
-                    <span>Verilog</span><span>SystemVerilog</span><span>C</span>
-                    <span class="tool">Vivado</span><span class="tool">Quartus Prime</span><span class="tool">NiosⅡ</span><span class="tool">ModelSim</span>
+                    <a href="https://web.archive.org/web/20120716210757/http://www.verilog.com/IEEEVerilog.html" target="_blank"><span>Verilog</span></a>
+                    <a href="https://standards.ieee.org/standard/1800-2009.html" target="_blank"><span>SystemVerilog</span></a>
+                    <a href="https://www.intel.cn/content/dam/altera-www/global/zh_CN/pdfs/literature/hb/nios2/edh_ed51004.pdf" target="_blank"><span>C</span></a>
+                    <a href="https://www.xilinx.com/products/design-tools/vivado.html" target="_blank"><span class="tool">Vivado</span></a>
+                    <a href="https://www.intel.com.tw/content/www/tw/zh/software/programmable/quartus-prime/overview.html" target="_blank"><span class="tool">Quartus Prime</span></a>
+                    <a href="https://www.intel.com/content/www/us/en/products/details/fpga/nios-processor/ii/article.html" target="_blank"><span class="tool">NiosⅡ</span></a>
+                    <a href="https://www.intel.com.tw/content/www/tw/zh/software/programmable/quartus-prime/model-sim.html" target="_blank"><span class="tool">ModelSim</span></a>
                 </div>
             </div>
             <div class="skill-card">
                 <i class="fa-solid fa-terminal"></i>
                 <h3>MCU Development</h3>
                 <div class="skill-tags">
-                    <span>C</span>
-                    <span class="tool">Keil MDK</span><span class="tool">Keil C51</span><span class="tool">Proteus</span>
+                    <a href="https://www.keil.com/arm/gnu.asp" target="_blank"><span>C</span></a>
+                    <a href="https://www2.keil.com/mdk5/" target="_blank"><span class="tool">Keil MDK</span></a>
+                    <a href="https://www.keil.com/c51/" target="_blank"><span class="tool">Keil C51</span></a>
+                    <a href="https://www.labcenter.com/vsmstudio/" target="_blank"><span class="tool">Proteus</span></a>
                 </div>
             </div>
         </div>
