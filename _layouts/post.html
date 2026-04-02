@@ -9,11 +9,17 @@ layout: default
         display: flex;
         flex-direction: column;
         justify-content: center;
-        padding: 80px 10% 40px;
+        padding: 80px 5% 40px;
         background-image: linear-gradient(to bottom, rgba(0,0,0,0.5), rgba(0,0,0,1)), url('/static/img/wallpaper4.jpg');
         background-size: cover;
         background-position: center;
         overflow: hidden;
+    }
+
+    .hero-inner {
+        max-width: 1800px;
+        margin: 0 auto;
+        width: 100%;
     }
 
     header.post-hero h1 {
@@ -67,13 +73,80 @@ layout: default
     }
 
     /* Content Area Styling */
-    .post-content {
-        max-width: 1000px;
+    .post-layout-wrapper {
+        display: flex;
+        max-width: 1800px;
         margin: 0 auto;
-        padding: 60px 10% 120px;
+        padding: 60px 5% 120px;
+        gap: 60px;
+    }
+
+    .post-content {
+        flex: 1;
+        min-width: 0;
         font-size: 18px;
         line-height: 1.8;
         color: #d1d1d6;
+    }
+
+    /* TOC Styling */
+    .post-toc-aside {
+        width: 250px;
+        position: sticky;
+        top: 120px;
+        align-self: flex-start;
+        display: block;
+    }
+
+    .toc-title {
+        font-size: 12px;
+        font-weight: 700;
+        color: var(--secondary-text);
+        letter-spacing: 1px;
+        margin-bottom: 20px;
+        text-transform: uppercase;
+    }
+
+    .toc-content {
+        font-size: 14px;
+        line-height: 1.6;
+    }
+
+    .toc-content ul {
+        list-style: none;
+        padding-left: 0;
+    }
+
+    .toc-content li {
+        margin-bottom: 12px;
+    }
+
+    .toc-content a {
+        color: var(--secondary-text);
+        text-decoration: none;
+        transition: color 0.2s;
+        display: block;
+    }
+
+    .toc-content a:hover {
+        color: #fff;
+    }
+
+    .toc-content .is-active-link {
+        color: var(--accent-color) !important;
+        font-weight: 600;
+    }
+
+    .toc-content .toc-list {
+        margin-left: 15px;
+        border-left: 1px solid var(--border-color);
+        padding-left: 15px;
+        margin-top: 10px;
+    }
+
+    @media (max-width: 1200px) {
+        .post-toc-aside { display: none; }
+        .post-layout-wrapper { padding: 40px 6% 80px; }
     }
 
     .post-content h1, .post-content h2, .post-content h3, .post-content h4 {
@@ -222,39 +295,65 @@ layout: default
 </style>
 
 <header class="post-hero">
-    <div class="post-meta">
-        <span><i class="fa-solid fa-calendar-days"></i> {{ page.date | date: "%Y.%m.%d" }}</span>
+    <div class="hero-inner">
+        <div class="post-meta">
+            <span><i class="fa-solid fa-calendar-days"></i> {{ page.date | date: "%Y.%m.%d" }}</span>
+            
+            {% assign words = content | strip_html | strip_newlines | remove: ' ' | size %}
+            <span><i class="fa-solid fa-file-word"></i> {{ words }} 字</span>
+            
+            {% assign read_time = words | divided_by: 300 | plus: 1 %}
+            <span><i class="fa-solid fa-clock"></i> {{ read_time }} 分钟</span>
+            
+            <span id="busuanzi_container_page_pv">
+                <i class="fa-solid fa-eye"></i> <span id="busuanzi_value_page_pv">...</span> 次阅读
+            </span>
+        </div>
         
-        {% assign words = content | strip_html | strip_newlines | remove: ' ' | size %}
-        <span><i class="fa-solid fa-file-word"></i> {{ words }} 字</span>
+        <h1>{{ page.title }}</h1>
         
-        {% assign read_time = words | divided_by: 300 | plus: 1 %}
-        <span><i class="fa-solid fa-clock"></i> {{ read_time }} 分钟</span>
-        
-        <span id="busuanzi_container_page_pv">
-            <i class="fa-solid fa-eye"></i> <span id="busuanzi_value_page_pv">...</span> 次阅读
-        </span>
-    </div>
-    
-    <h1>{{ page.title }}</h1>
-    
-    <div class="post-tags">
-        {% for tag in page.tags %}
-        <a href="/archive?filter={{ tag }}" class="post-tag">{{ tag }}</a>
-        {% endfor %}
+        <div class="post-tags">
+            {% for tag in page.tags %}
+            <a href="/archive?filter={{ tag }}" class="post-tag">{{ tag }}</a>
+            {% endfor %}
+        </div>
     </div>
 </header>
 
-<article class="post-content">
-    {{ content }}
-</article>
+<div class="post-layout-wrapper">
+    <article class="post-content js-toc-content">
+        {{ content }}
+    </article>
+
+    <aside class="post-toc-aside">
+        <div class="toc-title">On This Page</div>
+        <div class="toc-content js-toc"></div>
+    </aside>
+</div>
 
 <!-- Fast Navigation bar (Breadcrumb / Simple link back) -->
-<div style="max-width: 1000px; margin: 0 auto; padding: 0 10% 60px;">
+<div style="max-width: 1800px; margin: 0 auto; padding: 0 5% 60px;">
     <a href="/archive" class="pill outline" style="font-size: 12px; padding: 8px 20px;">
         <i class="fa-solid fa-arrow-left"></i> Back to Archive
     </a>
 </div>
+
+<!-- TOC Scripts -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/tocbot/4.21.0/tocbot.min.js"></script>
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        tocbot.init({
+            tocSelector: '.js-toc',
+            contentSelector: '.js-toc-content',
+            headingSelector: 'h1, h2, h3',
+            hasInnerContainers: true,
+            scrollSmooth: true,
+            scrollSmoothDuration: 420,
+            headingsOffset: 100,
+            activeLinkClass: 'is-active-link',
+        });
+    });
+</script>
 
 <!-- Comments Section -->
 <section class="comments">
