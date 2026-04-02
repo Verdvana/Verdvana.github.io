@@ -81,8 +81,15 @@ layout: default
         gap: 60px;
     }
 
+    /* Left placeholder to balance the layout and keep content centered */
+    .post-layout-left {
+        width: 250px;
+        flex-shrink: 0;
+    }
+
     .post-content {
         flex: 1;
+        max-width: 1000px; /* Standard reading width for focus */
         min-width: 0;
         font-size: 18px;
         line-height: 1.8;
@@ -96,6 +103,7 @@ layout: default
         top: 120px;
         align-self: flex-start;
         display: block;
+        flex-shrink: 0;
     }
 
     .toc-title {
@@ -144,9 +152,75 @@ layout: default
         margin-top: 10px;
     }
 
-    @media (max-width: 1200px) {
-        .post-toc-aside { display: none; }
-        .post-layout-wrapper { padding: 40px 6% 80px; }
+    @media (max-width: 1300px) {
+        .post-toc-aside, .post-layout-left { display: none; }
+        .post-layout-wrapper { padding: 40px 6% 80px; justify-content: center; }
+    }
+
+    /* Code Blocks Enhancement */
+    .post-content div.highlight {
+        position: relative;
+        margin: 2em 0;
+    }
+
+    .post-content pre {
+        background: #1e1e1e !important;
+        padding: 40px 20px 20px; /* Space for header */
+        border-radius: 12px;
+        margin: 0;
+        border: 1px solid var(--border-color);
+        overflow-x: auto;
+        font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, Courier, monospace;
+        font-size: 0.9em;
+    }
+
+    .post-content .highlight {
+        position: relative;
+        margin: 2em 0;
+    }
+
+    .code-header {
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 32px;
+        background: rgba(255, 255, 255, 0.05);
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 0 15px;
+        border-top-left-radius: 12px;
+        border-top-right-radius: 12px;
+        border-bottom: 1px solid var(--border-color);
+        z-index: 10;
+        pointer-events: none;
+    }
+
+    .code-lang {
+        font-size: 11px;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        color: var(--secondary-text);
+        font-weight: 700;
+    }
+
+    .copy-btn {
+        pointer-events: all;
+        background: rgba(255, 255, 255, 0.1);
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        color: var(--secondary-text);
+        font-size: 10px;
+        padding: 2px 8px;
+        border-radius: 4px;
+        cursor: pointer;
+        transition: all 0.2s;
+    }
+
+    .copy-btn:hover {
+        background: var(--accent-color);
+        border-color: var(--accent-color);
+        color: #fff;
     }
 
     .post-content h1, .post-content h2, .post-content h3, .post-content h4 {
@@ -253,15 +327,6 @@ layout: default
     }
 
     /* Comments Section */
-    section.comments {
-        padding: 40px 10% 80px;
-    }
-
-    .comment-container {
-        max-width: 1000px;
-        margin: 0 auto;
-    }
-
     .comment-card {
         background: var(--glass);
         padding: 40px;
@@ -289,7 +354,6 @@ layout: default
     .v .vinfo { border-bottom: 1px solid var(--border-color) !important; }
 
     @media (max-width: 900px) {
-        section.comments { padding: 40px 6%; }
         .comment-card { padding: 20px; }
     }
 </style>
@@ -321,6 +385,8 @@ layout: default
 </header>
 
 <div class="post-layout-wrapper">
+    <div class="post-layout-left"></div> <!-- Placeholder to center content -->
+
     <article class="post-content js-toc-content">
         {{ content }}
     </article>
@@ -332,16 +398,21 @@ layout: default
 </div>
 
 <!-- Fast Navigation bar (Breadcrumb / Simple link back) -->
-<div style="max-width: 1800px; margin: 0 auto; padding: 0 5% 60px;">
-    <a href="/archive" class="pill outline" style="font-size: 12px; padding: 8px 20px;">
-        <i class="fa-solid fa-arrow-left"></i> Back to Archive
-    </a>
+<div class="post-layout-wrapper" style="padding-top: 0; padding-bottom: 60px;">
+    <div class="post-layout-left"></div>
+    <div class="post-content">
+        <a href="/archive" class="pill outline" style="font-size: 12px; padding: 8px 20px;">
+            <i class="fa-solid fa-arrow-left"></i> Back to Archive
+        </a>
+    </div>
+    <aside class="post-toc-aside" style="visibility: hidden;"></aside>
 </div>
 
 <!-- TOC Scripts -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/tocbot/4.21.0/tocbot.min.js"></script>
 <script>
     document.addEventListener('DOMContentLoaded', function() {
+        // Init TOC
         tocbot.init({
             tocSelector: '.js-toc',
             contentSelector: '.js-toc-content',
@@ -352,18 +423,56 @@ layout: default
             headingsOffset: 100,
             activeLinkClass: 'is-active-link',
         });
+
+        // Add code headers and copy buttons
+        document.querySelectorAll('.post-content pre').forEach((pre) => {
+            // Check if already has header
+            if (pre.parentNode.classList.contains('highlight')) {
+                const wrapper = pre.parentNode;
+                const code = pre.querySelector('code');
+                let lang = 'CODE';
+                
+                // Get language from class
+                if (code) {
+                    const langClass = Array.from(code.classList).find(c => c.startsWith('language-'));
+                    if (langClass) {
+                        lang = langClass.replace('language-', '').toUpperCase();
+                    }
+                }
+
+                const header = document.createElement('div');
+                header.className = 'code-header';
+                header.innerHTML = `
+                    <span class="code-lang">${lang}</span>
+                    <button class="copy-btn">COPY</button>
+                `;
+                
+                wrapper.insertBefore(header, pre);
+
+                const btn = header.querySelector('.copy-btn');
+                btn.addEventListener('click', () => {
+                    const text = pre.innerText;
+                    navigator.clipboard.writeText(text).then(() => {
+                        btn.innerText = 'COPIED!';
+                        setTimeout(() => btn.innerText = 'COPY', 2000);
+                    });
+                });
+            }
+        });
     });
 </script>
 
 <!-- Comments Section -->
-<section class="comments">
-    <div class="comment-container">
+<section class="post-layout-wrapper" style="padding-top: 0;">
+    <div class="post-layout-left"></div>
+    <div class="post-content">
         <div class="comment-card">
             <div class="v">
                 <i class="fas fa-spinner fa-pulse"></i>
             </div>
         </div>
     </div>
+    <aside class="post-toc-aside" style="visibility: hidden;"></aside>
 </section>
 
 <!-- Valine Script -->
