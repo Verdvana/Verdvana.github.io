@@ -910,6 +910,18 @@ layout: null
             color: var(--accent-color);
             font-size: 14px;
         }
+
+        .stat-item .unit {
+            margin-left: 2px;
+            opacity: 0.8;
+        }
+
+        #uptime-stats {
+            margin-top: 12px;
+            font-family: monospace;
+            display: flex;
+            gap: 12px;
+        }
     </style>
 </head>
 <body>
@@ -1358,6 +1370,24 @@ layout: null
                         <i class="fa-solid fa-user-group"></i>
                         <span id="busuanzi_value_site_uv"><i class="fa-solid fa-spinner fa-spin"></i></span> Visitors
                     </div>
+                    {% assign total_words = 0 %}
+                    {% for post in site.posts %}
+                        {% assign words = post.content | strip_html | number_of_words %}
+                        {% assign total_words = total_words | plus: words %}
+                    {% endfor %}
+                    <div class="stat-item">
+                        <i class="fa-solid fa-pen-nib"></i>
+                        <span>{{ total_words }}</span> <span class="unit">Words</span>
+                    </div>
+                </div>
+                <div id="uptime-stats" class="site-stats" style="margin-top: 16px;">
+                    <div class="stat-item">
+                        <i class="fa-solid fa-clock"></i>
+                        <span id="run_time_day">-</span><span class="unit">d</span>
+                        <span id="run_time_hour">-</span><span class="unit">h</span>
+                        <span id="run_time_minute">-</span><span class="unit">m</span>
+                        <span id="run_time_second">-</span><span class="unit">s</span>
+                    </div>
                 </div>
                 <p style="color: var(--secondary-text); margin-bottom: 8px; margin-top: 24px;">© 2018-2026 Verdvana. All rights reserved.</p>
                 <p style="color: var(--secondary-text); font-size: 12px;">Engineered with precision in Shanghai.</p>
@@ -1381,6 +1411,26 @@ layout: null
             const modal = document.getElementById('wechat-modal');
             modal.classList.toggle('active');
         }
+
+        // Running Time Script
+        setInterval(function() {
+            function setzero(i) {
+                return (i < 10) ? "0" + i : i;
+            }
+            let birthDay = new Date("10/04/2018 11:03:56");
+            let today = new Date();
+            let timeOld = (today.getTime() - birthDay.getTime());
+            let msPerDay = 24 * 60 * 60 * 1000;
+            let daysOld = Math.floor(timeOld / msPerDay);
+            let hrsOld = Math.floor((timeOld % msPerDay) / (60 * 60 * 1000));
+            let minsOld = Math.floor((timeOld % (60 * 60 * 1000)) / (60 * 1000));
+            let secondsOld = Math.floor((timeOld % (60 * 1000)) / 1000);
+
+            document.getElementById("run_time_day").innerHTML = daysOld;
+            document.getElementById("run_time_hour").innerHTML = setzero(hrsOld);
+            document.getElementById("run_time_minute").innerHTML = setzero(minsOld);
+            document.getElementById("run_time_second").innerHTML = setzero(secondsOld);
+        }, 1000);
     </script>
 
 </body>
