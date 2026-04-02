@@ -1372,8 +1372,11 @@ layout: null
                     </div>
                     {% assign total_words = 0 %}
                     {% for post in site.posts %}
-                        {% assign words = post.content | strip_html | number_of_words %}
-                        {% assign total_words = total_words | plus: words %}
+                        {% assign post_ext = post.path | split: '.' | last %}
+                        {% if post_ext == 'md' %}
+                            {% assign words = post.content | strip_html | strip_newlines | remove: ' ' | size %}
+                            {% assign total_words = total_words | plus: words %}
+                        {% endif %}
                     {% endfor %}
                     <div class="stat-item">
                         <i class="fa-solid fa-pen-nib"></i>
