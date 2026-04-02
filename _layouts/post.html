@@ -416,6 +416,20 @@ layout: default
 
         // Add code headers and copy buttons
         function addCodeHeader() {
+            // 1. Mermaid: Convert Jekyll's .language-mermaid blocks to clean .mermaid divs
+            document.querySelectorAll('div.language-mermaid, pre.language-mermaid').forEach((el) => {
+                if (el.getAttribute('data-mermaid-converted')) return;
+                const code = el.querySelector('code') || el;
+                const diagramText = code.innerText;
+                const mermaidDiv = document.createElement('div');
+                mermaidDiv.className = 'mermaid';
+                mermaidDiv.innerText = diagramText;
+                el.parentNode.insertBefore(mermaidDiv, el);
+                el.remove();
+                mermaidDiv.setAttribute('data-mermaid-converted', 'true');
+                if (window.mermaid) window.mermaid.init(undefined, mermaidDiv);
+            });
+
             document.querySelectorAll('.post-content pre').forEach((pre) => {
                 if (pre.parentElement.classList.contains('code-block-wrapper')) return;
 
@@ -436,6 +450,13 @@ layout: default
                     const pClasses = Array.from(pre.parentElement.classList);
                     const pLangClass = pClasses.find(c => c.startsWith('language-'));
                     if (pLangClass) lang = pLangClass.replace('language-', '').toUpperCase();
+                }
+
+                // SKIP MERMAID: Mermaid diagrams should not be wrapped in code headers
+                if (lang === 'MERMAID' || pre.classList.contains('mermaid') || (code && code.classList.contains('language-mermaid'))) {
+                    // Just ensure it has the mermaid class for the renderer
+                    pre.classList.add('mermaid');
+                    return;
                 }
 
                 const header = document.createElement('div');
