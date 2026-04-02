@@ -640,20 +640,21 @@ layout: null
                 border-left: 2px solid var(--border-color) !important; 
                 border-top: none !important; 
                 margin-top: 0 !important;
-                grid-template-columns: 1fr !important; /* Force single column on mobile */
-                gap: 16px !important;
+                display: block !important; /* Switch to block to stack items */
             }
 
             .projects-area h5 {
-                grid-column: 1 !important; /* Remove span 2 to allow 1-column grid */
+                display: block !important;
                 margin-bottom: 12px !important;
             }
 
             .project-item { 
+                display: grid !important;
                 grid-template-columns: 48px 1fr !important;
                 min-height: auto !important; 
                 padding: 16px !important; 
                 width: 100% !important;
+                margin-bottom: 16px !important; /* Add spacing between stacked cards */
             }
 
             .project-content h6 {
