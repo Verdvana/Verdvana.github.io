@@ -302,8 +302,8 @@ layout: null
 
         .career-item {
             display: grid;
-            grid-template-columns: 160px 64px 1fr 720px; /* Further reduced date column to 160px */
-            gap: 0px; /* Further reduced gap to 16px */
+            grid-template-columns: 160px 64px 1fr 2fr; /* Use ratios for columns instead of fixed pixels */
+            gap: 16px;
             padding: 80px 0;
             border-bottom: 1px solid var(--border-color);
             align-items: start;
@@ -435,11 +435,11 @@ layout: null
         }
 
         .projects-area {
-            width: 720px;
-            padding-left: 20px; /* Reduced from 40px to pull projects closer */
+            flex: 1; /* Allow it to grow/shrink based on available space */
+            padding-left: 20px;
             border-left: 1px solid var(--border-color);
             display: grid;
-            grid-template-columns: 350px 350px;
+            grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); /* Automatically switch to 1 column if space < 320px */
             gap: 16px;
             align-content: start;
         }
@@ -648,13 +648,13 @@ layout: null
             }
 
             .projects-area { 
-                width: 100%; 
-                padding: 20px 0 0 20px; /* Adjust padding for mobile line */
-                border-left: 2px solid var(--border-color); 
-                border-top: none; 
-                margin-top: 0;
-                grid-template-columns: 1fr; /* Stack projects on mobile */
-                gap: 12px;
+                width: 100% !important; 
+                padding: 20px 0 0 20px !important; 
+                border-left: 2px solid var(--border-color) !important; 
+                border-top: none !important; 
+                margin-top: 0 !important;
+                grid-template-columns: 1fr !important; /* Force single column on mobile */
+                gap: 16px !important;
             }
 
             .project-item { 
