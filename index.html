@@ -487,6 +487,7 @@ layout: null
         .project-content {
             display: flex;
             flex-direction: column;
+            min-width: 0; /* Important for flex child to allow wrapping of its children */
         }
 
         .project-item h6 {
@@ -524,6 +525,8 @@ layout: null
             border-radius: 4px;
             font-weight: 600;
             border: 1px solid rgba(0, 113, 227, 0.2);
+            white-space: nowrap; /* Prevent tag internal text wrapping */
+            display: inline-block;
         }
 
         /* Footer */
@@ -646,17 +649,33 @@ layout: null
 
             .projects-area { 
                 width: 100%; 
-                padding-left: 20px; 
+                padding: 20px 0 0 20px; /* Adjust padding for mobile line */
                 border-left: 2px solid var(--border-color); 
                 border-top: none; 
-                padding-top: 20px; 
                 margin-top: 0;
                 grid-template-columns: 1fr; /* Stack projects on mobile */
+                gap: 12px;
             }
 
             .project-item { 
                 grid-template-columns: 48px 1fr; 
                 min-height: auto; 
+                padding: 16px; /* Ensure enough internal spacing */
+            }
+
+            .project-content h6 {
+                white-space: normal; /* Allow title to wrap if too long */
+                word-break: break-word;
+            }
+
+            .project-tags {
+                display: flex;
+                flex-wrap: wrap;
+                gap: 8px;
+            }
+
+            .project-tag {
+                white-space: nowrap; /* Prevent individual tags from breaking internally */
             }
 
             .career-date-column::after, .date-cell.sub::after { display: none; }
