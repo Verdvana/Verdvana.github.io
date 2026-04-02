@@ -720,13 +720,25 @@ layout: null
             line-height: normal;
         }
 
+        .skill-tags span i, 
+        .skill-tags span img {
+            width: 15px;
+            height: 15px;
+            max-width: 15px;
+            max-height: 15px;
+            flex-shrink: 0;
+            margin: 0;
+            padding: 0;
+            display: block;
+            transform: translateY(0.5px);
+            object-fit: contain;
+        }
+
         .skill-tags span i {
             font-size: 14px;
-            display: inline-flex;
+            display: flex;
             align-items: center;
             justify-content: center;
-            margin-bottom: 0; /* Explicitly reset */
-            transform: translateY(0.5px);
         }
 
         .skill-tags span.tool {
