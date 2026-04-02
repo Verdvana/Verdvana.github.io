@@ -112,7 +112,7 @@
             padding-top: 80px; /* Space for fixed nav */
         }
 
-        /* Footer */
+        /* Footer Redesign */
         footer {
             padding: 100px 10% 120px;
             background: #000;
@@ -131,6 +131,12 @@
             margin-bottom: 40px;
         }
 
+        .contact-sections {
+            display: flex;
+            flex-direction: column;
+            gap: 48px;
+        }
+
         .contact-group h5 {
             font-size: 12px;
             text-transform: uppercase;
@@ -139,6 +145,7 @@
             margin-bottom: 20px;
         }
 
+        /* Primary Contacts */
         .contact-pills {
             display: flex;
             gap: 16px;
@@ -167,13 +174,106 @@
             border: 1px solid rgba(255, 255, 255, 0.3);
         }
 
-        .footer-right {
-            text-align: right;
+        .pill.outline:hover {
+            border-color: #fff;
+            background: rgba(255, 255, 255, 0.05);
         }
 
-        .footer-right p {
+        /* Network Links (Low Priority) */
+        .network-links {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 24px;
+        }
+
+        .network-link {
+            font-size: 14px;
             color: var(--secondary-text);
-            margin-bottom: 8px;
+            text-decoration: none;
+            transition: all 0.2s ease;
+            border-bottom: 1px solid transparent;
+        }
+
+        .network-link:hover {
+            color: #fff;
+            border-bottom-color: var(--accent-color);
+        }
+
+        /* WeChat Modal */
+        #wechat-modal {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.9);
+            z-index: 2000;
+            backdrop-filter: blur(10px);
+            justify-content: center;
+            align-items: center;
+            cursor: pointer;
+        }
+
+        .modal-content {
+            background: #1c1c1e;
+            padding: 30px;
+            border-radius: 24px;
+            text-align: center;
+            border: 1px solid var(--border-color);
+            transform: scale(0.9);
+            transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        #wechat-modal.active { display: flex; }
+        #wechat-modal.active .modal-content { transform: scale(1); }
+
+        .modal-content img {
+            width: 200px;
+            height: 200px;
+            border-radius: 12px;
+            margin-bottom: 20px;
+        }
+
+        .modal-content p {
+            color: #fff;
+            font-size: 14px;
+            font-weight: 500;
+        }
+
+        /* Busuanzi Statistics */
+        .site-stats {
+            margin-top: 32px;
+            display: flex;
+            gap: 24px;
+            font-size: 12px;
+            color: var(--secondary-text);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .stat-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .stat-item i {
+            color: var(--accent-color);
+            font-size: 14px;
+        }
+
+        .stat-item .unit {
+            margin-left: 2px;
+            opacity: 0.8;
+        }
+
+        #uptime-stats {
+            margin-top: 12px;
+            font-family: monospace;
+            display: flex;
+            gap: 12px;
+        }
+
+        .footer-right {
+            text-align: right;
         }
 
         @media (max-width: 900px) {
@@ -211,26 +311,108 @@
         <div class="footer-content">
             <div class="footer-left">
                 <h2>Connect.</h2>
-                <div class="contact-group">
-                    <h5>Direct Contact</h5>
-                    <div class="contact-pills">
-                        <a href="mailto:verdvana@outlook.com" class="pill">
-                            <i class="fa-solid fa-envelope"></i> Email
-                        </a>
-                        <a href="https://github.com/Verdvana" target="_blank" class="pill outline">
-                            <i class="fa-brands fa-github"></i> GitHub
-                        </a>
+                <div class="contact-sections">
+                    <!-- Primary Contacts -->
+                    <div class="contact-group">
+                        <h5>Direct Contact</h5>
+                        <div class="contact-pills">
+                            <a href="mailto:verdvana@outlook.com" class="pill">
+                                <i class="fa-solid fa-envelope"></i> Email
+                            </a>
+                            <a href="https://github.com/Verdvana" target="_blank" class="pill outline">
+                                <i class="fa-brands fa-github"></i> GitHub
+                            </a>
+                            <a href="javascript:void(0)" onclick="toggleWeChat()" class="pill outline">
+                                <i class="fa-brands fa-weixin"></i> WeChat
+                            </a>
+                        </div>
+                    </div>
+                    
+                    <!-- Network (Secondary) -->
+                    <div class="contact-group">
+                        <h5>Friends</h5>
+                        <div class="contact-pills">
+                            <a href="https://blog.skycity11.xyz" class="pill outline">Skycity</a>
+                        </div>
                     </div>
                 </div>
             </div>
             <div class="footer-right">
-                <p>© 2018-2026 Verdvana. All rights reserved.</p>
-                <p style="font-size: 12px;">Engineered with precision in Shanghai.</p>
+                <div class="site-stats">
+                    <div class="stat-item">
+                        <i class="fa-solid fa-eye"></i>
+                        <span id="busuanzi_value_site_pv"><i class="fa-solid fa-spinner fa-spin"></i></span> Views
+                    </div>
+                    <div class="stat-item">
+                        <i class="fa-solid fa-user-group"></i>
+                        <span id="busuanzi_value_site_uv"><i class="fa-solid fa-spinner fa-spin"></i></span> Visitors
+                    </div>
+                    {% assign total_words = 0 %}
+                    {% for post in site.posts %}
+                        {% if post.path contains '_posts/' %}
+                            {% assign post_ext = post.path | split: '.' | last %}
+                            {% if post_ext == 'md' or post_ext == 'markdown' %}
+                                {% assign words = post.content | strip_html | strip_newlines | remove: ' ' | size %}
+                                {% assign total_words = total_words | plus: words %}
+                            {% endif %}
+                        {% endif %}
+                    {% endfor %}
+                    <div class="stat-item">
+                        <i class="fa-solid fa-pen-nib"></i>
+                        <span>{{ total_words }}</span> <span class="unit">Characters</span>
+                    </div>
+                </div>
+                <div id="uptime-stats" class="site-stats" style="margin-top: 16px;">
+                    <div class="stat-item">
+                        <i class="fa-solid fa-clock"></i>
+                        <span id="run_time_day">-</span><span class="unit">d</span>
+                        <span id="run_time_hour">-</span><span class="unit">h</span>
+                        <span id="run_time_minute">-</span><span class="unit">m</span>
+                        <span id="run_time_second">-</span><span class="unit">s</span>
+                    </div>
+                </div>
+                <p style="color: var(--secondary-text); margin-bottom: 8px; margin-top: 24px;">© 2018-2026 Verdvana. All rights reserved.</p>
+                <p style="color: var(--secondary-text); font-size: 12px;">Engineered with precision in Shanghai.</p>
             </div>
         </div>
     </footer>
 
+    <!-- WeChat Modal -->
+    <div id="wechat-modal" onclick="toggleWeChat()">
+        <div class="modal-content" onclick="event.stopPropagation()">
+            <img src="/static/img/wechat.jpg" alt="WeChat QR Code">
+            <p>Scan to connect</p>
+        </div>
+    </div>
+
     <!-- Busuanzi Script -->
     <script async src="//busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+
+    <script>
+        function toggleWeChat() {
+            const modal = document.getElementById('wechat-modal');
+            modal.classList.toggle('active');
+        }
+
+        // Running Time Script
+        setInterval(function() {
+            function setzero(i) {
+                return (i < 10) ? "0" + i : i;
+            }
+            let birthDay = new Date("10/04/2018 11:03:56");
+            let today = new Date();
+            let timeOld = (today.getTime() - birthDay.getTime());
+            let msPerDay = 24 * 60 * 60 * 1000;
+            let daysOld = Math.floor(timeOld / msPerDay);
+            let hrsOld = Math.floor((timeOld % msPerDay) / (60 * 60 * 1000));
+            let minsOld = Math.floor((timeOld % (60 * 60 * 1000)) / (60 * 1000));
+            let secondsOld = Math.floor((timeOld % (60 * 1000)) / 1000);
+
+            document.getElementById("run_time_day").innerHTML = daysOld;
+            document.getElementById("run_time_hour").innerHTML = setzero(hrsOld);
+            document.getElementById("run_time_minute").innerHTML = setzero(minsOld);
+            document.getElementById("run_time_second").innerHTML = setzero(secondsOld);
+        }, 1000);
+    </script>
 </body>
 </html>
