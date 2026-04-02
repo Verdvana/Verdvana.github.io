@@ -178,6 +178,47 @@ layout: default
         .post-content { padding: 40px 6% 80px; font-size: 16px; }
         .post-meta { gap: 15px; }
     }
+
+    /* Comments Section */
+    section.comments {
+        padding: 40px 10% 80px;
+    }
+
+    .comment-container {
+        max-width: 1000px;
+        margin: 0 auto;
+    }
+
+    .comment-card {
+        background: var(--glass);
+        padding: 40px;
+        border-radius: 20px;
+        border: 1px solid var(--border-color);
+        backdrop-filter: blur(10px);
+    }
+
+    /* Valine Custom Styling */
+    .v * { color: var(--text-color) !important; }
+    .v .vlist .vcard .vhead .vname { color: var(--accent-color) !important; font-weight: 600; }
+    .v .vlist .vcard .vh { border-bottom: 1px solid var(--border-color) !important; }
+    .v .vbtn {
+        background: var(--accent-color) !important;
+        border: none !important;
+        color: white !important;
+        border-radius: 40px !important;
+        padding: 8px 24px !important;
+        font-weight: 600 !important;
+    }
+    .v .vlist .vcard .vcontent { color: #d1d1d6 !important; }
+    .v .vpanel { background: rgba(255, 255, 255, 0.03) !important; border: 1px solid var(--border-color) !important; }
+    .v .vheader .vinput { border-bottom: 1px solid var(--border-color) !important; }
+    .v .vsys { background: rgba(255, 255, 255, 0.05) !important; color: var(--secondary-text) !important; }
+    .v .vinfo { border-bottom: 1px solid var(--border-color) !important; }
+
+    @media (max-width: 900px) {
+        section.comments { padding: 40px 6%; }
+        .comment-card { padding: 20px; }
+    }
 </style>
 
 <header class="post-hero">
@@ -214,3 +255,34 @@ layout: default
         <i class="fa-solid fa-arrow-left"></i> Back to Archive
     </a>
 </div>
+
+<!-- Comments Section -->
+<section class="comments">
+    <div class="comment-container">
+        <div class="comment-card">
+            <div class="v">
+                <i class="fas fa-spinner fa-pulse"></i>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Valine Script -->
+<script
+    src='https://cdn.jsdelivr.net/npm/valine'
+    defer='defer'
+    onload='
+      new Valine({
+        "el": ".v",
+        "appId": "0KCYIvqG5ktP9Pw9zjIQyESV-gzGzoHsz",
+        "appKey": "hVnb4I7RVQClldY6uAIuYGrk",
+        "notify": "true",
+        "verify": "true",
+        "avatar": "identicon",
+        "placeholder": "在这里评论吧！（上面可以填写您的昵称、邮箱和网址）",
+        "visitor": true,
+        "highlight": true,
+        "avatarForce": false,
+        "recordIP": true
+      })'
+></script>
