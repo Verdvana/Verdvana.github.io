@@ -1,0 +1,216 @@
+---
+layout: default
+---
+<style>
+    /* Hero Section for Posts */
+    header.post-hero {
+        position: relative;
+        min-height: 50vh;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        padding: 80px 10% 40px;
+        background-image: linear-gradient(to bottom, rgba(0,0,0,0.5), rgba(0,0,0,1)), url('/static/img/wallpaper4.jpg');
+        background-size: cover;
+        background-position: center;
+        overflow: hidden;
+    }
+
+    header.post-hero h1 {
+        font-size: clamp(32px, 6vw, 64px);
+        font-weight: 700;
+        line-height: 1.2;
+        margin-bottom: 30px;
+        letter-spacing: -2px;
+        background: linear-gradient(to right, #fff, #a1a1a6);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+    }
+
+    .post-meta {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 24px;
+        color: var(--secondary-text);
+        font-size: 14px;
+        font-weight: 500;
+        margin-bottom: 20px;
+    }
+
+    .post-meta i {
+        color: var(--accent-color);
+        margin-right: 8px;
+    }
+
+    .post-tags {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+    }
+
+    .post-tag {
+        font-size: 11px;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        color: var(--accent-color);
+        background: rgba(0, 113, 227, 0.1);
+        padding: 4px 12px;
+        border-radius: 20px;
+        border: 1px solid rgba(0, 113, 227, 0.2);
+        text-decoration: none;
+        transition: all 0.2s;
+    }
+
+    .post-tag:hover {
+        background: rgba(0, 113, 227, 0.2);
+        border-color: var(--accent-color);
+    }
+
+    /* Content Area Styling */
+    .post-content {
+        max-width: 1000px;
+        margin: 0 auto;
+        padding: 60px 10% 120px;
+        font-size: 18px;
+        line-height: 1.8;
+        color: #d1d1d6;
+    }
+
+    .post-content h1, .post-content h2, .post-content h3, .post-content h4 {
+        color: #fff;
+        margin-top: 2em;
+        margin-bottom: 1em;
+        font-weight: 700;
+        letter-spacing: -1px;
+    }
+
+    .post-content h2 { font-size: 32px; border-bottom: 1px solid var(--border-color); padding-bottom: 10px; }
+    .post-content h3 { font-size: 24px; }
+
+    .post-content p { margin-bottom: 1.5em; }
+
+    .post-content img {
+        max-width: 100%;
+        border-radius: 12px;
+        border: 1px solid var(--border-color);
+        margin: 2em 0;
+    }
+
+    .post-content blockquote {
+        border-left: 4px solid var(--accent-color);
+        padding: 10px 24px;
+        background: var(--glass);
+        margin: 2em 0;
+        border-radius: 0 8px 8px 0;
+    }
+
+    .post-content blockquote p { margin-bottom: 0; font-style: italic; }
+
+    /* Tables Styling */
+    .post-content table {
+        width: 100%;
+        border-collapse: collapse;
+        margin: 2em 0;
+        font-size: 16px;
+        background: rgba(255, 255, 255, 0.02);
+        border-radius: 8px;
+        overflow: hidden;
+    }
+
+    .post-content th, .post-content td {
+        padding: 12px 16px;
+        border: 1px solid var(--border-color);
+        text-align: left;
+    }
+
+    .post-content th {
+        background: rgba(255, 255, 255, 0.05);
+        color: #fff;
+        font-weight: 600;
+    }
+
+    .post-content tr:nth-child(even) { background: rgba(255, 255, 255, 0.01); }
+
+    /* Code Blocks */
+    .post-content pre {
+        background: #1e1e1e !important;
+        padding: 20px;
+        border-radius: 12px;
+        margin: 2em 0;
+        border: 1px solid var(--border-color);
+        overflow-x: auto;
+    }
+
+    .post-content code {
+        font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, Courier, monospace;
+        font-size: 0.9em;
+        background: rgba(255, 255, 255, 0.1);
+        padding: 2px 6px;
+        border-radius: 4px;
+        color: #fff;
+    }
+
+    .post-content pre code {
+        background: none;
+        padding: 0;
+        border-radius: 0;
+    }
+
+    /* Mermaid Center */
+    .mermaid {
+        display: flex;
+        justify-content: center;
+        margin: 2em 0;
+    }
+
+    /* Wavedrom Center */
+    .wavedrom {
+        background: white; /* WaveDrom is usually white-bg friendly, or add a container */
+        padding: 20px;
+        border-radius: 12px;
+        margin: 2em 0;
+        overflow-x: auto;
+    }
+
+    /* Mobile Adaptions */
+    @media (max-width: 900px) {
+        header.post-hero { padding: 80px 6% 30px; }
+        .post-content { padding: 40px 6% 80px; font-size: 16px; }
+        .post-meta { gap: 15px; }
+    }
+</style>
+
+<header class="post-hero">
+    <div class="post-meta">
+        <span><i class="fa-solid fa-calendar-days"></i> {{ page.date | date: "%Y.%m.%d" }}</span>
+        
+        {% assign words = content | strip_html | strip_newlines | remove: ' ' | size %}
+        <span><i class="fa-solid fa-file-word"></i> {{ words }} 字</span>
+        
+        {% assign read_time = words | divided_by: 300 | plus: 1 %}
+        <span><i class="fa-solid fa-clock"></i> {{ read_time }} 分钟</span>
+        
+        <span id="busuanzi_container_page_pv">
+            <i class="fa-solid fa-eye"></i> <span id="busuanzi_value_page_pv">...</span> 次阅读
+        </span>
+    </div>
+    
+    <h1>{{ page.title }}</h1>
+    
+    <div class="post-tags">
+        {% for tag in page.tags %}
+        <a href="/archive?filter={{ tag }}" class="post-tag">{{ tag }}</a>
+        {% endfor %}
+    </div>
+</header>
+
+<article class="post-content">
+    {{ content }}
+</article>
+
+<!-- Fast Navigation bar (Breadcrumb / Simple link back) -->
+<div style="max-width: 1000px; margin: 0 auto; padding: 0 10% 60px;">
+    <a href="/archive" class="pill outline" style="font-size: 12px; padding: 8px 20px;">
+        <i class="fa-solid fa-arrow-left"></i> Back to Archive
+    </a>
+</div>

@@ -1,603 +1,194 @@
 ---
-layout: null
+layout: default
 ---
-<!DOCTYPE html>
-<html lang="zh-CN">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>VERDVANA — {{ page.title }}</title>
-    <!-- Favicon -->
-    <link rel="icon" type="image/jpeg" href="/static/img/avatar.jpg">
-    <link rel="apple-touch-icon" href="/static/img/avatar.jpg">
-    <!-- Font Awesome for Icons -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <style>
-        :root {
-            --bg-color: #000000;
-            --text-color: #ffffff;
-            --secondary-text: #8e8e93;
-            --accent-color: #0071e3;
-            --border-color: rgba(255, 255, 255, 0.1);
-            --card-bg: rgba(28, 28, 30, 0.7);
-            --glass: rgba(255, 255, 255, 0.05);
-        }
+<style>
+    /* Hero Section */
+    header.hero {
+        position: relative;
+        height: 40vh;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        padding: 0 10%;
+        background-image: linear-gradient(to bottom, rgba(0,0,0,0.5), rgba(0,0,0,1)), url('/static/img/wallpaper2.jpg');
+        background-size: cover;
+        background-position: center;
+        overflow: hidden;
+    }
 
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
+    header.hero h1 {
+        font-size: clamp(40px, 8vw, 64px);
+        font-weight: 700;
+        line-height: 1.4;
+        margin-bottom: 24px;
+        letter-spacing: -2px;
+        background: linear-gradient(to right, #fff, #a1a1a6);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+    }
 
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-            background-color: var(--bg-color);
-            color: var(--text-color);
-            line-height: 1.6;
-            -webkit-font-smoothing: antialiased;
-            overflow-x: hidden;
-        }
+    header.hero p {
+        font-size: clamp(16px, 2vw, 20px);
+        color: #d1d1d6;
+        max-width: 700px;
+        font-weight: 400;
+        line-height: 1.4;
+    }
 
-        /* Fixed Navigation */
-        nav {
-            position: fixed;
-            top: 0;
-            width: 100%;
-            padding: 20px 40px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            z-index: 1000;
-            background: rgba(0, 0, 0, 0.7);
-            backdrop-filter: blur(20px);
-            border-bottom: 1px solid var(--border-color);
-        }
+    /* Archive Section */
+    section.archive { padding: 40px 10% 80px; min-height: 60vh; }
+    .archive-container { max-width: 1200px; margin: 0 auto; }
+    .archive-year-group { margin-bottom: 60px; }
+    .archive-controls { margin-bottom: 40px; display: flex; flex-direction: column; gap: 20px; }
+    .search-container { position: relative; width: 100%; }
+    .search-input { width: 100%; background: rgba(255, 255, 255, 0.05); border: 1px solid var(--border-color); border-radius: 12px; padding: 14px 20px 14px 48px; color: white; font-size: 16px; outline: none; transition: all 0.2s; }
+    .search-input:focus { border-color: var(--accent-color); background: rgba(255, 255, 255, 0.08); box-shadow: 0 0 0 4px rgba(0, 113, 227, 0.1); }
+    .search-icon { position: absolute; left: 18px; top: 50%; transform: translateY(-50%); color: var(--secondary-text); font-size: 18px; }
+    .filter-container { display: flex; flex-wrap: wrap; gap: 8px; }
+    .filter-tag { font-size: 12px; padding: 6px 14px; border-radius: 20px; background: rgba(255, 255, 255, 0.05); color: var(--secondary-text); border: 1px solid var(--border-color); cursor: pointer; transition: all 0.2s; user-select: none; }
+    .filter-tag:hover { color: white; border-color: var(--secondary-text); }
+    .filter-tag.active { background: rgba(0, 113, 227, 0.1); color: var(--accent-color); border-color: var(--accent-color); }
+    .archive-header { display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 30px; border-bottom: 1px solid var(--border-color); padding-bottom: 10px; }
+    .archive-year-title { font-size: 32px; font-weight: 700; color: var(--accent-color); border-bottom: none; margin-bottom: 0; padding-bottom: 0; }
+    .sort-controls { display: flex; gap: 10px; margin-bottom: 2px; }
+    .sort-btn { background: transparent; border: 1px solid var(--border-color); color: var(--secondary-text); padding: 4px 12px; border-radius: 15px; font-size: 12px; cursor: pointer; transition: all 0.2s; text-decoration: none; }
+    .sort-btn:hover { border-color: var(--accent-color); color: white; }
+    .sort-btn.active { background: var(--accent-color); border-color: var(--accent-color); color: white; }
+    .archive-item { display: flex; justify-content: space-between; align-items: center; padding: 20px 0; border-bottom: 1px solid rgba(255, 255, 255, 0.05); transition: all 0.2s; }
+    .archive-item:hover { padding-left: 10px; border-bottom-color: var(--accent-color); }
+    .archive-info { display: flex; align-items: center; gap: 24px; flex: 1; min-width: 0; }
+    .archive-date { font-family: monospace; font-size: 16px; color: var(--secondary-text); white-space: nowrap; }
+    .archive-title { font-size: 18px; font-weight: 500; color: #fff; text-decoration: none; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; transition: color 0.2s; }
+    .archive-item:hover .archive-title { color: var(--accent-color); }
+    .archive-meta { display: flex; gap: 12px; margin-left: 20px; }
+    .archive-category { font-size: 11px; text-transform: uppercase; letter-spacing: 1px; color: var(--accent-color); background: rgba(0, 113, 227, 0.1); padding: 4px 12px; border-radius: 20px; border: 1px solid rgba(0, 113, 227, 0.2); white-space: nowrap; }
 
-        nav .logo-area {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            text-decoration: none;
-            color: white;
-        }
+    @media (max-width: 900px) {
+        header.hero { height: 40vh; padding: 0 6%; }
+        header.hero h1 { font-size: 32px; }
+        section.archive { padding: 10px 6%; }
+        .archive-item { flex-direction: column; align-items: flex-start; gap: 8px; }
+        .archive-info { gap: 12px; width: 100%; }
+        .archive-date { font-size: 14px; }
+        .archive-title { font-size: 16px; white-space: normal; }
+        .archive-meta { margin-left: 0; margin-top: 4px; }
+    }
+</style>
 
-        nav .logo-area img {
-            width: 32px;
-            height: 32px;
-            border-radius: 50%;
-            border: 1px solid var(--border-color);
-            object-fit: cover;
-        }
+<header class="hero">
+    <h1>{{ page.title | default: "The Blog" }}</h1>
+    <p>A chronological archive of technical explorations, design thoughts, and laboratory notes.</p>
+</header>
 
-        nav .logo {
-            font-size: 18px;
-            font-weight: 700;
-            letter-spacing: -0.5px;
-        }
-
-        nav .nav-links {
-            display: flex;
-            gap: 30px;
-        }
-
-        nav a {
-            text-decoration: none;
-            color: var(--text-color);
-            font-size: 14px;
-            font-weight: 500;
-            transition: color 0.2s;
-        }
-
-        nav a:hover {
-            color: var(--secondary-text);
-        }
-
-        /* Hero Section */
-        header.hero {
-            position: relative;
-            height: 40vh;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            padding: 0 10%;
-            background-image: linear-gradient(to bottom, rgba(0,0,0,0.5), rgba(0,0,0,1)), url('/static/img/wallpaper2.jpg');
-            background-size: cover;
-            background-position: center;
-            overflow: hidden;
-        }
-
-        header.hero h1 {
-            font-size: clamp(40px, 8vw, 64px);
-            font-weight: 700;
-            line-height: 1.4;
-            margin-bottom: 24px;
-            letter-spacing: -2px;
-            background: linear-gradient(to right, #fff, #a1a1a6);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-        }
-
-        header.hero p {
-            font-size: clamp(16px, 2vw, 20px);
-            color: #d1d1d6;
-            max-width: 700px;
-            font-weight: 400;
-            line-height: 1.4;
-        }
-
-        /* Archive Section */
-        section.archive {
-            padding: 40px 10% 80px;
-            min-height: 60vh;
-        }
-
-        .archive-container {
-            max-width: 1200px;
-            margin: 0 auto;
-        }
-
-        .archive-year-group {
-            margin-bottom: 60px;
-        }
-
-        /* Search & Filter Styles */
-        .archive-controls {
-            margin-bottom: 40px;
-            display: flex;
-            flex-direction: column;
-            gap: 20px;
-        }
-
-        .search-container {
-            position: relative;
-            width: 100%;
-        }
-
-        .search-input {
-            width: 100%;
-            background: rgba(255, 255, 255, 0.05);
-            border: 1px solid var(--border-color);
-            border-radius: 12px;
-            padding: 14px 20px 14px 48px;
-            color: white;
-            font-size: 16px;
-            outline: none;
-            transition: all 0.2s;
-        }
-
-        .search-input:focus {
-            border-color: var(--accent-color);
-            background: rgba(255, 255, 255, 0.08);
-            box-shadow: 0 0 0 4px rgba(0, 113, 227, 0.1);
-        }
-
-        .search-icon {
-            position: absolute;
-            left: 18px;
-            top: 50%;
-            transform: translateY(-50%);
-            color: var(--secondary-text);
-            font-size: 18px;
-        }
-
-        .filter-container {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 8px;
-        }
-
-        .filter-tag {
-            font-size: 12px;
-            padding: 6px 14px;
-            border-radius: 20px;
-            background: rgba(255, 255, 255, 0.05);
-            color: var(--secondary-text);
-            border: 1px solid var(--border-color);
-            cursor: pointer;
-            transition: all 0.2s;
-            user-select: none;
-        }
-
-        .filter-tag:hover {
-            color: white;
-            border-color: var(--secondary-text);
-        }
-
-        .filter-tag.active {
-            background: rgba(0, 113, 227, 0.1);
-            color: var(--accent-color);
-            border-color: var(--accent-color);
-        }
-
-        .archive-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: flex-end;
-            margin-bottom: 30px;
-            border-bottom: 1px solid var(--border-color);
-            padding-bottom: 10px;
-        }
-
-        .archive-year-title {
-            font-size: 32px;
-            font-weight: 700;
-            color: var(--accent-color);
-            border-bottom: none;
-            margin-bottom: 0;
-            padding-bottom: 0;
-        }
-
-        .sort-controls {
-            display: flex;
-            gap: 10px;
-            margin-bottom: 2px;
-        }
-
-        .sort-btn {
-            background: transparent;
-            border: 1px solid var(--border-color);
-            color: var(--secondary-text);
-            padding: 4px 12px;
-            border-radius: 15px;
-            font-size: 12px;
-            cursor: pointer;
-            transition: all 0.2s;
-            text-decoration: none;
-        }
-
-        .sort-btn:hover {
-            border-color: var(--accent-color);
-            color: white;
-        }
-
-        .sort-btn.active {
-            background: var(--accent-color);
-            border-color: var(--accent-color);
-            color: white;
-        }
-
-        .archive-item {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 20px 0;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
-            transition: all 0.2s;
-        }
-
-        .archive-item:hover {
-            padding-left: 10px;
-            border-bottom-color: var(--accent-color);
-        }
-
-        .archive-info {
-            display: flex;
-            align-items: center;
-            gap: 24px;
-            flex: 1;
-            min-width: 0;
-        }
-
-        .archive-date {
-            font-family: monospace;
-            font-size: 16px;
-            color: var(--secondary-text);
-            white-space: nowrap;
-        }
-
-        .archive-title {
-            font-size: 18px;
-            font-weight: 500;
-            color: #fff;
-            text-decoration: none;
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-            transition: color 0.2s;
-        }
-
-        .archive-item:hover .archive-title {
-            color: var(--accent-color);
-        }
-
-        .archive-meta {
-            display: flex;
-            gap: 12px;
-            margin-left: 20px;
-        }
-
-        .archive-category {
-            font-size: 11px;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            color: var(--accent-color);
-            background: rgba(0, 113, 227, 0.1);
-            padding: 4px 12px;
-            border-radius: 20px;
-            border: 1px solid rgba(0, 113, 227, 0.2);
-            white-space: nowrap;
-        }
-
-        /* Footer */
-        footer {
-            padding: 80px 10% 100px;
-            background: #000;
-        }
-
-        .footer-content {
-            display: flex;
-            justify-content: space-between;
-            align-items: flex-end;
-            border-top: 1px solid var(--border-color);
-            padding-top: 60px;
-        }
-
-        .footer-left h2 {
-            font-size: 48px;
-            letter-spacing: -2px;
-            margin-bottom: 24px;
-        }
-
-        .contact-pills {
-            display: flex;
-            gap: 16px;
-        }
-
-        .pill {
-            padding: 12px 28px;
-            border-radius: 40px;
-            background: #fff;
-            color: #000;
-            text-decoration: none;
-            font-weight: 600;
-            font-size: 14px;
-            transition: all 0.2s;
-        }
-
-        .pill:hover { opacity: 0.8; transform: scale(1.02); }
-
-        .footer-right p {
-            color: var(--secondary-text);
-            margin-bottom: 8px;
-            text-align: right;
-        }
-
-        @media (max-width: 900px) {
-            nav { padding: 15px 20px; }
-            nav .nav-links { gap: 15px; }
-            nav .nav-links a { font-size: 13px; }
-            
-            header.hero { height: 40vh; padding: 0 6%; }
-            header.hero h1 { font-size: 32px; }
-            
-            section.archive { padding: 10px 6%; }
-            
-            .archive-item { flex-direction: column; align-items: flex-start; gap: 8px; }
-            .archive-info { gap: 12px; width: 100%; }
-            .archive-date { font-size: 14px; }
-            .archive-title { font-size: 16px; white-space: normal; }
-            .archive-meta { margin-left: 0; margin-top: 4px; }
-            
-            .footer-content { flex-direction: column; align-items: flex-start; gap: 30px; }
-            .footer-right p { text-align: left; }
-        }
-    </style>
-</head>
-<body>
-    <nav>
-        <a href="/" class="logo-area">
-            <img src="/static/img/avatar.jpg" alt="Verdvana">
-            <span class="logo">VERDVANA</span>
-        </a>
-        <div class="nav-links">
-            <a href="/archive">Blog</a>
-            <a href="/labs">Labs</a>
-            <a href="/comments">Comments</a>
-            <a href="https://github.com/Verdvana">GitHub</a>
+<section class="archive">
+    <div class="archive-container">
+        {% assign sort_mode = page.sort_by | default: "date" %}
+        <div class="archive-controls">
+            <div class="archive-header" style="border-bottom: none; margin-bottom: 0; justify-content: flex-end;">
+                <div class="sort-controls">
+                    <a href="javascript:void(0)" class="sort-btn" id="sort-date">By Date</a>
+                    <a href="javascript:void(0)" class="sort-btn" id="sort-cat">By Category</a>
+                </div>
+            </div>
+            <div class="search-container">
+                <i class="fa-solid fa-magnifying-glass search-icon"></i>
+                <input type="text" class="search-input" id="blog-search" placeholder="Search blog titles... (supports Regex)">
+            </div>
+            <div class="filter-container">
+                {% assign all_filters = "" | split: "," %}
+                {% for post in site.posts %}{% assign post_filters = post.categories | concat: post.tags %}{% assign all_filters = all_filters | concat: post_filters %}{% endfor %}
+                {% assign all_filters = all_filters | uniq | sort %}
+                {% for filter in all_filters %}<div class="filter-tag" data-filter="{{ filter }}">{{ filter }}</div>{% endfor %}
+            </div>
         </div>
-    </nav>
 
-    <header class="hero">
-        <h1>{{ page.title | default: "The Blog" }}</h1>
-        <p>A chronological archive of technical explorations, design thoughts, and laboratory notes.</p>
-    </header>
-
-    <section class="archive">
-        <div class="archive-container">
-            {% assign sort_mode = page.sort_by | default: "date" %}
-            
-            <div class="archive-controls">
-                <!-- Sort Control -->
-                <div class="archive-header" style="border-bottom: none; margin-bottom: 0; justify-content: flex-end;">
-                    <div class="sort-controls">
-                        <a href="?sort=date" class="sort-btn {% if sort_mode == 'date' %}active{% endif %}" id="sort-date">By Date</a>
-                        <a href="?sort=category" class="sort-btn {% if sort_mode == 'category' %}active{% endif %}" id="sort-cat">By Category</a>
-                    </div>
-                </div>
-
-                <!-- Search Input -->
-                <div class="search-container">
-                    <i class="fa-solid fa-magnifying-glass search-icon"></i>
-                    <input type="text" class="search-input" id="blog-search" placeholder="Search blog titles... (supports Regex)">
-                </div>
-
-                <!-- Category Filters -->
-                <div class="filter-container">
-                    {% assign all_filters = "" | split: "," %}
-                    {% for post in site.posts %}
-                        {% assign post_filters = post.categories | concat: post.tags %}
-                        {% assign all_filters = all_filters | concat: post_filters %}
-                    {% endfor %}
-                    {% assign all_filters = all_filters | uniq | sort %}
-                    
-                    {% for filter in all_filters %}
-                        <div class="filter-tag" data-filter="{{ filter }}">{{ filter }}</div>
-                    {% endfor %}
-                </div>
-            </div>
-
-            <div id="archive-content-date" {% if sort_mode != 'date' %}style="display:none;"{% endif %}>
-                {% for post in site.posts %}
-                    {% assign currentdate = post.date | date: "%Y" %}
-                    {% if currentdate != nextdate %}
-                        {% unless forloop.first %}</div></div>{% endunless %}
-                        <div class="archive-year-group" data-year="{{ currentdate }}">
-                            <h2 class="archive-year-title" style="border-bottom: 1px solid var(--border-color); margin-bottom: 30px; padding-bottom: 10px;">{{ currentdate }}</h2>
-                            <div class="archive-list">
-                        {% assign nextdate = currentdate %}
-                    {% endif %}
-                    
-                    <div class="archive-item" data-title="{{ post.title | escape }}" data-categories="{{ post.categories | concat: post.tags | join: ',' | escape }}">
-                        <div class="archive-info">
-                            <span class="archive-date">{{ post.date | date: "%m.%d" }}</span>
-                            <a href="{{ post.url | relative_url }}" class="archive-title">{{ post.title }}</a>
-                        </div>
-                        <div class="archive-meta">
-                            {% assign cats = post.categories | concat: post.tags | uniq %}
-                            {% for cat in cats limit:3 %}
-                                <span class="archive-category">{{ cat }}</span>
-                            {% endfor %}
-                        </div>
-                    </div>
-                    {% if forloop.last %}</div></div>{% endif %}
-                {% endfor %}
-            </div>
-
-            <div id="archive-content-category" {% if sort_mode != 'category' %}style="display:none;"{% endif %}>
-                {% for cat in all_filters %}
-                    <div class="archive-year-group" data-group-cat="{{ cat }}">
-                        <h2 class="archive-year-title" style="border-bottom: 1px solid var(--border-color); margin-bottom: 30px; padding-bottom: 10px;">{{ cat }}</h2>
+        <div id="archive-content-date">
+            {% for post in site.posts %}
+                {% assign currentdate = post.date | date: "%Y" %}
+                {% if currentdate != nextdate %}
+                    {% unless forloop.first %}</div></div>{% endunless %}
+                    <div class="archive-year-group" data-year="{{ currentdate }}">
+                        <h2 class="archive-year-title" style="border-bottom: 1px solid var(--border-color); margin-bottom: 30px; padding-bottom: 10px;">{{ currentdate }}</h2>
                         <div class="archive-list">
-                            {% for post in site.posts %}
-                                {% assign post_cats = post.categories | concat: post.tags %}
-                                {% if post_cats contains cat %}
-                                    <div class="archive-item" data-title="{{ post.title | escape }}" data-categories="{{ post_cats | join: ',' | escape }}">
-                                        <div class="archive-info">
-                                            <a href="{{ post.url | relative_url }}" class="archive-title">{{ post.title }}</a>
-                                            <span class="archive-date" style="margin-left: auto; font-size: 14px;">{{ post.date | date: "%Y.%m.%d" }}</span>
-                                        </div>
-                                    </div>
-                                {% endif %}
-                            {% endfor %}
-                        </div>
-                    </div>
-                {% endfor %}
-            </div>
+                    {% assign nextdate = currentdate %}
+                {% endif %}
+                <div class="archive-item" data-title="{{ post.title | escape }}" data-categories="{{ post.categories | concat: post.tags | join: ',' | escape }}">
+                    <div class="archive-info"><span class="archive-date">{{ post.date | date: "%m.%d" }}</span><a href="{{ post.url | relative_url }}" class="archive-title">{{ post.title }}</a></div>
+                    <div class="archive-meta">{% assign cats = post.categories | concat: post.tags | uniq %}{% for cat in cats limit:3 %}<span class="archive-category">{{ cat }}</span>{% endfor %}</div>
+                </div>
+                {% if forloop.last %}</div></div>{% endif %}
+            {% endfor %}
         </div>
-    </section>
 
-    <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            const dateBtn = document.getElementById('sort-date');
-            const catBtn = document.getElementById('sort-cat');
-            const dateContent = document.getElementById('archive-content-date');
-            const catContent = document.getElementById('archive-content-category');
-            const searchInput = document.getElementById('blog-search');
-            const filterTags = document.querySelectorAll('.filter-tag');
-            
-            let activeFilters = new Set();
-            let currentSort = '{{ sort_mode }}';
+        <div id="archive-content-category" style="display:none;">
+            {% for cat in all_filters %}
+                <div class="archive-year-group" data-group-cat="{{ cat }}">
+                    <h2 class="archive-year-title" style="border-bottom: 1px solid var(--border-color); margin-bottom: 30px; padding-bottom: 10px;">{{ cat }}</h2>
+                    <div class="archive-list">
+                        {% for post in site.posts %}{% assign post_cats = post.categories | concat: post.tags %}{% if post_cats contains cat %}
+                            <div class="archive-item" data-title="{{ post.title | escape }}" data-categories="{{ post_cats | join: ',' | escape }}">
+                                <div class="archive-info"><a href="{{ post.url | relative_url }}" class="archive-title">{{ post.title }}</a><span class="archive-date" style="margin-left: auto; font-size: 14px;">{{ post.date | date: "%Y.%m.%d" }}</span></div>
+                            </div>
+                        {% endif %}{% endfor %}
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+    </div>
+</section>
 
-            function updateDisplay() {
-                const searchTerm = searchInput.value.trim();
-                let regex = null;
-                try {
-                    regex = searchTerm ? new RegExp(searchTerm, 'i') : null;
-                } catch (e) {
-                    console.error("Invalid Regex");
-                }
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const dateBtn = document.getElementById('sort-date');
+        const catBtn = document.getElementById('sort-cat');
+        const dateContent = document.getElementById('archive-content-date');
+        const catContent = document.getElementById('archive-content-category');
+        const searchInput = document.getElementById('blog-search');
+        const filterTags = document.querySelectorAll('.filter-tag');
+        let activeFilters = new Set();
+        let currentSort = 'date';
 
-                const containers = [dateContent, catContent];
-                
-                containers.forEach(container => {
-                    const yearGroups = container.querySelectorAll('.archive-year-group');
-                    
-                    yearGroups.forEach(group => {
-                        const items = group.querySelectorAll('.archive-item');
-                        let groupVisible = false;
-
-                        items.forEach(item => {
-                            const title = item.getAttribute('data-title');
-                            const itemCats = item.getAttribute('data-categories').split(',');
-                            
-                            const matchesSearch = !regex || regex.test(title);
-                            
-                            // Category filter logic (Intersection / AND)
-                            let matchesFilter = true;
-                            if (activeFilters.size > 0) {
-                                matchesFilter = Array.from(activeFilters).every(f => itemCats.includes(f));
-                            }
-
-                            if (matchesSearch && matchesFilter) {
-                                item.style.display = 'flex';
-                                groupVisible = true;
-                            } else {
-                                item.style.display = 'none';
-                            }
-                        });
-
-                        group.style.display = groupVisible ? 'block' : 'none';
+        function updateDisplay() {
+            const searchTerm = searchInput.value.trim();
+            let regex = null;
+            try { regex = searchTerm ? new RegExp(searchTerm, 'i') : null; } catch (e) {}
+            const containers = [dateContent, catContent];
+            containers.forEach(container => {
+                container.querySelectorAll('.archive-year-group').forEach(group => {
+                    let groupVisible = false;
+                    group.querySelectorAll('.archive-item').forEach(item => {
+                        const title = item.getAttribute('data-title');
+                        const itemCats = item.getAttribute('data-categories').split(',');
+                        const matchesSearch = !regex || regex.test(title);
+                        let matchesFilter = activeFilters.size === 0 || Array.from(activeFilters).every(f => itemCats.includes(f));
+                        if (matchesSearch && matchesFilter) { item.style.display = 'flex'; groupVisible = true; } else { item.style.display = 'none'; }
                     });
-                });
-            }
-
-            function updateSort(mode) {
-                currentSort = mode;
-                if (mode === 'category') {
-                    dateContent.style.display = 'none';
-                    catContent.style.display = 'block';
-                    catBtn.classList.add('active');
-                    dateBtn.classList.remove('active');
-                } else {
-                    dateContent.style.display = 'block';
-                    catContent.style.display = 'none';
-                    dateBtn.classList.add('active');
-                    catBtn.classList.remove('active');
-                }
-                localStorage.setItem('blog-sort-pref', mode);
-                updateDisplay();
-            }
-
-            // Events
-            dateBtn.addEventListener('click', (e) => { e.preventDefault(); updateSort('date'); });
-            catBtn.addEventListener('click', (e) => { e.preventDefault(); updateSort('category'); });
-            searchInput.addEventListener('input', updateDisplay);
-
-            filterTags.forEach(tag => {
-                tag.addEventListener('click', () => {
-                    const filter = tag.getAttribute('data-filter');
-                    if (activeFilters.has(filter)) {
-                        activeFilters.delete(filter);
-                        tag.classList.remove('active');
-                    } else {
-                        activeFilters.add(filter);
-                        tag.classList.add('active');
-                    }
-                    updateDisplay();
+                    group.style.display = groupVisible ? 'block' : 'none';
                 });
             });
+        }
 
-            // Init
-            const savedPref = localStorage.getItem('blog-sort-pref');
-            if (savedPref) updateSort(savedPref);
+        function updateSort(mode) {
+            currentSort = mode;
+            if (mode === 'category') { dateContent.style.display = 'none'; catContent.style.display = 'block'; catBtn.classList.add('active'); dateBtn.classList.remove('active'); }
+            else { dateContent.style.display = 'block'; catContent.style.display = 'none'; dateBtn.classList.add('active'); catBtn.classList.remove('active'); }
+            localStorage.setItem('blog-sort-pref', mode);
             updateDisplay();
-        });
-    </script>
+        }
 
-    <footer>
-        <div class="footer-content">
-            <div class="footer-left">
-                <h2>Connect.</h2>
-                <div class="contact-pills">
-                    <a href="mailto:verdvana@outlook.com" class="pill">Contact Me</a>
-                    <a href="https://github.com/Verdvana" target="_blank" class="pill" style="background:transparent; color:#fff; border:1px solid #fff;">GitHub</a>
-                </div>
-            </div>
-            <div class="footer-right">
-                <p>© {{ "now" | date: "%Y" }} Verdvana. All rights reserved.</p>
-                <p style="font-size: 12px;">Engineered with precision in Shanghai.</p>
-            </div>
-        </div>
-    </footer>
-</body>
-</html>
+        dateBtn.addEventListener('click', () => updateSort('date'));
+        catBtn.addEventListener('click', () => updateSort('category'));
+        searchInput.addEventListener('input', updateDisplay);
+        filterTags.forEach(tag => {
+            tag.addEventListener('click', () => {
+                const filter = tag.getAttribute('data-filter');
+                if (activeFilters.has(filter)) { activeFilters.delete(filter); tag.classList.remove('active'); }
+                else { activeFilters.add(filter); tag.classList.add('active'); }
+                updateDisplay();
+            });
+        });
+
+        const savedPref = localStorage.getItem('blog-sort-pref') || 'date';
+        updateSort(savedPref);
+    });
+</script>
