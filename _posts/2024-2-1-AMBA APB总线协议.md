@@ -3,7 +3,7 @@ layout: post
 title:  "AMBA APB总线协议"
 date:   2024-2-1 10:10:10 +0700
 tags: 
-  - SoC
+  - Bus
   - RTL
   - Verilog HDL
   - IC
