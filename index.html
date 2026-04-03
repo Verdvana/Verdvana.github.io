@@ -127,6 +127,24 @@ layout: null
             line-height: 1.4;
         }
 
+        .wallpaper-credit {
+            position: absolute;
+            bottom: 30px;
+            right: 40px;
+            font-size: 10px;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            color: rgba(255, 255, 255, 0.3);
+            text-decoration: none;
+            transition: all 0.3s ease;
+            z-index: 10;
+        }
+
+        .wallpaper-credit:hover {
+            color: #fff;
+            text-shadow: 0 0 10px rgba(255,255,255,0.5);
+        }
+
         /* Split Section: Blog & Labs */
         .entries-container {
             display: flex;
@@ -952,6 +970,9 @@ layout: null
     <header class="hero">
         <h1>Engineering the <br>Future of Silicon.</h1>
         <p>Senior ASICs Engineer at Qualcomm. <br>Architecting high-performance hardware solutions and exploring the frontiers of IC design.</p>
+        <a href="https://chenjiabao.artstation.com" target="_blank" class="wallpaper-credit">
+            Wallpaper authorized by BAOV
+        </a>
     </header>
 
     <!-- Career with Logos -->
