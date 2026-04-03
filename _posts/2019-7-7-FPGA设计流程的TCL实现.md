@@ -4,6 +4,7 @@ title:  "FPGA设计流程的Tcl实现"
 date:   2019-7-7 17:23:10 +0700
 tags:
   - Tcl
+  - FPGA
 ---
 
 -------

@@ -3,7 +3,6 @@ layout: post
 title:  "使用Memory Compiler生成ASIC Embedded Memory"
 date:   2021-12-19 16:56:20 +0700
 tags:
-  - Linux
   - Digital IC Design
 ---
 

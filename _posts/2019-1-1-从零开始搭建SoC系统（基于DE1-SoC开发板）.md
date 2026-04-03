@@ -3,8 +3,7 @@ layout: post
 title:  "从零开始搭建SoC系统（基于DE1-SoC开发板）"
 date:   2019-1-1 9:18:10 +0700
 tags:
-  - SoC
-  - FPGA
+  - FPGA SoC
 ---
 
 -------

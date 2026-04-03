@@ -3,7 +3,7 @@ layout: post
 title:  "在DS-5中使用网口调试Linux应用程序（基于DE10-Nano）"
 date:   2019-4-16 10:50:10 +0700
 tags:
-  - SoC
+  - FPGA SoC
 ---
 
 -------

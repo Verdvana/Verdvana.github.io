@@ -3,8 +3,7 @@ layout: post
 title:  "在Quartus Prime 17.1以上版本中添加Frame Reader IP核"
 date:   2019-1-2 18:57:10 +0700
 tags:
-  - SoC
-  - FPGA
+  - FPGA SoC
 ---
 
 

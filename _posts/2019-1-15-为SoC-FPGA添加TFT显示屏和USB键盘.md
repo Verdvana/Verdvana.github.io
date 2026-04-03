@@ -3,8 +3,7 @@ layout: post
 title:  "为SoC-FPGA添加TFT显示屏和USB键盘"
 date:   2019-1-15 13:34:10 +0700
 tags:
-  - SoC
-  - FPGA
+  - FPGA SoC
 ---
 
 -------
