@@ -3,7 +3,11 @@ layout: post
 title:  "AMBA APB总线协议"
 date:   2024-2-1 10:10:10 +0700
 tags: 
-  - Digital IC Design
+  - SoC
+  - RTL
+  - Verilog HDL
+  - IC
+  - FPGA
 ---
 
 

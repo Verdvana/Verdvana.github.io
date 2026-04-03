@@ -3,8 +3,9 @@ layout: post
 title:  "Design Compiler入门"
 date:   2020-1-26 16:57:10 +0700
 tags:
-  - Digital IC Design
+  - IC
   - Synthesis
+  - EDA
 ---
 
 -------

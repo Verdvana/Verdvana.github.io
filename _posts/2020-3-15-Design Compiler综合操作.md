@@ -3,9 +3,10 @@ layout: post
 title:  "Design Compiler综合操作"
 date:   2020-3-15 21:36:10 +0700
 tags:
-  - Digital IC Design
+  - IC
   - Synthesis
   - Tcl
+  - EDA
 ---
 
 -------

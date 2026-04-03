@@ -4,7 +4,8 @@ title:  "Synopsys EDA Tools安装和使用过程中出现的问题及解决方�
 date:   2021-11-13 13:22:20 +0700
 tags:
   - Linux
-  - Digital IC Design
+  - IC
+  - EDA
 ---
 
 

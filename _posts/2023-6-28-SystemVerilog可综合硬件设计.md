@@ -4,6 +4,7 @@ title:  "SystemVerilog可综合硬件设计"
 date:   2023-6-28 22:19:10 +0700
 tags:
   - Verilog HDL
+  - RTL
 ---
 
 -------

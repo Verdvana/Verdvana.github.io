@@ -3,7 +3,9 @@ layout: post
 title:  "基于FPGA的LFSR伪随机数生成器"
 date:   2019-1-16 15:58:10 +0700
 tags:
-  - FPGA
+  - Verilog HDL
+  - RTL
+  - IP
 ---
 
 -------
