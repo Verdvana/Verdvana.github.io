@@ -1448,6 +1448,22 @@ layout: null
     <!-- APlayer Container -->
     <div id="aplayer"></div>
 
+    <style>
+        /* 让播放器更不起眼 */
+        .aplayer.aplayer-fixed.aplayer-narrow .aplayer-body {
+            opacity: 0.3;
+            transition: opacity 0.3s ease;
+        }
+        .aplayer.aplayer-fixed.aplayer-narrow:hover .aplayer-body {
+            opacity: 1;
+        }
+        /* 隐藏不必要的阴影和背景 */
+        .aplayer {
+            background: transparent !important;
+            box-shadow: none !important;
+        }
+    </style>
+
     <!-- Busuanzi Script -->
     <script async src="//busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
 
@@ -1456,6 +1472,7 @@ layout: null
         const ap = new APlayer({
             container: document.getElementById('aplayer'),
             fixed: true,
+            mini: true, // 开启迷你模式，更不起眼
             autoplay: false,
             theme: '#0071e3',
             loop: 'all',
@@ -1463,14 +1480,13 @@ layout: null
             preload: 'auto',
             volume: 0.5,
             mutex: true,
-            listFolded: false,
-            listMaxHeight: 90,
+            listFolded: true,
             audio: [
                 {
-                    name: 'Background Music',
+                    name: 'BGM',
                     artist: 'Verdvana',
                     url: '/static/music/bgm.mp3',
-                    cover: '/static/img/avatar.jpg',
+                    cover: '/static/music/bgm.jpg', // 换成专辑封面路径
                     theme: '#0071e3'
                 }
             ]
