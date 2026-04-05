@@ -27,6 +27,10 @@
     <script src="https://cdn.jsdelivr.net/npm/prismjs/components/prism-core.min.js" defer></script>
     <script src="https://cdn.jsdelivr.net/npm/prismjs/plugins/autoloader/prism-autoloader.min.js" defer onload='Prism.plugins.autoloader.languages_path = "https://cdn.jsdelivr.net/npm/prismjs/components/"'></script>
     
+    <!-- APlayer -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/aplayer/dist/APlayer.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/aplayer/dist/APlayer.min.js"></script>
+    
     <style>
         :root {
             --bg-color: #000000;
@@ -385,10 +389,37 @@
         </div>
     </div>
 
+    <!-- APlayer Container -->
+    <div id="aplayer"></div>
+
     <!-- Busuanzi Script -->
     <script async src="//busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
 
     <script>
+        // APlayer Initialization
+        const ap = new APlayer({
+            container: document.getElementById('aplayer'),
+            fixed: true,
+            autoplay: false,
+            theme: '#0071e3',
+            loop: 'all',
+            order: 'list',
+            preload: 'auto',
+            volume: 0.5,
+            mutex: true,
+            listFolded: false,
+            listMaxHeight: 90,
+            audio: [
+                {
+                    name: 'Background Music',
+                    artist: 'Verdvana',
+                    url: '/static/music/bgm.mp3',
+                    cover: '/static/img/avatar.jpg',
+                    theme: '#0071e3'
+                }
+            ]
+        });
+
         function toggleWeChat() {
             const modal = document.getElementById('wechat-modal');
             modal.classList.toggle('active');
