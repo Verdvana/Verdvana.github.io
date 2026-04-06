@@ -393,18 +393,27 @@
     <div id="aplayer"></div>
 
     <style>
-        /* 让播放器更不起眼 */
+        /* 极致折叠模式：左侧小竖条 */
         .aplayer.aplayer-fixed.aplayer-narrow .aplayer-body {
-            opacity: 0.3;
-            transition: opacity 0.3s ease;
+            left: -60px !important; /* 隐藏大部分封面，只留一个小边 */
+            transition: left 0.3s ease !important;
         }
         .aplayer.aplayer-fixed.aplayer-narrow:hover .aplayer-body {
-            opacity: 1;
+            left: 0 !important;
         }
-        /* 隐藏不必要的阴影和背景 */
+        /* 移除背景阴影，使其更隐形 */
         .aplayer {
-            background: transparent !important;
+            background: rgba(255, 255, 255, 0) !important;
             box-shadow: none !important;
+        }
+        /* 调整展开后的背景色，适配你的暗色主题 */
+        .aplayer .aplayer-info {
+            background: #1c1c1e !important;
+            color: #fff !important;
+            border-bottom: 1px solid rgba(255,255,255,0.1) !important;
+        }
+        .aplayer .aplayer-info .aplayer-music .aplayer-title {
+            color: #fff !important;
         }
     </style>
 
@@ -416,7 +425,7 @@
         const ap = new APlayer({
             container: document.getElementById('aplayer'),
             fixed: true,
-            mini: true, // 开启迷你模式，更不起眼
+            mini: false, // 关闭 mini 模式以使用吸附条样式
             autoplay: false,
             theme: '#0071e3',
             loop: 'all',
@@ -430,7 +439,7 @@
                     name: 'BGM',
                     artist: 'Verdvana',
                     url: '/static/music/bgm.mp3',
-                    cover: '/static/music/bgm.jpg', // 换成专辑封面路径
+                    cover: '/static/music/bgm.jpg',
                     theme: '#0071e3'
                 }
             ]
