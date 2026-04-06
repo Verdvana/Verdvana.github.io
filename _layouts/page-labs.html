@@ -113,7 +113,6 @@ layout: default
                             <h3 class="labs-title">{{ meta.title | default: meta.slug }}</h3>
                             {% if meta.desc %}<p class="labs-desc">{{ meta.desc }}</p>{% endif %}
                             {% if meta.tags %}<div class="labs-tags">{% for t in meta.tags %}<span class="labs-tag">{{ t }}</span>{% endfor %}</div>{% endif %}
-                            <div class="labs-meta">{{ href }}</div>
                         </div>
                     </a>
                 {% endif %}
