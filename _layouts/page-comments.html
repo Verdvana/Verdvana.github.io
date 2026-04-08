@@ -96,6 +96,7 @@ layout: default
 </section>
 
 <!-- Valine Script -->
+<!-- 
 <script
     src='https://cdn.jsdelivr.net/npm/valine'
     defer='defer'
@@ -114,3 +115,30 @@ layout: default
         "recordIP": true
       })'
 ></script>
+-->
+
+<!-- Waline -->
+<link
+  rel="stylesheet"
+  href="https://unpkg.com/@waline/client@v2/dist/waline.css"
+/>
+
+<script src="https://unpkg.com/@waline/client@v2/dist/waline.js"></script>
+
+<script>
+  document.addEventListener('DOMContentLoaded', function () {
+    Waline.init({
+      el: '.v',
+      serverURL: 'https://vercelproject-cvm08xycb-verdvanas-projects.vercel.app/',  // ← 换成你的
+      path: location.pathname,                      // ✅ 必须保留
+      placeholder: '在这里留言交流吧～',
+      avatar: 'identicon',
+      highlight: true,
+      pageview: true,
+      requiredMeta: ['nick'],
+      locale: {
+        placeholder: '在这里评论吧！（昵称必填，邮箱可选）'
+      }
+    });
+  });
+</script>
