@@ -88,31 +88,23 @@ layout: default
 <section class="comments">
     <div class="archive-container">
         <div class="comment-card">
-            <div class="v">
+            <div id="waline">
                 <i class="fas fa-spinner fa-pulse"></i>
             </div>
         </div>
     </div>
 </section>
 
-<!-- Valine Script -->
-<script
-    src='https://cdn.jsdelivr.net/npm/valine'
-    defer='defer'
-    onload='
-      new Valine({
-        "el": ".v",
-        "appId": "0KCYIvqG5ktP9Pw9zjIQyESV-gzGzoHsz",
-        "appKey": "hVnb4I7RVQClldY6uAIuYGrk",
-        "notify": "true",
-        "verify": "true",
-        "avatar": "identicon",
-        "placeholder": "在这里评论吧！（上面可以填写您的昵称、邮箱和网址）",
-        "visitor": true,
-        "highlight": true,
-        "avatarForce": false,
-        "recordIP": true
-      })'
-></script>
+<link rel="stylesheet" href="https://unpkg.com/@waline/client@v2/dist/waline.css"/>
+<script type="module">
+    import { init } from 'https://unpkg.com/@waline/client@v2/dist/waline.mjs';
+    init({
+        el: '#waline',
+        serverURL: 'https://vercelproject-gold-one.vercel.app',
+        placeholder: '在这里评论吧！（上面可以填写您的昵称、邮箱和网址）',
+        dark: 'auto',
+        search: false,
+    });
+</script>
 
 

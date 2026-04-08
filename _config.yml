@@ -112,27 +112,20 @@ jekyll-theme-WuK: # 用了wu-kan的主题，自定义样式都在这个命名空
   comments:
     enable: true # 需要在script中引入
     alert: |
-      <div class="v">
+      <div id="waline">
         <i class="fas fa-spinner fa-pulse"></i>
       </div>
-      <script
-        src='https://cdn.jsdelivr.net/npm/valine'
-        defer='defer'
-        onload='
-          new Valine({
-            "el": ".v",
-            "appId": "0KCYIvqG5ktP9Pw9zjIQyESV-gzGzoHsz",
-            "appKey": "hVnb4I7RVQClldY6uAIuYGrk",
-            "notify": "true",
-            "verify": "true",
-            "avatar": "identicon",
-            "placeholder": "在这里评论吧！（上面可以填写您的昵称、邮箱和网址）",
-            "visitor": true,
-            "highlight": true,
-            "avatarForce": false,
-            "recordIP": true
-          })'
-      ></script>
+      <link rel="stylesheet" href="https://unpkg.com/@waline/client@v2/dist/waline.css"/>
+      <script type="module">
+        import { init } from 'https://unpkg.com/@waline/client@v2/dist/waline.mjs';
+        init({
+          el: '#waline',
+          serverURL: 'https://vercelproject-gold-one.vercel.app',
+          placeholder: '在这里评论吧！（上面可以填写您的昵称、邮箱和网址）',
+          dark: 'auto',
+          search: false,
+        });
+      </script>
   post:
     date:
       enable: true
