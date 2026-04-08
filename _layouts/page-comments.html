@@ -130,7 +130,8 @@ layout: default
     Waline.init({
       el: '.v',
       serverURL: 'https://vercelproject-cvm08xycb-verdvanas-projects.vercel.app/',  // ← 换成你的
-      path: location.pathname,                      // ✅ 必须保留
+      //path: location.pathname,                      // ✅ 必须保留
+      path: '/comments/',   // ✅ 关键修复点
       placeholder: '在这里留言交流吧～',
       avatar: 'identicon',
       highlight: true,
