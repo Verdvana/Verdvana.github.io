@@ -277,12 +277,17 @@
             gap: 12px;
         }
 
+        .footer-right {
+            text-align: right;
+        }
+
         @media (max-width: 900px) {
             nav { padding: 15px 20px; }
             nav .nav-links { gap: 15px; }
             nav .nav-links a { font-size: 13px; }
             
             .footer-content { flex-direction: column; align-items: flex-start; gap: 30px; padding-top: 40px; }
+            .footer-right { text-align: left; }
         }
     </style>
     {% if page.header_append %}

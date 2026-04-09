@@ -48,6 +48,11 @@ layout: default
         margin-right: 8px;
     }
 
+    .post-meta .unit {
+        margin-left: 2px;
+        opacity: 0.8;
+    }
+
     .post-tags {
         display: flex;
         flex-wrap: wrap;
@@ -357,13 +362,13 @@ layout: default
             <span><i class="fa-solid fa-calendar-days"></i> {{ page.date | date: "%Y.%m.%d" }}</span>
             
             {% assign words = content | strip_html | strip_newlines | remove: ' ' | size %}
-            <span><i class="fa-solid fa-file-word"></i> {{ words }} 字</span>
+            <span><i class="fa-solid fa-pen-nib"></i> {{ words }} <span class="unit">Characters</span></span>
             
             {% assign read_time = words | divided_by: 300 | plus: 1 %}
-            <span><i class="fa-solid fa-clock"></i> {{ read_time }} 分钟</span>
+            <span><i class="fa-solid fa-clock"></i> {{ read_time }} <span class="unit">Mins</span></span>
             
             <span id="busuanzi_container_page_pv">
-                <i class="fa-solid fa-eye"></i> <span class="waline-pageview-count">...</span> 次阅读
+                <i class="fa-solid fa-eye"></i> <span class="waline-pageview-count">...</span> <span class="unit">Views</span>
             </span>
         </div>
         
