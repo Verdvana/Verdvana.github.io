@@ -353,6 +353,7 @@ graph LR
 * 调试/测试/诊断：JTAG锁定、Debug fuse关闭
 * 低功耗状态限制：retention-only、deep sleep、某些寄存器不可访问
 
+
 ----
 
 ## 6. 低功耗设计特性
@@ -363,6 +364,7 @@ graph LR
 - **零转换功耗：** 在非活动期间，APB从机接口保持静默。由于没有流水线，不需要像AHB那样维护忙碌状态（BUSY/IDLE HTRANS）。
 - **静态保持（Static Retention）：** APB Bridge在传输结束后应保持地址和写数据信号稳定，而非将其复位或悬空。这样可以显著减少高电容总线上的信号翻转率（Toggle Rate），从而降低动态功耗。
 - **局部时钟门控：** APB极简的握手机制使得外设能够轻松实现局部Clock Gating，仅在PSEL有效时开启模块时钟。
+
 
 ----
 
