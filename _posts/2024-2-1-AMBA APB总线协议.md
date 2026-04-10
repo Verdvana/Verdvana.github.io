@@ -38,7 +38,16 @@ tags:
 
 ## 2 APB interface
 
-<table>
+<style>
+  table.apb {
+    color: #000;
+  }
+  table.apb th {
+    font-weight: 600;
+  }
+</style>
+
+<table class="apb">
   <tr>
     <th>Source</th>
     <th>Version</th>
