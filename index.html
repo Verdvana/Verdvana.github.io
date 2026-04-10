@@ -1407,14 +1407,9 @@ layout: null
                         <span id="busuanzi_value_site_uv"><i class="fa-solid fa-spinner fa-spin"></i></span> Visitors
                     </div>
                     {% assign total_words = 0 %}
-                    {% for post in site.posts %}
-                        {% if post.path contains '_posts/' %}
-                            {% assign post_ext = post.path | split: '.' | last %}
-                            {% if post_ext == 'md' or post_ext == 'markdown' %}
-                                {% assign words = post.content | strip_html | strip_newlines | remove: ' ' | size %}
-                                {% assign total_words = total_words | plus: words %}
-                            {% endif %}
-                        {% endif %}
+                    {% for p in site.posts %}
+                        {% assign p_words = p.content | strip_html | strip_newlines | remove: ' ' | size %}
+                        {% assign total_words = total_words | plus: p_words %}
                     {% endfor %}
                     <div class="stat-item">
                         <i class="fa-solid fa-pen-nib"></i>
