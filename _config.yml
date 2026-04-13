@@ -433,10 +433,6 @@ jekyll-theme-WuK: # 用了wu-kan的主题，自定义样式都在这个命名空
         ></script>
       - | # 在这里自定义页面样式吧
         <style>
-        table, th, td {
-          border: 10px solid #ccc;
-          border-collapse: collapse;
-        }
         pre {
           max-height: 50vh;
           overflow: auto;
