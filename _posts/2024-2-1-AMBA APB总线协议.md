@@ -26,7 +26,9 @@ tags:
 &#160; &#160; &#160; &#160; 特点：
 * **非流水线（Non-pipelined）：** 每一笔传输至少占用两个时钟周期，设计逻辑简单。不支持pipeline、Busrst、Outstanding传输，最快只能Back to back。
 * **单时钟沿触发：** 所有信号均在PCLK上升沿采样，极大简化了静态时序分析（STA）与自动测试向量生成（ATPG）。不能读写同时传输，AHB也不行，AXI可以；
-* **辅助总线定位：** 典型拓扑中，APB通过APB Bridge连接至AHB或AXI等高性能主干总线，起到隔离高速翻转信号、降低全局时钟树负载的作用。不支持仲裁，因为是单主多从。
+* **辅助总线定位：** APB接口专为访问外设的可编程控制寄存器而设计。典型拓扑中，APB通过APB Bridge连接至AHB或AXI等高性能主干总线，起到隔离高速翻转信号、降低全局时钟树负载的作用。不支持仲裁，因为是单主多从。
+* **辅助总线定位：** APB传输由APB bridge发起。APB bridge也可称为“**Requester**”。外设接口响应请求。APB外设也可称为“**Completer**”。
+
 
 &#160; &#160; &#160; &#160; 版本：
 * [AMBA2 APB Specification](https://developer.arm.com/documentation/ihi0011/a/)（APB2）
@@ -71,12 +73,12 @@ tags:
     <td style="background:#BEE6E9">低电平有效，通常直接连接到系统总线的复位信号</td>
   </tr>
   <tr>
-    <td rowspan=8 style="background:#FFDAB9">APB bridge</td>
+    <td rowspan=11 style="background:#FFDAB9">APB bridge</td>
     <td rowspan=5 style="background:#BEE6E9">APB2</td>
     <td style="background:#BEE6E9">PADDR</td>
     <td style="background:#BEE6E9">8/16/32</td>
     <td style="background:#BEE6E9">Address</td>
-    <td style="background:#BEE6E9">最多32bit</td>
+    <td style="background:#BEE6E9">表示字节地址（Byte Address）</td>
   </tr>
   <tr>
     <td style="background:#BEE6E9">PSELx</td>
@@ -100,7 +102,7 @@ tags:
     <td style="background:#BEE6E9">PWDATA</td>
     <td style="background:#BEE6E9">8/16/32</td>
     <td style="background:#BEE6E9">Write data</td>
-    <td style="background:#BEE6E9">最多32bit，PWRITE为1时由Master产生</td>
+    <td style="background:#BEE6E9">PWRITE为1时由Master产生，位宽必须与PRDATA相同</td>
   </tr>
   <tr>
     <td rowspan=2 style="background:#CEEFC8">APB4</td>
@@ -116,19 +118,37 @@ tags:
     <td style="background:#CEEFC8">指示在写传输期间，要更新哪个字节通道<br>写数据总线的每8bit对应1bitPSTRB<br>在读传输期间，PSTRB不能跳变</td>
   </tr>
   <tr>
-    <td rowspan=1 style="background:#EBF6CB">APB5</td>
+    <td rowspan=4 style="background:#EBF6CB">APB5</td>
+    <td style="background:#EBF6CB">PNSE</td>
+    <td style="background:#EBF6CB">1</td>
+    <td style="background:#EBF6CB">Extension to protection type</td>
     <td style="background:#EBF6CB"></td>
+  </tr>
+  <tr>
+    <td style="background:#EBF6CB">PWAKEUP</td>
+    <td style="background:#EBF6CB">1</td>
+    <td style="background:#EBF6CB">Wake-up</td>
     <td style="background:#EBF6CB"></td>
+  </tr>
+  <tr>
+    <td style="background:#EBF6CB">PAUSER</td>
+    <td style="background:#EBF6CB">≤128</td>
     <td style="background:#EBF6CB"></td>
     <td style="background:#EBF6CB"></td>
   </tr>
   <tr>
-    <td rowspan=3 style="background:#FFE4E1">Slave interface</td>
+    <td style="background:#EBF6CB">PWUSER</td>
+    <td style="background:#EBF6CB">≤DATA_WIDTH/2</td>
+    <td style="background:#EBF6CB"></td>
+    <td style="background:#EBF6CB"></td>
+  </tr>
+  <tr>
+    <td rowspan=5 style="background:#FFE4E1">Slave interface</td>
     <td style="background:#BEE6E9">APB2</td>
     <td style="background:#BEE6E9">PRDATA</td>
     <td style="background:#BEE6E9">8/16/32</td>
     <td style="background:#BEE6E9">Read data</td>
-    <td style="background:#BEE6E9">最多32bit，PWRITE为0时由Slave产生</td>
+    <td style="background:#BEE6E9">PWRITE为0时由Slave产生，位宽必须与PWDATA相同</td>
   </tr>
   <tr>
     <td rowspan=2 style="background:#C4E9D9">APB3</td>
@@ -142,6 +162,19 @@ tags:
     <td style="background:#C4E9D9">1</td>
     <td style="background:#C4E9D9">Transfer error</td>
     <td style="background:#C4E9D9">传输失败的错误信号</td>
+  </tr>
+  <tr>
+    <td rowspan=2 style="background:#EBF6CB">APB5</td>
+    <td style="background:#EBF6CB">PRUSER</td>
+    <td style="background:#EBF6CB">≤DATA_WIDTH/2</td>
+    <td style="background:#EBF6CB"></td>
+    <td style="background:#EBF6CB"></td>
+  </tr>
+  <tr>
+    <td style="background:#EBF6CB">PRUSER</td>
+    <td style="background:#EBF6CB">≤16</td>
+    <td style="background:#EBF6CB"></td>
+    <td style="background:#EBF6CB"></td>
   </tr>
 </table>
 
