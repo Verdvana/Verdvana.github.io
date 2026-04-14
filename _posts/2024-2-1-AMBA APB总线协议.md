@@ -264,14 +264,14 @@ graph LR
 
 ```wavedrom
 { signal: [
-  { name: "PCLK",  wave: "pP........" },
-  { name: "PADDR", wave: "x.6......", data:"Addr1"},
-  { name: "PWRITE", wave: "x.1......" },
-  { name: "PSEL", wave: "0.1....0." },
-  { name: "PENABLE", wave: "0..1...0." },
-  { name: "PWDATA", wave: "x.6....x.", data:"Data1"},
-  { name: "PREADY", wave: "x..0..1x." },
-  { name: "STATUS", wave: "3..4..53.", data:"IDLE S A IDLE" },
+  { name: "PCLK",  wave: "pP...." },
+  { name: "PADDR", wave: "x6...x", data:"Addr1"},
+  { name: "PWRITE", wave: "x1...x" },
+  { name: "PSEL", wave: "01...0" },
+  { name: "PENABLE", wave: "x01..x" },
+  { name: "PWDATA", wave: "x6...x", data:"Data1"},
+  { name: "PREADY", wave: "x.0.1x" },
+  { name: "STATUS", wave: "34..53", data:"IDLE S A IDLE" },
 ],
   head: {
     text: 'Write transfers with wait states',
