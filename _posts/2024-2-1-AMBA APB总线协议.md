@@ -237,10 +237,10 @@ graph LR
 &#160; &#160; &#160; &#160; 第一阶段为IDLE状态。
 
 
-&#160; &#160; &#160; &#160; 第二阶段为SETUP，此时主机把PSEL和PWRITE拉高；PADDR和PWDATA准备好地址和数据；把PENABLE拉低表示下一拍实施写入。
+&#160; &#160; &#160; &#160; 第二阶段为SETUP状态，T1时刻主机把PSEL和PWRITE拉高；PADDR和PWDATA准备好地址和数据，把PENABLE拉低表示下一拍实施写入。
 
 
-&#160; &#160; &#160; &#160; 第三阶段为ACCESS，主机把PENABLE拉高，表示该数据有效；从机采样到PSEL拉高，会把PREADY拉高表示接收数据；
+&#160; &#160; &#160; &#160; 第三阶段为ACCESS，T2时刻主机把PENABLE拉高，表示该数据有效；从机采样到PSEL拉高，会把PREADY拉高表示会在T3时刻接收写入数据；PADDR和PWDATA以及其它控制信号必须保持稳定，直至传输完成。
 
 &#160; &#160; &#160; &#160; 第四阶段退出ACCESS，如果PREADY为高，代表从机接收到信号，主机则拉低PSEL和PENABLE信号，进入IDLE状态。
 
@@ -248,15 +248,19 @@ graph LR
 
 ```wavedrom
 { signal: [
-  { name: "PCLK",  wave: "p..........." },
-  { name: "PADDR", wave: "x.3.4.5.6.x.", data:"Addr1 Addr2 Addr3 Addr4"},
-  { name: "PWRITE", wave: "x.1.1.1.1.1." },
-  { name: "PSEL", wave: "0.1.1.1.1.0." },
-  { name: "PENABLE", wave: "0..10101010." },
-  { name: "PWDATA", wave: "x.3.4.5.6.x.", data:"Data1 Data2 Data3 Data4"},
-  { name: "PREADY", wave: "x..1010101xx" },
-  { name: "STATUS", wave: "3.454545453.", data:"IDLE S A S A S A S A IDLE" },
-]}
+  { name: "PCLK",  wave: "pP........p" },
+  { name: "PADDR", wave: "x3.4.5.6.x.", data:"Addr1 Addr2 Addr3 Addr4"},
+  { name: "PWRITE", wave: "x1.1.1.1.1." },
+  { name: "PSEL", wave: "01.1.1.1.0." },
+  { name: "PENABLE", wave: "0.10101010." },
+  { name: "PWDATA", wave: "x3.4.5.6.x.", data:"Data1 Data2 Data3 Data4"},
+  { name: "PREADY", wave: "x.1010101xx" },
+  { name: "STATUS", wave: "3454545453.", data:"IDLE S A S A S A S A IDLE" },
+],
+  head: {
+    text: 'Write transfers with no wait states',
+    tick: 0,
+  }}
 ```
 
 
