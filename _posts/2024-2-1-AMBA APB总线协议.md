@@ -115,7 +115,7 @@ tags:
     <td style="background:#CEEFC8">PSTRB</td>
     <td style="background:#CEEFC8">1/2/4</td>
     <td style="background:#CEEFC8">Write strobes</td>
-    <td style="background:#CEEFC8">指示在写传输期间，要更新哪个字节通道<br>写数据总线的每8bit对应1bitPSTRB<br>在读传输期间，PSTRB不能跳变</td>
+    <td style="background:#CEEFC8">指示在写传输期间，要更新哪个字节通道<br>写数据总线的每8bit对应1bit的PSTRB<br>HIGH表示对应的字节通道包含有效信息<br>在读传输期间，PSTRB不能跳变且所有bit必须被Requester置为LOW</td>
   </tr>
   <tr>
     <td rowspan=4 style="background:#EBF6CB">APB5</td>
@@ -212,7 +212,7 @@ graph LR
 
 ### 4.1 写传输
 
-&#160; &#160; &#160; &#160; 没有等待状态：
+#### 4.1.1 无等待状态：
 
 
 ```wavedrom
@@ -237,14 +237,12 @@ graph LR
 &#160; &#160; &#160; &#160; 第一阶段为IDLE状态。
 
 
-&#160; &#160; &#160; &#160; 第二阶段为SETUP状态，T1时刻主机把PSEL和PWRITE拉高；PADDR和PWDATA准备好地址和数据，把PENABLE拉低表示下一拍实施写入。
+&#160; &#160; &#160; &#160; 第二阶段为SETUP状态，T1时刻主机把`PSEL`和`PWRITE`拉高；`PADDR`和`PWDATA`准备好地址和数据，把`PENABLE`拉低表示下一拍实施写入。
 
 
-&#160; &#160; &#160; &#160; 第三阶段为ACCESS，T2时刻主机把PENABLE拉高，表示该数据有效；从机采样到PSEL拉高，会把PREADY拉高表示会在T3时刻接收写入数据；PADDR和PWDATA以及其它控制信号必须保持稳定，直至传输完成。
+&#160; &#160; &#160; &#160; 第三阶段为ACCESS，T2时刻主机把`PENABLE`拉高，表示该数据有效；从机采样到PSEL拉高，会把`PREADY`拉高表示会在T3时刻接收写入数据；`PADDR`和`PWDATA`以及其它控制信号必须保持稳定，直至传输完成。
 
-&#160; &#160; &#160; &#160; 第四阶段退出ACCESS，如果PREADY为高，代表从机接收到信号，主机则拉低PSEL和PENABLE信号，进入IDLE状态。
-
-&#160; &#160; &#160; &#160; 没有等待状态的连续写时序：
+&#160; &#160; &#160; &#160; 第四阶段退出ACCESS，如果PREADY为高，代表从机接收到信号，主机则拉低`PENABLE`信号。如果没有另一项针对同一外设的传输，主机拉低`PSEL`信号，进入IDLE状态；否则为连续写传输，时序图如下：
 
 ```wavedrom
 { signal: [
@@ -264,7 +262,20 @@ graph LR
 ```
 
 
-&#160; &#160; &#160; &#160; 具有等待状态：
+#### 4.1.2 有等待状态：
+
+
+&#160; &#160; &#160; &#160; 在ACESS期间，当`PENABLE`为高电平时，从机通过将`PREADY`拉低来延长传输，在`PREADY`保持低电平期间，以下信号保持不变：
+
+* PADDR
+* PWRITE
+* PSELx
+* PENABLE
+* PWDATA
+* PSTRB
+* PPROT
+* PAUSER
+* PWUSER
 
 ```wavedrom
 { signal: [
@@ -284,7 +295,11 @@ graph LR
 ```
 
 
-&#160; &#160; &#160; &#160; ACCESS可能不止一个周期，取决于从机什么时候回复PREADY信号，因此数据写入完成要大于两个时钟周期。
+&#160; &#160; &#160; &#160; 所以ACCESS可能不止一个周期，取决于从机什么时候回复`PREADY`信号，因此数据写入完成要大于两个时钟周期。
+
+
+
+&#160; &#160; &#160; &#160; 当`PENABLE`为低电平时，`PREADY`可以取任意值。这确保了具有固定两周期访问周期的外设可以将`PREADY` 固定为高。
 
 ### 4.2 读传输
  
