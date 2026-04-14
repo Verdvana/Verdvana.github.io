@@ -316,14 +316,14 @@ layout: default
     }
 
     /* Wavedrom Center */
-    .wavedrom {
+    .wavedrom, script[type="WaveDrom"] + svg {
         display: flex;
         justify-content: center;
         margin: 2em 0;
         overflow-x: auto;
     }
     /* Force white lines for dark theme using filter - most reliable method */
-    .wavedrom svg {
+    .wavedrom svg, script[type="WaveDrom"] + svg {
         filter: invert(1) hue-rotate(180deg) brightness(1.2) !important;
         background: transparent !important;
     }
