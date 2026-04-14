@@ -447,7 +447,7 @@ graph LR
 
 ```wavedrom
 { signal: [
-  { name: "PCLK",  wave: "pP...." },
+  { name: "PCLK",  wave: "pP..." },
   { name: "PADDR", wave: "x6..x", data:"Addr1"},
   { name: "PWRITE", wave: "x1..x" },
   { name: "PSEL", wave: "01..0" },
