@@ -39,9 +39,6 @@ tags:
     - **新增 PSLVERR：** 支持错误反馈。提升了复杂SoC的鲁棒性。
 * **APB4：** 增强安全性与复杂数据流支持。
     - **新增 PPROT[2:0]：** 完善安全架构。
-        - `PPROT[0]`：Normal (0) vs Privileged (1) 访问。
-        - `PPROT[1]`：Secure (0) vs Non-secure (1) 访问。
-        - `PPROT[2]`：Data (0) vs Instruction (1) 访问。
     - **新增 PSTRB：** 引入字节掩码，支持稀疏数据传输，允许在32位总线上仅更新特定字节。
 * **APB5：**
 
@@ -125,7 +122,7 @@ tags:
     <td style="background:#CEEFC8">PPROT</td>
     <td style="background:#CEEFC8">3</td>
     <td style="background:#CEEFC8">Protection type</td>
-    <td style="background:#CEEFC8">PPROT[2]: 1=Instruction; 0=Data<br>PPROT[1]: 1=Nonsecure; 0=Secure<br>PPROT[0]: 1=Privileged; 0=Normal</td>
+    <td style="background:#CEEFC8">提供对非法传输的保护</td>
   </tr>
   <tr>
     <td style="background:#CEEFC8">PSTRB</td>
@@ -494,7 +491,18 @@ graph LR
 
 ### 5.3 PPROT
 
+&#160; &#160; &#160; &#160; 为了支持复杂的系统设计，通常需要系统中的互连设备和其他器件共同提供针对非法交易的保护。下表展示了`PPROT`的三种访问保护级别和对应的编码：
 
+| PPROT | Protection | Description | Comments |
+| --- | --- | --- | --- |
+| PPROT[0] | Normal or Privileged| Requesters来指示处理模式。privileged模式通常在系统内具有更高的访问权限 | LOW：normal；HIGH：privileged |
+| PPROT[1] | Secure or Non-secure| 适用于需要对处理模式进行更精细区分的系统 | LOW：secure；HIGH：non-secure |
+| PPROT[2] | Data or Instruction| 指示该事务是数据访问还是指令访问,仅供参考，未必在所有情况下都准确 | LOW：data；HIGH：instruction |
+
+
+
+
+&#160; &#160; &#160; &#160; PPROT的主要用途是作为安全或非安全交易的标识符。允许对`PPROT[0]`和`PPROT[2]`标识符采用不同的解释。
 
 
 ----

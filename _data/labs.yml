@@ -22,3 +22,11 @@
   thumb: /assets/labs/thumbs/random_picker.png
   tags: [Others]
   order: 4
+
+- slug: crypto_toolbox
+  title: 加密工具箱
+  desc: >
+    纯客户端在线加密工具箱，支持哈希（MD5/SHA）、HMAC、AES加解密、Base64/Hex/URL编解码、JWT解析及随机密码生成。
+  thumb: /assets/labs/thumbs/crypto_toolbox.png
+  tags: [Algorithm]
+  order: 2
