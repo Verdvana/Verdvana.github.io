@@ -215,18 +215,23 @@ graph LR
 &#160; &#160; &#160; &#160; 没有等待状态：
 
 
-<script type="WaveDrom">
+```wavedrom
 { signal: [
-  { name: "PCLK",  wave: "p....." },
-  { name: "PADDR", wave: "x.6...", data:"Addr1"},
-  { name: "PWRITE", wave: "x.1..." },
-  { name: "PSEL", wave: "0.1.0." },
-  { name: "PENABLE", wave: "0..10." },
-  { name: "PWDATA", wave: "x.6.x.", data:"Data1"},
-  { name: "PREADY", wave: "x..1xx" },
-  { name: "STATUS", wave: "3.453.", data:"IDLE S A IDLE" },
-]}
-</script>
+  { name: "PCLK",  wave: "pP..p" },
+  { name: "PADDR", wave: "x6.x,", data:"Addr1"},
+  { name: "PWRITE", wave: "x1.x." },
+  { name: "PSEL", wave: "01.0." },
+  { name: "PENABLE", wave: "x01x." },
+  { name: "PWDATA", wave: "x6.x.", data:"Data1"},
+  { name: "PREADY", wave: "x.1xx" },
+  { name: "STATUS", wave: "3453.", data:"IDLE S A IDLE" },
+],
+  head: {
+    text: 'Write transfers with no wait states',
+    tick: 0,
+  }
+}
+```
 
 
 &#160; &#160; &#160; &#160; 第一阶段为IDLE状态。
@@ -241,7 +246,7 @@ graph LR
 
 &#160; &#160; &#160; &#160; 没有等待状态的连续写时序：
 
-<script type="WaveDrom">
+```wavedrom
 { signal: [
   { name: "PCLK",  wave: "p..........." },
   { name: "PADDR", wave: "x.3.4.5.6.x.", data:"Addr1 Addr2 Addr3 Addr4"},
@@ -252,14 +257,14 @@ graph LR
   { name: "PREADY", wave: "x..1010101xx" },
   { name: "STATUS", wave: "3.454545453.", data:"IDLE S A S A S A S A IDLE" },
 ]}
-</script>
+```
 
 
 &#160; &#160; &#160; &#160; 具有等待状态：
 
-<script type="WaveDrom">
+```wavedrom
 { signal: [
-  { name: "PCLK",  wave: "p........" },
+  { name: "PCLK",  wave: "pP........" },
   { name: "PADDR", wave: "x.6......", data:"Addr1"},
   { name: "PWRITE", wave: "x.1......" },
   { name: "PSEL", wave: "0.1....0." },
@@ -267,8 +272,12 @@ graph LR
   { name: "PWDATA", wave: "x.6....x.", data:"Data1"},
   { name: "PREADY", wave: "x..0..1x." },
   { name: "STATUS", wave: "3..4..53.", data:"IDLE S A IDLE" },
-]}
-</script>
+],
+  head: {
+    text: 'Write transfers with wait states',
+    tick: 0,
+  }}
+```
 
 
 &#160; &#160; &#160; &#160; ACCESS可能不止一个周期，取决于从机什么时候回复PREADY信号，因此数据写入完成要大于两个时钟周期。
@@ -278,7 +287,7 @@ graph LR
 
 &#160; &#160; &#160; &#160; 没有等待状态，类似写传输：
 
-<script type="WaveDrom">
+```wavedrom
 { signal: [
   { name: "PCLK",  wave: "p....." },
   { name: "PADDR", wave: "x.6...", data:"Addr1"},
@@ -289,12 +298,12 @@ graph LR
   { name: "PREADY", wave: "x..1xx" },
   { name: "STATUS", wave: "3.453.", data:"IDLE S A IDLE" },
 ]}
-</script>
+```
 
 
 &#160; &#160; &#160; &#160; 具有等待状态，类似写传输：
 
-<script type="WaveDrom">
+```wavedrom
 { signal: [
   { name: "PCLK",  wave: "p........" },
   { name: "PADDR", wave: "x.6......", data:"Addr1"},
@@ -305,7 +314,7 @@ graph LR
   { name: "PREADY", wave: "x..0..1x." },
   { name: "STATUS", wave: "3..4..53.", data:"IDLE S A IDLE" },
 ]}
-</script>
+```
 
 
 ----
@@ -340,7 +349,7 @@ graph LR
 
 &#160; &#160; &#160; &#160; PSLVERR表示从机认为写传输有错误。时序图如下：
 
-<script type="WaveDrom">
+```wavedrom
 { signal: [
   { name: "PCLK",  wave: "p........" },
   { name: "PADDR", wave: "x.6......", data:"Addr1"},
@@ -352,7 +361,7 @@ graph LR
   { name: "PSLVERR", wave: "x.....1x." },
   { name: "STATUS", wave: "3..4..53.", data:"IDLE S A IDLE" },
 ]}
-</script>
+```
 
 
 &#160; &#160; &#160; &#160; 写传输时，当从机任务可以接受数据时，把PREADY拉高。同时（RSEL&PENABLE&PREADY同时为高时）如果之前采集PADDR、PWDATA等信号有问题，则认为写传输有误，所以在此时把PSLVERR也拉高。主机会在下一个上升沿采集到此错误信号，得知写入错误。
