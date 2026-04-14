@@ -73,7 +73,7 @@ tags:
     <td style="background:#BEE6E9">低电平有效，通常直接连接到系统总线的复位信号</td>
   </tr>
   <tr>
-    <td rowspan=11 style="background:#FFDAB9">APB bridge</td>
+    <td rowspan=11 style="background:#FFDAB9">Requester</td>
     <td rowspan=5 style="background:#BEE6E9">APB2</td>
     <td style="background:#BEE6E9">PADDR</td>
     <td style="background:#BEE6E9">8/16/32</td>
@@ -115,7 +115,7 @@ tags:
     <td style="background:#CEEFC8">PSTRB</td>
     <td style="background:#CEEFC8">1/2/4</td>
     <td style="background:#CEEFC8">Write strobes</td>
-    <td style="background:#CEEFC8">指示在写传输期间，要更新哪个字节通道<br>写数据总线的每8bit对应1bit的PSTRB<br>HIGH表示对应的字节通道包含有效信息<br>在读传输期间，PSTRB不能跳变且所有bit必须被Requester置为LOW</td>
+    <td style="background:#CEEFC8">指示在写传输期间，要更新哪个字节通道</td>
   </tr>
   <tr>
     <td rowspan=4 style="background:#EBF6CB">APB5</td>
@@ -143,7 +143,7 @@ tags:
     <td style="background:#EBF6CB"></td>
   </tr>
   <tr>
-    <td rowspan=5 style="background:#FFE4E1">Slave interface</td>
+    <td rowspan=5 style="background:#FFE4E1">Completer</td>
     <td style="background:#BEE6E9">APB2</td>
     <td style="background:#BEE6E9">PRDATA</td>
     <td style="background:#BEE6E9">8/16/32</td>
@@ -185,8 +185,8 @@ tags:
 &#160; &#160; &#160; &#160; APB协议总共只有三种状态，分别是IDLE，SETUP和ACCESS。
 
 * IDLE：默认空闲状态；
-* SETUP：当主机需要传输数据的时候，会把从机对应的PSEL拉高，PENABLE拉低，此时进入SETUP，且只持续一拍，下一拍必进入ACCESS；
-* ACCESS：驱动PENBALE拉高，之后会采样从机的PREADY信号，如果为低则持续状态，如果为高则回到IDLE或回到SETUP，这取决于是否还有数据传输。SETUP进入ACCESS时需要以下信号保持不变：
+* SETUP：当主机需要传输数据的时候，会把Completer对应的PSEL拉高，`PENABLE拉低`，此时进入SETUP，且只持续一拍，下一拍必进入ACCESS；
+* ACCESS：驱动PENBALE拉高，之后会采样Completer的`PREADY`信号，如果为低则持续状态，如果为高则回到IDLE或回到SETUP，这取决于是否还有数据传输。SETUP进入ACCESS时需要以下信号保持不变：
   * PADDR；
   * PPROT；
   * PWRITE；
@@ -195,7 +195,7 @@ tags:
   * PAUSER；
   * PWUSER；
 
-&#160; &#160; &#160; &#160; 从APB从机角度，状态转换如下图所示：
+&#160; &#160; &#160; &#160; 从Completer角度，状态转换如下图所示：
 
 ```mermaid
 graph LR
@@ -212,7 +212,7 @@ graph LR
 
 ### 4.1 写传输
 
-#### 4.1.1 无等待状态：
+#### 4.1.1 无等待状态
 
 
 ```wavedrom
@@ -262,7 +262,7 @@ graph LR
 ```
 
 
-#### 4.1.2 有等待状态：
+#### 4.1.2 有等待状态
 
 
 &#160; &#160; &#160; &#160; 在ACESS期间，当`PENABLE`为高电平时，从机通过将`PREADY`拉低来延长传输，在`PREADY`保持低电平期间，以下信号保持不变：
@@ -302,38 +302,59 @@ graph LR
 &#160; &#160; &#160; &#160; 当`PENABLE`为低电平时，`PREADY`可以取任意值。这确保了具有固定两周期访问周期的外设可以将`PREADY` 固定为高。
 
 ### 4.2 读传输
- 
 
-&#160; &#160; &#160; &#160; 没有等待状态，类似写传输：
+#### 4.2.1 无等待状态
 
-```wavedrom
-{ signal: [
-  { name: "PCLK",  wave: "p....." },
-  { name: "PADDR", wave: "x.6...", data:"Addr1"},
-  { name: "PWRITE", wave: "x.0..." },
-  { name: "PSEL", wave: "0.1.0." },
-  { name: "PENABLE", wave: "0..10." },
-  { name: "PRDATA", wave: "x..6x.", data:"Data1"},
-  { name: "PREADY", wave: "x..1xx" },
-  { name: "STATUS", wave: "3.453.", data:"IDLE S A IDLE" },
-]}
-```
-
-
-&#160; &#160; &#160; &#160; 具有等待状态，类似写传输：
+&#160; &#160; &#160; &#160; 类似写传输：
 
 ```wavedrom
 { signal: [
-  { name: "PCLK",  wave: "p........" },
-  { name: "PADDR", wave: "x.6......", data:"Addr1"},
-  { name: "PWRITE", wave: "x.1......" },
-  { name: "PSEL", wave: "0.1....0." },
-  { name: "PENABLE", wave: "0..1...0." },
-  { name: "PRDATA", wave: "x.6....x.", data:"Data1"},
-  { name: "PREADY", wave: "x..0..1x." },
-  { name: "STATUS", wave: "3..4..53.", data:"IDLE S A IDLE" },
-]}
+  { name: "PCLK",  wave: "pP..p" },
+  { name: "PADDR", wave: "x6.x,", data:"Addr1"},
+  { name: "PWRITE", wave: "x0.x." },
+  { name: "PSEL", wave: "01.0." },
+  { name: "PENABLE", wave: "x01x." },
+  { name: "PRDATA", wave: "xx6x.", data:"Data1"},
+  { name: "PREADY", wave: "x.1xx" },
+  { name: "STATUS", wave: "3453.", data:"IDLE S A IDLE" },
+],
+  head: {
+    text: 'Read transfers with no wait states',
+    tick: 0,
+  }
+}
 ```
+
+#### 4.2.2 有等待状态
+
+&#160; &#160; &#160; &#160; 类似写传输：
+
+```wavedrom
+{ signal: [
+  { name: "PCLK",  wave: "pP...." },
+  { name: "PADDR", wave: "x6...x", data:"Addr1"},
+  { name: "PWRITE", wave: "x0...x" },
+  { name: "PSEL", wave: "01...0" },
+  { name: "PENABLE", wave: "x01..x" },
+  { name: "PRDATA", wave: "x...6x", data:"Data1"},
+  { name: "PREADY", wave: "x.0.1x" },
+  { name: "STATUS", wave: "34..53", data:"IDLE S A IDLE" },
+],
+  head: {
+    text: 'Read transfers with wait states',
+    tick: 0,
+  }}
+```
+
+&#160; &#160; &#160; &#160; 在 PREADY 保持低电平期间，以下信号保持不变:
+
+* PADDR
+* PWRITE
+* PSELx
+* PENABLE
+* PPROT
+* PAUSER
+
 
 
 ----
@@ -351,17 +372,26 @@ graph LR
         - `PPROT[1]`：Secure (0) vs Non-secure (1) 访问。
         - `PPROT[2]`：Data (0) vs Instruction (1) 访问。
     - **新增 PSTRB：** 引入字节掩码，支持稀疏数据传输，允许在32位总线上仅更新特定字节。
+5. **APB5 (AMBA 5.0)：**
 
 ### 5.1 PSTRB
 
 
-&#160; &#160; &#160; &#160; PSTRB可以理解为写入选通，1bit控制PWDATA的8bit是否能写入：
+&#160; &#160; &#160; &#160; `PSTRB`可以理解为写入选通，1bit控制`PWDATA`的8bit是否能写入：
 
 | PSTRB | 3 | 2 | 1 | 0 |
 | --- | --- | --- | --- | --- |
 | PWDATA | 31:24 | 23:16 | 15:8 | 7:0 |
 
-&#160; &#160; &#160; &#160; **读传输时，PSTRB必须全位拉低。**
+&#160; &#160; &#160; &#160; **在读传输期间，PSTRB不能跳变且所有bit必须被Requester拉低。**
+
+
+&#160; &#160; &#160; &#160; `PSTRB`是一个可选信号。Requester和Completer不一定都支持该信号，下表描述了在连接Requester和Completer时`PSTRB`的兼容性：
+
+| PSTRB | Completer: signal not present | Completer: signal present |
+| --- | --- | --- |
+| **Requester: signal not present** | 兼容，不支持Sparse writes | 兼容，所有写入数据字节通道在写入时均有效，将`PSTRB`输入端与Requester的`PWRITE`输出端连接 |
+| **Requester: signal present** | 兼容，不支持Sparse writes | 兼容，支持Sparse writes |
 
 ### 5.2 PSLVERR
 
