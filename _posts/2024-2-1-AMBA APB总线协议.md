@@ -31,6 +31,22 @@ tags:
 
 
 &#160; &#160; &#160; &#160; 版本：
+
+* **APB2：** 基础规范。固定2周期访问。
+    - **限制：** 无法处理慢速外设，若Slave处理慢，Bridge必须强制插入系统级等待，效率极低。
+* **APB3：** 引入灵活性。
+    - **新增 PREADY：** 支持反压机制。Slave可以根据自身状态自主延长访问时间，不再被动匹配2周期。
+    - **新增 PSLVERR：** 支持错误反馈。提升了复杂SoC的鲁棒性。
+* **APB4：** 增强安全性与复杂数据流支持。
+    - **新增 PPROT[2:0]：** 完善安全架构。
+        - `PPROT[0]`：Normal (0) vs Privileged (1) 访问。
+        - `PPROT[1]`：Secure (0) vs Non-secure (1) 访问。
+        - `PPROT[2]`：Data (0) vs Instruction (1) 访问。
+    - **新增 PSTRB：** 引入字节掩码，支持稀疏数据传输，允许在32位总线上仅更新特定字节。
+* **APB5：**
+
+&#160; &#160; &#160; &#160; 官方文档：
+
 * [AMBA2 APB Specification](https://developer.arm.com/documentation/ihi0011/a/)（APB2）
 * [AMBA3 APB Protocol Specification v1.0](https://developer.arm.com/documentation/ihi0024/b)（APB3）
 * [AMBA APB Protocol Specification v2.0/Issue C](https://developer.arm.com/documentation/ihi0024/c)（APB4）
@@ -178,6 +194,7 @@ tags:
   </tr>
 </table>
 
+
 ----
 
 ## 3 状态转换
@@ -205,6 +222,7 @@ graph LR
     ACCESS -->|PREADY = 0| ACCESS;
     ACCESS -->|PREADY = 1| IDLE;
 ```
+
 
 ----
 
@@ -359,20 +377,10 @@ graph LR
 
 ----
 
+
 ## 5 其他信号
 
-1. **APB2 (AMBA 2.0)：** 基础规范。固定2周期访问。
-    - **限制：** 无法处理慢速外设，若Slave处理慢，Bridge必须强制插入系统级等待，效率极低。
-2. **APB3 (AMBA 3.0)：** 引入灵活性。
-    - **新增 PREADY：** 支持反压机制。Slave可以根据自身状态自主延长访问时间，不再被动匹配2周期。
-    - **新增 PSLVERR：** 支持错误反馈。提升了复杂SoC的鲁棒性。
-3. **APB4 (AMBA 4.0)：** 增强安全性与复杂数据流支持。
-    - **新增 PPROT[2:0]：** 完善安全架构。
-        - `PPROT[0]`：Normal (0) vs Privileged (1) 访问。
-        - `PPROT[1]`：Secure (0) vs Non-secure (1) 访问。
-        - `PPROT[2]`：Data (0) vs Instruction (1) 访问。
-    - **新增 PSTRB：** 引入字节掩码，支持稀疏数据传输，允许在32位总线上仅更新特定字节。
-5. **APB5 (AMBA 5.0)：**
+
 
 ### 5.1 PSTRB
 
@@ -396,29 +404,20 @@ graph LR
 ### 5.2 PSLVERR
 
 
-&#160; &#160; &#160; &#160; PSLVERR表示从机认为写传输有错误。时序图如下：
-
-```wavedrom
-{ signal: [
-  { name: "PCLK",  wave: "p........" },
-  { name: "PADDR", wave: "x.6......", data:"Addr1"},
-  { name: "PWRITE", wave: "x.1......" },
-  { name: "PSEL", wave: "0.1....0." },
-  { name: "PENABLE", wave: "0..1...0." },
-  { name: "PWDATA", wave: "x.6....x.", data:"Data1"},
-  { name: "PREADY", wave: "x..0..1x." },
-  { name: "PSLVERR", wave: "x.....1x." },
-  { name: "STATUS", wave: "3..4..53.", data:"IDLE S A IDLE" },
-]}
-```
+&#160; &#160; &#160; &#160; `PSLVERR`可用于指示APB传输中的错误状态。读取和写入事务均可能发生错误状态。
 
 
-&#160; &#160; &#160; &#160; 写传输时，当从机任务可以接受数据时，把PREADY拉高。同时（RSEL&PENABLE&PREADY同时为高时）如果之前采集PADDR、PWDATA等信号有问题，则认为写传输有误，所以在此时把PSLVERR也拉高。主机会在下一个上升沿采集到此错误信号，得知写入错误。
+&#160; &#160; &#160; &#160; 写传输时，当从机任务可以接受数据时，把`PREADY`拉高。同时（`RSEL`&`PENABLE`&`PREADY`同时为高时）如果之前采集`PADDR`、`PWDATA`等信号有问题，则认为写传输有误，所以在此时把PSLVERR也拉高。主机会在下一个上升沿采集到此错误信号，得知写入错误。
 
 
-&#160; &#160; &#160; &#160; PSLVERR信号仅在PSEL、PENABLE与PREADY同时为HIGH的最后周期内有效。
+&#160; &#160; &#160; &#160; `PSLVERR`信号仅在`PSEL`、`PENABLE`与`PREADY`同时为HIGH的最后周期内有效。建议（但非强制要求）在`PSEL`、`PENABLE`或`PREADY`为低电平时，将`PSLVERR`拉低。
 
-&#160; &#160; &#160; &#160; 读传输也可能出现错误，表示无可读数据。
+
+&#160; &#160; &#160; &#160; 收到错误的交易可能已更改外设的状态，也可能未更改。这取决于具体的外设，两种状态均可接受。当写入交易收到错误时，这并不意味着外设内的寄存器未被更新。
+
+&#160; &#160; &#160; &#160; 收到错误的读取交易可能会返回无效数据。外设在发生读取错误时，没有要求必须将数据总线置为全 0。收到读取传输错误响应的请求方仍可使用该数据。完成方不能依赖错误响应来阻止读取 PRDATA 上的值。
+
+&#160; &#160; &#160; &#160; 完成方无需支持`PSLVERR`。如果完成方未包含`PSLVERR`，则请求方的相应输入应连接为低电平。
 
 &#160; &#160; &#160; &#160; 常见的错误有：
 * 非法地址：
@@ -444,8 +443,62 @@ graph LR
 * 调试/测试/诊断：JTAG锁定、Debug fuse关闭
 * 低功耗状态限制：retention-only、deep sleep、某些寄存器不可访问
 
+&#160; &#160; &#160; &#160; 写传输失败并伴随错误的时序图如下：
+
+```wavedrom
+{ signal: [
+  { name: "PCLK",  wave: "pP...." },
+  { name: "PADDR", wave: "x6..x", data:"Addr1"},
+  { name: "PWRITE", wave: "x1..x" },
+  { name: "PSEL", wave: "01..0" },
+  { name: "PENABLE", wave: "x01.x" },
+  { name: "PWDATA", wave: "x6..x", data:"Data1"},
+  { name: "PREADY", wave: "x.01x" },
+  { name: "PSLVERR", wave: "x..1x" },
+  { name: "STATUS", wave: "34.53", data:"IDLE S A IDLE" },
+],
+  head: {
+    text: 'Example failing write transfer',
+    tick: 0,
+  }}
+```
+
+
+
+&#160; &#160; &#160; &#160; 读取传输也可能以错误响应结束，这表明没有有效的读取数据可用：
+
+```wavedrom
+{ signal: [
+  { name: "PCLK",  wave: "pP...." },
+  { name: "PADDR", wave: "x6...x", data:"Addr1"},
+  { name: "PWRITE", wave: "x0...x" },
+  { name: "PSEL", wave: "01...0" },
+  { name: "PENABLE", wave: "x01..x" },
+  { name: "PRDATA", wave: "x....." },
+  { name: "PREADY", wave: "x.0.1x" },
+  { name: "PSLVERR", wave: "x...1x" },
+  { name: "STATUS", wave: "34..53", data:"IDLE S A IDLE" },
+],
+  head: {
+    text: 'Example failing read transfer',
+    tick: 0,
+  }}
+```
+
+
+&#160; &#160; &#160; &#160; 映射关系：
+
+* AXI->APB：`PSLVERR`上的APB错误在读取操作中映射回`RRESP`，在写入操作中映射回`BRESP`。
+* AHB->APB：对于读写操作，`PSLVERR`上的APB错误会被映射回`HRESP`。
+
+
+### 5.3 PPROT
+
+
+
 
 ----
+
 
 ## 6. 低功耗设计特性
 
