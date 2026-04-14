@@ -317,20 +317,24 @@ layout: default
 
     /* Wavedrom Center */
     .wavedrom {
-        background: rgba(255, 255, 255, 0.8) !important;
+        background: transparent !important;
         padding: 20px;
         border-radius: 12px;
         margin: 2em 0;
         overflow-x: auto;
     }
-    .wavedrom svg {
-        filter: invert(0) !important;
-    }
     .wavedrom svg path {
-        stroke: #000 !important;
+        stroke: #fff !important;
     }
     .wavedrom svg text {
-        fill: #000 !important;
+        fill: #fff !important;
+    }
+    .wavedrom svg rect {
+        fill: transparent !important;
+    }
+    /* Specific WaveDrom signal styles might need overriding if they use hardcoded colors */
+    .wavedrom svg .s3, .wavedrom svg .s4, .wavedrom svg .s5, .wavedrom svg .s6 {
+        fill: rgba(255, 255, 255, 0.1) !important;
     }
 
     /* Mobile Adaptions */
