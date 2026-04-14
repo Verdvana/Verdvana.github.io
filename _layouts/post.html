@@ -317,11 +317,20 @@ layout: default
 
     /* Wavedrom Center */
     .wavedrom {
-        background: white; /* WaveDrom is usually white-bg friendly, or add a container */
+        background: rgba(255, 255, 255, 0.8) !important;
         padding: 20px;
         border-radius: 12px;
         margin: 2em 0;
         overflow-x: auto;
+    }
+    .wavedrom svg {
+        filter: invert(0) !important;
+    }
+    .wavedrom svg path {
+        stroke: #000 !important;
+    }
+    .wavedrom svg text {
+        fill: #000 !important;
     }
 
     /* Mobile Adaptions */
