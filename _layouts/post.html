@@ -317,24 +317,15 @@ layout: default
 
     /* Wavedrom Center */
     .wavedrom {
-        background: transparent !important;
-        padding: 20px;
-        border-radius: 12px;
+        display: flex;
+        justify-content: center;
         margin: 2em 0;
         overflow-x: auto;
     }
-    .wavedrom svg path {
-        stroke: #fff !important;
-    }
-    .wavedrom svg text {
-        fill: #fff !important;
-    }
-    .wavedrom svg rect {
-        fill: transparent !important;
-    }
-    /* Specific WaveDrom signal styles might need overriding if they use hardcoded colors */
-    .wavedrom svg .s3, .wavedrom svg .s4, .wavedrom svg .s5, .wavedrom svg .s6 {
-        fill: rgba(255, 255, 255, 0.1) !important;
+    /* Force white lines for dark theme using filter - most reliable method */
+    .wavedrom svg {
+        filter: invert(1) hue-rotate(180deg) brightness(1.2) !important;
+        background: transparent !important;
     }
 
     /* Mobile Adaptions */
@@ -452,11 +443,40 @@ layout: default
         });
     }
 
+    // 2. WaveDrom Conversion
+    function convertWaveDrom() {
+        document.querySelectorAll('div.language-wavedrom, pre.language-wavedrom, .highlight.language-wavedrom').forEach((el) => {
+            if (el.hasAttribute('data-wavedrom-converted')) return;
+            const code = el.querySelector('code') || el;
+            let diagramText = code.textContent.trim();
+            
+            if (diagramText) {
+                const container = document.createElement('div');
+                container.className = 'wavedrom';
+                const script = document.createElement('script');
+                script.type = 'WaveDrom';
+                script.textContent = diagramText;
+                container.appendChild(script);
+                container.setAttribute('data-wavedrom-converted', 'true');
+                el.parentNode.insertBefore(container, el);
+                el.remove();
+                
+                if (window.WaveDrom) {
+                    try { WaveDrom.ProcessAll(); } catch(e) {}
+                }
+            }
+        });
+    }
+
     // Run conversion immediately if DOM is ready, otherwise on DOMContentLoaded
     if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', convertMermaid);
+        document.addEventListener('DOMContentLoaded', () => {
+            convertMermaid();
+            convertWaveDrom();
+        });
     } else {
         convertMermaid();
+        convertWaveDrom();
     }
 
     document.addEventListener('DOMContentLoaded', function() {
@@ -497,8 +517,8 @@ layout: default
                     if (pLangClass) lang = pLangClass.replace('language-', '').toUpperCase();
                 }
 
-                // SKIP MERMAID: Double check to ensure we don't wrap mermaid in code headers
-                if (lang === 'MERMAID' || pre.classList.contains('mermaid')) return;
+                // SKIP MERMAID & WAVEDROM: Double check to ensure we don't wrap them in code headers
+                if (lang === 'MERMAID' || pre.classList.contains('mermaid') || lang === 'WAVEDROM' || pre.classList.contains('wavedrom')) return;
 
                 const header = document.createElement('div');
                 header.className = 'code-header';
@@ -539,6 +559,9 @@ layout: default
         // Also retry mermaid conversion in case library was late
         setTimeout(convertMermaid, 500);
         setTimeout(convertMermaid, 1500);
+        // Retry wavedrom
+        setTimeout(convertWaveDrom, 500);
+        setTimeout(convertWaveDrom, 1500);
     });
 </script>
 
