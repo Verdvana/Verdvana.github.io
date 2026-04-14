@@ -4,62 +4,47 @@
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1"/>
 <title>在线加密工具箱</title>
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" referrerpolicy="no-referrer"/>
 <style>
 :root{
-  --bg:#0b0f14;--panel:rgba(255,255,255,0.06);--panel2:rgba(255,255,255,0.08);
-  --text:rgba(255,255,255,0.92);--muted:rgba(255,255,255,0.66);--faint:rgba(255,255,255,0.45);
-  --border:rgba(255,255,255,0.12);--shadow:0 18px 60px rgba(0,0,0,0.45);
-  --accent:#7aa2ff;--accent2:#7df0c4;--danger:#ff6b6b;--ok:#39d98a;--warn:#ffd166;
-  --mono:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,monospace;
-  --sans:ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial;
-  --radius:16px;
+  --bg: #0b0f14;
+  --panel: rgba(255,255,255,0.06);
+  --panel2: rgba(255,255,255,0.08);
+  --text: rgba(255,255,255,0.92);
+  --muted: rgba(255,255,255,0.66);
+  --faint: rgba(255,255,255,0.45);
+  --border: rgba(255,255,255,0.12);
+  --shadow: 0 18px 60px rgba(0,0,0,0.45);
+  --accent: #7aa2ff;
+  --accent2:#7df0c4;
+  --danger:#ff6b6b;
+  --ok:#39d98a;
+  --warn:#ffd166;
+  --mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+  --sans: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji","Segoe UI Emoji";
+  --radius: 16px;
 }
-[data-theme=light]{
-  --bg:#f6f7fb;--panel:rgba(0,0,0,0.04);--panel2:rgba(0,0,0,0.06);
-  --text:rgba(0,0,0,0.9);--muted:rgba(0,0,0,0.62);--faint:rgba(0,0,0,0.42);
-  --border:rgba(0,0,0,0.10);--shadow:0 18px 50px rgba(8,15,35,0.10);
-  --accent:#2b6dff;--accent2:#00a37a;
+@media (prefers-color-scheme: light){
+  :root{
+    --bg:#f6f7fb;
+    --panel: rgba(0,0,0,0.04);
+    --panel2: rgba(0,0,0,0.06);
+    --text: rgba(0,0,0,0.9);
+    --muted: rgba(0,0,0,0.62);
+    --faint: rgba(0,0,0,0.42);
+    --border: rgba(0,0,0,0.10);
+    --shadow: 0 18px 50px rgba(8, 15, 35, 0.10);
+    --accent:#2b6dff;
+    --accent2:#00a37a;
+  }
 }
-@media(prefers-color-scheme:light){:root:not([data-theme=dark]){
-  --bg:#f6f7fb;--panel:rgba(0,0,0,0.04);--panel2:rgba(0,0,0,0.06);
-  --text:rgba(0,0,0,0.9);--muted:rgba(0,0,0,0.62);--faint:rgba(0,0,0,0.42);
-  --border:rgba(0,0,0,0.10);--shadow:0 18px 50px rgba(8,15,35,0.10);
-  --accent:#2b6dff;--accent2:#00a37a;
-}}
+
 *{box-sizing:border-box;margin:0;padding:0;}
 body{background:radial-gradient(1200px 700px at 80% -20%,rgba(122,162,255,.22),transparent 60%),
   radial-gradient(900px 550px at 20% 0%,rgba(125,240,196,.18),transparent 55%),var(--bg);
   color:var(--text);font-family:var(--sans);line-height:1.5;min-height:100vh;}
 a{color:var(--accent);text-decoration:none;}a:hover{text-decoration:underline;}
-.layout{display:flex;min-height:100vh;}
-/* ── Sidebar ── */
-.sidebar{width:252px;min-height:100vh;background:var(--panel);border-right:1px solid var(--border);
-  display:flex;flex-direction:column;transition:width .25s ease;flex-shrink:0;position:relative;z-index:100;}
-.sidebar.collapsed{width:64px;}
-.sb-top{display:flex;align-items:center;gap:10px;padding:16px 14px;border-bottom:1px solid var(--border);}
-.sb-toggle{background:none;border:none;color:var(--muted);cursor:pointer;font-size:18px;padding:6px;
-  border-radius:8px;flex-shrink:0;transition:color .2s;}
-.sb-toggle:hover{color:var(--accent);}
-.sb-logo img{width:34px;height:34px;border-radius:50%;object-fit:cover;flex-shrink:0;}
-.sidebar.collapsed .sb-logo{display:none;}
-.sb-nav{padding:10px 8px;display:flex;flex-direction:column;gap:2px;}
-.sb-item{display:flex;align-items:center;gap:12px;padding:10px 10px;border-radius:10px;
-  color:var(--muted);font-size:14px;transition:background .18s,color .18s;white-space:nowrap;overflow:hidden;}
-.sb-item:hover{background:var(--panel2);color:var(--text);text-decoration:none;}
-.sb-item.active{background:rgba(122,162,255,.15);color:var(--accent);}
-.sb-item i{font-size:16px;flex-shrink:0;width:20px;text-align:center;}
-.sidebar.collapsed .sb-item span{display:none;}
-.sb-backdrop{display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:90;}
-@media(max-width:760px){
-  .sidebar{position:fixed;left:-252px;transition:left .25s ease;height:100vh;}
-  .sidebar.mobile-open{left:0;}
-  .sb-backdrop.show{display:block;}
-}
-/* ── Main ── */
-.main{flex:1;min-width:0;}
 .wrap{max-width:960px;margin:0 auto;padding:24px 18px 80px;}
-/* ── Topbar ── */
 .topbar{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;margin-bottom:22px;}
 .brand{display:flex;gap:12px;align-items:center;}
 .logo{width:40px;height:40px;border-radius:12px;
@@ -67,20 +52,12 @@ a{color:var(--accent);text-decoration:none;}a:hover{text-decoration:underline;}
   box-shadow:0 10px 30px rgba(0,0,0,.22);display:flex;align-items:center;justify-content:center;color:#fff;font-size:18px;}
 h1{font-size:18px;margin:0;letter-spacing:.2px;}
 .subtitle{margin:2px 0 0;color:var(--muted);font-size:13px;}
-/* ── Theme toggle ── */
-.theme-ctrl{display:flex;align-items:center;gap:10px;}
-.theme-seg{display:flex;border:1px solid var(--border);border-radius:999px;overflow:hidden;background:var(--panel);}
-.theme-seg button{background:none;border:none;color:var(--muted);padding:6px 12px;cursor:pointer;font-size:12px;
-  font-family:var(--sans);transition:background .18s,color .18s;}
-.theme-seg button.active{background:var(--accent);color:#fff;}
-/* ── Tabs ── */
 .tabs{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:22px;}
 .tab-btn{background:var(--panel);border:1px solid var(--border);color:var(--muted);
   padding:8px 16px;border-radius:999px;cursor:pointer;font-size:13px;font-family:var(--sans);
   transition:all .18s;white-space:nowrap;}
 .tab-btn:hover{color:var(--text);}
 .tab-btn.active{background:var(--accent);border-color:var(--accent);color:#fff;}
-/* ── Cards ── */
 .grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;}
 @media(max-width:700px){.grid{grid-template-columns:1fr;}}
 .card{border:1px solid var(--border);background:linear-gradient(180deg,rgba(255,255,255,.05),rgba(255,255,255,.03));
@@ -124,8 +101,6 @@ button.danger:hover{opacity:.85;}
 .tab-panel{display:none;animation:fadeIn .2s ease;}
 .tab-panel.active{display:block;}
 @keyframes fadeIn{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}
-.section-title{font-size:14px;font-weight:600;color:var(--muted);margin-bottom:12px;
-  display:flex;align-items:center;gap:8px;}
 .full-card{border:1px solid var(--border);background:linear-gradient(180deg,rgba(255,255,255,.05),rgba(255,255,255,.03));
   border-radius:var(--radius);box-shadow:var(--shadow);overflow:hidden;margin-bottom:16px;}
 .row3{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-bottom:16px;}
@@ -134,27 +109,262 @@ button.danger:hover{opacity:.85;}
 .checkbox-group label{display:flex;align-items:center;gap:5px;color:var(--text);font-size:13px;cursor:pointer;}
 .checkbox-group input[type=checkbox]{width:15px;height:15px;accent-color:var(--accent);}
 footer.foot{text-align:center;padding:24px;color:var(--faint);font-size:12px;border-top:1px solid var(--border);margin-top:40px;}
+/* ====== Theme override: manual light/dark ====== */
+    html[data-theme="dark"]{
+      --bg: #0b0f14;
+      --panel: rgba(255,255,255,0.06);
+      --panel2: rgba(255,255,255,0.08);
+      --text: rgba(255,255,255,0.92);
+      --muted: rgba(255,255,255,0.66);
+      --faint: rgba(255,255,255,0.45);
+      --border: rgba(255,255,255,0.12);
+      --shadow: 0 18px 60px rgba(0,0,0,0.45);
+      --accent: #7aa2ff;
+      --accent2:#7df0c4;
+    }
+    html[data-theme="light"]{
+      --bg:#f6f7fb;
+      --panel: rgba(0,0,0,0.04);
+      --panel2: rgba(0,0,0,0.06);
+      --text: rgba(0,0,0,0.9);
+      --muted: rgba(0,0,0,0.62);
+      --faint: rgba(0,0,0,0.42);
+      --border: rgba(0,0,0,0.10);
+      --shadow: 0 18px 50px rgba(8, 15, 35, 0.10);
+      --accent:#2b6dff;
+      --accent2:#00a37a;
+    }
+
+    /* ====== Smooth theme transition (avoid affecting input experience) ====== */
+    html.theme-transition,
+    html.theme-transition body{
+      transition: background-color .25s ease, color .25s ease;
+    }
+    html.theme-transition *:not(input):not(textarea):not(select),
+    html.theme-transition *:not(input):not(textarea):not(select)::before,
+    html.theme-transition *:not(input):not(textarea):not(select)::after{
+      transition:
+        background-color .25s ease,
+        color .25s ease,
+        border-color .25s ease,
+        box-shadow .25s ease,
+        fill .25s ease,
+        stroke .25s ease,
+        opacity .25s ease;
+    }
+    html.theme-transition input,
+    html.theme-transition textarea,
+    html.theme-transition select{
+      transition: none !important;
+    }
+
+    /* ====== iOS-like theme switch ====== */
+    .theme-switch{
+      display:flex;
+      align-items:center;
+      gap:10px;
+      user-select:none;
+    }
+    .theme-switch .label{
+      font-size:12px;
+      color: var(--muted);
+    }
+    .switch{
+      position: relative;
+      width: 44px;
+      height: 26px;
+      border-radius: 999px;
+      background: rgba(255,255,255,0.10);
+      border: 1px solid var(--border);
+      box-shadow: inset 0 0 0 1px rgba(0,0,0,0.02);
+      transition: background .2s ease, border-color .2s ease, box-shadow .2s ease;
+    }
+    @media (prefers-color-scheme: light){
+      .switch{ background: rgba(0,0,0,0.06); }
+    }
+    .switch input{
+      position:absolute;
+      inset:0;
+      opacity:0;
+      cursor:pointer;
+    }
+    .switch .knob{
+      position:absolute;
+      top: 3px;
+      left: 3px;
+      width: 20px;
+      height: 20px;
+      border-radius: 999px;
+      background: rgba(255,255,255,0.92);
+      box-shadow: 0 6px 16px rgba(0,0,0,0.22);
+      transform: translateX(0);
+      transition: transform .2s ease, background .2s ease;
+    }
+    html[data-theme="light"] .switch .knob{
+      background: rgba(255,255,255,0.98);
+    }
+    .switch input:checked ~ .knob{
+      transform: translateX(18px);
+    }
+    .switch.on{
+      background: rgba(125,240,196,0.22);
+      border-color: rgba(125,240,196,0.35);
+    }
+    .switch:focus-within{
+      box-shadow: 0 0 0 4px rgba(122,162,255,0.16);
+    }
+
+      
+
+/* ====== Left sidebar (OpenAI-like) + overlay ====== */
+.layout{
+  display:flex;
+  min-height: 100vh;
+}
+.sidebar{
+  --sb-w: 64px; /* collapsed width */
+  width: var(--sb-w);
+  flex: 0 0 var(--sb-w);
+  height: 100vh;
+  position: sticky;
+  top: 0;
+  z-index: 9998;
+  border-right: 1px solid var(--border);
+  background: rgba(255,255,255,0.04);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  display:flex;
+  flex-direction: column;
+  padding: 10px 10px;
+  gap: 10px;
+  transition: width .18s ease, flex-basis .18s ease;
+}
+html[data-theme="light"] .sidebar{
+  background: rgba(255,255,255,0.72);
+}
+.sidebar.is-expanded{ --sb-w: 252px; }
+.main{ flex: 1 1 auto; min-width: 0; }
+
+.sb-top{ display:flex; align-items:center; gap: 10px; }
+.sb-toggle{
+  width: 40px; height: 40px;
+  border-radius: 12px;
+  padding: 0;
+  display:grid; place-items:center;
+  border: 1px solid var(--border);
+  background: rgba(255,255,255,0.03);
+}
+.sb-toggle:hover{ background: rgba(255,255,255,0.07); border-color: rgba(122,162,255,0.55); }
+.sb-toggle i{ font-size: 16px; }
+
+.sb-logo{
+  width: 40px; height: 40px;
+  border-radius: 14px;
+  overflow:hidden;
+  border: 1px solid var(--border);
+  flex: 0 0 auto;
+  display:block;
+}
+.sb-logo img{ width:100%; height:100%; object-fit: cover; display:block; }
+
+.sb-nav{ display:flex; flex-direction: column; gap: 6px; padding-top: 6px; }
+.sb-item{
+  display:flex; align-items:center; gap: 12px;
+  width: 100%;
+  border-radius: 12px;
+  padding: 10px 10px;
+  border: 1px solid transparent;
+  color: var(--text);
+  background: transparent;
+  text-decoration: none;
+  cursor: pointer;
+  user-select: none;
+  transition: background .16s ease, border-color .16s ease, transform .04s ease;
+}
+.sb-item:hover{ background: rgba(255,255,255,0.06); border-color: rgba(122,162,255,0.25); }
+.sb-item:active{ transform: translateY(1px); }
+.sb-item i{ width: 20px; text-align:center; opacity: 0.92; }
+.sb-item span{ white-space: nowrap; font-size: 13px; color: var(--text); }
+
+.sidebar:not(.is-expanded) .sb-item span{ display:none; }
+.sidebar:not(.is-expanded) .sb-top{ flex-direction: column; align-items: stretch; justify-content: flex-start; }
+.sidebar:not(.is-expanded) .sb-logo{ display:block; }
+
+.sb-sep{ height: 1px; background: var(--border); margin: 6px 2px; }
+.sb-bottom{ margin-top: auto; padding-top: 6px; }
+.sb-back{ border: 1px solid var(--border); background: rgba(255,255,255,0.03); }
+.sb-back:hover{ border-color: rgba(255,209,102,0.35); background: rgba(255,209,102,0.10); }
+
+/* Backdrop overlay (mobile when expanded) */
+.sb-backdrop{
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.35);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity .16s ease;
+  z-index: 9997;
+}
+.sb-backdrop.is-active{ opacity: 1; pointer-events: auto; }
+
+/* Mobile: sidebar overlays content when expanded */
+@media (max-width: 720px){
+  .sidebar{ position: fixed; left: 0; top: 0; }
+  .main{ margin-left: 64px; }
+  .sidebar.is-expanded{ box-shadow: 0 18px 60px rgba(0,0,0,0.35); }
+  body.sb-lock-scroll{ overflow: hidden; }
+}
+
+@media print{
+  .sidebar, .sb-backdrop{ display:none; }
+  .main{ margin-left: 0; }
+}
+
+
 </style>
 </head>
 <body>
-<div class="layout">
-  <!-- Sidebar -->
-  <aside class="sidebar" id="sidebar">
+<div class="layout" id="appLayout">
+<aside class="sidebar" id="sidebar" aria-label="站点导航">
     <div class="sb-top">
-      <button class="sb-toggle" id="sbToggle" title="展开/折叠"><i class="fa-solid fa-bars"></i></button>
-      <a class="sb-logo" href="https://verdvana.cn" title="verdvana.cn"><img src="https://verdvana.cn/static/img/avatar.jpg" alt="logo"/></a>
+      <button class="sb-toggle" id="sbToggle" type="button" aria-label="展开/折叠菜单" title="展开/折叠菜单">
+        <i class="fa-solid fa-bars" aria-hidden="true"></i>
+      </button>
+      <a class="sb-logo" href="https://verdvana.cn" title="verdvana.cn">
+        <img src="https://verdvana.cn/static/img/avatar.jpg" alt="logo" />
+      </a>
     </div>
-    <nav class="sb-nav">
-      <a class="sb-item" href="https://verdvana.cn" title="主页"><i class="fa-solid fa-home"></i><span>主页</span></a>
-      <a class="sb-item" href="https://verdvana.cn/archive/" title="博文"><i class="fa-solid fa-archive"></i><span>博文</span></a>
-      <a class="sb-item" href="https://verdvana.cn/tags/" title="分类"><i class="fa-solid fa-tags"></i><span>分类</span></a>
-      <a class="sb-item active" href="#" title="工具箱"><i class="fa-solid fa-toolbox"></i><span>工具箱</span></a>
-      <a class="sb-item" href="https://verdvana.cn/about/" title="关于"><i class="fa-solid fa-user"></i><span>关于</span></a>
+
+    <nav class="sb-nav" aria-label="快捷入口">
+      <a class="sb-item" href="https://verdvana.cn" title="主页">
+        <i class="fa-solid fa-home" aria-hidden="true"></i><span>主页</span>
+      </a>
+      <a class="sb-item" href="https://verdvana.cn/archive/" title="博文">
+        <i class="fa-solid fa-archive" aria-hidden="true"></i><span>博文</span>
+      </a>
+      <a class="sb-item" href="https://verdvana.cn/tags/" title="分类">
+        <i class="fa-solid fa-tags" aria-hidden="true"></i><span>分类</span>
+      </a>
+      <a class="sb-item" href="https://verdvana.cn/comments/" title="留言">
+        <i class="fa-solid fa-comments" aria-hidden="true"></i><span>留言</span>
+      </a>
+      <a class="sb-item" href="https://verdvana.cn/merger/" title="打赏">
+        <i class="fa-solid fa-coffee" aria-hidden="true"></i><span>打赏</span>
+      </a>
+      <a class="sb-item" href="https://verdvana.cn/labs/" title="更多">
+        <i class="fa-solid fa-flask" aria-hidden="true"></i><span>更多</span>
+      </a>
+      <div class="sb-sep" role="separator" aria-hidden="true"></div>
     </nav>
+
+    <div class="sb-bottom">
+      <button class="sb-item sb-back" id="sbBack" type="button" title="返回上一级">
+        <i class="fa-solid fa-arrow-left" aria-hidden="true"></i><span>返回上一级</span>
+      </button>
+    </div>
   </aside>
-  <div class="sb-backdrop" id="sbBackdrop"></div>
-  <!-- Main -->
-  <div class="main">
+<div class="sb-backdrop" id="sbBackdrop" aria-hidden="true"></div>
+  <main class="main" id="mainContent">
     <div class="wrap">
       <!-- Topbar -->
       <div class="topbar">
@@ -162,17 +372,21 @@ footer.foot{text-align:center;padding:24px;color:var(--faint);font-size:12px;bor
           <div class="logo"><i class="fa-solid fa-lock"></i></div>
           <div>
             <h1>在线加密工具箱</h1>
-            <p class="subtitle">纯客户端 · 数据不上传 · 支持哈希/对称/编码/JWT等</p>
+            <p class="subtitle">纯客户端 · 数据不上传 · 支持哈希 / 对称加密 / 编解码 / JWT 等</p>
           </div>
         </div>
-        <div class="theme-ctrl">
-          <div class="theme-seg">
-            <button onclick="setTheme('system')" id="ts-system">自动</button>
-            <button onclick="setTheme('light')" id="ts-light">浅色</button>
-            <button onclick="setTheme('dark')" id="ts-dark">深色</button>
-          </div>
+        <div style="display:flex; gap:12px; align-items:center; flex-wrap:wrap; justify-content:flex-end;">
+      <div class="theme-switch">
+        <span class="label" id="themeLabel">系统</span>
+        <div class="switch" id="themeSwitchWrap" title="切换明暗模式（Alt/Option 点击或长按可切回系统）">
+          <input id="themeToggle" type="checkbox" aria-label="切换明暗模式">
+          <span class="knob" aria-hidden="true"></span>
         </div>
       </div>
+
+    </div>
+      </div>
+
       <!-- Tabs -->
       <div class="tabs">
         <button class="tab-btn active" onclick="switchTab('hash',this)"><i class="fa-solid fa-hashtag"></i> 哈希</button>
@@ -383,7 +597,6 @@ footer.foot{text-align:center;padding:24px;color:var(--faint);font-size:12px;bor
       <!-- Panel 8: Random -->
       <div class="tab-panel" id="p-rand">
         <div class="row3">
-          <!-- UUID -->
           <div class="card">
             <div class="hd"><div class="dot"></div><h3>UUID v4 生成</h3></div>
             <div class="bd">
@@ -393,7 +606,6 @@ footer.foot{text-align:center;padding:24px;color:var(--faint);font-size:12px;bor
               <div class="toolbar"><button class="copy-btn" style="padding:6px 14px;" onclick="copyText(document.getElementById('uuid-out').textContent,this)">复制</button></div>
             </div>
           </div>
-          <!-- Random bytes -->
           <div class="card">
             <div class="hd"><div class="dot"></div><h3>随机字节</h3></div>
             <div class="bd">
@@ -404,7 +616,6 @@ footer.foot{text-align:center;padding:24px;color:var(--faint);font-size:12px;bor
               <div class="toolbar"><button class="copy-btn" style="padding:6px 14px;" onclick="copyText(document.getElementById('rbytes-out').textContent,this)">复制</button></div>
             </div>
           </div>
-          <!-- Password -->
           <div class="card">
             <div class="hd"><div class="dot"></div><h3>随机密码</h3></div>
             <div class="bd">
@@ -427,33 +638,10 @@ footer.foot{text-align:center;padding:24px;color:var(--faint);font-size:12px;bor
 
       <footer class="foot"><i class="fa-solid fa-shield-halved"></i> 所有操作均在浏览器本地完成，数据不会上传至任何服务器。</footer>
     </div>
-  </div>
+  </main>
 </div>
 <script>
-// ── Theme ──
-function setTheme(t){
-  localStorage.setItem('theme',t);
-  const root=document.documentElement;
-  if(t==='dark') root.setAttribute('data-theme','dark');
-  else if(t==='light') root.setAttribute('data-theme','light');
-  else root.removeAttribute('data-theme');
-  ['system','light','dark'].forEach(x=>document.getElementById('ts-'+x).classList.toggle('active',x===t));
-}
-(function(){setTheme(localStorage.getItem('theme')||'system');})();
-
-// ── Sidebar ──
-const sb=document.getElementById('sidebar');
-const sbBtn=document.getElementById('sbToggle');
-const sbBd=document.getElementById('sbBackdrop');
-let expanded=true;
-function toggleSidebar(){
-  if(window.innerWidth<=760){sb.classList.toggle('mobile-open');sbBd.classList.toggle('show');}
-  else{expanded=!expanded;sb.classList.toggle('collapsed',!expanded);}
-}
-sbBtn.addEventListener('click',toggleSidebar);
-sbBd.addEventListener('click',()=>{sb.classList.remove('mobile-open');sbBd.classList.remove('show');});
-
-// ── Tabs ──
+// ── Tab switching ──
 function switchTab(id,btn){
   document.querySelectorAll('.tab-panel').forEach(p=>p.classList.remove('active'));
   document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
@@ -539,7 +727,6 @@ function md5(str){
     for(let i=0;i<bin.length*4;i++)s+=hex[(bin[i>>2]>>(i%4*8+4))&0xf]+hex[(bin[i>>2]>>(i%4*8))&0xf];
     return s;
   }
-  // encode to latin1 for MD5
   const uriEnc=unescape(encodeURIComponent(str));
   return binl2hex(coreMD5(str2blks(uriEnc),uriEnc.length*8));
 }
@@ -562,9 +749,7 @@ async function calcHash(){
   const text=document.getElementById('hash-input').value;
   const enc=document.getElementById('hash-enc').value;
   if(!text){alert('请输入文本');return;}
-  // MD5 (pure JS, always UTF-8 style)
   document.getElementById('r-md5').textContent=md5(text);
-  // SubtleCrypto hashes
   const buf=encodeText(text,enc);
   for(const [name,id] of[['SHA-1','r-sha1'],['SHA-256','r-sha256'],['SHA-384','r-sha384'],['SHA-512','r-sha512']]){
     try{
@@ -588,7 +773,7 @@ async function calcHMAC(){
   }catch(e){el.textContent='错误: '+e.message;}
 }
 
-// ── AES (key derived via PBKDF2) ──
+// ── AES (PBKDF2 key derivation) ──
 async function doAES(){
   const op=document.getElementById('aes-op').value;
   const input=document.getElementById('aes-input').value.trim();
@@ -601,7 +786,6 @@ async function doAES(){
   errEl.style.display='none';outEl.value='';
   if(!input||!pass){errMsg.textContent='请填写内容和密码';errEl.style.display='flex';return;}
   try{
-    // Derive key from password using PBKDF2 with fixed salt (for demo purposes)
     const salt=new TextEncoder().encode('CryptoToolboxSalt2024');
     const baseKey=await crypto.subtle.importKey('raw',new TextEncoder().encode(pass),'PBKDF2',false,['deriveKey']);
     const key=await crypto.subtle.deriveKey(
@@ -611,7 +795,6 @@ async function doAES(){
     if(op==='enc'){
       const iv=crypto.getRandomValues(new Uint8Array(mode==='AES-GCM'?12:16));
       const ct=await crypto.subtle.encrypt({name:mode,iv:iv},key,new TextEncoder().encode(input));
-      // Pack: iv || ciphertext → base64
       const combined=new Uint8Array(iv.length+ct.byteLength);
       combined.set(iv);combined.set(new Uint8Array(ct),iv.length);
       outEl.value=btoa(String.fromCharCode(...combined));
@@ -642,7 +825,6 @@ function b64Decode(){
   try{document.getElementById('b64-output').value=decodeURIComponent(escape(atob(text)));}
   catch(e){document.getElementById('b64-output').value='解码错误: '+e.message;}
 }
-// File to Base64
 document.getElementById('b64-file').addEventListener('change',function(){
   const file=this.files[0];if(!file)return;
   const reader=new FileReader();
@@ -690,7 +872,6 @@ function parseJWT(){
   function b64url(s){s=s.replace(/-/g,'+').replace(/_/g,'/');while(s.length%4)s+='=';try{return JSON.parse(atob(s));}catch{return null;}}
   const header=b64url(parts[0]),payload=b64url(parts[1]);
   if(!header||!payload){out.innerHTML='<div class="badge err">JWT 解析失败，请检查格式</div>';return;}
-  // Check expiry
   let expBadge='';
   if(payload.exp){
     const now=Math.floor(Date.now()/1000);
@@ -738,6 +919,169 @@ function genPassword(){
   const rnd=crypto.getRandomValues(new Uint32Array(len));
   document.getElementById('pwd-out').textContent=Array.from(rnd).map(v=>cset[v%cset.length]).join('');
 }
+
+// ── Theme (exact from reference) ──
+(function initTheme(){
+    const KEY = "verdvana_theme"; // 'system' | 'light' | 'dark'
+    const html = document.documentElement;
+    const toggle = document.getElementById("themeToggle");
+    const label = document.getElementById("themeLabel");
+    const wrap = document.getElementById("themeSwitchWrap");
+
+    if(!toggle || !label || !wrap) return;
+
+    const systemPrefersDark = () =>
+      window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches;
+
+    function withTransition(fn){
+      html.classList.add("theme-transition");
+      try{ fn(); } finally{
+        window.setTimeout(()=> html.classList.remove("theme-transition"), 280);
+      }
+    }
+
+    function apply(mode){
+      // mode: 'system' | 'light' | 'dark'
+      if(mode === "system"){
+        html.removeAttribute("data-theme"); // let CSS prefers-color-scheme decide
+        toggle.checked = systemPrefersDark();
+        label.textContent = "系统";
+      }else{
+        html.setAttribute("data-theme", mode);
+        toggle.checked = (mode === "dark");
+        label.textContent = (mode === "dark") ? "深色" : "浅色";
+      }
+      if(toggle.checked) wrap.classList.add("on");
+      else wrap.classList.remove("on");
+    }
+
+    function getSaved(){
+      return localStorage.getItem(KEY) || "system";
+    }
+    function save(mode){
+      localStorage.setItem(KEY, mode);
+    }
+
+    // 初始
+    apply(getSaved());
+
+    // 监听系统主题变化：仅当当前为 system 时跟随
+    const mql = window.matchMedia("(prefers-color-scheme: dark)");
+    const onSystemChange = () => {
+      if(getSaved() === "system") withTransition(()=>apply("system"));
+    };
+    if(mql && mql.addEventListener) mql.addEventListener("change", onSystemChange);
+    else if(mql && mql.addListener) mql.addListener(onSystemChange);
+
+    // 点击开关：浅色 ↔ 深色；按住 Alt/Option 点击 -> 切回 system
+    toggle.addEventListener("click", (e) => {
+      const alt = e.altKey;
+      if(alt){
+        save("system");
+        withTransition(()=>apply("system"));
+        return;
+      }
+      const next = toggle.checked ? "dark" : "light";
+      save(next);
+      withTransition(()=>apply(next));
+    });
+
+    // 长按（移动端）也切回 system：800ms
+    let pressTimer = null;
+    wrap.addEventListener("pointerdown", () => {
+      pressTimer = setTimeout(() => {
+        save("system");
+        withTransition(()=>apply("system"));
+        wrap.title = "已切回：系统";
+        setTimeout(()=> wrap.title = "切换明暗模式（Alt/Option 点击或长按可切回系统）", 1200);
+      }, 800);
+    });
+    wrap.addEventListener("pointerup", () => { if(pressTimer) clearTimeout(pressTimer); });
+    wrap.addEventListener("pointercancel", () => { if(pressTimer) clearTimeout(pressTimer); });
+  })();
+
+// ── Sidebar (exact from reference) ──
+(function initSidebar(){
+  const sb = document.getElementById('sidebar');
+  const btn = document.getElementById('sbToggle');
+  const back = document.getElementById('sbBack');
+  const backdrop = document.getElementById('sbBackdrop');
+  if(!sb || !btn) return;
+
+  // Default: collapsed
+  sb.classList.remove('is-expanded');
+
+  const mq = window.matchMedia ? window.matchMedia('(max-width: 720px)') : null;
+  const isMobile = () => mq ? mq.matches : (window.innerWidth <= 720);
+
+  function setIcon(){
+    const icon = btn.querySelector('i');
+    if(!icon) return;
+    icon.className = sb.classList.contains('is-expanded')
+      ? 'fa-solid fa-chevron-left'
+      : 'fa-solid fa-bars';
+  }
+
+  function syncOverlay(){
+    const active = sb.classList.contains('is-expanded') && isMobile();
+    if(backdrop) backdrop.classList.toggle('is-active', active);
+    document.body.classList.toggle('sb-lock-scroll', active);
+  }
+
+  function collapse(){
+    sb.classList.remove('is-expanded');
+    setIcon();
+    syncOverlay();
+  }
+
+  setIcon();
+  syncOverlay();
+
+  btn.addEventListener('click', () => {
+    sb.classList.toggle('is-expanded');
+    setIcon();
+    syncOverlay();
+  });
+
+  // click overlay to close
+  if(backdrop){
+    backdrop.addEventListener('click', collapse);
+    backdrop.addEventListener('touchstart', collapse, {passive:true});
+  }
+
+  // ESC to close (mobile expanded)
+  window.addEventListener('keydown', (e) => {
+    if(e.key === 'Escape' && sb.classList.contains('is-expanded') && isMobile()) collapse();
+  });
+
+  // resize sync
+  window.addEventListener('resize', syncOverlay);
+  if(mq && mq.addEventListener) mq.addEventListener('change', syncOverlay);
+  else if(mq && mq.addListener) mq.addListener(syncOverlay);
+
+  // Back: prefer history; fallback to parent path; final fallback to labs
+  if(back){
+    back.addEventListener('click', () => {
+      try{
+        if(history.length > 1){
+          history.back();
+          return;
+        }
+      }catch(e){}
+      try{
+        const u = new URL(window.location.href);
+        let p = u.pathname.replace(/\/+$/, '');
+        const idx = p.lastIndexOf('/');
+        if(idx > 0){
+          u.pathname = p.slice(0, idx + 1);
+          window.location.assign(u.toString());
+          return;
+        }
+      }catch(e){}
+      window.location.assign('https://verdvana.cn/labs/');
+    });
+  }
+})();
 </script>
 </body>
 </html>
