@@ -331,6 +331,12 @@ layout: default
         filter: invert(1) hue-rotate(180deg) brightness(1.2) !important;
         background: transparent !important;
     }
+    /* Enhance WaveDrom grid lines (vertical dashed lines) */
+    .wavedrom svg path[stroke-dasharray], 
+    script[type="WaveDrom"] + svg path[stroke-dasharray] {
+        stroke: #666 !important; /* Lighter color after inversion */
+        stroke-width: 0.5px !important;
+    }
 
     /* Mobile Adaptions */
     @media (max-width: 900px) {
