@@ -1,11 +1,12 @@
 <!DOCTYPE html>
+
 <html lang="zh-CN">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>VisionMatrix 视觉阵列转换器</title>
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" referrerpolicy="no-referrer" />
-    <style>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>VisionMatrix 视觉阵列转换器</title>
+<link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" referrerpolicy="no-referrer" rel="stylesheet"/>
+<style>
         :root {
             --primary-color: #007aff;
             --bg-gradient: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
@@ -31,27 +32,18 @@
         body {
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
             background: var(--bg-gradient); background-attachment: fixed;
-            color: var(--text-color); margin: 0; padding: 20px;
+            color: var(--text-color); margin: 0; padding: 80px 20px 20px 20px;
             min-height: 100vh; display: flex; justify-content: center;
+        
+            padding-top: 80px;
         }
 
         .container { width: 100%; max-width: 900px; z-index: 1; }
 
         /* iOS Switch */
         header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px; }
-        .ios-switch-label { display: flex; align-items: center; gap: 12px; cursor: pointer; font-size: 14px; font-weight: 500; }
-        .switch { position: relative; width: 51px; height: 31px; }
-        .switch input { opacity: 0; width: 0; height: 0; }
-        .slider {
-            position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0;
-            background-color: var(--switch-bg); transition: .4s; border-radius: 34px;
-        }
-        .slider:before {
-            position: absolute; content: ""; height: 27px; width: 27px; left: 2px; bottom: 2px;
-            background-color: white; transition: .4s; border-radius: 50%; box-shadow: 0 3px 8px rgba(0,0,0,0.15);
-        }
-        input:checked + .slider { background-color: #34c759; }
-        input:checked + .slider:before { transform: translateX(20px); }
+        input:checked +
+        input:checked +
 
         /* Card Style */
         .card {
@@ -87,97 +79,118 @@
         .blob { position: fixed; width: 400px; height: 400px; background: var(--primary-color); filter: blur(100px); border-radius: 50%; z-index: -1; opacity: 0.1; }
     </style>
 
-<style id="vv-sidebar-compat">
-/* When Verdvana sidebar is mounted, let main handle centering/padding */
-body.vv-has-sidebar{ display:block; justify-content: initial; padding:0; }
-body.vv-has-sidebar .vv-main{ padding:20px; display:flex; justify-content:center; }
-body.vv-has-sidebar .vv-main > .container{ width:100%; max-width:900px; }
-</style>
+<style>
+        /* ── Fixed Navigation (from index.html) ────────────────────── */
+        nav {
+            position: fixed; top: 0; width: 100%;
+            padding: 20px 40px;
+            display: flex; justify-content: space-between; align-items: center;
+            z-index: 1000;
+            background: rgba(0, 0, 0, 0.7);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        nav .logo-area { display: flex; align-items: center; gap: 12px; text-decoration: none; color: white; }
+        nav .logo-area img { width: 32px; height: 32px; border-radius: 50%; border: 1px solid rgba(255,255,255,0.1); object-fit: cover; }
+        nav .logo { font-size: 18px; font-weight: 700; letter-spacing: -0.5px; }
+        nav .nav-links { display: flex; gap: 30px; }
+        nav a { text-decoration: none; color: #ffffff; font-size: 14px; font-weight: 500; transition: color 0.2s; }
+        nav a:hover { color: #8e8e93; }
 
-</head>
-<body>
-
+        /* ── Floating Back Button ───────────────────────────────────── */
+        #fabBack {
+            position: fixed; bottom: 32px; right: 32px; z-index: 999;
+            width: 52px; height: 52px; border-radius: 50%;
+            background: #0071e3; border: none; color: #fff;
+            font-size: 18px; cursor: pointer;
+            box-shadow: 0 8px 24px rgba(0,113,227,0.45);
+            display: flex; align-items: center; justify-content: center;
+            transition: background 0.2s, transform 0.15s, box-shadow 0.2s;
+        }
+        #fabBack:hover { background: #0077ed; transform: translateY(-2px); box-shadow: 0 12px 30px rgba(0,113,227,0.55); }
+        #fabBack:active { transform: translateY(0); }
+</style></head>
+<body data-theme="dark"><nav>
+<a class="logo-area" href="/">
+<img alt="Verdvana" src="/static/img/avatar.jpg"/>
+<span class="logo">VERDVANA</span>
+</a>
+<div class="nav-links">
+<a href="/archive">Blog</a>
+<a href="/labs">Labs</a>
+<a href="/comments">Comments</a>
+<a href="https://github.com/Verdvana">GitHub</a>
+</div>
+</nav>
 <div class="blob" style="top: -150px; left: -100px;"></div>
 <div class="blob" style="bottom: -150px; right: -100px; background: #ff3b30;"></div>
-
 <div class="container">
-    <header>
-        <div>
-            <h1 style="margin:0; font-size: 24px; letter-spacing: -0.5px;">VisionMatrix 视觉阵列转换器</h1>
-            <p style="margin:4px 0 0; opacity: 0.5; font-size: 13px;">Base64 · 字符画 · 多位深RGB/灰度点阵</p>
-        </div>
-        <label class="ios-switch-label">
-            <span id="theme-text">深色</span>
-            <div class="switch">
-                <input type="checkbox" id="theme-toggle" onchange="toggleTheme()">
-                <span class="slider"></span>
-            </div>
-        </label>
-    </header>
-
-    <div class="card">
-        <div class="upload-area" onclick="document.getElementById('fileInput').click()">
-            <p id="upload-text" style="margin:0">点击上传或拖拽图片到此区域，或直接Ctrl/Command+V粘贴剪贴板中的图片</p>
-            <input type="file" id="fileInput" accept="image/*" style="display:none">
-        </div>
-    </div>
-
-    <div id="result-container" class="hidden">
-        <div class="card">
-            <div class="section-title">Base64 编码 <button onclick="copyText('base64-output')">复制</button></div>
-            <textarea id="base64-output" readonly></textarea>
-        </div>
-
-        <div class="card">
-            <div class="section-title">ASCII 字符画 <button onclick="copyText('ascii-preview', true)">复制</button></div>
-            <div class="controls">
-                <div class="control-group">
-                    <label>宽度: <span id="ascii-w-val">100</span></label>
-                    <input type="range" id="ascii-w" min="40" max="250" value="100" oninput="updateAll()">
-                </div>
-                <div class="control-group">
-                    <label>操作</label>
-                    <button class="secondary" onclick="document.getElementById('ascii-preview').style.filter = (document.getElementById('ascii-preview').style.filter === 'invert(1)') ? 'invert(0)' : 'invert(1)'">反相显示</button>
-                </div>
-            </div>
-            <div id="ascii-preview"></div>
-        </div>
-
-        <div class="card">
-            <div class="section-title">灰度亮点矩阵 <button onclick="copyText('gray-code')">复制代码</button></div>
-            <div class="preview-container"><canvas id="gray-canvas"></canvas></div>
-            <div class="controls">
-                <div class="control-group">
-                    <label>宽度: <span id="gray-w-val">32</span></label>
-                    <input type="range" id="gray-w" min="8" max="128" value="32" oninput="updateAll()">
-                </div>
-                <div class="control-group">
-                    <label>位深 (Bit)</label>
-                    <select id="gray-bit" onchange="updateAll()">
-                        <option value="1">1-bit (黑白)</option>
-                        <option value="2">2-bit (4级灰度)</option>
-                        <option value="4" selected>4-bit (16级灰度)</option>
-                        <option value="8">8-bit (256级灰度)</option>
-                    </select>
-                </div>
-            </div>
-            <textarea id="gray-code" readonly placeholder="C语言代码..."></textarea>
-        </div>
-
-        <div class="card">
-            <div class="section-title">RGB 亮点矩阵 <button onclick="copyText('rgb-code')">复制代码</button></div>
-            <div class="preview-container"><canvas id="rgb-canvas"></canvas></div>
-            <div class="controls" style="grid-template-columns: repeat(4, 1fr);">
-                <div class="control-group"><label>宽度: <span id="rgb-w-val">32</span></label><input type="range" id="rgb-w" min="8" max="128" value="32" oninput="updateAll()"></div>
-                <div class="control-group"><label>R 位</label><select id="r-bit" onchange="updateAll()"></select></div>
-                <div class="control-group"><label>G 位</label><select id="g-bit" onchange="updateAll()"></select></div>
-                <div class="control-group"><label>B 位</label><select id="b-bit" onchange="updateAll()"></select></div>
-            </div>
-            <textarea id="rgb-code" readonly placeholder="C语言代码..."></textarea>
-        </div>
-    </div>
+<header>
+<div>
+<h1 style="margin:0; font-size: 24px; letter-spacing: -0.5px;">VisionMatrix 视觉阵列转换器</h1>
+<p style="margin:4px 0 0; opacity: 0.5; font-size: 13px;">Base64 · 字符画 · 多位深RGB/灰度点阵</p>
 </div>
 
+</header>
+<div class="card">
+<div class="upload-area" onclick="document.getElementById('fileInput').click()">
+<p id="upload-text" style="margin:0">点击上传或拖拽图片到此区域，或直接Ctrl/Command+V粘贴剪贴板中的图片</p>
+<input accept="image/*" id="fileInput" style="display:none" type="file"/>
+</div>
+</div>
+<div class="hidden" id="result-container">
+<div class="card">
+<div class="section-title">Base64 编码 <button onclick="copyText('base64-output')">复制</button></div>
+<textarea id="base64-output" readonly=""></textarea>
+</div>
+<div class="card">
+<div class="section-title">ASCII 字符画 <button onclick="copyText('ascii-preview', true)">复制</button></div>
+<div class="controls">
+<div class="control-group">
+<label>宽度: <span id="ascii-w-val">100</span></label>
+<input id="ascii-w" max="250" min="40" oninput="updateAll()" type="range" value="100"/>
+</div>
+<div class="control-group">
+<label>操作</label>
+<button class="secondary" onclick="document.getElementById('ascii-preview').style.filter = (document.getElementById('ascii-preview').style.filter === 'invert(1)') ? 'invert(0)' : 'invert(1)'">反相显示</button>
+</div>
+</div>
+<div id="ascii-preview"></div>
+</div>
+<div class="card">
+<div class="section-title">灰度亮点矩阵 <button onclick="copyText('gray-code')">复制代码</button></div>
+<div class="preview-container"><canvas id="gray-canvas"></canvas></div>
+<div class="controls">
+<div class="control-group">
+<label>宽度: <span id="gray-w-val">32</span></label>
+<input id="gray-w" max="128" min="8" oninput="updateAll()" type="range" value="32"/>
+</div>
+<div class="control-group">
+<label>位深 (Bit)</label>
+<select id="gray-bit" onchange="updateAll()">
+<option value="1">1-bit (黑白)</option>
+<option value="2">2-bit (4级灰度)</option>
+<option selected="" value="4">4-bit (16级灰度)</option>
+<option value="8">8-bit (256级灰度)</option>
+</select>
+</div>
+</div>
+<textarea id="gray-code" placeholder="C语言代码..." readonly=""></textarea>
+</div>
+<div class="card">
+<div class="section-title">RGB 亮点矩阵 <button onclick="copyText('rgb-code')">复制代码</button></div>
+<div class="preview-container"><canvas id="rgb-canvas"></canvas></div>
+<div class="controls" style="grid-template-columns: repeat(4, 1fr);">
+<div class="control-group"><label>宽度: <span id="rgb-w-val">32</span></label><input id="rgb-w" max="128" min="8" oninput="updateAll()" type="range" value="32"/></div>
+<div class="control-group"><label>R 位</label><select id="r-bit" onchange="updateAll()"></select></div>
+<div class="control-group"><label>G 位</label><select id="g-bit" onchange="updateAll()"></select></div>
+<div class="control-group"><label>B 位</label><select id="b-bit" onchange="updateAll()"></select></div>
+</div>
+<textarea id="rgb-code" placeholder="C语言代码..." readonly=""></textarea>
+</div>
+</div>
+</div>
 <script>
     const fileInput = document.getElementById('fileInput');
     let originalImg = new Image();
@@ -355,357 +368,16 @@ body.vv-has-sidebar .vv-main > .container{ width:100%; max-width:900px; }
     }
 </script>
 
-
-
-<script>
-/*! Verdvana Sidebar Pack (Inject Mode / 方式B) */
-(function () {
-  const CONFIG = {
-    logoUrl: "https://verdvana.cn/static/img/avatar.jpg",
-    homeUrl: "https://verdvana.cn",
-    fallbackBackUrl: "https://verdvana.cn/labs/",
-    rememberState: false,
-    storageKey: "vv_sidebar_expanded",
-    collapsedWidth: 64,
-    expandedWidth: 252,
-    mobileBreakpoint: 720,
-    overlayOpacity: 0.35,
-    // 若本页主体容器固定，可指定：
-    // targetSelector: ".container",
-    items: [
-      { text: "主页", href: "https://verdvana.cn",           icon: "fa-home" },
-      { text: "博文", href: "https://verdvana.cn/archive/",  icon: "fa-archive" },
-      { text: "分类", href: "https://verdvana.cn/tags/",     icon: "fa-tags" },
-      { text: "留言", href: "https://verdvana.cn/comments/", icon: "fa-comments" },
-      { text: "打赏", href: "https://verdvana.cn/merger/",   icon: "fa-coffee" },
-      { text: "更多", href: "https://verdvana.cn/labs/",     icon: "fa-flask" }
-    ]
-  };
-
-  function ensureFontAwesome() {
-    const id = "vv-fa-css";
-    if (document.getElementById(id)) return;
-    const already = [...document.querySelectorAll('link[rel="stylesheet"]')]
-      .some(l => (l.href || "").includes("font-awesome") || (l.href || "").includes("all.min.css"));
-    if (already) return;
-    const link = document.createElement("link");
-    link.id = id;
-    link.rel = "stylesheet";
-    link.href = "https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css";
-    link.referrerPolicy = "no-referrer";
-    document.head.appendChild(link);
-  }
-
-  function injectCSS() {
-    const id = "vv-sidebar-style";
-    if (document.getElementById(id)) return;
-    const style = document.createElement("style");
-    style.id = id;
-    style.textContent = `
-/* ===== Verdvana Sidebar (Inject) ===== */
-.vv-layout{ display:flex; min-height:100vh; }
-.vv-sidebar{
-  --vv-sb-w: ${CONFIG.collapsedWidth}px;
-  width: var(--vv-sb-w);
-  flex: 0 0 var(--vv-sb-w);
-  height: 100vh;
-  position: sticky;
-  top: 0;
-  z-index: 9998;
-  border-right: 1px solid var(--border-color, rgba(255,255,255,0.25));
-  background: rgba(255,255,255,0.35);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  display:flex;
-  flex-direction: column;
-  padding: 10px;
-  gap: 10px;
-  transition: width .18s ease, flex-basis .18s ease;
-}
-[data-theme="dark"] .vv-sidebar{ background: rgba(28,28,30,0.55); }
-.vv-sidebar.is-expanded{ --vv-sb-w: ${CONFIG.expandedWidth}px; }
-.vv-main{ flex: 1 1 auto; min-width:0; }
-
-.vv-sb-top{ display:flex; align-items:center; gap:10px; }
-.vv-sb-toggle{
-  width: 40px; height: 40px;
-  border-radius: 12px;
-  padding: 0;
-  display:grid; place-items:center;
-  border: 1px solid var(--border-color, rgba(255,255,255,0.25));
-  background: rgba(255,255,255,0.20);
-  color: var(--text-color, #1d1d1f);
-  cursor: pointer;
-}
-[data-theme="dark"] .vv-sb-toggle{ background: rgba(255,255,255,0.08); color: var(--text-color, #f5f5f7); }
-.vv-sb-toggle:hover{ border-color: rgba(122,162,255,0.55); }
-
-.vv-sb-logo{
-  width: 40px; height: 40px;
-  border-radius: 14px;
-  overflow:hidden;
-  border: 1px solid var(--border-color, rgba(255,255,255,0.25));
-  display:block;
-}
-.vv-sb-logo img{ width:100%; height:100%; object-fit:cover; display:block; }
-
-.vv-sb-nav{ display:flex; flex-direction:column; gap:6px; padding-top:6px; }
-.vv-sb-item{
-  display:flex; align-items:center; gap:12px;
-  width:100%;
-  border-radius: 12px;
-  padding: 10px 10px;
-  border: 1px solid transparent;
-  color: var(--text-color, #1d1d1f);
-  background: transparent;
-  text-decoration:none;
-  cursor:pointer;
-  user-select:none;
-  transition: background .16s ease, border-color .16s ease, transform .04s ease;
-}
-[data-theme="dark"] .vv-sb-item{ color: var(--text-color, #f5f5f7); }
-.vv-sb-item:hover{ background: rgba(255,255,255,0.20); border-color: rgba(122,162,255,0.25); }
-[data-theme="dark"] .vv-sb-item:hover{ background: rgba(255,255,255,0.08); }
-.vv-sb-item:active{ transform: translateY(1px); }
-.vv-sb-item i{ width: 20px; text-align:center; opacity:.92; }
-.vv-sb-item span{ white-space:nowrap; font-size:13px; }
-
-.vv-sidebar:not(.is-expanded) .vv-sb-item span{ display:none; }
-.vv-sidebar:not(.is-expanded) .vv-sb-top{ flex-direction: column; align-items: stretch; }
-
-.vv-sb-sep{ height:1px; background: var(--border-color, rgba(255,255,255,0.25)); margin:6px 2px; }
-.vv-sb-bottom{ margin-top:auto; padding-top:6px; }
-.vv-sb-back{ border: 1px solid var(--border-color, rgba(255,255,255,0.25)); background: rgba(255,255,255,0.18); }
-[data-theme="dark"] .vv-sb-back{ background: rgba(255,255,255,0.08); }
-
-/* Backdrop (overlay) - activated on mobile when sidebar expanded */
-.vv-backdrop{
-  position: fixed;
-  inset: 0;
-  background: rgba(0,0,0, ${CONFIG.overlayOpacity});
-  opacity: 0;
-  pointer-events: none;
-  transition: opacity .16s ease;
-  z-index: 9997;
-}
-.vv-backdrop.is-active{ opacity: 1; pointer-events: auto; }
-
-@media (max-width: ${CONFIG.mobileBreakpoint}px){
-  .vv-sidebar{ position: fixed; left: 0; top: 0; }
-  .vv-main{ margin-left: ${CONFIG.collapsedWidth}px; }
-  .vv-sidebar.is-expanded{ box-shadow: 0 18px 60px rgba(0,0,0,0.35); }
-  body.vv-lock-scroll{ overflow: hidden; }
-}
-@media print{ .vv-sidebar, .vv-backdrop{ display:none; } .vv-main{ margin-left:0; } }
-`;
-    document.head.appendChild(style);
-  }
-
-  function buildSidebar() {
-    const layout = document.createElement("div");
-    layout.className = "vv-layout";
-    layout.id = "vvLayout";
-
-    const sidebar = document.createElement("aside");
-    sidebar.className = "vv-sidebar";
-    sidebar.id = "vvSidebar";
-    sidebar.setAttribute("aria-label", "站点导航");
-
-    const top = document.createElement("div");
-    top.className = "vv-sb-top";
-
-    const toggle = document.createElement("button");
-    toggle.className = "vv-sb-toggle";
-    toggle.id = "vvSbToggle";
-    toggle.type = "button";
-    toggle.setAttribute("aria-label", "展开/折叠菜单");
-    toggle.title = "展开/折叠菜单";
-    toggle.innerHTML = `<i class="fa-solid fa-bars" aria-hidden="true"></i>`;
-
-    const logo = document.createElement("a");
-    logo.className = "vv-sb-logo";
-    logo.href = CONFIG.homeUrl;
-    logo.title = "verdvana.cn";
-    logo.innerHTML = `<img src="${CONFIG.logoUrl}" alt="logo">`;
-
-    top.appendChild(toggle);
-    top.appendChild(logo);
-
-    const nav = document.createElement("nav");
-    nav.className = "vv-sb-nav";
-    nav.setAttribute("aria-label", "快捷入口");
-
-    CONFIG.items.forEach(it => {
-      const a = document.createElement("a");
-      a.className = "vv-sb-item";
-      a.href = it.href;
-      a.title = it.text;
-      a.innerHTML = `<i class="fa-solid ${it.icon}" aria-hidden="true"></i><span>${it.text}</span>`;
-      nav.appendChild(a);
-    });
-
-    const sep = document.createElement("div");
-    sep.className = "vv-sb-sep";
-    sep.setAttribute("role", "separator");
-    sep.setAttribute("aria-hidden", "true");
-    nav.appendChild(sep);
-
-    const bottom = document.createElement("div");
-    bottom.className = "vv-sb-bottom";
-
-    const back = document.createElement("button");
-    back.className = "vv-sb-item vv-sb-back";
-    back.id = "vvSbBack";
-    back.type = "button";
-    back.title = "返回上一级";
-    back.innerHTML = `<i class="fa-solid fa-arrow-left" aria-hidden="true"></i><span>返回上一级</span>`;
-
-    bottom.appendChild(back);
-
-    sidebar.appendChild(top);
-    sidebar.appendChild(nav);
-    sidebar.appendChild(bottom);
-
-    const backdrop = document.createElement('div');
-    backdrop.className = 'vv-backdrop';
-    backdrop.id = 'vvBackdrop';
-    backdrop.setAttribute('aria-hidden', 'true');
-
-    const main = document.createElement("main");
-    main.className = "vv-main";
-    main.id = "vvMain";
-
-    layout.appendChild(sidebar);
-    layout.appendChild(backdrop);
-    layout.appendChild(main);
-
-    return { layout, sidebar, main, toggle, back, backdrop };
-  }
-
-  function moveContentIntoMain(main) {
-    const body = document.body;
-    const currentScript = document.currentScript;
-
-    if (CONFIG.targetSelector) {
-      const target = document.querySelector(CONFIG.targetSelector);
-      if (target) main.appendChild(target);
-      return;
-    }
-
-    const nodes = [...body.childNodes];
-    nodes.forEach(node => {
-      if (node === currentScript) return;
-      if (node.nodeType === 1) {
-        const tag = node.tagName.toLowerCase();
-        if (tag === "script" || tag === "style" || tag === "link") return;
-      }
-      if (node.nodeType === 3 && !node.nodeValue.trim()) {
-        node.parentNode && node.parentNode.removeChild(node);
-        return;
-      }
-      if (node.nodeType === 1 && (node.id === 'vvLayout' || node.id === 'vvSidebar' || node.id === 'vvMain' || node.id === 'vvBackdrop')) return;
-      main.appendChild(node);
-    });
-  }
-
-  function isMobile() {
-    return window.matchMedia && window.matchMedia(`(max-width: ${CONFIG.mobileBreakpoint}px)`).matches;
-  }
-
-  function bindBehavior(sidebar, toggleBtn, backBtn, backdrop) {
-    if (CONFIG.rememberState) {
-      try {
-        const saved = localStorage.getItem(CONFIG.storageKey);
-        if (saved === "1") sidebar.classList.add("is-expanded");
-      } catch (e) {}
-    } else {
-      sidebar.classList.remove("is-expanded");
-    }
-
-    function setIcon() {
-      const icon = toggleBtn.querySelector("i");
-      if (!icon) return;
-      icon.className = sidebar.classList.contains("is-expanded")
-        ? "fa-solid fa-chevron-left"
-        : "fa-solid fa-bars";
-    }
-
-    function syncOverlay() {
-      const expanded = sidebar.classList.contains('is-expanded');
-      const mobile = isMobile();
-      if (backdrop) backdrop.classList.toggle('is-active', expanded && mobile);
-      document.body.classList.toggle('vv-lock-scroll', expanded && mobile);
-    }
-
-    function collapse() {
-      sidebar.classList.remove('is-expanded');
-      setIcon();
-      syncOverlay();
-      if (CONFIG.rememberState) {
-        try { localStorage.setItem(CONFIG.storageKey, "0"); } catch(e) {}
-      }
-    }
-
-    setIcon();
-    syncOverlay();
-
-    toggleBtn.addEventListener("click", () => {
-      sidebar.classList.toggle("is-expanded");
-      setIcon();
-      syncOverlay();
-      if (CONFIG.rememberState) {
+<button aria-label="返回上一层" id="fabBack" title="返回上一层"><i class="fa fa-arrow-left"></i></button><script>
+    document.getElementById('fabBack').addEventListener('click', function () {
+        try { if (history.length > 1) { history.back(); return; } } catch (e) {}
         try {
-          localStorage.setItem(CONFIG.storageKey, sidebar.classList.contains("is-expanded") ? "1" : "0");
+            var u = new URL(window.location.href);
+            var p = u.pathname.replace(/\/+$/, '');
+            var idx = p.lastIndexOf('/');
+            if (idx > 0) { u.pathname = p.slice(0, idx + 1); window.location.assign(u.toString()); return; }
         } catch (e) {}
-      }
+        window.location.assign('https://verdvana.cn/labs/');
     });
-
-    if (backdrop) {
-      backdrop.addEventListener('click', collapse);
-      backdrop.addEventListener('touchstart', collapse, {passive:true});
-    }
-
-    window.addEventListener('keydown', (e) => {
-      if (e.key === 'Escape' && sidebar.classList.contains('is-expanded') && isMobile()) collapse();
-    });
-
-    window.addEventListener('resize', syncOverlay);
-
-    backBtn.addEventListener("click", () => {
-      try {
-        if (history.length > 1) { history.back(); return; }
-      } catch (e) {}
-      try {
-        const u = new URL(window.location.href);
-        let p = u.pathname.replace(/\/+$/, "");
-        const idx = p.lastIndexOf("/");
-        if (idx > 0) {
-          u.pathname = p.slice(0, idx + 1);
-          window.location.assign(u.toString());
-          return;
-        }
-      } catch (e) {}
-      window.location.assign(CONFIG.fallbackBackUrl);
-    });
-  }
-
-  function mount() {
-    document.body.classList.add('vv-has-sidebar');
-    ensureFontAwesome();
-    injectCSS();
-    const { layout, sidebar, main, toggle, back, backdrop } = buildSidebar();
-    document.body.insertBefore(layout, document.body.firstChild);
-    moveContentIntoMain(main);
-    bindBehavior(sidebar, toggle, back, backdrop);
-  }
-
-  if (document.readyState === "loading") {
-    document.addEventListener("DOMContentLoaded", mount);
-  } else {
-    mount();
-  }
-})();
-</script>
-
-</body>
+</script></body>
 </html>
