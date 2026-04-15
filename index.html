@@ -6,6 +6,37 @@ layout: null
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <!-- SEO Meta Tags -->
+    <meta name="description" content="Verdvana — Senior ASICs Engineer at Qualcomm Shanghai. Specializing in Wi-Fi SoC RTL design, low-power architecture, CDC/STA signoff, and EDA automation for cutting-edge wireless chips.">
+    <meta name="keywords" content="ASIC Engineer, RTL Design, SoC, Wi-Fi, Qualcomm, Shanghai, IC Design, Hardware Engineering, FPGA, EDA, PrimeTime, SpyGlass">
+    <meta name="author" content="Verdvana">
+    <!-- Open Graph -->
+    <meta property="og:title" content="VERDVANA — ASICs & Hardware Design">
+    <meta property="og:description" content="Senior ASICs Engineer at Qualcomm Shanghai. RTL design, low-power SoC architecture, and EDA automation for Wi-Fi 6/7/8 chips.">
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://verdvana.cn">
+    <meta property="og:image" content="https://verdvana.cn/static/img/wallpaper.jpg">
+    <!-- JSON-LD Person Schema -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "Person",
+      "name": "Verdvana",
+      "jobTitle": "Senior ASICs Engineer",
+      "worksFor": {
+        "@type": "Organization",
+        "name": "Qualcomm"
+      },
+      "url": "https://verdvana.cn",
+      "sameAs": ["https://github.com/Verdvana"],
+      "address": {
+        "@type": "PostalAddress",
+        "addressLocality": "Shanghai",
+        "addressCountry": "CN"
+      },
+      "knowsAbout": ["ASIC Design", "RTL Design", "SoC Architecture", "Wi-Fi", "EDA", "PrimeTime", "SpyGlass", "Verilog", "SystemVerilog"]
+    }
+    </script>
     <title>VERDVANA — ASICs & Hardware Design</title>
     <!-- Favicon -->
     <link rel="icon" type="image/jpeg" href="/static/img/avatar.jpg">
@@ -969,7 +1000,14 @@ layout: null
             display: flex;
             gap: 12px;
         }
-    </style>
+
+        /* Project Description */
+        .project-desc {
+            font-size: 11px;
+            color: var(--secondary-text);
+            margin-top: 6px;
+            line-height: 1.4;
+        }    </style>
 </head>
 <body>
 
@@ -988,7 +1026,7 @@ layout: null
 
     <header class="hero">
         <h1>Engineering the <br>Future of Silicon.</h1>
-        <p>Senior ASICs Engineer at Qualcomm. <br>Architecting high-performance hardware solutions and exploring the frontiers of IC design.</p>
+        <p>Senior ASICs Engineer at Qualcomm. <br>Architecting high-performance hardware solutions and exploring the frontiers of IC design. <br><span style="font-size: clamp(14px, 1.8vw, 20px); color: #8e8e93;">Specialized in Wi-Fi SoC RTL · Low-Power Architecture · EDA Automation</span></p>
         <a href="https://chenjiabao.artstation.com" target="_blank" class="wallpaper-credit">
             Wallpaper authorized by BAOV
         </a>
@@ -1031,6 +1069,7 @@ layout: null
                                     <span class="project-tag">UWB & Thread</span>
                                     <span class="project-tag">4k QAM & 320MHz BW</span>
                                 </div>
+                        <p class="project-desc">Next-gen Wi-Fi 8 flagship with ultra-wide 320 MHz bandwidth, UWB integration, and 4K QAM modulation.</p>
                             </div>
                         </div>
                         <div class="project-item">
@@ -1046,6 +1085,7 @@ layout: null
                                     <span class="project-tag">8.6 Gbps Peak</span>
                                     <span class="project-tag">Low Power HBS</span>
                                 </div>
+                        <p class="project-desc">High-bandwidth Wi-Fi 8 solution with advanced low-power Hearable BT subsystem (HBS).</p>
                             </div>
                         </div>
                         <div class="project-item">
@@ -1062,6 +1102,7 @@ layout: null
                                     <span class="project-tag">Dual Bluetooth</span>
                                     <span class="project-tag">4k QAM & 320MHz BW</span>
                                 </div>
+                        <p class="project-desc">Multi-link Wi-Fi 7 platform with dual Bluetooth architecture and cutting-edge RF design.</p>
                             </div>
                         </div>
                         <div class="project-item">
@@ -1078,6 +1119,7 @@ layout: null
                                     <span class="project-tag">Low Power</span>
                                     <span class="project-tag">4k QAM & 320MHz BW</span>
                                 </div>
+                        <p class="project-desc">Cost-optimized Wi-Fi 7 chip delivering flagship features in a compact, low-power design.</p>
                             </div>
                         </div>
                         <div class="project-item">
@@ -1094,6 +1136,7 @@ layout: null
                                     <span class="project-tag">2x2 MIMO</span>
                                     <span class="project-tag">1024 QAM</span>
                                 </div>
+                        <p class="project-desc">Entry-level Wi-Fi 6 SoC with efficient 2×2 MIMO, targeting IoT and mobile platforms.</p>
                             </div>
                         </div>
                     </div>
@@ -1340,6 +1383,7 @@ layout: null
             <div class="content">
                 <span class="label">Research & Thoughts</span>
                 <h3>The Blog</h3>
+                    <p style="font-size: 13px; color: var(--secondary-text); margin-bottom: 20px; margin-top: -30px;">Articles are primarily written in <span style="color: #fff;">Chinese</span> · 技术博客</p>
                 
                 <div class="recent-list">
                     {% for post in site.posts limit:8 %}
