@@ -1,11 +1,12 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
 <head>
-<meta charset="UTF-8"/>
-<meta name="viewport" content="width=device-width,initial-scale=1"/>
-<title>在线加密工具箱</title>
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" referrerpolicy="no-referrer"/>
-<style>
+    <meta charset="utf-8"/>
+    <meta content="width=device-width,initial-scale=1" name="viewport"/>
+    <title>在线加密工具箱</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" referrerpolicy="no-referrer" rel="stylesheet"/>
+    <style>
+
 :root{
   --bg: #0b0f14;
   --panel: rgba(255,255,255,0.06);
@@ -24,27 +25,16 @@
   --sans: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji","Segoe UI Emoji";
   --radius: 16px;
 }
-@media (prefers-color-scheme: light){
-  :root{
-    --bg:#f6f7fb;
-    --panel: rgba(0,0,0,0.04);
-    --panel2: rgba(0,0,0,0.06);
-    --text: rgba(0,0,0,0.9);
-    --muted: rgba(0,0,0,0.62);
-    --faint: rgba(0,0,0,0.42);
-    --border: rgba(0,0,0,0.10);
-    --shadow: 0 18px 50px rgba(8, 15, 35, 0.10);
-    --accent:#2b6dff;
-    --accent2:#00a37a;
-  }
-}
+
 
 *{box-sizing:border-box;margin:0;padding:0;}
 body{background:radial-gradient(1200px 700px at 80% -20%,rgba(122,162,255,.22),transparent 60%),
   radial-gradient(900px 550px at 20% 0%,rgba(125,240,196,.18),transparent 55%),var(--bg);
   color:var(--text);font-family:var(--sans);line-height:1.5;min-height:100vh;}
 a{color:var(--accent);text-decoration:none;}a:hover{text-decoration:underline;}
-.wrap{max-width:960px;margin:0 auto;padding:24px 18px 80px;}
+.wrap{max-width:960px;margin:0 auto;padding:24px 18px 80px;
+    padding-top: 90px;
+}
 .topbar{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;margin-bottom:22px;}
 .brand{display:flex;gap:12px;align-items:center;}
 .logo{width:40px;height:40px;border-radius:12px;
@@ -110,30 +100,8 @@ button.danger:hover{opacity:.85;}
 .checkbox-group input[type=checkbox]{width:15px;height:15px;accent-color:var(--accent);}
 footer.foot{text-align:center;padding:24px;color:var(--faint);font-size:12px;border-top:1px solid var(--border);margin-top:40px;}
 /* ====== Theme override: manual light/dark ====== */
-    html[data-theme="dark"]{
-      --bg: #0b0f14;
-      --panel: rgba(255,255,255,0.06);
-      --panel2: rgba(255,255,255,0.08);
-      --text: rgba(255,255,255,0.92);
-      --muted: rgba(255,255,255,0.66);
-      --faint: rgba(255,255,255,0.45);
-      --border: rgba(255,255,255,0.12);
-      --shadow: 0 18px 60px rgba(0,0,0,0.45);
-      --accent: #7aa2ff;
-      --accent2:#7df0c4;
-    }
-    html[data-theme="light"]{
-      --bg:#f6f7fb;
-      --panel: rgba(0,0,0,0.04);
-      --panel2: rgba(0,0,0,0.06);
-      --text: rgba(0,0,0,0.9);
-      --muted: rgba(0,0,0,0.62);
-      --faint: rgba(0,0,0,0.42);
-      --border: rgba(0,0,0,0.10);
-      --shadow: 0 18px 50px rgba(8, 15, 35, 0.10);
-      --accent:#2b6dff;
-      --accent2:#00a37a;
-    }
+    
+    
 
     /* ====== Smooth theme transition (avoid affecting input experience) ====== */
     html.theme-transition,
@@ -159,488 +127,426 @@ footer.foot{text-align:center;padding:24px;color:var(--faint);font-size:12px;bor
     }
 
     /* ====== iOS-like theme switch ====== */
-    .theme-switch{
-      display:flex;
-      align-items:center;
-      gap:10px;
-      user-select:none;
-    }
-    .theme-switch .label{
-      font-size:12px;
-      color: var(--muted);
-    }
-    .switch{
-      position: relative;
-      width: 44px;
-      height: 26px;
-      border-radius: 999px;
-      background: rgba(255,255,255,0.10);
-      border: 1px solid var(--border);
-      box-shadow: inset 0 0 0 1px rgba(0,0,0,0.02);
-      transition: background .2s ease, border-color .2s ease, box-shadow .2s ease;
-    }
-    @media (prefers-color-scheme: light){
-      .switch{ background: rgba(0,0,0,0.06); }
-    }
-    .switch input{
-      position:absolute;
-      inset:0;
-      opacity:0;
-      cursor:pointer;
-    }
-    .switch .knob{
-      position:absolute;
-      top: 3px;
-      left: 3px;
-      width: 20px;
-      height: 20px;
-      border-radius: 999px;
-      background: rgba(255,255,255,0.92);
-      box-shadow: 0 6px 16px rgba(0,0,0,0.22);
-      transform: translateX(0);
-      transition: transform .2s ease, background .2s ease;
-    }
-    html[data-theme="light"] .switch .knob{
-      background: rgba(255,255,255,0.98);
-    }
-    .switch input:checked ~ .knob{
-      transform: translateX(18px);
-    }
-    .switch.on{
-      background: rgba(125,240,196,0.22);
-      border-color: rgba(125,240,196,0.35);
-    }
-    .switch:focus-within{
-      box-shadow: 0 0 0 4px rgba(122,162,255,0.16);
-    }
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
 
       
 
 /* ====== Left sidebar (OpenAI-like) + overlay ====== */
-.layout{
-  display:flex;
-  min-height: 100vh;
-}
-.sidebar{
-  --sb-w: 64px; /* collapsed width */
-  width: var(--sb-w);
-  flex: 0 0 var(--sb-w);
-  height: 100vh;
-  position: sticky;
-  top: 0;
-  z-index: 9998;
-  border-right: 1px solid var(--border);
-  background: rgba(255,255,255,0.04);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  display:flex;
-  flex-direction: column;
-  padding: 10px 10px;
-  gap: 10px;
-  transition: width .18s ease, flex-basis .18s ease;
-}
-html[data-theme="light"] .sidebar{
-  background: rgba(255,255,255,0.72);
-}
-.sidebar.is-expanded{ --sb-w: 252px; }
+
+
+
+
 .main{ flex: 1 1 auto; min-width: 0; }
 
 .sb-top{ display:flex; align-items:center; gap: 10px; }
-.sb-toggle{
-  width: 40px; height: 40px;
-  border-radius: 12px;
-  padding: 0;
-  display:grid; place-items:center;
-  border: 1px solid var(--border);
-  background: rgba(255,255,255,0.03);
-}
-.sb-toggle:hover{ background: rgba(255,255,255,0.07); border-color: rgba(122,162,255,0.55); }
-.sb-toggle i{ font-size: 16px; }
 
-.sb-logo{
-  width: 40px; height: 40px;
-  border-radius: 14px;
-  overflow:hidden;
-  border: 1px solid var(--border);
-  flex: 0 0 auto;
-  display:block;
-}
-.sb-logo img{ width:100%; height:100%; object-fit: cover; display:block; }
 
-.sb-nav{ display:flex; flex-direction: column; gap: 6px; padding-top: 6px; }
-.sb-item{
-  display:flex; align-items:center; gap: 12px;
-  width: 100%;
-  border-radius: 12px;
-  padding: 10px 10px;
-  border: 1px solid transparent;
-  color: var(--text);
-  background: transparent;
-  text-decoration: none;
-  cursor: pointer;
-  user-select: none;
-  transition: background .16s ease, border-color .16s ease, transform .04s ease;
-}
-.sb-item:hover{ background: rgba(255,255,255,0.06); border-color: rgba(122,162,255,0.25); }
-.sb-item:active{ transform: translateY(1px); }
-.sb-item i{ width: 20px; text-align:center; opacity: 0.92; }
-.sb-item span{ white-space: nowrap; font-size: 13px; color: var(--text); }
 
-.sidebar:not(.is-expanded) .sb-item span{ display:none; }
-.sidebar:not(.is-expanded) .sb-top{ flex-direction: column; align-items: stretch; justify-content: flex-start; }
-.sidebar:not(.is-expanded) .sb-logo{ display:block; }
 
-.sb-sep{ height: 1px; background: var(--border); margin: 6px 2px; }
-.sb-bottom{ margin-top: auto; padding-top: 6px; }
-.sb-back{ border: 1px solid var(--border); background: rgba(255,255,255,0.03); }
-.sb-back:hover{ border-color: rgba(255,209,102,0.35); background: rgba(255,209,102,0.10); }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 /* Backdrop overlay (mobile when expanded) */
-.sb-backdrop{
-  position: fixed;
-  inset: 0;
-  background: rgba(0,0,0,0.35);
-  opacity: 0;
-  pointer-events: none;
-  transition: opacity .16s ease;
-  z-index: 9997;
-}
-.sb-backdrop.is-active{ opacity: 1; pointer-events: auto; }
+
+
 
 /* Mobile: sidebar overlays content when expanded */
 @media (max-width: 720px){
-  .sidebar{ position: fixed; left: 0; top: 0; }
+  
   .main{ margin-left: 64px; }
-  .sidebar.is-expanded{ box-shadow: 0 18px 60px rgba(0,0,0,0.35); }
-  body.sb-lock-scroll{ overflow: hidden; }
+  
+  body
 }
 
 @media print{
-  .sidebar, .sb-backdrop{ display:none; }
+  
   .main{ margin-left: 0; }
 }
 
 
-</style>
+
+
+        /* ── Fixed Navigation (from index.html) ─────────────────────── */
+        nav {
+            position: fixed;
+            top: 0;
+            width: 100%;
+            padding: 20px 40px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            z-index: 1000;
+            background: rgba(0, 0, 0, 0.7);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        nav .logo-area {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            text-decoration: none;
+            color: white;
+        }
+        nav .logo-area img {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            border: 1px solid rgba(255,255,255,0.1);
+            object-fit: cover;
+        }
+        nav .logo {
+            font-size: 18px;
+            font-weight: 700;
+            letter-spacing: -0.5px;
+        }
+        nav .nav-links {
+            display: flex;
+            gap: 30px;
+        }
+        nav a {
+            text-decoration: none;
+            color: #ffffff;
+            font-size: 14px;
+            font-weight: 500;
+            transition: color 0.2s;
+        }
+        nav a:hover {
+            color: #8e8e93;
+        }
+
+
+        /* ── Floating Back Button ─────────────────────────────────────── */
+        #fabBack {
+            position: fixed;
+            bottom: 32px;
+            right: 32px;
+            z-index: 999;
+            width: 52px;
+            height: 52px;
+            border-radius: 50%;
+            background: #0071e3;
+            border: none;
+            color: #fff;
+            font-size: 18px;
+            cursor: pointer;
+            box-shadow: 0 8px 24px rgba(0,113,227,0.45);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: background 0.2s, transform 0.15s, box-shadow 0.2s;
+        }
+        #fabBack:hover {
+            background: #0077ed;
+            transform: translateY(-2px);
+            box-shadow: 0 12px 30px rgba(0,113,227,0.55);
+        }
+        #fabBack:active {
+            transform: translateY(0);
+        }
+
+    </style>
 </head>
 <body>
-<div class="layout" id="appLayout">
-<aside class="sidebar" id="sidebar" aria-label="站点导航">
-    <div class="sb-top">
-      <button class="sb-toggle" id="sbToggle" type="button" aria-label="展开/折叠菜单" title="展开/折叠菜单">
-        <i class="fa-solid fa-bars" aria-hidden="true"></i>
-      </button>
-      <a class="sb-logo" href="https://verdvana.cn" title="verdvana.cn">
-        <img src="https://verdvana.cn/static/img/avatar.jpg" alt="logo" />
-      </a>
-    </div>
-
-    <nav class="sb-nav" aria-label="快捷入口">
-      <a class="sb-item" href="https://verdvana.cn" title="主页">
-        <i class="fa-solid fa-home" aria-hidden="true"></i><span>主页</span>
-      </a>
-      <a class="sb-item" href="https://verdvana.cn/archive/" title="博文">
-        <i class="fa-solid fa-archive" aria-hidden="true"></i><span>博文</span>
-      </a>
-      <a class="sb-item" href="https://verdvana.cn/tags/" title="分类">
-        <i class="fa-solid fa-tags" aria-hidden="true"></i><span>分类</span>
-      </a>
-      <a class="sb-item" href="https://verdvana.cn/comments/" title="留言">
-        <i class="fa-solid fa-comments" aria-hidden="true"></i><span>留言</span>
-      </a>
-      <a class="sb-item" href="https://verdvana.cn/merger/" title="打赏">
-        <i class="fa-solid fa-coffee" aria-hidden="true"></i><span>打赏</span>
-      </a>
-      <a class="sb-item" href="https://verdvana.cn/labs/" title="更多">
-        <i class="fa-solid fa-flask" aria-hidden="true"></i><span>更多</span>
-      </a>
-      <div class="sb-sep" role="separator" aria-hidden="true"></div>
-    </nav>
-
-    <div class="sb-bottom">
-      <button class="sb-item sb-back" id="sbBack" type="button" title="返回上一级">
-        <i class="fa-solid fa-arrow-left" aria-hidden="true"></i><span>返回上一级</span>
-      </button>
-    </div>
-  </aside>
-<div class="sb-backdrop" id="sbBackdrop" aria-hidden="true"></div>
-  <main class="main" id="mainContent">
-    <div class="wrap">
-      <!-- Topbar -->
-      <div class="topbar">
-        <div class="brand">
-          <div class="logo"><i class="fa-solid fa-lock"></i></div>
-          <div>
-            <h1>在线加密工具箱</h1>
-            <p class="subtitle">纯客户端 · 数据不上传 · 支持哈希 / 对称加密 / 编解码 / JWT 等</p>
-          </div>
-        </div>
-        <div style="display:flex; gap:12px; align-items:center; flex-wrap:wrap; justify-content:flex-end;">
-      <div class="theme-switch">
-        <span class="label" id="themeLabel">系统</span>
-        <div class="switch" id="themeSwitchWrap" title="切换明暗模式（Alt/Option 点击或长按可切回系统）">
-          <input id="themeToggle" type="checkbox" aria-label="切换明暗模式">
-          <span class="knob" aria-hidden="true"></span>
-        </div>
-      </div>
-
-    </div>
-      </div>
-
-      <!-- Tabs -->
-      <div class="tabs">
-        <button class="tab-btn active" onclick="switchTab('hash',this)"><i class="fa-solid fa-hashtag"></i> 哈希</button>
-        <button class="tab-btn" onclick="switchTab('hmac',this)"><i class="fa-solid fa-key"></i> HMAC</button>
-        <button class="tab-btn" onclick="switchTab('aes',this)"><i class="fa-solid fa-shield-halved"></i> AES</button>
-        <button class="tab-btn" onclick="switchTab('base64',this)"><i class="fa-solid fa-code"></i> Base64</button>
-        <button class="tab-btn" onclick="switchTab('hex',this)"><i class="fa-solid fa-grip"></i> Hex</button>
-        <button class="tab-btn" onclick="switchTab('url',this)"><i class="fa-solid fa-link"></i> URL编解码</button>
-        <button class="tab-btn" onclick="switchTab('jwt',this)"><i class="fa-solid fa-id-badge"></i> JWT解析</button>
-        <button class="tab-btn" onclick="switchTab('rand',this)"><i class="fa-solid fa-dice"></i> 随机生成</button>
-      </div>
-
-      <!-- Panel 1: Hash -->
-      <div class="tab-panel active" id="p-hash">
-        <div class="grid">
-          <div class="card">
-            <div class="hd"><div class="dot"></div><h3>输入文本</h3></div>
-            <div class="bd">
-              <div><label>待哈希的文本</label><textarea id="hash-input" placeholder="请输入要计算哈希的文本..."></textarea></div>
-              <div><label>字符编码</label>
-                <select id="hash-enc"><option value="utf8">UTF-8</option><option value="utf16">UTF-16LE</option></select>
-              </div>
-              <div class="toolbar">
-                <button class="primary" onclick="calcHash()"><i class="fa-solid fa-play"></i> 计算哈希</button>
-                <button class="secondary" onclick="clearField('hash-input','hash-results')">清空</button>
-              </div>
-            </div>
-          </div>
-          <div class="card">
-            <div class="hd"><div class="dot" style="background:var(--accent2)"></div><h3>哈希结果</h3></div>
-            <div class="bd" id="hash-results">
-              <div class="result-row"><span class="result-label">MD5</span><span class="result-val" id="r-md5">—</span><button class="copy-btn" onclick="copyVal('r-md5',this)">复制</button></div>
-              <div class="result-row"><span class="result-label">SHA-1</span><span class="result-val" id="r-sha1">—</span><button class="copy-btn" onclick="copyVal('r-sha1',this)">复制</button></div>
-              <div class="result-row"><span class="result-label">SHA-256</span><span class="result-val" id="r-sha256">—</span><button class="copy-btn" onclick="copyVal('r-sha256',this)">复制</button></div>
-              <div class="result-row"><span class="result-label">SHA-384</span><span class="result-val" id="r-sha384">—</span><button class="copy-btn" onclick="copyVal('r-sha384',this)">复制</button></div>
-              <div class="result-row"><span class="result-label">SHA-512</span><span class="result-val" id="r-sha512">—</span><button class="copy-btn" onclick="copyVal('r-sha512',this)">复制</button></div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- Panel 2: HMAC -->
-      <div class="tab-panel" id="p-hmac">
-        <div class="grid">
-          <div class="card">
-            <div class="hd"><div class="dot"></div><h3>HMAC 参数</h3></div>
-            <div class="bd">
-              <div><label>消息内容</label><textarea id="hmac-msg" placeholder="请输入消息..."></textarea></div>
-              <div><label>密钥 (Key)</label><input type="text" id="hmac-key" placeholder="输入密钥字符串"/></div>
-              <div><label>算法</label>
-                <select id="hmac-alg">
-                  <option value="SHA-1">HMAC-SHA-1</option>
-                  <option value="SHA-256" selected>HMAC-SHA-256</option>
-                  <option value="SHA-384">HMAC-SHA-384</option>
-                  <option value="SHA-512">HMAC-SHA-512</option>
-                </select>
-              </div>
-              <div class="toolbar">
-                <button class="primary" onclick="calcHMAC()"><i class="fa-solid fa-play"></i> 计算 HMAC</button>
-                <button class="secondary" onclick="document.getElementById('hmac-msg').value='';document.getElementById('hmac-result').textContent='—'">清空</button>
-              </div>
-            </div>
-          </div>
-          <div class="card">
-            <div class="hd"><div class="dot" style="background:var(--accent2)"></div><h3>HMAC 结果</h3></div>
-            <div class="bd">
-              <div><label>十六进制结果</label>
-                <div class="code-block" id="hmac-result" style="min-height:60px;">—</div>
-              </div>
-              <div class="toolbar"><button class="copy-btn" style="padding:7px 16px;" onclick="copyText(document.getElementById('hmac-result').textContent,this)">复制结果</button></div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- Panel 3: AES -->
-      <div class="tab-panel" id="p-aes">
-        <div class="grid">
-          <div class="card">
-            <div class="hd"><div class="dot"></div><h3>AES 加解密参数</h3></div>
-            <div class="bd">
-              <div><label>操作</label>
-                <select id="aes-op"><option value="enc">加密 (Encrypt)</option><option value="dec">解密 (Decrypt)</option></select>
-              </div>
-              <div><label>明文 / 密文</label><textarea id="aes-input" placeholder="加密时输入明文；解密时输入 Base64 密文..."></textarea></div>
-              <div><label>密码 (Password)</label><input type="password" id="aes-pass" placeholder="输入密码（自动派生密钥）"/></div>
-              <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
-                <div><label>模式</label>
-                  <select id="aes-mode"><option value="AES-GCM">AES-GCM</option><option value="AES-CBC">AES-CBC</option></select>
-                </div>
-                <div><label>密钥长度</label>
-                  <select id="aes-bits"><option value="128">128 bit</option><option value="192">192 bit</option><option value="256" selected>256 bit</option></select>
-                </div>
-              </div>
-              <div class="toolbar">
-                <button class="primary" onclick="doAES()"><i class="fa-solid fa-shield-halved"></i> 执行</button>
-                <button class="secondary" onclick="document.getElementById('aes-input').value='';document.getElementById('aes-output').value=''">清空</button>
-              </div>
-            </div>
-          </div>
-          <div class="card">
-            <div class="hd"><div class="dot" style="background:var(--accent2)"></div><h3>输出结果</h3></div>
-            <div class="bd">
-              <div><label>结果（Base64）</label><textarea id="aes-output" placeholder="结果将显示在此处..." readonly></textarea></div>
-              <div id="aes-err" style="display:none;" class="badge err"><i class="fa-solid fa-circle-exclamation"></i> <span id="aes-err-msg"></span></div>
-              <div class="toolbar"><button class="copy-btn" style="padding:7px 16px;" onclick="copyText(document.getElementById('aes-output').value,this)">复制结果</button></div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- Panel 4: Base64 -->
-      <div class="tab-panel" id="p-base64">
-        <div class="grid">
-          <div class="card">
-            <div class="hd"><div class="dot"></div><h3>输入</h3></div>
-            <div class="bd">
-              <div><label>文本内容</label><textarea id="b64-input" placeholder="输入文本或 Base64 字符串..."></textarea></div>
-              <div><label>模式</label>
-                <select id="b64-mode"><option value="std">标准 Base64</option><option value="url">URL-Safe Base64</option></select>
-              </div>
-              <div><label>文件上传（将文件转为 Base64）</label>
-                <input type="file" id="b64-file" style="background:none;border:none;padding:0;font-family:var(--sans);color:var(--muted);font-size:13px;"/>
-              </div>
-              <div class="toolbar">
-                <button class="primary" onclick="b64Encode()"><i class="fa-solid fa-arrow-right"></i> 编码</button>
-                <button class="secondary" onclick="b64Decode()"><i class="fa-solid fa-arrow-left"></i> 解码</button>
-                <button class="secondary" onclick="document.getElementById('b64-input').value='';document.getElementById('b64-output').value=''">清空</button>
-              </div>
-            </div>
-          </div>
-          <div class="card">
-            <div class="hd"><div class="dot" style="background:var(--accent2)"></div><h3>结果</h3></div>
-            <div class="bd">
-              <div><label>输出</label><textarea id="b64-output" placeholder="结果显示在此..." readonly></textarea></div>
-              <div class="toolbar"><button class="copy-btn" style="padding:7px 16px;" onclick="copyText(document.getElementById('b64-output').value,this)">复制结果</button></div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- Panel 5: Hex -->
-      <div class="tab-panel" id="p-hex">
-        <div class="grid">
-          <div class="card">
-            <div class="hd"><div class="dot"></div><h3>输入</h3></div>
-            <div class="bd">
-              <div><label>文本 / Hex 字符串</label><textarea id="hex-input" placeholder="输入文本或十六进制字符串..."></textarea></div>
-              <div><label>十六进制分隔符</label>
-                <select id="hex-sep"><option value="">无分隔</option><option value=" ">空格</option><option value=":">冒号</option></select>
-              </div>
-              <div class="toolbar">
-                <button class="primary" onclick="toHex()"><i class="fa-solid fa-arrow-right"></i> 文本→Hex</button>
-                <button class="secondary" onclick="fromHex()"><i class="fa-solid fa-arrow-left"></i> Hex→文本</button>
-                <button class="secondary" onclick="document.getElementById('hex-input').value='';document.getElementById('hex-output').value=''">清空</button>
-              </div>
-            </div>
-          </div>
-          <div class="card">
-            <div class="hd"><div class="dot" style="background:var(--accent2)"></div><h3>结果</h3></div>
-            <div class="bd">
-              <div><label>输出</label><textarea id="hex-output" placeholder="结果显示在此..." readonly></textarea></div>
-              <div class="toolbar"><button class="copy-btn" style="padding:7px 16px;" onclick="copyText(document.getElementById('hex-output').value,this)">复制结果</button></div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- Panel 6: URL -->
-      <div class="tab-panel" id="p-url">
-        <div class="grid">
-          <div class="card">
-            <div class="hd"><div class="dot"></div><h3>输入</h3></div>
-            <div class="bd">
-              <div><label>URL / 文本内容</label><textarea id="url-input" placeholder="输入 URL 或文本..."></textarea></div>
-              <div class="toolbar">
-                <button class="primary" onclick="urlEncode()"><i class="fa-solid fa-arrow-right"></i> 编码</button>
-                <button class="secondary" onclick="urlDecode()"><i class="fa-solid fa-arrow-left"></i> 解码</button>
-                <button class="secondary" onclick="document.getElementById('url-input').value='';document.getElementById('url-output').value=''">清空</button>
-              </div>
-            </div>
-          </div>
-          <div class="card">
-            <div class="hd"><div class="dot" style="background:var(--accent2)"></div><h3>结果</h3></div>
-            <div class="bd">
-              <div><label>输出</label><textarea id="url-output" placeholder="结果显示在此..." readonly></textarea></div>
-              <div class="toolbar"><button class="copy-btn" style="padding:7px 16px;" onclick="copyText(document.getElementById('url-output').value,this)">复制结果</button></div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- Panel 7: JWT -->
-      <div class="tab-panel" id="p-jwt">
-        <div class="full-card">
-          <div class="hd"><div class="dot"></div><h3>JWT Token 输入</h3></div>
-          <div class="bd">
-            <div><label>粘贴 JWT Token</label><textarea id="jwt-input" placeholder="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIn0..." style="min-height:80px;"></textarea></div>
-            <div class="toolbar">
-              <button class="primary" onclick="parseJWT()"><i class="fa-solid fa-magnifying-glass"></i> 解析</button>
-              <button class="secondary" onclick="document.getElementById('jwt-input').value='';document.getElementById('jwt-out').innerHTML=''">清空</button>
-            </div>
-          </div>
-        </div>
-        <div id="jwt-out"></div>
-      </div>
-
-      <!-- Panel 8: Random -->
-      <div class="tab-panel" id="p-rand">
-        <div class="row3">
-          <div class="card">
-            <div class="hd"><div class="dot"></div><h3>UUID v4 生成</h3></div>
-            <div class="bd">
-              <div><label>数量</label><input type="number" id="uuid-count" value="1" min="1" max="50"/></div>
-              <div class="toolbar"><button class="primary" onclick="genUUID()">生成</button><button class="secondary" onclick="document.getElementById('uuid-out').textContent=''">清空</button></div>
-              <div class="code-block" id="uuid-out" style="min-height:80px;"></div>
-              <div class="toolbar"><button class="copy-btn" style="padding:6px 14px;" onclick="copyText(document.getElementById('uuid-out').textContent,this)">复制</button></div>
-            </div>
-          </div>
-          <div class="card">
-            <div class="hd"><div class="dot"></div><h3>随机字节</h3></div>
-            <div class="bd">
-              <div><label>字节数量</label><input type="number" id="rbytes-count" value="16" min="1" max="512"/></div>
-              <div><label>输出格式</label><select id="rbytes-fmt"><option value="hex">十六进制</option><option value="b64">Base64</option></select></div>
-              <div class="toolbar"><button class="primary" onclick="genBytes()">生成</button><button class="secondary" onclick="document.getElementById('rbytes-out').textContent=''">清空</button></div>
-              <div class="code-block" id="rbytes-out" style="min-height:60px;"></div>
-              <div class="toolbar"><button class="copy-btn" style="padding:6px 14px;" onclick="copyText(document.getElementById('rbytes-out').textContent,this)">复制</button></div>
-            </div>
-          </div>
-          <div class="card">
-            <div class="hd"><div class="dot"></div><h3>随机密码</h3></div>
-            <div class="bd">
-              <div><label>密码长度</label><input type="number" id="pwd-len" value="16" min="4" max="128"/></div>
-              <div><label>字符集</label>
-                <div class="checkbox-group">
-                  <label><input type="checkbox" id="pwd-upper" checked/>大写字母</label>
-                  <label><input type="checkbox" id="pwd-lower" checked/>小写字母</label>
-                  <label><input type="checkbox" id="pwd-digit" checked/>数字</label>
-                  <label><input type="checkbox" id="pwd-sym" checked/>符号</label>
-                </div>
-              </div>
-              <div class="toolbar"><button class="primary" onclick="genPassword()">生成</button><button class="secondary" onclick="document.getElementById('pwd-out').textContent=''">清空</button></div>
-              <div class="code-block" id="pwd-out" style="min-height:60px;word-break:break-all;"></div>
-              <div class="toolbar"><button class="copy-btn" style="padding:6px 14px;" onclick="copyText(document.getElementById('pwd-out').textContent,this)">复制</button></div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <footer class="foot"><i class="fa-solid fa-shield-halved"></i> 所有操作均在浏览器本地完成，数据不会上传至任何服务器。</footer>
-    </div>
-  </main>
+<nav>
+<a class="logo-area" href="/">
+<img alt="Verdvana" src="/static/img/avatar.jpg"/>
+<span class="logo">VERDVANA</span>
+</a>
+<div class="nav-links">
+<a href="/archive">Blog</a>
+<a href="/labs">Labs</a>
+<a href="/comments">Comments</a>
+<a href="https://github.com/Verdvana">GitHub</a>
 </div>
-<script>
+</nav>
+<main class="main" id="mainContent">
+<div class="wrap">
+<!-- Topbar -->
+<div class="topbar">
+<div class="brand">
+<div class="logo"><i class="fa-solid fa-lock"></i></div>
+<div>
+<h1>在线加密工具箱</h1>
+<p class="subtitle">纯客户端 · 数据不上传 · 支持哈希 / 对称加密 / 编解码 / JWT 等</p>
+</div>
+</div>
+<div style="display:flex; gap:12px; align-items:center; flex-wrap:wrap; justify-content:flex-end;">
+
+</div>
+</div>
+<!-- Tabs -->
+<div class="tabs">
+<button class="tab-btn active" onclick="switchTab('hash',this)"><i class="fa-solid fa-hashtag"></i> 哈希</button>
+<button class="tab-btn" onclick="switchTab('hmac',this)"><i class="fa-solid fa-key"></i> HMAC</button>
+<button class="tab-btn" onclick="switchTab('aes',this)"><i class="fa-solid fa-shield-halved"></i> AES</button>
+<button class="tab-btn" onclick="switchTab('base64',this)"><i class="fa-solid fa-code"></i> Base64</button>
+<button class="tab-btn" onclick="switchTab('hex',this)"><i class="fa-solid fa-grip"></i> Hex</button>
+<button class="tab-btn" onclick="switchTab('url',this)"><i class="fa-solid fa-link"></i> URL编解码</button>
+<button class="tab-btn" onclick="switchTab('jwt',this)"><i class="fa-solid fa-id-badge"></i> JWT解析</button>
+<button class="tab-btn" onclick="switchTab('rand',this)"><i class="fa-solid fa-dice"></i> 随机生成</button>
+</div>
+<!-- Panel 1: Hash -->
+<div class="tab-panel active" id="p-hash">
+<div class="grid">
+<div class="card">
+<div class="hd"><div class="dot"></div><h3>输入文本</h3></div>
+<div class="bd">
+<div><label>待哈希的文本</label><textarea id="hash-input" placeholder="请输入要计算哈希的文本..."></textarea></div>
+<div><label>字符编码</label>
+<select id="hash-enc"><option value="utf8">UTF-8</option><option value="utf16">UTF-16LE</option></select>
+</div>
+<div class="toolbar">
+<button class="primary" onclick="calcHash()"><i class="fa-solid fa-play"></i> 计算哈希</button>
+<button class="secondary" onclick="clearField('hash-input','hash-results')">清空</button>
+</div>
+</div>
+</div>
+<div class="card">
+<div class="hd"><div class="dot" style="background:var(--accent2)"></div><h3>哈希结果</h3></div>
+<div class="bd" id="hash-results">
+<div class="result-row"><span class="result-label">MD5</span><span class="result-val" id="r-md5">—</span><button class="copy-btn" onclick="copyVal('r-md5',this)">复制</button></div>
+<div class="result-row"><span class="result-label">SHA-1</span><span class="result-val" id="r-sha1">—</span><button class="copy-btn" onclick="copyVal('r-sha1',this)">复制</button></div>
+<div class="result-row"><span class="result-label">SHA-256</span><span class="result-val" id="r-sha256">—</span><button class="copy-btn" onclick="copyVal('r-sha256',this)">复制</button></div>
+<div class="result-row"><span class="result-label">SHA-384</span><span class="result-val" id="r-sha384">—</span><button class="copy-btn" onclick="copyVal('r-sha384',this)">复制</button></div>
+<div class="result-row"><span class="result-label">SHA-512</span><span class="result-val" id="r-sha512">—</span><button class="copy-btn" onclick="copyVal('r-sha512',this)">复制</button></div>
+</div>
+</div>
+</div>
+</div>
+<!-- Panel 2: HMAC -->
+<div class="tab-panel" id="p-hmac">
+<div class="grid">
+<div class="card">
+<div class="hd"><div class="dot"></div><h3>HMAC 参数</h3></div>
+<div class="bd">
+<div><label>消息内容</label><textarea id="hmac-msg" placeholder="请输入消息..."></textarea></div>
+<div><label>密钥 (Key)</label><input id="hmac-key" placeholder="输入密钥字符串" type="text"/></div>
+<div><label>算法</label>
+<select id="hmac-alg">
+<option value="SHA-1">HMAC-SHA-1</option>
+<option selected="" value="SHA-256">HMAC-SHA-256</option>
+<option value="SHA-384">HMAC-SHA-384</option>
+<option value="SHA-512">HMAC-SHA-512</option>
+</select>
+</div>
+<div class="toolbar">
+<button class="primary" onclick="calcHMAC()"><i class="fa-solid fa-play"></i> 计算 HMAC</button>
+<button class="secondary" onclick="document.getElementById('hmac-msg').value='';document.getElementById('hmac-result').textContent='—'">清空</button>
+</div>
+</div>
+</div>
+<div class="card">
+<div class="hd"><div class="dot" style="background:var(--accent2)"></div><h3>HMAC 结果</h3></div>
+<div class="bd">
+<div><label>十六进制结果</label>
+<div class="code-block" id="hmac-result" style="min-height:60px;">—</div>
+</div>
+<div class="toolbar"><button class="copy-btn" onclick="copyText(document.getElementById('hmac-result').textContent,this)" style="padding:7px 16px;">复制结果</button></div>
+</div>
+</div>
+</div>
+</div>
+<!-- Panel 3: AES -->
+<div class="tab-panel" id="p-aes">
+<div class="grid">
+<div class="card">
+<div class="hd"><div class="dot"></div><h3>AES 加解密参数</h3></div>
+<div class="bd">
+<div><label>操作</label>
+<select id="aes-op"><option value="enc">加密 (Encrypt)</option><option value="dec">解密 (Decrypt)</option></select>
+</div>
+<div><label>明文 / 密文</label><textarea id="aes-input" placeholder="加密时输入明文；解密时输入 Base64 密文..."></textarea></div>
+<div><label>密码 (Password)</label><input id="aes-pass" placeholder="输入密码（自动派生密钥）" type="password"/></div>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+<div><label>模式</label>
+<select id="aes-mode"><option value="AES-GCM">AES-GCM</option><option value="AES-CBC">AES-CBC</option></select>
+</div>
+<div><label>密钥长度</label>
+<select id="aes-bits"><option value="128">128 bit</option><option value="192">192 bit</option><option selected="" value="256">256 bit</option></select>
+</div>
+</div>
+<div class="toolbar">
+<button class="primary" onclick="doAES()"><i class="fa-solid fa-shield-halved"></i> 执行</button>
+<button class="secondary" onclick="document.getElementById('aes-input').value='';document.getElementById('aes-output').value=''">清空</button>
+</div>
+</div>
+</div>
+<div class="card">
+<div class="hd"><div class="dot" style="background:var(--accent2)"></div><h3>输出结果</h3></div>
+<div class="bd">
+<div><label>结果（Base64）</label><textarea id="aes-output" placeholder="结果将显示在此处..." readonly=""></textarea></div>
+<div class="badge err" id="aes-err" style="display:none;"><i class="fa-solid fa-circle-exclamation"></i> <span id="aes-err-msg"></span></div>
+<div class="toolbar"><button class="copy-btn" onclick="copyText(document.getElementById('aes-output').value,this)" style="padding:7px 16px;">复制结果</button></div>
+</div>
+</div>
+</div>
+</div>
+<!-- Panel 4: Base64 -->
+<div class="tab-panel" id="p-base64">
+<div class="grid">
+<div class="card">
+<div class="hd"><div class="dot"></div><h3>输入</h3></div>
+<div class="bd">
+<div><label>文本内容</label><textarea id="b64-input" placeholder="输入文本或 Base64 字符串..."></textarea></div>
+<div><label>模式</label>
+<select id="b64-mode"><option value="std">标准 Base64</option><option value="url">URL-Safe Base64</option></select>
+</div>
+<div><label>文件上传（将文件转为 Base64）</label>
+<input id="b64-file" style="background:none;border:none;padding:0;font-family:var(--sans);color:var(--muted);font-size:13px;" type="file"/>
+</div>
+<div class="toolbar">
+<button class="primary" onclick="b64Encode()"><i class="fa-solid fa-arrow-right"></i> 编码</button>
+<button class="secondary" onclick="b64Decode()"><i class="fa-solid fa-arrow-left"></i> 解码</button>
+<button class="secondary" onclick="document.getElementById('b64-input').value='';document.getElementById('b64-output').value=''">清空</button>
+</div>
+</div>
+</div>
+<div class="card">
+<div class="hd"><div class="dot" style="background:var(--accent2)"></div><h3>结果</h3></div>
+<div class="bd">
+<div><label>输出</label><textarea id="b64-output" placeholder="结果显示在此..." readonly=""></textarea></div>
+<div class="toolbar"><button class="copy-btn" onclick="copyText(document.getElementById('b64-output').value,this)" style="padding:7px 16px;">复制结果</button></div>
+</div>
+</div>
+</div>
+</div>
+<!-- Panel 5: Hex -->
+<div class="tab-panel" id="p-hex">
+<div class="grid">
+<div class="card">
+<div class="hd"><div class="dot"></div><h3>输入</h3></div>
+<div class="bd">
+<div><label>文本 / Hex 字符串</label><textarea id="hex-input" placeholder="输入文本或十六进制字符串..."></textarea></div>
+<div><label>十六进制分隔符</label>
+<select id="hex-sep"><option value="">无分隔</option><option value=" ">空格</option><option value=":">冒号</option></select>
+</div>
+<div class="toolbar">
+<button class="primary" onclick="toHex()"><i class="fa-solid fa-arrow-right"></i> 文本→Hex</button>
+<button class="secondary" onclick="fromHex()"><i class="fa-solid fa-arrow-left"></i> Hex→文本</button>
+<button class="secondary" onclick="document.getElementById('hex-input').value='';document.getElementById('hex-output').value=''">清空</button>
+</div>
+</div>
+</div>
+<div class="card">
+<div class="hd"><div class="dot" style="background:var(--accent2)"></div><h3>结果</h3></div>
+<div class="bd">
+<div><label>输出</label><textarea id="hex-output" placeholder="结果显示在此..." readonly=""></textarea></div>
+<div class="toolbar"><button class="copy-btn" onclick="copyText(document.getElementById('hex-output').value,this)" style="padding:7px 16px;">复制结果</button></div>
+</div>
+</div>
+</div>
+</div>
+<!-- Panel 6: URL -->
+<div class="tab-panel" id="p-url">
+<div class="grid">
+<div class="card">
+<div class="hd"><div class="dot"></div><h3>输入</h3></div>
+<div class="bd">
+<div><label>URL / 文本内容</label><textarea id="url-input" placeholder="输入 URL 或文本..."></textarea></div>
+<div class="toolbar">
+<button class="primary" onclick="urlEncode()"><i class="fa-solid fa-arrow-right"></i> 编码</button>
+<button class="secondary" onclick="urlDecode()"><i class="fa-solid fa-arrow-left"></i> 解码</button>
+<button class="secondary" onclick="document.getElementById('url-input').value='';document.getElementById('url-output').value=''">清空</button>
+</div>
+</div>
+</div>
+<div class="card">
+<div class="hd"><div class="dot" style="background:var(--accent2)"></div><h3>结果</h3></div>
+<div class="bd">
+<div><label>输出</label><textarea id="url-output" placeholder="结果显示在此..." readonly=""></textarea></div>
+<div class="toolbar"><button class="copy-btn" onclick="copyText(document.getElementById('url-output').value,this)" style="padding:7px 16px;">复制结果</button></div>
+</div>
+</div>
+</div>
+</div>
+<!-- Panel 7: JWT -->
+<div class="tab-panel" id="p-jwt">
+<div class="full-card">
+<div class="hd"><div class="dot"></div><h3>JWT Token 输入</h3></div>
+<div class="bd">
+<div><label>粘贴 JWT Token</label><textarea id="jwt-input" placeholder="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIn0..." style="min-height:80px;"></textarea></div>
+<div class="toolbar">
+<button class="primary" onclick="parseJWT()"><i class="fa-solid fa-magnifying-glass"></i> 解析</button>
+<button class="secondary" onclick="document.getElementById('jwt-input').value='';document.getElementById('jwt-out').innerHTML=''">清空</button>
+</div>
+</div>
+</div>
+<div id="jwt-out"></div>
+</div>
+<!-- Panel 8: Random -->
+<div class="tab-panel" id="p-rand">
+<div class="row3">
+<div class="card">
+<div class="hd"><div class="dot"></div><h3>UUID v4 生成</h3></div>
+<div class="bd">
+<div><label>数量</label><input id="uuid-count" max="50" min="1" type="number" value="1"/></div>
+<div class="toolbar"><button class="primary" onclick="genUUID()">生成</button><button class="secondary" onclick="document.getElementById('uuid-out').textContent=''">清空</button></div>
+<div class="code-block" id="uuid-out" style="min-height:80px;"></div>
+<div class="toolbar"><button class="copy-btn" onclick="copyText(document.getElementById('uuid-out').textContent,this)" style="padding:6px 14px;">复制</button></div>
+</div>
+</div>
+<div class="card">
+<div class="hd"><div class="dot"></div><h3>随机字节</h3></div>
+<div class="bd">
+<div><label>字节数量</label><input id="rbytes-count" max="512" min="1" type="number" value="16"/></div>
+<div><label>输出格式</label><select id="rbytes-fmt"><option value="hex">十六进制</option><option value="b64">Base64</option></select></div>
+<div class="toolbar"><button class="primary" onclick="genBytes()">生成</button><button class="secondary" onclick="document.getElementById('rbytes-out').textContent=''">清空</button></div>
+<div class="code-block" id="rbytes-out" style="min-height:60px;"></div>
+<div class="toolbar"><button class="copy-btn" onclick="copyText(document.getElementById('rbytes-out').textContent,this)" style="padding:6px 14px;">复制</button></div>
+</div>
+</div>
+<div class="card">
+<div class="hd"><div class="dot"></div><h3>随机密码</h3></div>
+<div class="bd">
+<div><label>密码长度</label><input id="pwd-len" max="128" min="4" type="number" value="16"/></div>
+<div><label>字符集</label>
+<div class="checkbox-group">
+<label><input checked="" id="pwd-upper" type="checkbox"/>大写字母</label>
+<label><input checked="" id="pwd-lower" type="checkbox"/>小写字母</label>
+<label><input checked="" id="pwd-digit" type="checkbox"/>数字</label>
+<label><input checked="" id="pwd-sym" type="checkbox"/>符号</label>
+</div>
+</div>
+<div class="toolbar"><button class="primary" onclick="genPassword()">生成</button><button class="secondary" onclick="document.getElementById('pwd-out').textContent=''">清空</button></div>
+<div class="code-block" id="pwd-out" style="min-height:60px;word-break:break-all;"></div>
+<div class="toolbar"><button class="copy-btn" onclick="copyText(document.getElementById('pwd-out').textContent,this)" style="padding:6px 14px;">复制</button></div>
+</div>
+</div>
+</div>
+</div>
+<footer class="foot"><i class="fa-solid fa-shield-halved"></i> 所有操作均在浏览器本地完成，数据不会上传至任何服务器。</footer>
+</div>
+</main>
+    <button id="fabBack" title="返回上一层" aria-label="返回上一层">
+        <i class="fa fa-arrow-left"></i>
+    </button>
+    <script>
 // ── Tab switching ──
 function switchTab(id,btn){
   document.querySelectorAll('.tab-panel').forEach(p=>p.classList.remove('active'));
@@ -921,167 +827,22 @@ function genPassword(){
 }
 
 // ── Theme (exact from reference) ──
-(function initTheme(){
-    const KEY = "verdvana_theme"; // 'system' | 'light' | 'dark'
-    const html = document.documentElement;
-    const toggle = document.getElementById("themeToggle");
-    const label = document.getElementById("themeLabel");
-    const wrap = document.getElementById("themeSwitchWrap");
 
-    if(!toggle || !label || !wrap) return;
-
-    const systemPrefersDark = () =>
-      window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches;
-
-    function withTransition(fn){
-      html.classList.add("theme-transition");
-      try{ fn(); } finally{
-        window.setTimeout(()=> html.classList.remove("theme-transition"), 280);
-      }
-    }
-
-    function apply(mode){
-      // mode: 'system' | 'light' | 'dark'
-      if(mode === "system"){
-        html.removeAttribute("data-theme"); // let CSS prefers-color-scheme decide
-        toggle.checked = systemPrefersDark();
-        label.textContent = "系统";
-      }else{
-        html.setAttribute("data-theme", mode);
-        toggle.checked = (mode === "dark");
-        label.textContent = (mode === "dark") ? "深色" : "浅色";
-      }
-      if(toggle.checked) wrap.classList.add("on");
-      else wrap.classList.remove("on");
-    }
-
-    function getSaved(){
-      return localStorage.getItem(KEY) || "system";
-    }
-    function save(mode){
-      localStorage.setItem(KEY, mode);
-    }
-
-    // 初始
-    apply(getSaved());
-
-    // 监听系统主题变化：仅当当前为 system 时跟随
-    const mql = window.matchMedia("(prefers-color-scheme: dark)");
-    const onSystemChange = () => {
-      if(getSaved() === "system") withTransition(()=>apply("system"));
-    };
-    if(mql && mql.addEventListener) mql.addEventListener("change", onSystemChange);
-    else if(mql && mql.addListener) mql.addListener(onSystemChange);
-
-    // 点击开关：浅色 ↔ 深色；按住 Alt/Option 点击 -> 切回 system
-    toggle.addEventListener("click", (e) => {
-      const alt = e.altKey;
-      if(alt){
-        save("system");
-        withTransition(()=>apply("system"));
-        return;
-      }
-      const next = toggle.checked ? "dark" : "light";
-      save(next);
-      withTransition(()=>apply(next));
-    });
-
-    // 长按（移动端）也切回 system：800ms
-    let pressTimer = null;
-    wrap.addEventListener("pointerdown", () => {
-      pressTimer = setTimeout(() => {
-        save("system");
-        withTransition(()=>apply("system"));
-        wrap.title = "已切回：系统";
-        setTimeout(()=> wrap.title = "切换明暗模式（Alt/Option 点击或长按可切回系统）", 1200);
-      }, 800);
-    });
-    wrap.addEventListener("pointerup", () => { if(pressTimer) clearTimeout(pressTimer); });
-    wrap.addEventListener("pointercancel", () => { if(pressTimer) clearTimeout(pressTimer); });
-  })();
 
 // ── Sidebar (exact from reference) ──
-(function initSidebar(){
-  const sb = document.getElementById('sidebar');
-  const btn = document.getElementById('sbToggle');
-  const back = document.getElementById('sbBack');
-  const backdrop = document.getElementById('sbBackdrop');
-  if(!sb || !btn) return;
 
-  // Default: collapsed
-  sb.classList.remove('is-expanded');
-
-  const mq = window.matchMedia ? window.matchMedia('(max-width: 720px)') : null;
-  const isMobile = () => mq ? mq.matches : (window.innerWidth <= 720);
-
-  function setIcon(){
-    const icon = btn.querySelector('i');
-    if(!icon) return;
-    icon.className = sb.classList.contains('is-expanded')
-      ? 'fa-solid fa-chevron-left'
-      : 'fa-solid fa-bars';
-  }
-
-  function syncOverlay(){
-    const active = sb.classList.contains('is-expanded') && isMobile();
-    if(backdrop) backdrop.classList.toggle('is-active', active);
-    document.body.classList.toggle('sb-lock-scroll', active);
-  }
-
-  function collapse(){
-    sb.classList.remove('is-expanded');
-    setIcon();
-    syncOverlay();
-  }
-
-  setIcon();
-  syncOverlay();
-
-  btn.addEventListener('click', () => {
-    sb.classList.toggle('is-expanded');
-    setIcon();
-    syncOverlay();
-  });
-
-  // click overlay to close
-  if(backdrop){
-    backdrop.addEventListener('click', collapse);
-    backdrop.addEventListener('touchstart', collapse, {passive:true});
-  }
-
-  // ESC to close (mobile expanded)
-  window.addEventListener('keydown', (e) => {
-    if(e.key === 'Escape' && sb.classList.contains('is-expanded') && isMobile()) collapse();
-  });
-
-  // resize sync
-  window.addEventListener('resize', syncOverlay);
-  if(mq && mq.addEventListener) mq.addEventListener('change', syncOverlay);
-  else if(mq && mq.addListener) mq.addListener(syncOverlay);
-
-  // Back: prefer history; fallback to parent path; final fallback to labs
-  if(back){
-    back.addEventListener('click', () => {
-      try{
-        if(history.length > 1){
-          history.back();
-          return;
-        }
-      }catch(e){}
-      try{
-        const u = new URL(window.location.href);
-        let p = u.pathname.replace(/\/+$/, '');
-        const idx = p.lastIndexOf('/');
-        if(idx > 0){
-          u.pathname = p.slice(0, idx + 1);
-          window.location.assign(u.toString());
-          return;
-        }
-      }catch(e){}
-      window.location.assign('https://verdvana.cn/labs/');
+    // 悬浮返回按钮
+    document.getElementById('fabBack').addEventListener('click', function () {
+        try { if (history.length > 1) { history.back(); return; } } catch (e) {}
+        try {
+            var u = new URL(window.location.href);
+            var p = u.pathname.replace(/\/+$/, '');
+            var idx = p.lastIndexOf('/');
+            if (idx > 0) { u.pathname = p.slice(0, idx + 1); window.location.assign(u.toString()); return; }
+        } catch (e) {}
+        window.location.assign('https://verdvana.cn/labs/');
     });
-  }
-})();
-</script>
+
+    </script>
 </body>
 </html>
