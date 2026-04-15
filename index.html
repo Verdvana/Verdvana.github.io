@@ -577,6 +577,20 @@ layout: null
 
         .pill:hover { opacity: 0.8; transform: scale(1.02); }
 
+                @media (min-width: 901px) and (max-width: 1500px) {
+            /* 页面宽度在 901px~1500px 之间：左侧栏不动，project 卡片变单列 */
+            .career-item {
+                grid-template-columns: 160px 64px 1fr 360px;
+            }
+            .projects-area {
+                width: 360px;
+                grid-template-columns: 1fr;
+            }
+            .projects-area h5 {
+                grid-column: span 1;
+            }
+        }
+
         @media (max-width: 900px) {
             nav { padding: 15px 20px; }
             nav .nav-links { gap: 15px; }
