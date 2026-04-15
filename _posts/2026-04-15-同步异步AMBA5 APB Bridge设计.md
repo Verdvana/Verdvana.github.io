@@ -690,8 +690,76 @@ cg_addr_coverage     地址范围 + 字节使能组合覆盖
 
 ### 11.3 Testbench
 
+&#160; &#160; &#160; &#160; 时钟设计（制造异步相位差）：
+
+```verilog
+always #5  M_PCLK = ~M_PCLK;          // 100 MHz
+initial #3 forever #10 S_PCLK = ~S_PCLK; // 50 MHz，初始偏移 3ns
+```
+
+&#160; &#160; &#160; &#160; 从端寄存器模型
+
+- **16×32bit寄存器堆**，初始化为 0xDEAD_000N
+- **随机等待周期**：$urandom_range(0, 3)模拟真实从设备延迟
+- **错误注入**：地址低4位=0xF时自动拉高S_PSLVERR
 
 
+&#160; &#160; &#160; &#160; 6组测试场景：
+| 测试 | 场景 | 验证点 |
+| --- | --- | --- |
+| TEST1 | 写后读回验证 | 数据完整性，4笔 |
+| TEST2 | 连续8笔写 | 多事务顺序性 |
+| TEST3 | 从端SLVERR | 错误地址响应 |
+| TEST4 | PPROT全组合 | 5种保护类型 |
+| TEST5 | PSTRB字节使能 | 7种使能组合 |
+| TEST6 | 地址边界 | 零地址+最大地址 |
+
+&#160; &#160; &#160; &#160; 安全机制：
+- ⏱️ 超时看门狗：1ms 无响应强制 $finish
+- 🔢 PREADY 超时：单笔事务超过 200 周期报错
+- ✅ PASS/FAIL 计数：仿真结束输出汇总
+
+
+### 11.4 仿真 Makefile
+
+
+&#160; &#160; &#160; &#160; 三款工具支持：
+
+```shell
+make              # 默认：VCS
+make TOOL=questa  # Questa
+make TOOL=xcelium # Xcelium
+
+```
+
+
+&#160; &#160; &#160; &#160; 常用命令：
+```shell
+# 基本仿真
+make                          # VCS 编译 + 仿真
+make WAVE=fsdb                # 抓取 FSDB 波形（Verdi）
+make WAVE=vcd                 # 抓取 VCD 波形
+
+# 覆盖率
+make COV=1                    # 启用覆盖率
+make vcs_cov_report           # 生成 HTML 覆盖率报告
+
+# 随机回归
+make SEED=12345               # 指定种子
+make regress                  # 4 场景全量回归
+make regress_cov              # 6 个 Seed 覆盖率回归 + 合并
+
+# 测试场景
+make test_basic               # SEED=1001
+make test_error               # SEED=2002
+make test_pstrb               # SEED=3003
+make test_boundary            # SEED=4004
+
+# 工具
+make lint                     # RTL Lint 检查
+make verdi                    # 打开 Verdi 看波形
+make clean                    # 清理产物
+```
 
 ---
 ## 12 设计约束与限制
