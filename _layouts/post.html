@@ -311,19 +311,23 @@ layout: default
     /* Mermaid Center */
     .mermaid {
         display: flex;
-        justify-content: center;
+        overflow-x: auto;
         margin: 2em 0;
+    }
+    .mermaid svg {
+        margin: 0 auto;
+        flex-shrink: 0;
     }
 
     /* Wavedrom Center */
-    .wavedrom, script[type="WaveDrom"] + svg {
+    .wavedrom {
         display: flex;
-        justify-content: center;
-        margin: 2em 0;
         overflow-x: auto;
+        margin: 2em 0;
     }
-    /* Force white lines for dark theme using filter - most reliable method */
     .wavedrom svg, script[type="WaveDrom"] + svg {
+        margin: 0 auto;
+        flex-shrink: 0 !important;
         filter: invert(1) hue-rotate(180deg) brightness(1.2) !important;
         background: transparent !important;
     }
