@@ -3,7 +3,7 @@
   title: 房贷计算器
   desc: >
     支持商贷/公积金、利率变更与提前还款的房贷计算器，秒算月供与总利息
-  thumb: /assets/labs/thumbs/mortgage_calculator.png
+  thumb: /assets/labs/thumbs/mortgage_calculator.jpg
   tags: [Finance]
   order: 2
 
@@ -11,7 +11,7 @@
   title: 视觉阵列转换器
   desc: >
     专为嵌入式开发打造的视觉阵列转换工具，集成Base64、字符画及多位深RGB/灰度点阵生成，一键完成图像到硬件代码的高效转换
-  thumb: /assets/labs/thumbs/visionmatrix.png
+  thumb: /assets/labs/thumbs/visionmatrix.jpg
   tags: [Image Processing]
   order: 1
 
@@ -19,7 +19,7 @@
   title: 随机抽取器
   desc: >
     多功能随机抽取工具，支持名单抽取、抽取个数自定义及结果去重
-  thumb: /assets/labs/thumbs/random_picker.png
+  thumb: /assets/labs/thumbs/random_picker.jpg
   tags: [Others]
   order: 4
 
@@ -27,6 +27,6 @@
   title: 加密工具箱
   desc: >
     纯客户端在线加密工具箱，支持哈希（MD5/SHA）、HMAC、AES加解密、Base64/Hex/URL编解码、JWT解析及随机密码生成。
-  thumb: /assets/labs/thumbs/crypto_toolbox.png
+  thumb: /assets/labs/thumbs/crypto_toolbox.jpg
   tags: [Algorithm]
   order: 2
