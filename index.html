@@ -2,22 +2,23 @@
 layout: null
 ---
 <!DOCTYPE html>
+
 <html lang="zh-CN">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <!-- SEO Meta Tags -->
-    <meta name="description" content="Verdvana — Senior ASICs Engineer at Qualcomm Shanghai. Specializing in Wi-Fi SoC RTL design, low-power architecture, CDC/STA signoff, and EDA automation for cutting-edge wireless chips.">
-    <meta name="keywords" content="ASIC Engineer, RTL Design, SoC, Wi-Fi, Qualcomm, Shanghai, IC Design, Hardware Engineering, FPGA, EDA, PrimeTime, SpyGlass">
-    <meta name="author" content="Verdvana">
-    <!-- Open Graph -->
-    <meta property="og:title" content="VERDVANA — ASICs & Hardware Design">
-    <meta property="og:description" content="Senior ASICs Engineer at Qualcomm Shanghai. RTL design, low-power SoC architecture, and EDA automation for Wi-Fi 6/7/8 chips.">
-    <meta property="og:type" content="website">
-    <meta property="og:url" content="https://verdvana.cn">
-    <meta property="og:image" content="https://verdvana.cn/static/img/wallpaper.jpg">
-    <!-- JSON-LD Person Schema -->
-    <script type="application/ld+json">
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<!-- SEO Meta Tags -->
+<meta content="Verdvana — Senior ASICs Engineer at Qualcomm Shanghai. Specializing in Wi-Fi SoC RTL design, low-power architecture, CDC/STA signoff, and EDA automation for cutting-edge wireless chips." name="description"/>
+<meta content="ASIC Engineer, RTL Design, SoC, Wi-Fi, Qualcomm, Shanghai, IC Design, Hardware Engineering, FPGA, EDA, PrimeTime, SpyGlass" name="keywords"/>
+<meta content="Verdvana" name="author"/>
+<!-- Open Graph -->
+<meta content="VERDVANA — ASICs &amp; Hardware Design" property="og:title"/>
+<meta content="Senior ASICs Engineer at Qualcomm Shanghai. RTL design, low-power SoC architecture, and EDA automation for Wi-Fi 6/7/8 chips." property="og:description"/>
+<meta content="website" property="og:type"/>
+<meta content="https://verdvana.cn" property="og:url"/>
+<meta content="https://verdvana.cn/static/img/wallpaper.jpg" property="og:image"/>
+<!-- JSON-LD Person Schema -->
+<script type="application/ld+json">
     {
       "@context": "https://schema.org",
       "@type": "Person",
@@ -37,20 +38,18 @@ layout: null
       "knowsAbout": ["ASIC Design", "RTL Design", "SoC Architecture", "Wi-Fi", "EDA", "PrimeTime", "SpyGlass", "Verilog", "SystemVerilog"]
     }
     </script>
-    <title>VERDVANA — ASICs & Hardware Design</title>
-    <!-- Favicon -->
-    <link rel="icon" type="image/jpeg" href="/static/img/avatar.jpg">
-    <link rel="apple-touch-icon" href="/static/img/avatar.jpg">
-    <!-- Font Awesome for Icons -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <!-- Devicon for Tech Logos -->
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/devicons/devicon@latest/devicon.min.css">
-    
-    <!-- APlayer -->
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/aplayer/dist/APlayer.min.css">
-    <script src="https://cdn.jsdelivr.net/npm/aplayer/dist/APlayer.min.js"></script>
-
-    <style>
+<title>VERDVANA — ASICs &amp; Hardware Design</title>
+<!-- Favicon -->
+<link href="/static/img/avatar.jpg" rel="icon" type="image/jpeg"/>
+<link href="/static/img/avatar.jpg" rel="apple-touch-icon"/>
+<!-- Font Awesome for Icons -->
+<link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet"/>
+<!-- Devicon for Tech Logos -->
+<link href="https://cdn.jsdelivr.net/gh/devicons/devicon@latest/devicon.min.css" rel="stylesheet"/>
+<!-- APlayer -->
+<link href="https://cdn.jsdelivr.net/npm/aplayer/dist/APlayer.min.css" rel="stylesheet"/>
+<script src="https://cdn.jsdelivr.net/npm/aplayer/dist/APlayer.min.js"></script>
+<style>
         :root {
             --bg-color: #000000;
             --text-color: #ffffff;
@@ -503,7 +502,10 @@ layout: null
             gap: 12px;
             align-items: start;
             min-height: 100px;
-        }
+        
+            position: relative;
+            overflow: hidden;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;}
 
         .project-logo {
             width: 48px;
@@ -756,7 +758,9 @@ layout: null
             border-radius: 16px;
             border: 1px solid var(--border-color);
             transition: all 0.3s ease;
-        }
+        
+            position: relative;
+            overflow: hidden;}
 
         .skill-card:hover {
             background: rgba(255, 255, 255, 0.08);
@@ -1007,464 +1011,530 @@ layout: null
             color: var(--secondary-text);
             margin-top: 6px;
             line-height: 1.4;
-        }    </style>
+        }    
+/* ===== Rainbow border on project card hover ===== */
+
+@property --angle {
+  syntax: '<angle>';
+  initial-value: 0deg;
+  inherits: false;
+}
+
+@keyframes rainbow-spin {
+  to { --angle: 360deg; }
+}
+
+.project-link {
+    display: block;
+    text-decoration: none;
+    color: inherit;
+}
+
+.project-link:hover .project-item {
+    transform: translateY(-3px);
+    box-shadow: 0 12px 32px rgba(0, 0, 0, 0.4);
+    cursor: pointer;
+}
+
+/* ::before 负责彩色边框，mask 裁出 1.5px 细线，opacity 控制显隐 */
+.project-link .project-item::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: 12px;
+    padding: 0.75px;
+    background: conic-gradient(
+        from var(--angle),
+        #ff6ec7, #a78bfa, #60a5fa, #34d399, #fbbf24, #f87171, #ff6ec7
+    );
+    -webkit-mask:
+        linear-gradient(#fff 0 0) content-box,
+        linear-gradient(#fff 0 0);
+    -webkit-mask-composite: xor;
+    mask-composite: exclude;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+    pointer-events: none;
+    z-index: 10;
+}
+
+.project-link:hover .project-item::before {
+    opacity: 1;
+    animation: rainbow-spin 3s linear infinite;
+}
+
+/* skill-card 同款彩色边框 */
+.skill-card::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: 16px;
+    padding: 0.75px;
+    background: conic-gradient(
+        from var(--angle),
+        #ff6ec7, #a78bfa, #60a5fa, #34d399, #fbbf24, #f87171, #ff6ec7
+    );
+    -webkit-mask:
+        linear-gradient(#fff 0 0) content-box,
+        linear-gradient(#fff 0 0);
+    -webkit-mask-composite: xor;
+    mask-composite: exclude;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+    pointer-events: none;
+    z-index: 10;
+}
+
+.skill-card:hover::before {
+    opacity: 1;
+    animation: rainbow-spin 3s linear infinite;
+}
+
+</style>
 </head>
 <body>
-
-    <nav>
-        <a href="/" class="logo-area">
-            <img src="/static/img/avatar.jpg" alt="Verdvana">
-            <span class="logo">VERDVANA</span>
-        </a>
-        <div class="nav-links">
-            <a href="/archive">Blog</a>
-            <a href="/labs">Labs</a>
-            <a href="/comments">Comments</a>
-            <a href="https://github.com/Verdvana">GitHub</a>
-        </div>
-    </nav>
-
-    <header class="hero">
-        <h1>Engineering the <br>Future of Silicon.</h1>
-        <p>Senior ASICs Engineer at Qualcomm. <br>Architecting high-performance hardware solutions and exploring the frontiers of IC design. <br><span style="font-size: clamp(14px, 1.8vw, 20px); color: #8e8e93;">Specialized in Wi-Fi SoC RTL · Low-Power Architecture · EDA Automation</span></p>
-        <a href="https://chenjiabao.artstation.com" target="_blank" class="wallpaper-credit">
+<nav>
+<a class="logo-area" href="/">
+<img alt="Verdvana" src="/static/img/avatar.jpg"/>
+<span class="logo">VERDVANA</span>
+</a>
+<div class="nav-links">
+<a href="/archive">Blog</a>
+<a href="/labs">Labs</a>
+<a href="/comments">Comments</a>
+<a href="https://github.com/Verdvana">GitHub</a>
+</div>
+</nav>
+<header class="hero">
+<h1>Engineering the <br/>Future of Silicon.</h1>
+<p>Senior ASICs Engineer at Qualcomm. <br/>Architecting high-performance hardware solutions and exploring the frontiers of IC design. <br/><span style="font-size: clamp(14px, 1.8vw, 20px); color: #8e8e93;">Specialized in Wi-Fi SoC RTL · Low-Power Architecture · EDA Automation</span></p>
+<a class="wallpaper-credit" href="https://chenjiabao.artstation.com" target="_blank">
             Wallpaper authorized by BAOV
         </a>
-    </header>
-
-    <!-- Career with Logos -->
-    <section id="career">
-        <h2>Career</h2>
-        <div class="career-container">
-            <!-- Qualcomm -->
-            <div class="career-item">
-                <div class="career-date-column">
-                    <div class="date-cell"> </div> <!-- Match H4 height -->
-                    <div class="date-cell sub">2023.12 — Present</div>
-                    <div class="date-cell sub">2021.06 — 2023.12</div>
-                </div>
-                <div class="company-logo">
-                    <img src="/static/img/q.png" alt="Qualcomm">
-                </div>
-                <div class="details">
-                    <h4><a href="https://www.qualcomm.com" target="_blank" style="color: var(--accent-color); text-decoration: none;">Qualcomm (Shanghai) Co., Ltd.</a></h4>
-                    <div class="position-name" style="color: inherit;">Senior ASICs Engineer</div>
-                    <div class="position-name" style="color: inherit;">ASICs Engineer</div>
-                    <p>Led RTL design and subsystem integration for Wi‑Fi 6/7/8 SoCs at Qualcomm Shanghai, contributing to 10+ successful tape‑outs across multiple FastConnect platforms.</p>
-                    <p>Worked closely with architecture and power teams to implement low‑power features at RTL level.</p>
-                    <p>Developed Tcl/Perl automation tools to significantly accelerate STA sign‑off and timing closure efficiency.</p>
-                </div>
-                <div class="projects-area">
-                        <h5>Featured Projects</h5>
-                        <div class="project-item">
-                            <div class="project-logo">
-                                <img src="/static/img/fc8800.jpg" alt="FC8800">
-                                <!-- <i class="fa-solid fa-microchip" style="color: var(--accent-color); font-size: 20px;"></i> -->
-                            </div>
-                            <div class="project-content">
-                                <h6>FastConnect 8800 <span class="process-node">6nm</span></h6>
-                                <div class="project-tags">
-                                    <span class="project-tag">Wi-Fi 8 (802.11bn)</span>
-                                    <span class="project-tag">Bluetooth 7.0</span>
-                                    <span class="project-tag">11.6 Gbps Peak</span>
-                                    <span class="project-tag">4×4 Wi-Fi</span>
-                                    <span class="project-tag">UWB & Thread</span>
-                                    <span class="project-tag">4k QAM & 320MHz BW</span>
-                                </div>
-                        <p class="project-desc">Next-gen Wi-Fi 8 flagship with ultra-wide 320 MHz bandwidth, UWB integration, and 4K QAM modulation.</p>
-                            </div>
-                        </div>
-                        <div class="project-item">
-                            <div class="project-logo">
-                                <img src="/static/img/fc.jpg" alt="FC8700">
-                                <!-- <i class="fa-solid fa-microchip" style="color: var(--accent-color); font-size: 20px;"></i> -->
-                            </div>
-                            <div class="project-content">
-                                <h6>FastConnect 8700 <span class="process-node">14nm</span></h6>
-                                <div class="project-tags">
-                                    <span class="project-tag">Wi-Fi 8 (802.11bn)</span>
-                                    <span class="project-tag">Bluetooth 7.0</span>
-                                    <span class="project-tag">8.6 Gbps Peak</span>
-                                    <span class="project-tag">Low Power HBS</span>
-                                </div>
-                        <p class="project-desc">High-bandwidth Wi-Fi 8 solution with advanced low-power Hearable BT subsystem (HBS).</p>
-                            </div>
-                        </div>
-                        <div class="project-item">
-                            <div class="project-logo">
-                                <img src="/static/img/fc7800.jpg" alt="FC7800">
-                                <!-- <i class="fa-solid fa-microchip" style="color: var(--accent-color); font-size: 20px;"></i> -->
-                            </div>
-                            <div class="project-content">
-                                <h6>FastConnect 7800 <span class="process-node">6nm/14nm</span></h6>
-                                <div class="project-tags">
-                                    <span class="project-tag">Wi-Fi 7 (802.11be)</span>
-                                    <span class="project-tag">Bluetooth 5.4</span>
-                                    <span class="project-tag">5.8 Gbps Peak</span>
-                                    <span class="project-tag">Dual Bluetooth</span>
-                                    <span class="project-tag">4k QAM & 320MHz BW</span>
-                                </div>
-                        <p class="project-desc">Multi-link Wi-Fi 7 platform with dual Bluetooth architecture and cutting-edge RF design.</p>
-                            </div>
-                        </div>
-                        <div class="project-item">
-                            <div class="project-logo">
-                                <img src="/static/img/fc7700.jpg" alt="FC7700">
-                                <!-- <i class="fa-solid fa-microchip" style="color: var(--accent-color); font-size: 20px;"></i> -->
-                            </div>
-                            <div class="project-content">
-                                <h6>FastConnect 7700 <span class="process-node">14nm</span></h6>
-                                <div class="project-tags">
-                                    <span class="project-tag">Wi-Fi 7 (802.11be)</span>
-                                    <span class="project-tag">Bluetooth 5.4</span>
-                                    <span class="project-tag">5.8 Gbps Peak</span>
-                                    <span class="project-tag">Low Power</span>
-                                    <span class="project-tag">4k QAM & 320MHz BW</span>
-                                </div>
-                        <p class="project-desc">Cost-optimized Wi-Fi 7 chip delivering flagship features in a compact, low-power design.</p>
-                            </div>
-                        </div>
-                        <div class="project-item">
-                            <div class="project-logo">
-                                <img src="/static/img/fc.jpg" alt="FC6400">
-                                <!-- <i class="fa-solid fa-microchip" style="color: var(--accent-color); font-size: 20px;"></i> -->
-                            </div>
-                            <div class="project-content">
-                                <h6>FastConnect 6400 <span class="process-node">22nm</span></h6>
-                                <div class="project-tags">
-                                    <span class="project-tag">Wi-Fi 6 (802.11ax)</span>
-                                    <span class="project-tag">Bluetooth 5.2</span>
-                                    <span class="project-tag">1.2 Gbps Peak</span>
-                                    <span class="project-tag">2x2 MIMO</span>
-                                    <span class="project-tag">1024 QAM</span>
-                                </div>
-                        <p class="project-desc">Entry-level Wi-Fi 6 SoC with efficient 2×2 MIMO, targeting IoT and mobile platforms.</p>
-                            </div>
-                        </div>
-                    </div>
-            </div>
-            <!-- Zhonggu -->
-            <div class="career-item">
-                <div class="career-date-column">
-                    <div class="date-cell"> </div>
-                    <div class="date-cell sub">2018.04 — 2018.08</div>
-                </div>
-                <div class="company-logo">
-                    <img src="/static/img/中谷.png" alt="Zhonggu">
-                </div>
-                <div class="details">
-                    <h4><a href="https://www.zgkj00.cn" target="_blank" style="color: var(--accent-color); text-decoration: none;">Shanxi Zhonggu Technology</a></h4>
-                    <div class="position-name" style="color: inherit;">Hardware Engineer</div>
-                    <p>Developed low-power industrial sensor systems and high-precision multi-layer PCB designs.</p>
-                </div>
-                <div class="projects-area">
-                        <h5>Featured Projects</h5>
-                        <div class="project-item">
-                            <div class="project-logo">
-                                <!-- <img src="/static/img/methane_detector.png" alt="Methane Detector"> -->
-                                <i class="fa-solid fa-microchip" style="color: var(--accent-color); font-size: 20px;"></i>
-                            </div>
-                            <div class="project-content">
-                                <h6>低功耗甲烷检测系统 <span class="process-node">STM32L0</span></h6>
-                                <div class="project-tags">
-                                    <span class="project-tag">Low Power</span>
-                                    <span class="project-tag">Sch/PCB Design</span>
-                                    <span class="project-tag">Embedded C</span>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="project-item">
-                            <div class="project-logo">
-                                <!-- <img src="/static/img/temp_detector.png" alt="Temp Detector"> -->
-                                <i class="fa-solid fa-microchip" style="color: var(--accent-color); font-size: 20px;"></i>
-                            </div>
-                            <div class="project-content">
-                                <h6>单总线多点温度检测器 <span class="process-node">STM8L15</span></h6>
-                                <div class="project-tags">
-                                    <span class="project-tag">IIC Bus</span>
-                                    <span class="project-tag">Sch/PCB Design</span>
-                                    <span class="project-tag">Embedded C</span>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-            </div>
-        </div>
-    </section>
-
-    <!-- Education Section -->
-    <section id="education">
-        <h2>Education</h2>
-        <div class="career-container">
-            <!-- Xidian University -->
-            <div class="career-item">
-                <div class="career-date-column">
-                    <div class="date-cell"> </div>
-                    <div class="date-cell sub">2018.09 — 2021.06</div>
-                </div>
-                <div class="company-logo">
-                    <img src="/static/img/西安电子科技大学-logo.svg" alt="Xidian University">
-                </div>
-                <div class="details">
-                    <h4><a href="https://www.xidian.edu.cn" target="_blank" style="color: var(--accent-color); text-decoration: none;">Xidian University</a></h4>
-                    <div class="position-name" style="color: inherit;">M.E. in Electronics and Communication Engineering</div>
-                    <p>Specialized in digital signal processing and hardware architecture. Award-winner in national electronic design contests.</p>
-                </div>
-                <div class="projects-area">
-                        <h5>Featured Projects</h5>
-                        <div class="project-item">
-                            <div class="project-logo">
-                                <!-- <img src="/static/img/methane_detector.png" alt="Methane Detector"> -->
-                                <i class="fa-solid fa-microchip" style="color: var(--accent-color); font-size: 20px;"></i>
-                            </div>
-                            <div class="project-content">
-                                <h6>基于FPGA的圆形光电探测阵列数据采集系统 <span class="process-node">Cyclone Ⅳ</span></h6>
-                                <div class="project-tags">
-                                    <span class="project-tag">Low Power</span>
-                                    <span class="project-tag">Sch/PCB Design</span>
-                                    <span class="project-tag">Embedded C</span>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="project-item">
-                            <div class="project-logo">
-                                <!-- <img src="/static/img/methane_detector.png" alt="Methane Detector"> -->
-                                <i class="fa-solid fa-microchip" style="color: var(--accent-color); font-size: 20px;"></i>
-                            </div>
-                            <div class="project-content">
-                                <h6>消防员辅助监控系统 <span class="process-node">Cyclone Ⅳ</span></h6>
-                                <div class="project-tags">
-                                    <span class="project-tag">Low Power</span>
-                                    <span class="project-tag">Sch/PCB Design</span>
-                                    <span class="project-tag">Nios Ⅱ</span>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="project-item">
-                            <div class="project-logo">
-                                <!-- <img src="/static/img/temp_detector.png" alt="Temp Detector"> -->
-                                <i class="fa-solid fa-microchip" style="color: var(--accent-color); font-size: 20px;"></i>
-                            </div>
-                            <div class="project-content">
-                                <h6>微波智能感知平台 <span class="process-node">PCIe</span></h6>
-                                <div class="project-tags">
-                                    <span class="project-tag">Wireless network card</span>
-                                    <span class="project-tag">Sch/PCB Design</span>
-                                    <span class="project-tag">Embedded C</span>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-            </div>
-            <!-- North University of China -->
-            <div class="career-item">
-                <div class="career-date-column">
-                    <div class="date-cell"> </div>
-                    <div class="date-cell sub">2013.09 — 2017.07</div>
-                </div>
-                <div class="company-logo">
-                    <img src="/static/img/中北大学-logo.svg" alt="North University of China">
-                </div>
-                <div class="details">
-                    <h4><a href="https://www.nuc.edu.cn" target="_blank" style="color: var(--accent-color); text-decoration: none;">North University of China</a></h4>
-                    <div class="position-name" style="color: inherit;">B.E. in Electronic Science and Technology</div>
-                    <p>Foundational studies in semiconductor physics, circuit design, and embedded systems. Recognized as an Outstanding Graduate in 2017.</p>
-                </div>
-                <div class="projects-area">
-                        <h5>Featured Projects</h5>
-                        <div class="project-item">
-                            <div class="project-logo">
-                                <!-- <img src="/static/img/methane_detector.png" alt="Methane Detector"> -->
-                                <i class="fa-solid fa-microchip" style="color: var(--accent-color); font-size: 20px;"></i>
-                            </div>
-                            <div class="project-content">
-                                <h6>带啸叫检测与抑制的功率放大电路 <span class="process-node">STM32L1</span></h6>
-                                <div class="project-tags">
-                                    <span class="project-tag">FFT</span>
-                                    <span class="project-tag">Sch/PCB Design</span>
-                                    <span class="project-tag">Embedded C</span>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="project-item">
-                            <div class="project-logo">
-                                <!-- <img src="/static/img/methane_detector.png" alt="Methane Detector"> -->
-                                <i class="fa-solid fa-microchip" style="color: var(--accent-color); font-size: 20px;"></i>
-                            </div>
-                            <div class="project-content">
-                                <h6>总线型温室大棚监控系统 <span class="process-node">STM32L1</span></h6>
-                                <div class="project-tags">
-                                    <span class="project-tag">Low Power</span>
-                                    <span class="project-tag">Sch/PCB Design</span>
-                                    <span class="project-tag">Nios Ⅱ</span>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="project-item">
-                            <div class="project-logo">
-                                <!-- <img src="/static/img/temp_detector.png" alt="Temp Detector"> -->
-                                <i class="fa-solid fa-microchip" style="color: var(--accent-color); font-size: 20px;"></i>
-                            </div>
-                            <div class="project-content">
-                                <h6>带频谱显示的音频播放器 <span class="process-node">STM32L1</span></h6>
-                                <div class="project-tags">
-                                    <span class="project-tag">Wireless network card</span>
-                                    <span class="project-tag">Sch/PCB Design</span>
-                                    <span class="project-tag">Embedded C</span>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-            </div>
-        </div>
-    </section>
-
-    <!-- Skills Section -->
-    <section id="skills">
-        <h2>Skills</h2>
-        <div class="skills-grid">
-            <div class="skill-card">
-                <i class="fa-solid fa-microchip"></i>
-                <h3>ASIC Design</h3>
-                <div class="skill-tags">
-                    <a href="https://web.archive.org/web/20120716210757/http://www.verilog.com/IEEEVerilog.html" target="_blank"><span class="lang"><img src="/static/img/ieee.png" alt="Verilog"> Verilog</span></a>
-                    <a href="https://standards.ieee.org/standard/1800-2009.html" target="_blank"><span class="lang"><img src="/static/img/ieee.png" alt="SystemVerilog"> SystemVerilog</span></a>
-                    <a href="https://www.perl.org/" target="_blank"><span class="lang"><img src="/static/img/perl.svg" alt="Perl"> Perl</span></a>
-                    <a href="https://www.tcl.tk/" target="_blank"><span class="lang"><img src="/static/img/tcl.svg" alt="Tcl"> Tcl</span></a>
-                    <a href="https://www.python.org/" target="_blank"><span class="lang"><img src="/static/img/python.svg" alt="Python"> Python</span></a>
-                    <a href="https://www.synopsys.com/zh-cn/verification/simulation/vcs.html" target="_blank"><span class="tool"><img src="/static/img/synopsys.ico" alt="VCS"> VCS</span></a>
-                    <a href="https://www.synopsys.com/zh-cn/verification/debug/verdi.html" target="_blank"><span class="tool"><img src="/static/img/synopsys.ico" alt="Verdi"> Verdi</span></a>
-                    <a href="https://www.synopsys.com/implementation-and-signoff/signoff/primeclock.html" target="_blank"><span class="tool"><img src="/static/img/synopsys.ico" alt="PrimeClock"> PrimeClock</span></a>
-                    <a href="https://www.synopsys.com/implementation-and-signoff/signoff/primetime.html" target="_blank"><span class="tool"><img src="/static/img/synopsys.ico" alt="PrimeTime"> PrimeTime</span></a>
-                    <a href="https://www.synopsys.com/implementation-and-signoff/rtl-synthesis-test/design-compiler-graphical.html" target="_blank"><span class="tool"><img src="/static/img/synopsys.ico" alt="Design Compiler"> Design Compiler</span></a>
-                </div>
-            </div>
-            <div class="skill-card">
-                <i class="fa-solid fa-pen-ruler"></i>
-                <h3>Hardware Development</h3>
-                <div class="skill-tags">
-                    <a href="https://www.orcad.com/products/orcad-capture/overview" target="_blank"><span class="tool"><img src="/static/img/cadence.ico" alt="OrCAD"> OrCAD Capture</span></a>
-                    <a href="https://www.cadence.com/en_US/home/tools/pcb-design-and-analysis/pcb-layout/allegro-pcb-designer.html" target="_blank"><span class="tool"><img src="/static/img/cadence.ico" alt="Allegro"> Allegro PCB Editor</span></a>
-                    <a href="https://www.altium.com/altium-designer" target="_blank"><span class="tool"><img src="/static/img/altium.png" alt="Altium"> Altium Designer</span></a>
-                    <a href="https://www.kicad.org/" target="_blank"><span class="tool"><img src="/static/img/kicad.ico" alt="KiCAD"> KiCAD</span></a>
-                    <a href="https://www.ni.com/zh-tw/shop/electronic-test-instrumentation/application-software-for-electronic-test-and-instrumentation-category/what-is-multisim.html" target="_blank"><span class="tool"><img src="/static/img/multisim.jpg" alt="Multisim"> Multisim</span></a>
-                </div>
-            </div>
-            <div class="skill-card">
-                <i class="fa-solid fa-memory"></i>
-                <h3>FPGA Development</h3>
-                <div class="skill-tags">
-                    <a href="https://web.archive.org/web/20120716210757/http://www.verilog.com/IEEEVerilog.html" target="_blank"><span class="lang"><img src="/static/img/ieee.png" alt="Verilog"> Verilog</span></a>
-                    <a href="https://standards.ieee.org/standard/1800-2009.html" target="_blank"><span class="lang"><img src="/static/img/ieee.png" alt="SystemVerilog"> SystemVerilog</span></a>
-                    <a href="https://www.intel.cn/content/dam/altera-www/global/zh_CN/pdfs/literature/hb/nios2/edh_ed51004.pdf" target="_blank"><span class="lang"><img src="/static/img/c.svg" alt="C"> C</span></a>
-                    <a href="https://www.xilinx.com/products/design-tools/vivado.html" target="_blank"><span class="tool"><img src="/static/img/vivado.png" alt="Vivado"> Vivado</span></a>
-                    <a href="https://www.intel.com.tw/content/www/tw/zh/software/programmable/quartus-prime/overview.html" target="_blank"><span class="tool"><img src="/static/img/altera.png" alt="Quartus"> Quartus Prime</span></a>
-                    <a href="https://www.intel.com/content/www/us/en/products/details/fpga/nios-processor/ii/article.html" target="_blank"><span class="tool"><img src="/static/img/altera.png" alt="Nios2"> NiosⅡ</span></a>
-                    <a href="https://www.intel.com.tw/content/www/tw/zh/software/programmable/quartus-prime/model-sim.html" target="_blank"><span class="tool"><img src="/static/img/modelsim.svg" alt="ModelSim"> ModelSim</span></a>
-                </div>
-            </div>
-            <div class="skill-card">
-                <i class="fa-solid fa-terminal"></i>
-                <h3>MCU Development</h3>
-                <div class="skill-tags">
-                    <a href="https://www.keil.com/arm/gnu.asp" target="_blank"><span class="lang"><img src="/static/img/c.svg" alt="C"> C</span></a>
-                    <a href="https://www2.keil.com/mdk5/" target="_blank"><span class="tool"><img src="/static/img/keil.png" alt="Keil"> Keil MDK</span></a>
-                    <a href="https://www.keil.com/c51/" target="_blank"><span class="tool"><img src="/static/img/keil.png" alt="Keil"> Keil C51</span></a>
-                    <a href="https://www.labcenter.com/vsmstudio/" target="_blank"><span class="tool"><img src="/static/img/proteus.png" alt="Proteus"> Proteus</span></a>
-                </div>
-            </div>
-        </div>
-    </section>
-
-    <!-- Blog & Labs Section -->
-    <div class="entries-container">
-        <!-- The Blog -->
-        <div class="entry-block">
-            <div class="overlay"></div>
-            <div class="bg-image" style="background-image: url('/static/img/wallpaper2.jpg');"></div>
-            <div class="content">
-                <span class="label">Research & Thoughts</span>
-                <h3>The Blog</h3>
-                    <!-- <p style="font-size: 13px; color: var(--secondary-text); margin-bottom: 20px; margin-top: -30px;">Articles are primarily written in <span style="color: #fff;">Chinese</span> · 技术博客</p> -->
-                
-                <div class="recent-list">
+</header>
+<!-- Career with Logos -->
+<section id="career">
+<h2>Career</h2>
+<div class="career-container">
+<!-- Qualcomm -->
+<div class="career-item">
+<div class="career-date-column">
+<div class="date-cell"> </div> <!-- Match H4 height -->
+<div class="date-cell sub">2023.12 — Present</div>
+<div class="date-cell sub">2021.06 — 2023.12</div>
+</div>
+<div class="company-logo">
+<img alt="Qualcomm" src="/static/img/q.png"/>
+</div>
+<div class="details">
+<h4><a href="https://www.qualcomm.com" style="color: var(--accent-color); text-decoration: none;" target="_blank">Qualcomm (Shanghai) Co., Ltd.</a></h4>
+<div class="position-name" style="color: inherit;">Senior ASICs Engineer</div>
+<div class="position-name" style="color: inherit;">ASICs Engineer</div>
+<p>Led RTL design and subsystem integration for Wi‑Fi 6/7/8 SoCs at Qualcomm Shanghai, contributing to 10+ successful tape‑outs across multiple FastConnect platforms.</p>
+<p>Worked closely with architecture and power teams to implement low‑power features at RTL level.</p>
+<p>Developed Tcl/Perl automation tools to significantly accelerate STA sign‑off and timing closure efficiency.</p>
+</div>
+<div class="projects-area">
+<h5>Featured Projects</h5>
+<a class="project-link" href="https://www.qualcomm.com/wi-fi/products/fastconnect/fastconnect8800" rel="noopener" style="text-decoration: none; color: inherit; display: block;" target="_blank"><div class="project-item">
+<div class="project-logo">
+<img alt="FC8800" src="/static/img/fc8800.jpg"/>
+<!-- <i class="fa-solid fa-microchip" style="color: var(--accent-color); font-size: 20px;"></i> -->
+</div>
+<div class="project-content">
+<h6>FastConnect 8800 <span class="process-node">6nm</span></h6>
+<div class="project-tags">
+<span class="project-tag">Wi-Fi 8 (802.11bn)</span>
+<span class="project-tag">Bluetooth 7.0</span>
+<span class="project-tag">11.6 Gbps Peak</span>
+<span class="project-tag">4×4 Wi-Fi</span>
+<span class="project-tag">UWB &amp; Thread</span>
+<span class="project-tag">4k QAM &amp; 320MHz BW</span>
+</div>
+<p class="project-desc">Next-gen Wi-Fi 8 flagship with ultra-wide 320 MHz bandwidth, UWB integration, and 4K QAM modulation.</p>
+</div>
+</div></a>
+<a class="project-link" href="YOUR_LINK_HERE_FC8700" style="text-decoration: none; color: inherit; display: block;"><div class="project-item">
+<div class="project-logo">
+<img alt="FC8700" src="/static/img/fc.jpg"/>
+<!-- <i class="fa-solid fa-microchip" style="color: var(--accent-color); font-size: 20px;"></i> -->
+</div>
+<div class="project-content">
+<h6>FastConnect 8700 <span class="process-node">14nm</span></h6>
+<div class="project-tags">
+<span class="project-tag">Wi-Fi 8 (802.11bn)</span>
+<span class="project-tag">Bluetooth 7.0</span>
+<span class="project-tag">8.6 Gbps Peak</span>
+<span class="project-tag">Low Power HBS</span>
+</div>
+<p class="project-desc">High-bandwidth Wi-Fi 8 solution with advanced low-power Hearable BT subsystem (HBS).</p>
+</div>
+</div></a>
+<a class="project-link" href="https://www.qualcomm.com/wi-fi/products/fastconnect/fastconnect-7800" rel="noopener" style="text-decoration: none; color: inherit; display: block;" target="_blank"><div class="project-item">
+<div class="project-logo">
+<img alt="FC7800" src="/static/img/fc7800.jpg"/>
+<!-- <i class="fa-solid fa-microchip" style="color: var(--accent-color); font-size: 20px;"></i> -->
+</div>
+<div class="project-content">
+<h6>FastConnect 7800 <span class="process-node">6nm/14nm</span></h6>
+<div class="project-tags">
+<span class="project-tag">Wi-Fi 7 (802.11be)</span>
+<span class="project-tag">Bluetooth 5.4</span>
+<span class="project-tag">5.8 Gbps Peak</span>
+<span class="project-tag">Dual Bluetooth</span>
+<span class="project-tag">4k QAM &amp; 320MHz BW</span>
+</div>
+<p class="project-desc">Multi-link Wi-Fi 7 platform with dual Bluetooth architecture and cutting-edge RF design.</p>
+</div>
+</div></a>
+<a class="project-link" href="https://www.qualcomm.com/wi-fi/products/fastconnect/fastconnect-7700" rel="noopener" style="text-decoration: none; color: inherit; display: block;" target="_blank"><div class="project-item">
+<div class="project-logo">
+<img alt="FC7700" src="/static/img/fc7700.jpg"/>
+<!-- <i class="fa-solid fa-microchip" style="color: var(--accent-color); font-size: 20px;"></i> -->
+</div>
+<div class="project-content">
+<h6>FastConnect 7700 <span class="process-node">14nm</span></h6>
+<div class="project-tags">
+<span class="project-tag">Wi-Fi 7 (802.11be)</span>
+<span class="project-tag">Bluetooth 5.4</span>
+<span class="project-tag">5.8 Gbps Peak</span>
+<span class="project-tag">Low Power</span>
+<span class="project-tag">4k QAM &amp; 320MHz BW</span>
+</div>
+<p class="project-desc">Cost-optimized Wi-Fi 7 chip delivering flagship features in a compact, low-power design.</p>
+</div>
+</div></a>
+<a class="project-link" href="YOUR_LINK_HERE_FC6400" style="text-decoration: none; color: inherit; display: block;"><div class="project-item">
+<div class="project-logo">
+<img alt="FC6400" src="/static/img/fc.jpg"/>
+<!-- <i class="fa-solid fa-microchip" style="color: var(--accent-color); font-size: 20px;"></i> -->
+</div>
+<div class="project-content">
+<h6>FastConnect 6400 <span class="process-node">22nm</span></h6>
+<div class="project-tags">
+<span class="project-tag">Wi-Fi 6 (802.11ax)</span>
+<span class="project-tag">Bluetooth 5.2</span>
+<span class="project-tag">1.2 Gbps Peak</span>
+<span class="project-tag">2x2 MIMO</span>
+<span class="project-tag">1024 QAM</span>
+</div>
+<p class="project-desc">Entry-level Wi-Fi 6 SoC with efficient 2×2 MIMO, targeting IoT and mobile platforms.</p>
+</div>
+</div></a>
+</div>
+</div>
+<!-- Zhonggu -->
+<div class="career-item">
+<div class="career-date-column">
+<div class="date-cell"> </div>
+<div class="date-cell sub">2018.04 — 2018.08</div>
+</div>
+<div class="company-logo">
+<img alt="Zhonggu" src="/static/img/中谷.png"/>
+</div>
+<div class="details">
+<h4><a href="https://www.zgkj00.cn" style="color: var(--accent-color); text-decoration: none;" target="_blank">Shanxi Zhonggu Technology</a></h4>
+<div class="position-name" style="color: inherit;">Hardware Engineer</div>
+<p>Developed low-power industrial sensor systems and high-precision multi-layer PCB designs.</p>
+</div>
+<div class="projects-area">
+<h5>Featured Projects</h5>
+<a class="project-link" href="YOUR_LINK_HERE" style="text-decoration: none; color: inherit; display: block;"><div class="project-item">
+<div class="project-logo">
+<!-- <img src="/static/img/methane_detector.png" alt="Methane Detector"> -->
+<i class="fa-solid fa-microchip" style="color: var(--accent-color); font-size: 20px;"></i>
+</div>
+<div class="project-content">
+<h6>低功耗甲烷检测系统 <span class="process-node">STM32L0</span></h6>
+<div class="project-tags">
+<span class="project-tag">Low Power</span>
+<span class="project-tag">Sch/PCB Design</span>
+<span class="project-tag">Embedded C</span>
+</div>
+</div>
+</div></a>
+<a class="project-link" href="YOUR_LINK_HERE" style="text-decoration: none; color: inherit; display: block;"><div class="project-item">
+<div class="project-logo">
+<!-- <img src="/static/img/temp_detector.png" alt="Temp Detector"> -->
+<i class="fa-solid fa-microchip" style="color: var(--accent-color); font-size: 20px;"></i>
+</div>
+<div class="project-content">
+<h6>单总线多点温度检测器 <span class="process-node">STM8L15</span></h6>
+<div class="project-tags">
+<span class="project-tag">IIC Bus</span>
+<span class="project-tag">Sch/PCB Design</span>
+<span class="project-tag">Embedded C</span>
+</div>
+</div>
+</div></a>
+</div>
+</div>
+</div>
+</section>
+<!-- Education Section -->
+<section id="education">
+<h2>Education</h2>
+<div class="career-container">
+<!-- Xidian University -->
+<div class="career-item">
+<div class="career-date-column">
+<div class="date-cell"> </div>
+<div class="date-cell sub">2018.09 — 2021.06</div>
+</div>
+<div class="company-logo">
+<img alt="Xidian University" src="/static/img/西安电子科技大学-logo.svg"/>
+</div>
+<div class="details">
+<h4><a href="https://www.xidian.edu.cn" style="color: var(--accent-color); text-decoration: none;" target="_blank">Xidian University</a></h4>
+<div class="position-name" style="color: inherit;">M.E. in Electronics and Communication Engineering</div>
+<p>Specialized in digital signal processing and hardware architecture. Award-winner in national electronic design contests.</p>
+</div>
+<div class="projects-area">
+<h5>Featured Projects</h5>
+<a class="project-link" href="YOUR_LINK_HERE" style="text-decoration: none; color: inherit; display: block;"><div class="project-item">
+<div class="project-logo">
+<!-- <img src="/static/img/methane_detector.png" alt="Methane Detector"> -->
+<i class="fa-solid fa-microchip" style="color: var(--accent-color); font-size: 20px;"></i>
+</div>
+<div class="project-content">
+<h6>基于FPGA的圆形光电探测阵列数据采集系统 <span class="process-node">Cyclone Ⅳ</span></h6>
+<div class="project-tags">
+<span class="project-tag">Low Power</span>
+<span class="project-tag">Sch/PCB Design</span>
+<span class="project-tag">Embedded C</span>
+</div>
+</div>
+</div></a>
+<a class="project-link" href="YOUR_LINK_HERE" style="text-decoration: none; color: inherit; display: block;"><div class="project-item">
+<div class="project-logo">
+<!-- <img src="/static/img/methane_detector.png" alt="Methane Detector"> -->
+<i class="fa-solid fa-microchip" style="color: var(--accent-color); font-size: 20px;"></i>
+</div>
+<div class="project-content">
+<h6>消防员辅助监控系统 <span class="process-node">Cyclone Ⅳ</span></h6>
+<div class="project-tags">
+<span class="project-tag">Low Power</span>
+<span class="project-tag">Sch/PCB Design</span>
+<span class="project-tag">Nios Ⅱ</span>
+</div>
+</div>
+</div></a>
+<a class="project-link" href="YOUR_LINK_HERE" style="text-decoration: none; color: inherit; display: block;"><div class="project-item">
+<div class="project-logo">
+<!-- <img src="/static/img/temp_detector.png" alt="Temp Detector"> -->
+<i class="fa-solid fa-microchip" style="color: var(--accent-color); font-size: 20px;"></i>
+</div>
+<div class="project-content">
+<h6>微波智能感知平台 <span class="process-node">PCIe</span></h6>
+<div class="project-tags">
+<span class="project-tag">Wireless network card</span>
+<span class="project-tag">Sch/PCB Design</span>
+<span class="project-tag">Embedded C</span>
+</div>
+</div>
+</div></a>
+</div>
+</div>
+<!-- North University of China -->
+<div class="career-item">
+<div class="career-date-column">
+<div class="date-cell"> </div>
+<div class="date-cell sub">2013.09 — 2017.07</div>
+</div>
+<div class="company-logo">
+<img alt="North University of China" src="/static/img/中北大学-logo.svg"/>
+</div>
+<div class="details">
+<h4><a href="https://www.nuc.edu.cn" style="color: var(--accent-color); text-decoration: none;" target="_blank">North University of China</a></h4>
+<div class="position-name" style="color: inherit;">B.E. in Electronic Science and Technology</div>
+<p>Foundational studies in semiconductor physics, circuit design, and embedded systems. Recognized as an Outstanding Graduate in 2017.</p>
+</div>
+<div class="projects-area">
+<h5>Featured Projects</h5>
+<a class="project-link" href="YOUR_LINK_HERE" style="text-decoration: none; color: inherit; display: block;"><div class="project-item">
+<div class="project-logo">
+<!-- <img src="/static/img/methane_detector.png" alt="Methane Detector"> -->
+<i class="fa-solid fa-microchip" style="color: var(--accent-color); font-size: 20px;"></i>
+</div>
+<div class="project-content">
+<h6>带啸叫检测与抑制的功率放大电路 <span class="process-node">STM32L1</span></h6>
+<div class="project-tags">
+<span class="project-tag">FFT</span>
+<span class="project-tag">Sch/PCB Design</span>
+<span class="project-tag">Embedded C</span>
+</div>
+</div>
+</div></a>
+<a class="project-link" href="YOUR_LINK_HERE" style="text-decoration: none; color: inherit; display: block;"><div class="project-item">
+<div class="project-logo">
+<!-- <img src="/static/img/methane_detector.png" alt="Methane Detector"> -->
+<i class="fa-solid fa-microchip" style="color: var(--accent-color); font-size: 20px;"></i>
+</div>
+<div class="project-content">
+<h6>总线型温室大棚监控系统 <span class="process-node">STM32L1</span></h6>
+<div class="project-tags">
+<span class="project-tag">Low Power</span>
+<span class="project-tag">Sch/PCB Design</span>
+<span class="project-tag">Nios Ⅱ</span>
+</div>
+</div>
+</div></a>
+<a class="project-link" href="YOUR_LINK_HERE" style="text-decoration: none; color: inherit; display: block;"><div class="project-item">
+<div class="project-logo">
+<!-- <img src="/static/img/temp_detector.png" alt="Temp Detector"> -->
+<i class="fa-solid fa-microchip" style="color: var(--accent-color); font-size: 20px;"></i>
+</div>
+<div class="project-content">
+<h6>带频谱显示的音频播放器 <span class="process-node">STM32L1</span></h6>
+<div class="project-tags">
+<span class="project-tag">Wireless network card</span>
+<span class="project-tag">Sch/PCB Design</span>
+<span class="project-tag">Embedded C</span>
+</div>
+</div>
+</div></a>
+</div>
+</div>
+</div>
+</section>
+<!-- Skills Section -->
+<section id="skills">
+<h2>Skills</h2>
+<div class="skills-grid">
+<div class="skill-card">
+<i class="fa-solid fa-microchip"></i>
+<h3>ASIC Design</h3>
+<div class="skill-tags">
+<a href="https://web.archive.org/web/20120716210757/http://www.verilog.com/IEEEVerilog.html" target="_blank"><span class="lang"><img alt="Verilog" src="/static/img/ieee.png"/> Verilog</span></a>
+<a href="https://standards.ieee.org/standard/1800-2009.html" target="_blank"><span class="lang"><img alt="SystemVerilog" src="/static/img/ieee.png"/> SystemVerilog</span></a>
+<a href="https://www.perl.org/" target="_blank"><span class="lang"><img alt="Perl" src="/static/img/perl.svg"/> Perl</span></a>
+<a href="https://www.tcl.tk/" target="_blank"><span class="lang"><img alt="Tcl" src="/static/img/tcl.svg"/> Tcl</span></a>
+<a href="https://www.python.org/" target="_blank"><span class="lang"><img alt="Python" src="/static/img/python.svg"/> Python</span></a>
+<a href="https://www.synopsys.com/zh-cn/verification/simulation/vcs.html" target="_blank"><span class="tool"><img alt="VCS" src="/static/img/synopsys.ico"/> VCS</span></a>
+<a href="https://www.synopsys.com/zh-cn/verification/debug/verdi.html" target="_blank"><span class="tool"><img alt="Verdi" src="/static/img/synopsys.ico"/> Verdi</span></a>
+<a href="https://www.synopsys.com/implementation-and-signoff/signoff/primeclock.html" target="_blank"><span class="tool"><img alt="PrimeClock" src="/static/img/synopsys.ico"/> PrimeClock</span></a>
+<a href="https://www.synopsys.com/implementation-and-signoff/signoff/primetime.html" target="_blank"><span class="tool"><img alt="PrimeTime" src="/static/img/synopsys.ico"/> PrimeTime</span></a>
+<a href="https://www.synopsys.com/implementation-and-signoff/rtl-synthesis-test/design-compiler-graphical.html" target="_blank"><span class="tool"><img alt="Design Compiler" src="/static/img/synopsys.ico"/> Design Compiler</span></a>
+</div>
+</div>
+<div class="skill-card">
+<i class="fa-solid fa-pen-ruler"></i>
+<h3>Hardware Development</h3>
+<div class="skill-tags">
+<a href="https://www.orcad.com/products/orcad-capture/overview" target="_blank"><span class="tool"><img alt="OrCAD" src="/static/img/cadence.ico"/> OrCAD Capture</span></a>
+<a href="https://www.cadence.com/en_US/home/tools/pcb-design-and-analysis/pcb-layout/allegro-pcb-designer.html" target="_blank"><span class="tool"><img alt="Allegro" src="/static/img/cadence.ico"/> Allegro PCB Editor</span></a>
+<a href="https://www.altium.com/altium-designer" target="_blank"><span class="tool"><img alt="Altium" src="/static/img/altium.png"/> Altium Designer</span></a>
+<a href="https://www.kicad.org/" target="_blank"><span class="tool"><img alt="KiCAD" src="/static/img/kicad.ico"/> KiCAD</span></a>
+<a href="https://www.ni.com/zh-tw/shop/electronic-test-instrumentation/application-software-for-electronic-test-and-instrumentation-category/what-is-multisim.html" target="_blank"><span class="tool"><img alt="Multisim" src="/static/img/multisim.jpg"/> Multisim</span></a>
+</div>
+</div>
+<div class="skill-card">
+<i class="fa-solid fa-memory"></i>
+<h3>FPGA Development</h3>
+<div class="skill-tags">
+<a href="https://web.archive.org/web/20120716210757/http://www.verilog.com/IEEEVerilog.html" target="_blank"><span class="lang"><img alt="Verilog" src="/static/img/ieee.png"/> Verilog</span></a>
+<a href="https://standards.ieee.org/standard/1800-2009.html" target="_blank"><span class="lang"><img alt="SystemVerilog" src="/static/img/ieee.png"/> SystemVerilog</span></a>
+<a href="https://www.intel.cn/content/dam/altera-www/global/zh_CN/pdfs/literature/hb/nios2/edh_ed51004.pdf" target="_blank"><span class="lang"><img alt="C" src="/static/img/c.svg"/> C</span></a>
+<a href="https://www.xilinx.com/products/design-tools/vivado.html" target="_blank"><span class="tool"><img alt="Vivado" src="/static/img/vivado.png"/> Vivado</span></a>
+<a href="https://www.intel.com.tw/content/www/tw/zh/software/programmable/quartus-prime/overview.html" target="_blank"><span class="tool"><img alt="Quartus" src="/static/img/altera.png"/> Quartus Prime</span></a>
+<a href="https://www.intel.com/content/www/us/en/products/details/fpga/nios-processor/ii/article.html" target="_blank"><span class="tool"><img alt="Nios2" src="/static/img/altera.png"/> NiosⅡ</span></a>
+<a href="https://www.intel.com.tw/content/www/tw/zh/software/programmable/quartus-prime/model-sim.html" target="_blank"><span class="tool"><img alt="ModelSim" src="/static/img/modelsim.svg"/> ModelSim</span></a>
+</div>
+</div>
+<div class="skill-card">
+<i class="fa-solid fa-terminal"></i>
+<h3>MCU Development</h3>
+<div class="skill-tags">
+<a href="https://www.keil.com/arm/gnu.asp" target="_blank"><span class="lang"><img alt="C" src="/static/img/c.svg"/> C</span></a>
+<a href="https://www2.keil.com/mdk5/" target="_blank"><span class="tool"><img alt="Keil" src="/static/img/keil.png"/> Keil MDK</span></a>
+<a href="https://www.keil.com/c51/" target="_blank"><span class="tool"><img alt="Keil" src="/static/img/keil.png"/> Keil C51</span></a>
+<a href="https://www.labcenter.com/vsmstudio/" target="_blank"><span class="tool"><img alt="Proteus" src="/static/img/proteus.png"/> Proteus</span></a>
+</div>
+</div>
+</div>
+</section>
+<!-- Blog & Labs Section -->
+<div class="entries-container">
+<!-- The Blog -->
+<div class="entry-block">
+<div class="overlay"></div>
+<div class="bg-image" style="background-image: url('/static/img/wallpaper2.jpg');"></div>
+<div class="content">
+<span class="label">Research &amp; Thoughts</span>
+<h3>The Blog</h3>
+<!-- <p style="font-size: 13px; color: var(--secondary-text); margin-bottom: 20px; margin-top: -30px;">Articles are primarily written in <span style="color: #fff;">Chinese</span> · 技术博客</p> -->
+<div class="recent-list">
                     {% for post in site.posts limit:8 %}
 
-                    <a href="{{ post.url | relative_url }}" class="list-link">
-                        <span class="item-title">{{ post.title }}</span>
-                        <span class="item-meta">{{ post.date | date: "%Y.%m.%d" }}</span>
-                    </a>
+                    <a class="list-link" href="{{ post.url | relative_url }}">
+<span class="item-title">{{ post.title }}</span>
+<span class="item-meta">{{ post.date | date: "%Y.%m.%d" }}</span>
+</a>
                     {% endfor %}
                 </div>
-                
-                <a href="/archive" class="pill" style="display: inline-block; background: transparent; color: #fff; border: 1px solid #fff; text-decoration: none;">View All Posts</a>
-            </div>
-        </div>
-
-        <!-- The Labs -->
-        <div class="entry-block">
-            <div class="overlay"></div>
-            <div class="bg-image" style="background-image: url('/static/img/wallpaper3.jpg');"></div>
-            <div class="content">
-                <span class="label">Experiments & Tools</span>
-                <h3>The Labs</h3>
-                
-                <div class="recent-list">
+<a class="pill" href="/archive" style="display: inline-block; background: transparent; color: #fff; border: 1px solid #fff; text-decoration: none;">View All Posts</a>
+</div>
+</div>
+<!-- The Labs -->
+<div class="entry-block">
+<div class="overlay"></div>
+<div class="bg-image" style="background-image: url('/static/img/wallpaper3.jpg');"></div>
+<div class="content">
+<span class="label">Experiments &amp; Tools</span>
+<h3>The Labs</h3>
+<div class="recent-list">
                     {% for lab in site.data.labs limit:8 %}
-                    <a href="/labs/{{ lab.slug }}.html" class="list-link">
-                        <span class="item-title">{{ lab.title }}</span>
-                        <span class="item-meta">{{ lab.tags | first }}</span>
-                    </a>
+                    <a class="list-link" href="/labs/{{ lab.slug }}.html">
+<span class="item-title">{{ lab.title }}</span>
+<span class="item-meta">{{ lab.tags | first }}</span>
+</a>
                     {% endfor %}
                 </div>
-                
-                <a href="/labs" class="pill" style="display: inline-block; background: transparent; color: #fff; border: 1px solid #fff; text-decoration: none;">Enter Labs</a>
-            </div>
-        </div>
-    </div>
-
-    <!-- Footer -->
-    <footer>
-        <div class="footer-content">
-            <div class="footer-left">
-                <h2>Connect</h2>
-                <div class="contact-sections">
-                    <!-- Primary Contacts -->
-                    <div class="contact-group">
-                        <h5>Direct Contact</h5>
-                        <div class="contact-pills">
-                            <a href="mailto:verdvana@outlook.com" class="pill">
-                                <i class="fa-solid fa-envelope"></i> Email
+<a class="pill" href="/labs" style="display: inline-block; background: transparent; color: #fff; border: 1px solid #fff; text-decoration: none;">Enter Labs</a>
+</div>
+</div>
+</div>
+<!-- Footer -->
+<footer>
+<div class="footer-content">
+<div class="footer-left">
+<h2>Connect</h2>
+<div class="contact-sections">
+<!-- Primary Contacts -->
+<div class="contact-group">
+<h5>Direct Contact</h5>
+<div class="contact-pills">
+<a class="pill" href="mailto:verdvana@outlook.com">
+<i class="fa-solid fa-envelope"></i> Email
                             </a>
-                            <a href="https://github.com/Verdvana" target="_blank" class="pill outline">
-                                <i class="fa-brands fa-github"></i> GitHub
+<a class="pill outline" href="https://github.com/Verdvana" target="_blank">
+<i class="fa-brands fa-github"></i> GitHub
                             </a>
-                            <a href="javascript:void(0)" onclick="toggleWeChat()" class="pill outline">
-                                <i class="fa-brands fa-weixin"></i> WeChat
+<a class="pill outline" href="javascript:void(0)" onclick="toggleWeChat()">
+<i class="fa-brands fa-weixin"></i> WeChat
                             </a>
-                        </div>
+</div>
+</div>
+<!-- Network (Secondary) -->
+<div class="contact-group">
+<h5>Friends</h5>
+<div class="contact-pills">
+<a class="pill outline" href="https://blog.skycity11.xyz">Skycity</a>
+<!-- <a href="#" class="pill outline">Colleague 2</a> -->
+<!-- <a href="#" class="pill outline">Partner 3</a> -->
+</div>
+</div>
+</div>
+</div>
+<div class="footer-right">
+<div class="site-stats">
+<div class="stat-item">
+<i class="fa-solid fa-eye"></i>
+<span id="busuanzi_value_site_pv"><i class="fa-solid fa-spinner fa-spin"></i></span> Views
                     </div>
-                    
-                    <!-- Network (Secondary) -->
-                    <div class="contact-group">
-                        <h5>Friends</h5>
-                        <div class="contact-pills">
-                            <a href="https://blog.skycity11.xyz" class="pill outline">Skycity</a>
-                            <!-- <a href="#" class="pill outline">Colleague 2</a> -->
-                            <!-- <a href="#" class="pill outline">Partner 3</a> -->
-                        </div>
-                    </div>
-                </div>
-            </div>
-            <div class="footer-right">
-                <div class="site-stats">
-                    <div class="stat-item">
-                        <i class="fa-solid fa-eye"></i>
-                        <span id="busuanzi_value_site_pv"><i class="fa-solid fa-spinner fa-spin"></i></span> Views
-                    </div>
-                    <div class="stat-item">
-                        <i class="fa-solid fa-user-group"></i>
-                        <span id="busuanzi_value_site_uv"><i class="fa-solid fa-spinner fa-spin"></i></span> Visitors
+<div class="stat-item">
+<i class="fa-solid fa-user-group"></i>
+<span id="busuanzi_value_site_uv"><i class="fa-solid fa-spinner fa-spin"></i></span> Visitors
                     </div>
                     {% assign total_words = 0 %}
                     {% for p in site.posts %}
@@ -1472,65 +1542,37 @@ layout: null
                         {% assign total_words = total_words | plus: p_words %}
                     {% endfor %}
                     <div class="stat-item">
-                        <i class="fa-solid fa-pen-nib"></i>
-                        <span>{{ total_words }}</span> <span class="unit">Characters</span>
-                    </div>
-                </div>
-                <div id="uptime-stats" class="site-stats" style="margin-top: 16px;">
-                    <div class="stat-item">
-                        <i class="fa-solid fa-clock"></i>
-                        <span id="run_time_day">-</span><span class="unit">d</span>
-                        <span id="run_time_hour">-</span><span class="unit">h</span>
-                        <span id="run_time_minute">-</span><span class="unit">m</span>
-                        <span id="run_time_second">-</span><span class="unit">s</span>
-                    </div>
-                </div>
-                <p style="color: var(--secondary-text); margin-bottom: 8px; margin-top: 24px;">© 2018-2026 Verdvana. All rights reserved.</p>
-                <p style="color: var(--secondary-text); font-size: 12px;">Engineered with precision in Shanghai.</p>
-            </div>
-        </div>
-    </footer>
+<i class="fa-solid fa-pen-nib"></i>
+<span>{{ total_words }}</span> <span class="unit">Characters</span>
+</div>
+</div>
+<div class="site-stats" id="uptime-stats" style="margin-top: 16px;">
+<div class="stat-item">
+<i class="fa-solid fa-clock"></i>
+<span id="run_time_day">-</span><span class="unit">d</span>
+<span id="run_time_hour">-</span><span class="unit">h</span>
+<span id="run_time_minute">-</span><span class="unit">m</span>
+<span id="run_time_second">-</span><span class="unit">s</span>
+</div>
+</div>
+<p style="color: var(--secondary-text); margin-bottom: 8px; margin-top: 24px;">© 2018-2026 Verdvana. All rights reserved.</p>
+<p style="color: var(--secondary-text); font-size: 12px;">Engineered with precision in Shanghai.</p>
+</div>
+</div>
+</footer>
+<!-- WeChat Modal -->
+<div id="wechat-modal" onclick="toggleWeChat()">
+<div class="modal-content" onclick="event.stopPropagation()">
+<img alt="WeChat QR Code" src="/static/img/wechat.jpg"/>
+<p>Scan to connect</p>
+</div>
+</div>
+<!-- APlayer Container -->
+<div id="aplayer"></div>
 
-    <!-- WeChat Modal -->
-    <div id="wechat-modal" onclick="toggleWeChat()">
-        <div class="modal-content" onclick="event.stopPropagation()">
-            <img src="/static/img/wechat.jpg" alt="WeChat QR Code">
-            <p>Scan to connect</p>
-        </div>
-    </div>
-
-    <!-- APlayer Container -->
-    <div id="aplayer"></div>
-
-    <style>
-        /* 极致折叠模式：左侧小竖条 */
-        .aplayer.aplayer-fixed.aplayer-narrow .aplayer-body {
-            left: -60px !important; /* 隐藏大部分封面，只留一个小边 */
-            transition: left 0.3s ease !important;
-        }
-        .aplayer.aplayer-fixed.aplayer-narrow:hover .aplayer-body {
-            left: 0 !important;
-        }
-        /* 移除背景阴影，使其更隐形 */
-        .aplayer {
-            background: rgba(255, 255, 255, 0) !important;
-            box-shadow: none !important;
-        }
-        /* 调整展开后的背景色，适配你的暗色主题 */
-        .aplayer .aplayer-info {
-            background: #1c1c1e !important;
-            color: #fff !important;
-            border-bottom: 1px solid rgba(255,255,255,0.1) !important;
-        }
-        .aplayer .aplayer-info .aplayer-music .aplayer-title {
-            color: #fff !important;
-        }
-    </style>
-
-    <!-- Busuanzi Script -->
-    <script async src="//busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
-
-    <script>
+<!-- Busuanzi Script -->
+<script async="" src="//busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+<script>
         // APlayer Initialization
         const ap = new APlayer({
             container: document.getElementById('aplayer'),
@@ -1580,6 +1622,5 @@ layout: null
             document.getElementById("run_time_second").innerHTML = setzero(secondsOld);
         }, 1000);
     </script>
-
 </body>
 </html>
