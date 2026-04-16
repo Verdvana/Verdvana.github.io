@@ -34,7 +34,7 @@
 - slug: cdc_interactive
   title: CDC跨时钟域交互演示
   desc: >
-    CDC 跨时钟域问题交互演示工具，涵盖 SpyGlass 29 个典型场景，含电路动画、波形、修复与 Waive 方案。
+    CDC跨时钟域问题交互演示工具，涵盖29个典型场景，含电路动画、波形、修复与Waive方案。
   thumb: /assets/labs/thumbs/cdc_interactive.jpg
   tags: [ASIC]
   order: 1
