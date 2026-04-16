@@ -1,0 +1,1727 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>CDC 跨时钟域交互演示 | SpyGlass &amp; Qualcomm 规则参考 v2</title>
+<style>
+:root{
+  --bg:#0b0f14;--bg2:#111820;--bg3:#192130;--border:#1e3050;
+  --accent:#00d4ff;--accent2:#0088cc;
+  --clka:rgba(0,100,220,0.15);--clka-b:#0064dc;
+  --clkb:rgba(220,100,0,0.15);--clkb-b:#dc6400;
+  --error:#ff4455;--warn:#ffaa22;--ok:#00cc66;--info:#8888ff;
+  --text:#c8d8e8;--text2:#7090b0;--card:#131e2a;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;overflow:hidden}
+body{background:var(--bg);color:var(--text);font-family:"Microsoft YaHei",Segoe UI,sans-serif;font-size:14px;display:flex;flex-direction:column}
+.navbar{height:48px;background:linear-gradient(90deg,#0a1520,#0d2035);border-bottom:1px solid var(--border);display:flex;align-items:center;padding:0 18px;gap:12px;flex-shrink:0;z-index:10}
+.navbar .logo{font-size:17px;font-weight:700;color:var(--accent);white-space:nowrap}
+.navbar .sub{font-size:11px;color:var(--text2);white-space:nowrap}
+.badge{background:var(--bg3);border:1px solid var(--border);border-radius:3px;padding:2px 7px;font-size:11px;color:var(--text2);white-space:nowrap}
+.layout{display:flex;flex:1;overflow:hidden;min-height:0}
+/* SIDEBAR */
+.sb{width:258px;background:var(--bg2);border-right:1px solid var(--border);overflow-y:auto;flex-shrink:0}
+.sb::-webkit-scrollbar{width:4px}.sb::-webkit-scrollbar-thumb{background:var(--border)}
+.cat-hd{padding:9px 12px 7px;font-size:11px;font-weight:600;color:var(--text2);text-transform:uppercase;letter-spacing:.7px;border-bottom:1px solid var(--border);background:var(--bg);cursor:pointer;display:flex;justify-content:space-between;user-select:none}
+.cat-hd:hover{color:var(--accent)}.cat-hd .ar{transition:transform .2s;font-size:10px}
+.cat-hd.col .ar{transform:rotate(-90deg)}
+.cat-items{overflow:hidden;max-height:600px;transition:max-height .3s ease}
+.si{padding:7px 12px 7px 22px;cursor:pointer;border-left:3px solid transparent;transition:all .15s;display:flex;align-items:center;gap:7px;border-bottom:1px solid rgba(255,255,255,.02)}
+.si:hover{background:var(--bg3);border-left-color:var(--accent2)}
+.si.active{background:rgba(0,212,255,.08);border-left-color:var(--accent);color:var(--accent)}
+.dot{width:7px;height:7px;border-radius:50%;flex-shrink:0}
+.de{background:var(--error)}.dw{background:var(--warn)}.dok{background:var(--ok)}.di{background:var(--info)}
+.si .rid{font-size:10px;color:var(--text2);margin-left:auto;white-space:nowrap}
+/* MAIN CONTENT */
+.main{flex:1;display:flex;overflow:hidden;min-height:0}
+.cpanel{flex:1;display:flex;flex-direction:column;padding:12px;overflow:hidden;gap:7px;min-height:0}
+.ptitle{font-size:15px;font-weight:600;color:var(--accent);display:flex;align-items:center;gap:8px;flex-shrink:0;flex-wrap:wrap}
+.rbadge{font-size:10px;background:var(--bg3);border:1px solid var(--border);border-radius:3px;padding:2px 7px;font-family:monospace;color:var(--warn)}
+.sbadge{font-size:10px;border-radius:3px;padding:2px 7px}
+.sbadge.e{background:rgba(255,68,85,.15);color:var(--error);border:1px solid rgba(255,68,85,.3)}
+.sbadge.w{background:rgba(255,170,34,.15);color:var(--warn);border:1px solid rgba(255,170,34,.3)}
+.sbadge.k{background:rgba(0,204,102,.15);color:var(--ok);border:1px solid rgba(0,204,102,.3)}
+.sbadge.i{background:rgba(136,136,255,.15);color:var(--info);border:1px solid rgba(136,136,255,.3)}
+.circ-area{flex:0 0 270px;background:var(--card);border:1px solid var(--border);border-radius:7px;overflow:hidden;position:relative}
+#cSvg{width:100%;height:100%}
+.wf-area{flex:0 0 155px;background:var(--card);border:1px solid var(--border);border-radius:7px;overflow:hidden;position:relative}
+#wfCanvas{display:block;width:100%;height:100%}
+.ctrl{display:flex;align-items:center;gap:7px;flex-shrink:0}
+.btn{background:var(--bg3);border:1px solid var(--border);color:var(--text);padding:5px 13px;border-radius:4px;cursor:pointer;font-size:12px;transition:all .15s;font-family:inherit}
+.btn:hover{border-color:var(--accent);color:var(--accent)}
+.btn.act{background:rgba(0,212,255,.1);border-color:var(--accent);color:var(--accent)}
+.btn.vio{background:rgba(255,68,85,.1);border-color:var(--error);color:var(--error)}
+.spd{background:var(--bg3);border:1px solid var(--border);color:var(--text);padding:4px 7px;border-radius:4px;font-size:12px;cursor:pointer;font-family:inherit}
+.pb{flex:1;height:4px;background:var(--bg3);border-radius:2px;overflow:hidden;cursor:pointer}
+.pbf{height:100%;background:var(--accent);width:0%;border-radius:2px;transition:width .05s}
+/* INFO PANEL */
+.ipanel{width:300px;background:var(--bg2);border-left:1px solid var(--border);overflow-y:auto;flex-shrink:0;padding:14px}
+.ipanel::-webkit-scrollbar{width:4px}.ipanel::-webkit-scrollbar-thumb{background:var(--border)}
+.tabs{display:flex;border-bottom:1px solid var(--border);margin-bottom:10px}
+.tab{padding:5px 12px;font-size:12px;cursor:pointer;border-bottom:2px solid transparent;color:var(--text2);transition:all .15s}
+.tab.active{color:var(--accent);border-bottom-color:var(--accent)}
+.tab:hover{color:var(--text)}
+.tc{display:none}.tc.active{display:block}
+.sec{margin-bottom:14px}
+.sec h3{font-size:11px;font-weight:600;color:var(--text2);text-transform:uppercase;letter-spacing:.6px;margin-bottom:7px;padding-bottom:4px;border-bottom:1px solid var(--border)}
+.sec p,.sec li{font-size:12px;line-height:1.65;color:var(--text);margin-bottom:3px}
+.sec ul{padding-left:15px}
+.cb{background:#060c12;border:1px solid var(--border);border-radius:4px;padding:7px 9px;font-family:"Courier New",monospace;font-size:11px;color:#aaddff;overflow-x:auto;margin-top:5px;line-height:1.55;white-space:pre;word-break:break-all}
+.tags{display:flex;flex-wrap:wrap;gap:4px;margin-bottom:7px}
+.tag{background:var(--bg3);border:1px solid var(--border);border-radius:3px;padding:2px 6px;font-size:10px;color:var(--text2)}
+</style>
+</head>
+<body>
+<div class="navbar">
+  <span class="logo">⚡ CDC 跨时钟域交互演示</span>
+  <span class="sub">基于 SpyGlass CDC Rules &amp; Qualcomm CDC Guidelines</span>
+  <div style="display:flex;gap:6px;margin-left:auto">
+    <span class="badge">SpyGlass VC</span>
+    <span class="badge">29 个场景</span>
+    <span class="badge" style="color:#7090b0">← → 切换场景</span>
+  </div>
+</div>
+<div class="layout">
+  <div class="sb" id="sb"></div>
+  <div class="main">
+    <div class="cpanel">
+      <div class="ptitle">
+        <span id="sTitle">请选择场景</span>
+        <span class="rbadge" id="rBadge">--</span>
+        <span class="sbadge" id="sBadge">--</span>
+      </div>
+      <div class="circ-area">
+        <svg id="cSvg" viewBox="0 0 800 268" preserveAspectRatio="xMidYMid meet"></svg>
+      </div>
+      <div class="wf-area">
+        <canvas id="wfCanvas"></canvas>
+      </div>
+      <div class="ctrl">
+        <button class="btn act" id="playBtn" onclick="togglePlay()">&#9654; 播放</button>
+        <button class="btn" onclick="resetAnim()">&#8635; 重置</button>
+        <select class="spd" id="spdSel" onchange="setSpeed(this.value)">
+          <option value="0.5">0.5&#215;</option>
+          <option value="1" selected>1&#215;</option>
+          <option value="2">2&#215;</option>
+          <option value="3">3&#215;</option>
+        </select>
+        <div class="pb" id="pb" onclick="seekAnim(event)"><div class="pbf" id="pbf"></div></div>
+        <button class="btn" id="vBtn" onclick="toggleVio()">&#128308; 显示违例</button>
+      </div>
+    </div>
+    <div class="ipanel">
+      <div class="tabs">
+        <div class="tab active" onclick="swTab(this,'td')">说明</div>
+        <div class="tab" onclick="swTab(this,'tf')">修复建议</div>
+        <div class="tab" onclick="swTab(this,'tw')">Waive 方案</div>
+      </div>
+      <div class="tc active" id="td">
+        <div class="sec"><h3>规则信息</h3><div class="tags" id="tagRow"></div><p id="rDesc">请从左侧选择场景。</p></div>
+        <div class="sec"><h3>问题根因</h3><p id="rRoot">--</p></div>
+        <div class="sec"><h3>潜在影响</h3><p id="rImpact">--</p></div>
+      </div>
+      <div class="tc" id="tf">
+        <div class="sec"><h3>RTL 修复方案</h3><p id="fDesc">--</p><div class="cb" id="fCode">--</div></div>
+        <div class="sec"><h3>SGDC 约束</h3><div class="cb" id="fSgdc">--</div></div>
+      </div>
+      <div class="tc" id="tw">
+        <div class="sec"><h3>Waive 条件</h3><p id="wCond">--</p></div>
+        <div class="sec"><h3>Waive 命令示例</h3><div class="cb" id="wCode">--</div></div>
+        <div class="sec"><h3>&#9888; 注意事项</h3><p id="wNote" style="color:var(--warn)">--</p></div>
+      </div>
+    </div>
+  </div>
+</div>
+<script>
+const SC = [
+{id:'ac_unsync01_s2f',ruleName:'Ac_unsync01',cat:0,title:'单比特未同步（慢→快）',sev:'Error',
+ desc:'单比特控制信号从慢时钟域（clkA）直接传入快时钟域（clkB），未经任何同步处理。快时钟的采样窗口更密集，极易在信号跳变附近采样，导致亚稳态。',
+ root:'跨时钟域路径缺少同步器（Synchronizer）。clkB频率更高，采样窗口更密，亚稳态概率更大，目标FF的Q端输出不确定值X。',
+ impact:'目标寄存器Q端可能输出X态，级联组合逻辑全部异常，引发芯片死机或概率性功能错误，MTBF严重恶化。',
+ fixDesc:'在目标时钟域（clkB）插入两级D触发器（2-FF Synchronizer）。',
+ fixCode:`// 修复前（非法跨域）\nalways @(posedge clkB)\n  data_b <= data_a; // 直接跨域！\n\n// 修复后：插入2-FF同步器\nreg sync1, sync2;\nalways @(posedge clkB or negedge rst_n) begin\n  if (!rst_n) {sync2,sync1} <= 2'b0;\n  else        {sync2,sync1} <= {sync1, data_a};\nend\nassign data_b_sync = sync2;`,
+ sgdc:`# 声明同步器单元\nsync_cell -name sync_2ff_inst \\\n  -from_clk clkA -to_clk clkB\n# 若为准静态信号\nquasi_static -name data_a`,
+ waiveCond:'仅当信号为准静态（quasi-static）配置寄存器，上电配置后不再变化，且架构师书面确认。',
+ waiveCode:`waive -rule Ac_unsync01 \\\n  -from_clock clkA -to_clock clkB \\\n  -signal data_a \\\n  -comment "配置寄存器，上电后static，经架构确认"`,
+ waiveNote:'⚠ 请勿随意waive！每条waive必须经架构师审核。建议用quasi_static约束替代waive。',
+ svgType:'unsync_s2f',wfType:'unsync_s2f'},
+
+{id:'ac_unsync01_f2s',ruleName:'Ac_unsync01',cat:0,title:'单比特未同步（快→慢）',sev:'Error',
+ desc:'单比特信号从快时钟域（clkA）直接传入慢时钟域（clkB），未做同步处理。信号宽度可能不足一个慢时钟周期，极易被慢时钟漏采。',
+ root:'快时钟信号宽度仅1~2个快时钟周期，而慢时钟采样周期更长，即使偶尔不漏采，也会存在亚稳态风险。',
+ impact:'慢时钟域可能永远看不到该脉冲，相关控制逻辑失效；或偶发性采到，引起随机功能错误。',
+ fixDesc:'使用脉冲同步器（Toggle Sync）或先展宽信号再加2-FF同步器。',
+ fixCode:`// 脉冲展宽 + toggle同步\nreg toggle_a;\nalways @(posedge clkA or negedge rst_n)\n  if (!rst_n) toggle_a <= 0;\n  else if (pulse_a) toggle_a <= ~toggle_a;\n\n// clkB域：2级同步后边沿检测\nreg s1,s2,s3;\nalways @(posedge clkB or negedge rst_n)\n  if (!rst_n) {s3,s2,s1} <= 3'b0;\n  else        {s3,s2,s1} <= {s2,s1,toggle_a};\nassign pulse_b = s2 ^ s3;`,
+ sgdc:`# 声明脉冲同步器\nsync_cell -name pulse_sync_inst \\\n  -from_clk clkA -to_clk clkB`,
+ waiveCond:'仅当确认信号宽度 > 2个慢时钟周期，或经波形仿真验证慢时钟必然能采到。',
+ waiveCode:`waive -rule Ac_unsync01 \\\n  -from_clock clkA -to_clock clkB \\\n  -signal pulse_a \\\n  -comment "信号宽度足够，仿真验证通过"`,
+ waiveNote:'快→慢跨域的信号宽度问题极易被忽视，必须通过仿真波形验证，仅靠代码审查不够。',
+ svgType:'unsync_f2s',wfType:'unsync_f2s'},
+
+{id:'ac_unsync02',ruleName:'Ac_unsync02',cat:0,title:'多比特未同步跨时钟',sev:'Error',
+ desc:'多位数据总线直接从clkA域跨越到clkB域，各bit独立传播延迟不同，目标域采样时各bit可能处于旧值和新值的混合状态（数据撕裂）。',
+ root:'多bit信号每个bit到达目标域的时间略微不同（skew），造成目标FF在同一时钟沿采到部分bit是新值、部分是旧值。',
+ impact:'目标域采到既非旧值也非新值的中间非法值，导致FSM跳到非法状态、数据计算错误等严重功能问题。',
+ fixDesc:'多bit跨域必须使用：①格雷码编码；②异步FIFO；③握手协议；④MUX同步器（qualifier保护）。',
+ fixCode:`// 方法1：格雷码（适合计数器）\nwire [3:0] cnt_gray = cnt_bin ^ (cnt_bin >> 1);\n// 2-FF同步格雷码，再解码\n\n// 方法2：握手协议\nalways @(posedge clkA)\n  if (send && !req) begin\n    data_latch <= new_data;\n    req <= 1'b1;\n  end else if (ack_sync) req <= 1'b0;`,
+ sgdc:`# 声明格雷码信号\ngray_signal -name data_bus[7:0]\n# 或声明qualifier\nqualifier -name req_qual \\\n  -from_clk clkA -to_clk clkB \\\n  -enable "top.req"`,
+ waiveCond:'仅当多bit信号是准静态的（传输期间不切换），且经架构设计保证数据稳定。',
+ waiveCode:`waive -rule Ac_unsync02 \\\n  -from_clock clkA -to_clock clkB \\\n  -signal data_bus \\\n  -comment "配置总线，写入后保持稳定"`,
+ waiveNote:'多bit未同步是最危险的CDC问题之一，随意waive可能导致概率性功能错误，且极难调试。',
+ svgType:'unsync_multi',wfType:'unsync_multi'},
+
+{id:'two_ff_sync',ruleName:'正确结构',cat:1,title:'双FF同步器（标准）',sev:'Ok',
+ desc:'两级D触发器同步器是处理单比特跨时钟域信号的工业标准。第一级FF可能出现亚稳态，经一个clkB周期稳定后，第二级FF安全采样。',
+ root:'亚稳态发生在第一级FF，经过1个时钟周期后亚稳态概率呈指数下降，第二级FF采到稳定值的概率极高。',
+ impact:'正确结构。极大降低MTBF中亚稳态导致的失效概率，是单比特CDC标准解法。',
+ fixDesc:'SpyGlass通过sync_cell声明识别此合法结构，确保SGDC中正确声明。',
+ fixCode:`// 标准2-FF同步器（推荐封装模块）\nmodule sync_2ff #(parameter W=1) (\n  input  clk_dst, rstn,\n  input  [W-1:0] d_src,\n  output [W-1:0] d_dst\n);\n  (* ASYNC_REG = "TRUE" *)\n  reg [W-1:0] meta, sync;\n  always @(posedge clk_dst or negedge rstn)\n    if (!rstn) {sync,meta} <= 0;\n    else       {sync,meta} <= {meta, d_src};\n  assign d_dst = sync;\nendmodule`,
+ sgdc:`# 声明同步器模块\nsync_cell -name sync_2ff \\\n  -from_clk clkA -to_clk clkB\n# 通配符写法\nsync_cell -name "*sync_2ff*"`,
+ waiveCond:'此为正确结构，无需waive。若SpyGlass未识别，需通过sync_cell约束告知工具。',
+ waiveCode:`# 无需waive，通过sync_cell约束声明\nsync_cell -name sync_2ff_inst`,
+ waiveNote:'ASYNC_REG属性使时序工具将两级FF物理放置靠近，减少布线延迟，降低亚稳态风险。',
+ svgType:'two_ff_sync',wfType:'two_ff_sync'},
+
+{id:'pulse_sync',ruleName:'正确结构',cat:1,title:'脉冲同步器（Toggle）',sev:'Ok',
+ desc:'源域将脉冲转为电平翻转（Toggle），目标域用2-FF同步后检测边沿还原为脉冲。适用于快→慢或频率不确定的跨域单脉冲传输。',
+ root:'Toggle信号宽度与源时钟无关，两脉冲间隔 > 2个目标时钟周期即可可靠传输。',
+ impact:'正确结构。能可靠传递单脉冲，不受源/目标时钟频率比限制。',
+ fixDesc:'由toggle寄存器+2-FF同步器+XOR边沿检测组成。注意最小脉冲间隔约束。',
+ fixCode:`// 源域：脉冲→Toggle\nreg toggle;\nalways @(posedge clkA or negedge rstn)\n  if (!rstn) toggle <= 0;\n  else if (pulse_in) toggle <= ~toggle;\n\n// 目标域：2-FF同步+边沿检测\nreg s1,s2,s3;\nalways @(posedge clkB or negedge rstn)\n  if (!rstn) {s3,s2,s1} <= 3'b000;\n  else       {s3,s2,s1} <= {s2,s1,toggle};\nassign pulse_out = s2^s3; // XOR边沿检测`,
+ sgdc:`# 声明脉冲同步器结构\nsync_cell -name pulse_sync_inst \\\n  -from_clk clkA -to_clk clkB`,
+ waiveCond:'此为正确结构，无需waive。',
+ waiveCode:`# 无需waive`,
+ waiveNote:'脉冲同步器的最小脉冲间隔：两相邻脉冲在源域的最短间隔必须 > 2个目标时钟周期。',
+ svgType:'pulse_sync',wfType:'pulse_sync'},
+
+{id:'handshake',ruleName:'正确结构',cat:1,title:'4相握手同步',sev:'Ok',
+ desc:'源域发出REQ并锁存数据，目标域收到同步REQ后读取数据并发送ACK，源域收到ACK后才允许下一次传输。适合多bit数据跨域。',
+ root:'握手确认机制保证数据在目标域读取时源域不更新，从根本上避免数据撕裂。',
+ impact:'正确结构。握手引入约4~6个时钟周期延迟，不适合高吞吐量场景。',
+ fixDesc:'REQ/ACK各需独立2-FF同步器，数据在REQ有效期间保持不变。SGDC中用qualifier声明。',
+ fixCode:`// 源域\nalways @(posedge clkA)\n  if (send && !req && !ack_sync)\n    {data_latch,req} <= {new_data,1'b1};\n  else if (ack_sync) req <= 1'b0;\n\n// 目标域\nalways @(posedge clkB)\n  if (req_sync && !ack)\n    {out_data,ack} <= {data_latch,1'b1};\n  else if (!req_sync) ack <= 1'b0;`,
+ sgdc:`# qualifier声明：数据受req保护\nqualifier -name req_qual \\\n  -from_clk clkA -to_clk clkB \\\n  -enable "top.req"`,
+ waiveCond:'此为正确结构，无需waive。',
+ waiveCode:`# 无需waive，使用qualifier约束`,
+ waiveNote:'握手中数据信号从结构上看可能报Ac_unsync02，用qualifier约束告知SpyGlass数据受req保护。',
+ svgType:'handshake',wfType:'handshake'},
+
+{id:'async_fifo',ruleName:'正确结构',cat:1,title:'异步FIFO（格雷码指针）',sev:'Ok',
+ desc:'读写指针使用格雷码，每次仅变化1bit，通过2-FF同步后可安全比较。用于高吞吐量多bit数据跨域传输。',
+ root:'二进制计数器多bit同时变化会有数据撕裂，格雷码每次仅1bit变化，避免了该问题。',
+ impact:'正确结构，是多bit数据高吞吐量跨域的工业标准方案。',
+ fixDesc:'格雷码转换逻辑需在SGDC中用gray_signal声明，SpyGlass才能识别为合法多bit同步结构。',
+ fixCode:`// 写指针格雷码\nwire [PTR_W:0] wptr_gray = wptr ^ (wptr >> 1);\n// 读域：2-FF同步写指针格雷码\nreg [PTR_W:0] wp_s1, wp_s2;\nalways @(posedge clk_rd or negedge rstn)\n  if (!rstn) {wp_s2,wp_s1} <= 0;\n  else       {wp_s2,wp_s1} <= {wp_s1,wptr_gray};\n// 同理：读指针同步到写域`,
+ sgdc:`# 声明格雷码指针\ngray_signal -name wptr_gray\ngray_signal -name rptr_gray`,
+ waiveCond:'此为正确结构，无需waive。如SpyGlass仍报错，检查gray_signal约束是否正确声明。',
+ waiveCode:`# 无需waive\ngray_signal -name wptr_gray[PTR_W:0]`,
+ waiveNote:'FIFO满/空标志也需考虑跨域，确认满/空判断逻辑在各自时钟域内正确实现。',
+ svgType:'async_fifo',wfType:'async_fifo'},
+
+{id:'mux_sync',ruleName:'正确结构',cat:1,title:'MUX同步器',sev:'Ok',
+ desc:'使用使能信号（EN）控制数据跨域：EN经2-FF同步，保证在数据稳定期间才触发锁存。适合多bit数据跨域，延迟小于握手协议。',
+ root:'MUX同步关键约束：EN有效期间，源域数据必须保持稳定（至少m+1个目标时钟周期）。',
+ impact:'正确结构，延迟比握手小，但必须在设计上保证EN有效期间数据稳定。',
+ fixDesc:'SpyGlass需要qualifier约束识别EN为数据有效限定符，否则报Ac_datahold01a。',
+ fixCode:`// EN同步\nreg en1,en2;\nalways @(posedge clkB or negedge rstn)\n  if (!rstn) {en2,en1} <= 0;\n  else       {en2,en1} <= {en1,data_en};\n// 边沿检测，锁存数据\nreg en2_d;\nalways @(posedge clkB) en2_d <= en2;\nwire en_rise = en2 & ~en2_d;\nalways @(posedge clkB)\n  if (en_rise) data_b <= data_a;`,
+ sgdc:`# 声明EN为qualifier\nqualifier -name data_en_qual \\\n  -from_clk clkA -to_clk clkB \\\n  -enable "top.data_en"`,
+ waiveCond:'此为正确结构，无需waive。',
+ waiveCode:`# 通过qualifier约束声明，无需waive`,
+ waiveNote:'MUX同步最大风险：忘记保证EN有效时数据的稳定性，必须仔细验证协议时序。',
+ svgType:'mux_sync',wfType:'mux_sync'},
+
+{id:'ac_conv01',ruleName:'Ac_conv01',cat:2,title:'同源信号分别同步后聚合',sev:'Warning',
+ desc:'来自同一时钟域的多路信号，分别通过独立2-FF同步器跨到目标域，同步后的输出经顺序元件后汇聚。各路同步器的cycle uncertainty不同，聚合后数据关联性可能错误。',
+ root:'两信号同时变化，但独立同步器可能分别采样到不同周期的值（cycle uncertainty = ±1 clk），导致目标域看到不一致的数据组合。',
+ impact:'目标域可能短暂出现"A已更新但B还是旧值"的中间状态，触发后级逻辑误动作。',
+ fixDesc:'改为单信号跨域（合并为格雷码总线）、异步FIFO、握手或qualifier保护的多bit同步。',
+ fixCode:`// 错误：两独立同步器\nsync_2ff u_a(.clk(clkB),.d(sig_a),.q(sa));\nsync_2ff u_b(.clk(clkB),.d(sig_b),.q(sb));\n// sa & sb 可能时序不一致！\n\n// 正确：格雷码合并或握手保证一致性\nwire [1:0] sig_gray = {sig_a,sig_b}^({sig_a,sig_b}>>1);\n// 或使用qualifier+MUX同步`,
+ sgdc:`# 若设计已保证一致性\ncdc_filter_coherency \\\n  -unrelated sig_a sig_b \\\n  -comment "握手保证数据一致性"`,
+ waiveCond:'当聚合逻辑本质上是独立无关的控制信号，或后级逻辑对瞬态非法值不敏感时可waive。',
+ waiveCode:`waive -rule Ac_conv01 \\\n  -from sig_a_sync -to sig_b_sync \\\n  -comment "两信号逻辑独立无关，不影响功能"`,
+ waiveNote:'需仔细分析聚合逻辑，确认不存在数据依赖关系，建议仿真验证。',
+ svgType:'conv01',wfType:'conv01'},
+
+{id:'ac_conv02',ruleName:'Ac_conv02',cat:2,title:'同步信号在FF前聚合',sev:'Warning',
+ desc:'来自同一源域的信号分别同步后，在到达顺序元件（FF）之前的组合逻辑中汇聚。比Ac_conv01危险，组合逻辑可能传播亚稳态或产生glitch被后级FF误采。',
+ root:'各路同步信号稳定时间略有不同，在组合逻辑相遇时可能出现短暂glitch，被后级FF锁存产生错误输出。',
+ impact:'glitch被目标域FF锁存，产生错误的功能逻辑输出，引发FSM异常跳转。',
+ fixDesc:'在各路同步器输出后，目标时钟域再寄存一拍，使所有分支在同一时钟沿对齐后再做组合逻辑。',
+ fixCode:`// 错误：同步后立即组合聚合\nassign out = sig_a_sync & sig_b_sync; // 危险！\n\n// 正确：先寄存一拍对齐，再做组合\nreg ra,rb;\nalways @(posedge clkB)\n  {ra,rb} <= {sig_a_sync,sig_b_sync};\nassign out = ra & rb; // 安全`,
+ sgdc:`# 声明此组合逻辑为预期设计\nallow_combo_logic -name top.conv_logic`,
+ waiveCond:'组合聚合输出不直接驱动关键时序路径，或确认glitch不影响后续功能。',
+ waiveCode:`waive -rule Ac_conv02 \\\n  -from {sig_a_sync sig_b_sync} \\\n  -comment "组合逻辑已验证不影响功能"`,
+ waiveNote:'组合逻辑前的聚合危险性更高，waive前必须用仿真证实。',
+ svgType:'conv02',wfType:'conv01'},
+
+{id:'ac_conv03',ruleName:'Ac_conv03',cat:2,title:'不同源域信号聚合',sev:'Warning',
+ desc:'来自不同时钟域的信号，各自同步到同一目标域后在顺序元件前聚合。这是最高风险的聚合情况，不同源域信号在目标域的相对时序完全不确定。',
+ root:'不同源域信号有着完全不同的时钟关系，即使分别同步，在目标域的相对时序也是不确定的，会出现各种组合。',
+ impact:'产生复杂的数据不一致问题，几乎不可避免出现功能错误，且问题极难复现和调试。',
+ fixDesc:'架构上避免不同源域信号在目标域聚合。必须聚合时，在两路数据共同到达目标域后建立严格的"双valid"握手确认机制。',
+ fixCode:`// 正确做法：目标域等待两路数据均有效\nreg data_a_rdy, data_b_rdy;\nalways @(posedge clkC)\n  if (data_a_ack) data_a_rdy <= 1;\n  if (data_b_ack) data_b_rdy <= 1;\n  if (data_a_rdy && data_b_rdy) begin\n    result <= data_a_s & data_b_s; // 两路均稳定\n    data_a_rdy <= 0; data_b_rdy <= 0;\n  end`,
+ sgdc:`# 声明过滤（已有一致性保证）\ncdc_filter_coherency \\\n  -unrelated sig_clkA_s sig_clkB_s \\\n  -comment "双valid握手保证数据一致"`,
+ waiveCond:'需要架构级别的书面保证、完整的时序分析和仿真验证，非常谨慎。',
+ waiveCode:`waive -rule Ac_conv03 \\\n  -from {sig_clkA_sync sig_clkB_sync} \\\n  -comment "双valid握手保证一致性，仿真验证"`,
+ waiveNote:'不同源域信号聚合是SoC设计高风险区域，必须在架构阶段彻底解决，不能依赖waive。',
+ svgType:'conv03',wfType:'conv01'},
+
+{id:'ac_conv04',ruleName:'Ac_conv04',cat:2,title:'多比特控制无格雷码',sev:'Error',
+ desc:'多bit控制信号跨时钟域，各bit通过独立同步器，没有使用格雷码编码，目标域可能采到递增过程中的过渡非法值。',
+ root:'二进制数递增时可能多个bit同时翻转（如7→8: 0111→1000），各bit到达目标域时间不同，产生如0010、0100等从未出现过的中间值。',
+ impact:'目标域FSM可能跳转到非法状态，地址/控制逻辑产生错误，且问题依赖具体数据序列，极难复现。',
+ fixDesc:'使用格雷码编码该多bit控制信号，每次只有1bit变化，彻底解决数据撕裂问题。',
+ fixCode:`// 格雷码计数器\nreg [3:0] cnt;\nwire [3:0] cnt_g = cnt ^ (cnt>>1);\n// 目标域同步格雷码\nreg [3:0] g1,g2;\nalways @(posedge clkB)\n  {g2,g1} <= {g1,cnt_g};\n// 解码\nwire [3:0] dec;\nassign dec[3]=g2[3];\nassign dec[2]=dec[3]^g2[2];\nassign dec[1]=dec[2]^g2[1];\nassign dec[0]=dec[1]^g2[0];`,
+ sgdc:`# 声明格雷码信号\ngray_signal -name cnt_g[3:0]\n# 声明同步器\nsync_cell -name gray_sync \\\n  -from_clk clkA -to_clk clkB`,
+ waiveCond:'确认该多bit信号每次只有1bit变化（本身是格雷码特性），或信号为准静态时。',
+ waiveCode:`waive -rule Ac_conv04 \\\n  -from ctrl_bus -to clkB_domain \\\n  -comment "信号为准静态配置，不会多bit同时跳变"`,
+ waiveNote:'状态机编码、地址总线等必须用格雷码或握手，不能简单waive。',
+ svgType:'conv04',wfType:'unsync_multi'},
+
+{id:'ac_glitch01',ruleName:'Ac_glitch01',cat:3,title:'同步器前非Glitch-Free MUX',sev:'Error',
+ desc:'在进入同步器之前，数据经过一个普通MUX，且MUX的select与data信号来自不同路径，可能在select切换时产生极窄毛刺，直接进入同步器第一级FF。',
+ root:'MUX的select信号与data在目标FF采样窗口内同时到达，组合逻辑竞争冒险产生宽度极窄的glitch，这个glitch被同步器第一级FF误采。',
+ impact:'毛刺被同步器锁存，等效产生一个假脉冲，触发错误的控制逻辑，且问题仅出现在特定切换时序窗口，仿真极难复现。',
+ fixDesc:'在MUX输出后在源域寄存一拍消除glitch，再跨域；或使用glitch-free MUX（ICG结构）。',
+ fixCode:`// 错误：组合MUX直接进同步器\nwire data_mux = sel ? da : db; // 可能有glitch\nsync_2ff u1(.clk(clkB),.d(data_mux),.q(out));\n\n// 正确：源域FF消除glitch\nreg mux_r;\nalways @(posedge clkA)\n  mux_r <= sel ? da : db; // FF消除竞争冒险\nsync_2ff u1(.clk(clkB),.d(mux_r),.q(out));`,
+ sgdc:`# 声明glitch-free MUX\nglitchfree_cell -names glf_mux_inst -type data\n# 或声明允许组合逻辑（已验证）\nallow_combo_logic -name mux_before_sync`,
+ waiveCond:'仅当MUX已验证为glitch-free结构，或data和select信号同源（同一时钟域FF输出）不会产生竞争。',
+ waiveCode:`waive -rule Ac_glitch01 \\\n  -from mux_out -to sync_in \\\n  -comment "MUX为glitch-free，已STA验证"`,
+ waiveNote:'MUX glitch问题在后仿（gate-level sim）中才会暴露，RTL仿真往往发现不了，务必重视。',
+ svgType:'glitch01',wfType:'glitch01'},
+
+{id:'ac_glitch02',ruleName:'Ac_glitch02',cat:3,title:'扇出重汇聚源导致毛刺',sev:'Error',
+ desc:'来自同一源FF输出的多条路径（扇出）经不同组合逻辑延迟后重新汇聚（reconvergence），在汇聚点产生竞争冒险毛刺，直接跨时钟域传播。',
+ root:'同一源信号经多条路径传播，各路径延迟不同，在汇聚门输出产生毛刺（逻辑冒险）。这个毛刺宽度极窄，STA可能不能检测。',
+ impact:'毛刺在跨域路径传播，被目标域FF误采，产生错误脉冲。后仿（考虑gate延迟）才会暴露。',
+ fixDesc:'在跨域信号进组合逻辑前，确保已在源域寄存一拍。避免将多路径重汇聚的信号直接跨域。',
+ fixCode:`// 错误：重汇聚组合逻辑直接跨域\nwire o1 = data & en;\nwire o2 = data | ctrl;\nwire rc = o1 ^ o2; // 重汇聚→可能glitch\n// rc直接跨域 → 错误!\n\n// 正确：源域先寄存一拍\nreg rc_r;\nalways @(posedge clkA) rc_r <= o1^o2;\n// rc_r 跨域 → 安全`,
+ sgdc:`# 声明过滤此重汇聚\ncdc_filter_coherency \\\n  -conv_gates top.reconv_gate`,
+ waiveCond:'通过STA（全工艺角PVT）能保证不产生glitch，需要后端确认签字。',
+ waiveCode:`waive -rule Ac_glitch02 \\\n  -from src_ff -to reconv_gate \\\n  -comment "STA验证无glitch，来源相同"`,
+ waiveNote:'RTL级极难保证无glitch，必须依赖后端STA确认，建议直接修改RTL。',
+ svgType:'glitch02',wfType:'glitch01'},
+
+{id:'ac_glitch03',ruleName:'Ac_glitch03',cat:3,title:'组合逻辑直接跨时钟域',sev:'Error',
+ desc:'跨时钟域的信号是一个组合逻辑输出，而不是源域FF的输出。组合逻辑天然存在毛刺，直接进入目标域同步器会显著增加亚稳态概率。',
+ root:'组合逻辑输出在逻辑翻转过程中存在竞争冒险窗口，输出值不稳定，存在宽度极短的glitch。',
+ impact:'glitch被同步器第一级FF采样，等效增加了亚稳态发生频率，MTBF大幅降低，且glitch可能传播到后级逻辑。',
+ fixDesc:'在组合逻辑输出和跨域路径之间插入一级源域触发器，消除组合逻辑的毛刺后再同步。',
+ fixCode:`// 错误：组合逻辑直接跨域\nassign cdc_sig = (st==IDLE) & dv; // 组合逻辑！\nsync_2ff u1(.clk(clkB),.d(cdc_sig),.q(out));\n\n// 正确：源域先寄存一拍\nreg cdc_r;\nalways @(posedge clkA or negedge rstn)\n  if (!rstn) cdc_r <= 0;\n  else cdc_r <= (st==IDLE) & dv;\nsync_2ff u1(.clk(clkB),.d(cdc_r),.q(out));`,
+ sgdc:`# 若输入均为quasi-static\nquasi_static -name combo_inputs`,
+ waiveCond:'仅当组合逻辑所有输入均为准静态信号，不会同时跳变，工具和架构均确认无glitch。',
+ waiveCode:`waive -rule Ac_glitch03 \\\n  -from combo_out -to sync_in \\\n  -comment "输入为quasi-static，无竞争冒险"`,
+ waiveNote:'强烈不建议waive，修复成本极低（增加一级FF），但错过可能导致难以复现的随机功能错误。',
+ svgType:'glitch03',wfType:'glitch01'},
+
+{id:'ac_cdc01',ruleName:'Ac_cdc01',cat:4,title:'快→慢信号宽度不足',sev:'Error',
+ desc:'信号从快时钟域（clkA）传到慢时钟域（clkB），信号有效宽度小于1.5个慢时钟周期，慢时钟采样可能完全错过该信号，导致数据丢失。',
+ root:'快时钟信号可能只维持1~2个快时钟周期，慢时钟的一个周期涵盖多个快时钟周期，采样窗口可能完全不与有效信号重叠。',
+ impact:'目标域永远无法采样到该信号，相关控制逻辑永远不会被触发，功能完全失效，且不报错难以发现。',
+ fixDesc:'①使用脉冲同步器（Toggle sync）；②源域展宽信号到 > 1.5个目标时钟周期；③使用握手协议。',
+ fixCode:`// 错误：只维持1个clkA周期的脉冲\nalways @(posedge clkA)\n  pulse <= 1'b1; // 下一周期自动清除！\n\n// 正确1：展宽脉冲\nreg [3:0] cnt;\nalways @(posedge clkA or negedge rstn)\n  if (!rstn) cnt <= 0;\n  else if (trig) cnt <= 4'd10;\n  else if (cnt>0) cnt <= cnt-1;\nassign sig_wide = (cnt > 0); // 展宽10个clkA周期\n\n// 正确2：使用toggle+sync（推荐）`,
+ sgdc:`# 无直接SGDC修复，需RTL改动\n# 信号展宽后声明路径\ncdc_false_path -from clkA_domain \\\n  -to clkB_domain \\\n  -comment "信号已展宽，仿真验证"`,
+ waiveCond:'确认源域信号宽度已足够（> 2× 目标时钟周期），并通过仿真验证目标域能可靠采样到。',
+ waiveCode:`waive -rule Ac_cdc01 \\\n  -from fast_sig -to slow_domain \\\n  -comment "信号宽度已展宽20ns，慢时钟10ns周期"`,
+ waiveNote:'必须通过波形仿真（或形式验证）确认信号宽度满足要求，不能仅凭主观判断waive。',
+ svgType:'cdc01',wfType:'cdc01'},
+
+{id:'ac_datahold01a',ruleName:'Ac_datahold01a',cat:4,title:'使能同步数据保持违例',sev:'Error',
+ desc:'使用使能信号（Enable）进行数据同步时，Enable有效之后源域数据发生了变化，导致目标域采样到的数据与Enable所对应的数据不符。',
+ root:'MUX同步/Enable同步的根本要求：Enable有效时数据必须保持稳定。若协议中EN和Data更新未正确对齐，就会出现此问题。',
+ impact:'目标域采到的数据与Enable对应的数据不一致，产生数据关联性错误，引发功能性故障。',
+ fixDesc:'确保在Enable信号拉高后，源域数据保持不变，直到目标域通过握手确认完成采样。',
+ fixCode:`// 错误：Enable拉高后data立即更新\nalways @(posedge clkA) begin\n  en <= 1'b1;\n  data <= new_data; // 同一周期更新！\nend\n\n// 正确：先锁存data，再拉en，等ack后清en\nalways @(posedge clkA) begin\n  if (!en) begin\n    data_latch <= new_data; // 先锁存\n    en <= 1'b1;             // 再拉EN\n  end else if (ack_sync)\n    en <= 1'b0; // 收到ack才清EN\nend`,
+ sgdc:`# qualifier声明数据有效性\nqualifier -name en_qual \\\n  -from_clk clkA -to_clk clkB \\\n  -enable "top.data_en"`,
+ waiveCond:'通过功能分析确认data和enable的时序关系不会导致采样到错误数据，需详细波形证明。',
+ waiveCode:`waive -rule Ac_datahold01a \\\n  -from data_sig -to dest_ff \\\n  -comment "设计协议保证EN有效期间data稳定，有仿真验证"`,
+ waiveNote:'此类问题往往在特定数据序列下才暴露，随机仿真难以覆盖，需要定向测试验证。',
+ svgType:'datahold',wfType:'datahold'},
+
+{id:'ar_unsync01',ruleName:'Ar_unsync01',cat:5,title:'异步复位信号未同步',sev:'Error',
+ desc:'异步复位信号（rstn）直接连接到目标时钟域的触发器，未经复位同步器。在复位释放时，不同触发器可能在不同时钟周期退出复位状态，产生复位竞争。',
+ root:'异步复位的Assert可以随时生效，但Deassert必须满足FF的Recovery time。不同位置FF的recovery时间不同，可能在不同周期释放复位。',
+ impact:'复位释放时，部分FF已开始工作而其他FF还在复位中，造成设计状态不一致，引发随机功能错误，概率较低但影响极大。',
+ fixDesc:'使用异步Assert/同步Deassert复位同步器（行业标准的ASIC复位处理方式）。',
+ fixCode:`// 错误：直接使用异步复位输入\nalways @(posedge clk or negedge rstn_ext)\n  if (!rstn_ext) state <= IDLE; // 危险！\n\n// 正确：复位同步器\nmodule rst_sync(input clk,rstn_in,output rstn_out);\n  reg d1,d2;\n  always @(posedge clk or negedge rstn_in)\n    if (!rstn_in) {d2,d1} <= 2'b00; // 异步assert\n    else          {d2,d1} <= {d1,1'b1}; // 同步deassert\n  assign rstn_out = d2;\nendmodule`,
+ sgdc:`# 声明复位同步器\nsync_cell -name rst_sync \\\n  -reset -to_clk clk\n# 声明输入复位端口\nreset -name rstn_in -async -value 0`,
+ waiveCond:'仅当复位信号是同步复位（随时钟沿同步），或设计已通过其他方式保证复位时序安全。',
+ waiveCode:`waive -rule Ar_unsync01 \\\n  -from rstn_in \\\n  -comment "该复位为同步复位，随clk沿生效"`,
+ waiveNote:'复位同步是ASIC设计基础规范，不正确的复位处理是导致芯片返修的主要原因之一！',
+ svgType:'rst_unsync',wfType:'rst_unsync'},
+
+{id:'ar_asyncdeassert01',ruleName:'Ar_asyncdeassert01',cat:5,title:'异步复位未同步释放',sev:'Error',
+ desc:'使用了异步复位，但没有同步释放（Synchronous Deassert）电路。复位释放时刻与时钟无关，不同FF具有不同的setup/hold时序参数，会在不同时刻退出复位状态。',
+ root:'异步复位释放时若正好在时钟沿附近，不同FF（不同物理位置、不同setup裕量）会有不同的表现，一部分在这个周期退出复位，一部分在下个周期退出。',
+ impact:'复位释放后设计进入不确定状态，FSM可能进入非法状态机转移，且问题仅在特定时序条件下出现，难以在仿真中复现。',
+ fixDesc:'必须使用"异步Assert，同步Deassert"的标准复位同步器，这是ASIC/FPGA设计行业标准。',
+ fixCode:`// 正确：异步Assert同步Deassert复位链\nalways @(posedge clk or negedge rstn_raw)\n  if (!rstn_raw)  // 异步Assert：立即复位\n    {rs2,rs1} <= 2'b00;\n  else            // 同步Deassert：时钟沿采样释放\n    {rs2,rs1} <= {rs1,1'b1};\n// rs2驱动所有需要该复位的FF\n// 保证所有FF在同一时钟沿同步退出复位`,
+ sgdc:`sync_cell -name rst_sync_inst \\\n  -reset -to_clk target_clk\nreset -name rstn_raw -async -value 0`,
+ waiveCond:'不建议waive。仅在能证明所有下游FF的Recovery时序裕量充足，且复位后系统有其他初始化机制时。',
+ waiveCode:`waive -rule Ar_asyncdeassert01 \\\n  -from rstn_raw -to target_domain \\\n  -comment "STA分析recovery裕量>1ns，全工艺角满足"`,
+ waiveNote:'此类问题在量产后随温度/电压变化可能偶发，不能仅凭TT角STA通过就waive。',
+ svgType:'rst_async_deassert',wfType:'rst_unsync'},
+
+{id:'reset_sync_correct',ruleName:'正确结构',cat:5,title:'复位同步器（正确结构）',sev:'Ok',
+ desc:'标准异步Assert/同步Deassert复位同步器：Assert时（低电平）所有FF立即异步复位；释放时，经2级FF同步后统一在时钟沿释放，避免复位竞争。',
+ root:'D端固定接高电平的2级FF链，异步复位后输出全为0，释放时同步采样高电平，保证所有后续FF在同一时钟沿同步退出复位。',
+ impact:'正确结构，是ASIC/FPGA设计的标准复位处理模板，每个时钟域都应有独立的复位同步器。',
+ fixDesc:'封装为独立模块，每个时钟域实例化一个，SGDC中通过sync_cell -reset声明。',
+ fixCode:`module rst_sync (\n  input  clk,\n  input  rstn_in,  // 原始异步复位（低有效）\n  output rstn_out  // 同步后复位输出\n);\n  (* ASYNC_REG = "TRUE" *)\n  reg meta_ff, sync_ff;\n  always @(posedge clk or negedge rstn_in)\n    if (!rstn_in) {sync_ff,meta_ff} <= 2'b00;\n    else          {sync_ff,meta_ff} <= {meta_ff,1'b1};\n  assign rstn_out = sync_ff;\nendmodule`,
+ sgdc:`sync_cell -name rst_sync \\\n  -reset -to_clk clk\nreset -name rstn_in -async -value 0`,
+ waiveCond:'此为正确结构，无需waive。',
+ waiveCode:`# 无需waive，确保SGDC正确声明`,
+ waiveNote:'每个时钟域都应有独立的复位同步器，不同时钟域的复位不能共用同一个同步器。',
+ svgType:'rst_sync_correct',wfType:'rst_sync'},
+
+{id:'ac_coherency06',ruleName:'Ac_coherency06',cat:6,title:'同域信号被多次同步（冗余）',sev:'Warning',
+ desc:'来自同一时钟域的信号A，被多个位于不同位置的同步器分别同步到同一目标域，产生多份同步副本，SpyGlass报告资源浪费。',
+ root:'架构设计冗余：多个下游模块各自实例化了同步器，但共享一个同步器输出就够了。',
+ impact:'仅浪费面积和功耗，不是功能性错误，Warning级别。',
+ fixDesc:'将多个同步器合并为一个，所有下游模块共享同步器输出。',
+ fixCode:`// 冗余：各模块各有同步器\n// modA: sync_2ff u_a(.d(sig),.q(sig_A_sync));\n// modB: sync_2ff u_b(.d(sig),.q(sig_B_sync));\n\n// 优化：顶层统一同步，向下分发\nsync_2ff u_top(.clk(clkB),.d(sig),.q(sig_sync));\n// sig_sync 同时连接 mod_A 和 mod_B`,
+ sgdc:`# Warning级别，若有意保留多同步\n# 通过注释说明设计意图即可`,
+ waiveCond:'若多路同步是有意为之（如增强鲁棒性或模块时序隔离），可以合理waive。',
+ waiveCode:`waive -rule Ac_coherency06 \\\n  -from sig_source \\\n  -comment "多模块各有独立同步，为模块时序隔离设计"`,
+ waiveNote:'优先考虑合并同步器节省面积，如有特殊原因保留多个，waive是可以接受的。',
+ svgType:'coherency',wfType:'two_ff_sync'},
+
+{id:'clock_glitch05',ruleName:'Clock_glitch05',cat:6,title:'时钟路径上的毛刺',sev:'Error',
+ desc:'时钟网络（Clock Tree）上存在组合逻辑产生的毛刺，直接影响触发器的CLK输入，导致FF在非预期时刻采样数据，造成时序完全错乱。',
+ root:'时钟MUX或时钟门控电路的select信号在时钟有效沿附近切换，产生毛刺脉冲直接驱动FF的CLK端，产生伪时钟沿。',
+ impact:'FF在非预期时钟沿采样数据，造成时序完全错乱，这是芯片设计中最严重的时钟完整性问题。',
+ fixDesc:'所有时钟切换和时钟门控必须使用glitch-free结构（ICG：Integrated Clock Gating Cell），时钟MUX的select信号必须在时钟无效电平期间稳定切换。',
+ fixCode:`// 错误：普通逻辑门做时钟门控\nassign clk_g = clk & en; // 产生毛刺！\n\n// 正确1：使用ICG（Integrated Clock Gate）\n// ICG包含Latch+AND，Latch在低电平锁存en\nCLKGATE u_icg(\n  .CLK(clk), .EN(en), .TE(scan_en),\n  .GCLK(clk_g) // Glitch-free输出\n);\n\n// 正确2：时钟MUX select在低电平期间切换`,
+ sgdc:`# 声明时钟门控单元\nset_parameter clock_gate_cell CLKGATE\n# 声明glitch-free cell\nglitchfree_cell -names CLKGATE -type clock`,
+ waiveCond:'极度谨慎。只有当STA全工艺角确认伪时钟沿不满足任何FF的建立保持时间，或设计中在毛刺期间D端稳定不变时。',
+ waiveCode:`waive -rule Clock_glitch05 \\\n  -from clk_mux_out \\\n  -comment "STA全角:毛刺<50ps,所有FF hold>200ps"`,
+ waiveNote:'时钟毛刺是最严重的芯片设计问题之一，强烈建议永远不要waive，从架构上根本解决！',
+ svgType:'clk_glitch',wfType:'clk_glitch'}
+
+,
+/* ══ 新增场景（已归入原有分组）══ */
+{id:'ac_unsync03',ruleName:'Ac_unsync03',cat:0,title:'向量信号部分比特未同步',sev:'Error',
+ desc:'多位向量信号中，仅部分bit经过同步器传入目标域，其余bit直接跨域或被遗漏。SpyGlass对每个bit独立追踪，未同步的bit单独报Ac_unsync03，比全部未同步更隐蔽。',
+ root:'向量拆分同步时，设计者常只对控制bit加同步器，数据bit被遗漏；或SGDC中sync_cell声明的位宽与RTL不一致，导致工具认为某些bit已同步而实际RTL未处理。',
+ impact:'未同步的bit在目标域出现亚稳态，与已同步bit组合产生更难调试的功能错误；中间bit的问题仅在特定数据场景下暴露。',
+ fixDesc:'对整个向量统一同步：使用异步FIFO、格雷码或握手协议。SGDC中sync_cell/gray_signal声明必须覆盖所有bit，用位宽精确声明，不要遗漏。',
+ fixCode:`// 错误：只同步部分bit\nsync_2ff u_ctrl(.clk(clkB),.d(bus[7]),.q(ctrl_sync));\nassign out = {ctrl_sync, bus[6:0]}; // 其余bit直接用！\n\n// 正确：格雷码整体同步\nwire [7:0] bus_gray = bus ^ (bus >> 1);\n// 或：握手+锁存整体跨域`,
+ sgdc:`# 错误声明（只声明1bit）\nsync_cell -name sync_inst -from_clk clkA -to_clk clkB\n# 正确：覆盖全部bit\ngray_signal -name bus_gray[7:0]\nqualifier -name req_qual \\\\\n  -from_clk clkA -to_clk clkB \\\\\n  -enable "top.req"`,
+ waiveCond:'仅当未同步bit是准静态信号（上电后不变化），且架构师书面确认该bit在目标域使用前必然稳定。',
+ waiveCode:`waive -rule Ac_unsync03 \\\\\n  -from bus[6:0] -to clkB_domain \\\\\n  -comment "配置bit，上电后static，架构确认"`,
+ waiveNote:'部分bit未同步是最隐蔽的CDC问题之一，建议全面review所有sync_cell的位宽声明，确保无遗漏。',
+ svgType:'unsync03',wfType:'unsync_multi'},
+
+{id:'ac_sync_reconv01',ruleName:'Ac_sync_reconv01',cat:2,title:'全局重收敛（跨模块SoC层）',sev:'Error',
+ desc:'来自同一源时钟域的信号，分别在不同子模块内经独立同步器同步后，在SoC顶层逻辑中重新汇聚（Global Reconvergence）。各同步器cycle uncertainty独立，汇聚后一致性无法保证。此问题在block级CDC不可见，只在SoC flat CDC才暴露。',
+ root:'子模块A和B各自对同一源信号独立同步，在SoC顶层将两路同步输出汇聚使用。各路±1 cycle不确定性在顶层叠加，工具在flat CDC goal下才能检测。',
+ impact:'SoC层出现跨模块数据不一致，极难调试。高通Kaanapali以后项目要求SoC cdc_flat必须通过Global Reconvergence检查，是Chip signoff门控之一。',
+ fixDesc:'①顶层统一同步一次后分发给各子模块；②子模块间握手协议保证数据一致；③各子模块cdc_model.tcl正确声明端口同步状态，避免SoC层重复同步导致重收敛。',
+ fixCode:`// 问题：子模块各自对同一源信号独立同步\n// ModA: sync_2ff u_a(.clk(clkB),.d(sig),.q(sig_a));\n// ModB: sync_2ff u_b(.clk(clkB),.d(sig),.q(sig_b));\n// Top:  out = sig_a & sig_b; // 全局重收敛！\n\n// 修复：顶层统一同步，向下分发\nsync_2ff u_top(.clk(clkB),.d(sig),.q(sig_sync));\nassign sig_a_in = sig_sync;\nassign sig_b_in = sig_sync;`,
+ sgdc:`cdc_filter_coherency \\\\\n  -unrelated sig_a_sync sig_b_sync \\\\\n  -comment "顶层统一同步分发，无重收敛"\ncdc_model -port sig_sync -clk clkB -combo no`,
+ waiveCond:'架构保证两路同步信号cycle差异不影响功能（幂等操作或双valid保护），且架构师书面确认。',
+ waiveCode:`waive -rule Ac_sync_reconv01 \\\\\n  -from {ModA.sig_sync ModB.sig_sync} \\\\\n  -comment "SoC层双valid握手保证一致性，架构确认"`,
+ waiveNote:'⚠ 高通Kaanapali/Congo以后项目cdc_flat必须通过此检查，是Chip signoff门控，不得随意waive！',
+ svgType:'sync_reconv01',wfType:'conv01'},
+
+{id:'ac_datahold01b',ruleName:'Ac_datahold01b',cat:4,title:'Qualifier失效后数据过早更新',sev:'Error',
+ desc:'Enable/Qualifier同步场景中，qualifier去高（失效）后，源域数据在同步链延迟尚未清除前立即更新。目标域同步链仍在传播旧qualifier期间感知到了新数据，采到错误组合。',
+ root:'Qualifier deassert后，目标域同步器仍需1~2个时钟周期反映该变化。若源域在qualifier去高后立即更新数据，目标域采样窗口可能跨越新旧数据边界，采到混合值。',
+ impact:'目标域采到"旧qualifier对应新数据"的错误组合，产生功能错误且仅在特定时序序列下复现，随机仿真难以覆盖，需定向测试才能发现。',
+ fixDesc:'Qualifier去高后，源域数据必须保持稳定至少(同步链级数+1)个目标时钟周期。建议通过握手ACK信号确认目标域完成采样后再更新数据。',
+ fixCode:`// 错误：qualifier去高后同周期更新data\nalways @(posedge clkA) begin\n  en <= 1'b0;       // qualifier去高\n  data <= new_data; // 同周期更新！危险！\nend\n\n// 正确：等待ACK确认后再更新\nalways @(posedge clkA) begin\n  if (ack_sync) en <= 1'b0;\n  if (!en && !ack_sync && need_update)\n    data <= new_data; // 安全更新窗口\nend`,
+ sgdc:`qualifier -name en_qual \\\\\n  -from_clk clkA -to_clk clkB \\\\\n  -enable "top.data_en"`,
+ waiveCond:'通过详细波形分析确认：qualifier去高后到数据更新之间间隔 > 同步链级数+1个目标时钟周期，有完整仿真波形证明。',
+ waiveCode:`waive -rule Ac_datahold01b \\\\\n  -from data_sig -to dest_ff \\\\\n  -comment "协议保证qualifier去高后3个clkB周期才更新data"`,
+ waiveNote:'Ac_datahold01b与01a区别：01a是qualifier有效时数据超前更新；01b是qualifier去高后数据滞后保持不足。两者都需仿真验证。',
+ svgType:'datahold01b',wfType:'datahold'},
+
+{id:'ac_datahold01c',ruleName:'Ac_datahold01c',cat:4,title:'MUX同步器组合逻辑数据保持违例',sev:'Error',
+ desc:'MUX同步器中，驱动目标域Latch的数据路径含组合逻辑（如多路选择器）。EN有效期间，组合逻辑的select等输入信号发生翻转，数据总线产生glitch，被目标域FF锁存到非法中间值。',
+ root:'MUX同步器要求EN有效期间数据稳定且无glitch。若数据路径含组合MUX且select在EN有效期变化，竞争冒险产生极窄glitch被目标域FF误采。',
+ impact:'目标域锁存到glitch产生的非法值，等效于多bit数据撕裂，但有EN保护的假象使问题更隐蔽。只在gate-level后仿（含组合逻辑延迟）中才会暴露。',
+ fixDesc:'①源域对MUX输出先寄存一拍消除glitch再送入跨域路径；②确保EN有效期间所有驱动数据的信号（含select）均不翻转；③改用握手协议替代MUX同步。',
+ fixCode:`// 错误：EN有效期间MUX的sel可能变化\nassign data_x = sel ? data_a : data_b; // 组合逻辑！\n// EN有效期间sel变→data_x产生glitch！\n\n// 正确：源域先寄存消除glitch\nreg [7:0] data_stable;\nalways @(posedge clkA)\n  if (!en) data_stable <= sel ? data_a : data_b;\n  // EN上升前锁定，EN期间稳定不变`,
+ sgdc:`qualifier -name en_mux_qual \\\\\n  -from_clk clkA -to_clk clkB \\\\\n  -enable "top.mux_en"\n# 约束的data字段指向寄存后的稳定信号`,
+ waiveCond:'STA+后仿确认：EN有效全部时间内，数据总线所有bit无任何翻转和glitch（含组合路径所有竞争冒险）。',
+ waiveCode:`waive -rule Ac_datahold01c \\\\\n  -from data_mux -to dest_latch \\\\\n  -comment "STA验证EN期间data无翻转，gate sim通过"`,
+ waiveNote:'此类问题只在门级后仿中暴露，RTL仿真无法发现。强烈建议在源域寄存一拍，修复成本极低。',
+ svgType:'datahold01c',wfType:'datahold'},
+
+{id:'ac_abstract_validation01',ruleName:'Ac_abstract_validation01',cat:6,title:'层次化CDC端口约束不一致',sev:'Error',
+ desc:'Block级CDC生成的抽象模型（cdc_model.tcl）中，端口时钟域声明与SoC顶层实际连接不匹配。如Block端口声明为clkA域，但SoC顶层将其连接到clkB域netlist，导致SoC CDC分析的基础约束错误。',
+ root:'Block级和SoC级CDC分别独立运行，cdc_model.tcl未随RTL变更同步更新；或Block端口在SoC中被复用于不同时钟域配置而cdc_model.tcl未反映。',
+ impact:'SoC层CDC分析基于错误约束：漏报真实CDC violation（严重）或误报大量假违例。Block级通过但SoC级出现新CDC问题，极难定位，可能导致Chip Respin。',
+ fixDesc:'①Block级每次RTL freeze必须重新运行CDC并由CDC owner审核后更新cdc_model.tcl；②SoC集成时执行cdc_model_check验证端口声明与顶层netlist一致；③使用高通CDC Ref Flow的auto-model-check功能。',
+ fixCode:`# Block级SGDC正确声明\ncdc_model -port data_out[7:0] \\\\\n  -clk clkA -combo no\n\n# SoC级验证思路\n# 1. 读Block的cdc_model.tcl\n# 2. 提取SoC顶层端口实际连接时钟\n# 3. 比对声明与实际\n# 4. 不一致 → 报Ac_abstract_validation01`,
+ sgdc:`cdc_model -port {data_out[7:0] ctrl_out} \\\\\n  -clk clkA -combo no\ncdc_model -port data_in[7:0] \\\\\n  -clk clkB -combo no\n# SoC级引用Block模型\nread_file -type sgdc ./block/block_cdc_model.tcl`,
+ waiveCond:'仅当端口不一致是Block复用于不同时钟域配置（有意为之），且SoC层flat CDC完整验证无真实CDC violation，经CDC owner签字确认。',
+ waiveCode:`waive -rule Ac_abstract_validation01 \\\\\n  -port block_inst.data_out \\\\\n  -comment "Block复用于clkB域配置，SoC flat CDC通过，架构确认"`,
+ waiveNote:'⚠ 高通内部规定：每次Block RTL freeze后必须更新cdc_model.tcl并经CDC Owner签字，此violation禁止未review批量waive。',
+ svgType:'abstract_val01',wfType:'two_ff_sync'},
+
+{id:'ar_combo01',ruleName:'Ar_combo01',cat:5,title:'复位路径上的组合逻辑毛刺',sev:'Error',
+ desc:'异步复位信号经过组合逻辑（AND/OR/NOT）后再驱动FF的异步复位端（RN/SN）。组合逻辑在输入跳变时产生的极窄毛刺，会触发FF产生误复位。这是ASIC量产失效的高频原因之一，只在gate-level后仿才会暴露。',
+ root:'复位路径上的AND门（如rstn & func_en）在func_en跳变瞬间产生竞争冒险，输出极窄低脉冲（glitch）。脉冲宽度可能不满足FF最小复位脉冲宽度要求，但仍能触发异步复位，导致FF在功能运行中被误复位。',
+ impact:'FF在功能运行期间被误复位，状态机跳回IDLE，数据丢失，系统随机挂死。仅在特定信号跳变时序下出现，RTL仿真极难复现，gate-level后仿（含门延迟）才会暴露。',
+ fixDesc:'①复位路径严禁普通组合逻辑门；②所有复位逻辑合并必须在复位同步器内部实现（Latch结构消除glitch）；③测试复位通过专用DFT复位路径处理。',
+ fixCode:`// 错误：复位路径上AND组合逻辑\nassign rstn_gated = rstn_in & func_en; // func_en跳变→毛刺！\nalways @(posedge clk or negedge rstn_gated)\n  if (!rstn_gated) state <= IDLE; // 被误复位！\n\n// 正确：门控逻辑移入复位同步器内部\nmodule rst_sync_gated(\n  input clk, rstn_in, func_en, output rstn_out\n);\n  reg d1, d2;\n  wire rstn_qual = rstn_in & func_en;\n  always @(posedge clk or negedge rstn_qual)\n    if (!rstn_qual) {d2,d1} <= 2'b00;\n    else {d2,d1} <= {d1,1'b1};\n  assign rstn_out = d2;\nendmodule`,
+ sgdc:`sync_cell -name rst_sync_gated \\\\\n  -reset -to_clk clk\nreset -name rstn_in -async -value 0\nglitchfree_cell -names RST_GATE_CELL -type reset`,
+ waiveCond:'仅当组合逻辑所有输入均为静态信号（复位期间完全不跳变），STA全工艺角PVT确认无毛刺，且DFT工程师书面确认测试模式安全。',
+ waiveCode:`waive -rule Ar_combo01 \\\\\n  -from rstn_gated \\\\\n  -comment "STA全角无glitch，func_en为static信号，DFT确认"`,
+ waiveNote:'复位路径glitch是ASIC量产失效高频原因，DFT scan模式下尤为危险。强烈建议从架构上根本解决，不要依赖waive。',
+ svgType:'ar_combo01',wfType:'rst_unsync'},
+
+{id:'mutual_exclusive_clocks',ruleName:'Mutual Exclusive',cat:6,title:'互斥时钟域未声明（MUX切换）',sev:'Warning',
+ desc:'两时钟通过MUX切换（同一时刻只有一个有效），但未在SGDC中声明为互斥时钟（Mutually Exclusive）。SpyGlass将两者视为独立异步时钟，对所有跨这两个时钟的路径误报大量CDC violation，严重淹没真实问题。',
+ root:'MUX时钟切换是SoC低功耗设计常见手段。不声明互斥时，工具认为两路时钟可能同时有效，对所有同步路径误判为未同步，生成大量假违例。',
+ impact:'大量False Positive淹没真实CDC问题，signoff效率极低。若对假违例进行"修复"（添加不必要同步器），反而破坏原设计时序并浪费面积/功耗。',
+ fixDesc:'①SGDC用set_clock_groups -logically_exclusive声明互斥；②确保MUX切换glitch-free（select在两时钟均无效期间切换）；③高通标准waiver tag：Mutual Exclusive Clocks: clkA <-> clkB。',
+ fixCode:`// 时钟MUX必须使用glitch-free单元\nCLKMUX u_mux(\n  .CLK0(clkA), .CLK1(clkB),\n  .SEL(clk_sel_sync), // 经专用同步器的glitch-free信号\n  .CLKOUT(clk_out)\n);\n// 切换时序：先关clkA，等稳定，再开clkB\n// clk_sel只在时钟无效低电平期间切换`,
+ sgdc:`# 方法1：SDC声明互斥时钟组（推荐）\nset_clock_groups -logically_exclusive \\\\\n  -group [get_clocks clkA] \\\\\n  -group [get_clocks clkB]\n\n# 方法2：SpyGlass SGDC\ncdc_preference -parameter clock_mux_exclusive \\\\\n  -value {clkA clkB}\n# 高通标准tag: Mutual Exclusive Clocks: clkA <-> clkB`,
+ waiveCond:'已正确声明互斥关系，且MUX切换经STA和仿真验证为glitch-free（切换完全在两时钟均无效期间）。',
+ waiveCode:`waive -rule Ac_unsync01 \\\\\n  -from_clock clkA -to_clock clkB \\\\\n  -comment "Mutual Exclusive Clocks: 互斥时钟，MUX切换glitch-free"`,
+ waiveNote:'高通CDC Waivers文档将"Mutual Exclusive Clocks"列为标准waiver tag。需同时验证：①MUX切换glitch-free；②select信号CDC已处理；③两时钟不会同时有效。',
+ svgType:'mutual_excl',wfType:'clk_glitch'}
+
+];
+
+const CATS = [
+  {name:'未同步跨时钟',icon:'🔴',ids:['ac_unsync01_s2f','ac_unsync01_f2s','ac_unsync02','ac_unsync03']},
+  {name:'同步结构（正确）',icon:'🟢',ids:['two_ff_sync','pulse_sync','handshake','async_fifo','mux_sync']},
+  {name:'聚合问题',icon:'🟡',ids:['ac_conv01','ac_conv02','ac_conv03','ac_conv04','ac_sync_reconv01']},
+  {name:'毛刺问题',icon:'🔴',ids:['ac_glitch01','ac_glitch02','ac_glitch03']},
+  {name:'数据保持问题',icon:'🔴',ids:['ac_cdc01','ac_datahold01a','ac_datahold01b','ac_datahold01c']},
+  {name:'复位同步',icon:'🟠',ids:['ar_unsync01','ar_asyncdeassert01','reset_sync_correct','ar_combo01']},
+  {name:'特殊情况',icon:'🟡',ids:['ac_coherency06','clock_glitch05','ac_abstract_validation01','mutual_exclusive_clocks']}
+];
+
+// ===================== CIRCUIT ENGINE =====================
+let SHOW_VIO = false;
+const SVG_NS = 'http://www.w3.org/2000/svg';
+
+function mkEl(tag, attrs={}) {
+  const el = document.createElementNS(SVG_NS, tag);
+  for (const [k,v] of Object.entries(attrs)) el.setAttribute(k, v);
+  return el;
+}
+function getSvg() { return document.getElementById('cSvg'); }
+
+function drawDomain(p, x,y,w,h, type, label) {
+  const colors = {A:['rgba(0,100,220,0.13)','#0064dc'],B:['rgba(220,100,0,0.13)','#dc6400'],C:['rgba(160,0,220,0.13)','#9000dc']};
+  const [fill,stroke] = colors[type]||colors.A;
+  p.appendChild(mkEl('rect',{x,y,width:w,height:h,rx:6,fill,stroke,'stroke-width':1.5,'stroke-dasharray':'6,3'}));
+  const t=mkEl('text',{x:x+8,y:y+16,fill:stroke,'font-size':11,'font-weight':'bold','font-family':'monospace'});
+  t.textContent=label; p.appendChild(t);
+}
+function drawFF(p, x,y, label, clkLbl, col='#4488cc') {
+  const g=mkEl('g');
+  g.appendChild(mkEl('rect',{x,y,width:56,height:48,rx:4,fill:'#0d1e30',stroke:col,'stroke-width':1.5}));
+  // D label
+  const d=mkEl('text',{x:x+5,y:y+26,fill:'#aaaacc','font-size':10,'font-family':'monospace'});
+  d.textContent='D'; g.appendChild(d);
+  // Q label
+  const q=mkEl('text',{x:x+42,y:y+26,fill:'#aaaacc','font-size':10,'font-family':'monospace'});
+  q.textContent='Q'; g.appendChild(q);
+  // CLK triangle
+  g.appendChild(mkEl('polygon',{points:`${x+3},${y+34} ${x+10},${y+30} ${x+10},${y+38}`,fill:'#6688aa'}));
+  // CLK label
+  const c=mkEl('text',{x:x+12,y:y+38,fill:'#557799','font-size':9,'font-family':'monospace'});
+  c.textContent=clkLbl; g.appendChild(c);
+  // Name label above
+  const n=mkEl('text',{x:x+28,y:y-5,fill:col,'font-size':10,'font-family':'monospace','text-anchor':'middle'});
+  n.textContent=label; g.appendChild(n);
+  p.appendChild(g);
+  return {dx:x,dy:y+24, qx:x+56,qy:y+24, clkx:x+28,clky:y+48};
+}
+function drawWire(p, x1,y1,x2,y2, col='#556677', dashed=false, animated=false) {
+  let mx=(x1+x2)/2;
+  let d=`M${x1},${y1} L${mx},${y1} L${mx},${y2} L${x2},${y2}`;
+  const line=mkEl('path',{d,fill:'none',stroke:col,'stroke-width':2});
+  if(dashed) line.setAttribute('stroke-dasharray','5,3');
+  p.appendChild(line);
+  if(animated) {
+    const dot=mkEl('circle',{r:4,fill:col,opacity:0.9});
+    const anim=mkEl('animateMotion',{dur:'1.5s',repeatCount:'indefinite',calcMode:'linear'});
+    const mp=mkEl('mpath'); mp.setAttribute('href','#wire_path_tmp');
+    anim.appendChild(mp);
+    // Use simpler linear animation
+    const a2=mkEl('animateMotion',{path:d,dur:'1.8s',repeatCount:'indefinite'});
+    dot.appendChild(a2);
+    p.appendChild(dot);
+  }
+  return line;
+}
+function drawArrow(p,x1,y1,x2,y2,col='#00d4ff') {
+  drawWire(p,x1,y1,x2,y2,col);
+  // Arrowhead
+  const dx=x2-x1,dy=y2-y1,l=Math.sqrt(dx*dx+dy*dy)||1;
+  const ux=dx/l,uy=dy/l;
+  const pts=`${x2},${y2} ${x2-8*ux+5*uy},${y2-8*uy-5*ux} ${x2-8*ux-5*uy},${y2-8*uy+5*ux}`;
+  p.appendChild(mkEl('polygon',{points:pts,fill:col}));
+}
+function drawLabel(p,x,y,text,col='#99aabb',size=11) {
+  const t=mkEl('text',{x,y,fill:col,'font-size':size,'font-family':'\"Microsoft YaHei\",sans-serif','text-anchor':'middle'});
+  t.textContent=text; p.appendChild(t);
+}
+function drawGate(p,x,y,type,label) {
+  const g=mkEl('g');
+  if(type==='AND') {
+    g.appendChild(mkEl('path',{d:`M${x},${y} L${x+20},${y} Q${x+36},${y} ${x+36},${y+16} Q${x+36},${y+32} ${x+20},${y+32} L${x},${y+32} Z`,fill:'#1a2840',stroke:'#4477aa','stroke-width':1.5}));
+  } else if(type==='OR') {
+    g.appendChild(mkEl('path',{d:`M${x},${y} Q${x+12},${y+8} ${x+20},${y} L${x+36},${y} Q${x+44},${y+16} ${x+36},${y+32} L${x+20},${y+32} Q${x+12},${y+24} ${x},${y+32} Q${x+10},${y+16} ${x},${y} Z`,fill:'#1a2840',stroke:'#4477aa','stroke-width':1.5}));
+  } else if(type==='XOR') {
+    g.appendChild(mkEl('path',{d:`M${x+6},${y} Q${x+18},${y+8} ${x+26},${y} L${x+42},${y} Q${x+50},${y+16} ${x+42},${y+32} L${x+26},${y+32} Q${x+18},${y+24} ${x+6},${y+32} Q${x+16},${y+16} ${x+6},${y} Z`,fill:'#1a2840',stroke:'#44aacc','stroke-width':1.5}));
+    g.appendChild(mkEl('path',{d:`M${x},${y} Q${x+10},${y+16} ${x},${y+32}`,fill:'none',stroke:'#44aacc','stroke-width':1.5}));
+  } else if(type==='MUX') {
+    g.appendChild(mkEl('polygon',{points:`${x},${y} ${x+40},${y+10} ${x+40},${y+40} ${x},${y+50}`,fill:'#1a2840',stroke:'#44aacc','stroke-width':1.5}));
+  }
+  const t=mkEl('text',{x:x+20,y:y+20,fill:'#aaccee','font-size':10,'font-family':'monospace','text-anchor':'middle','dominant-baseline':'middle'});
+  t.textContent=label||type; g.appendChild(t);
+  p.appendChild(g);
+}
+function drawViolation(p,x,y) {
+  if(!SHOW_VIO) return;
+  const g=mkEl('g');
+  g.appendChild(mkEl('circle',{cx:x,cy:y,r:12,fill:'rgba(255,50,50,0.2)',stroke:'#ff3344','stroke-width':2}));
+  const t=mkEl('text',{x,y:y+5,fill:'#ff3344','font-size':16,'font-weight':'bold','text-anchor':'middle'});
+  t.textContent='✕'; g.appendChild(t);
+  const a=mkEl('animate',{attributeName:'opacity',values:'1;0.3;1',dur:'1.2s',repeatCount:'indefinite'});
+  g.appendChild(a); p.appendChild(g);
+}
+function drawCheck(p,x,y) {
+  const g=mkEl('g');
+  g.appendChild(mkEl('circle',{cx:x,cy:y,r:11,fill:'rgba(0,200,100,0.15)',stroke:'#00cc66','stroke-width':1.5}));
+  const t=mkEl('text',{x,y:y+5,fill:'#00cc66','font-size':15,'text-anchor':'middle'});
+  t.textContent='✓'; g.appendChild(t);
+  p.appendChild(g);
+}
+function drawWarning(p,x,y) {
+  if(!SHOW_VIO) return;
+  const g=mkEl('g');
+  g.appendChild(mkEl('polygon',{points:`${x},${y-12} ${x+12},${y+8} ${x-12},${y+8}`,fill:'rgba(255,170,0,0.2)',stroke:'#ffaa22','stroke-width':1.5}));
+  const t=mkEl('text',{x,y:y+7,fill:'#ffaa22','font-size':10,'text-anchor':'middle'});
+  t.textContent='!'; g.appendChild(t);
+  const a=mkEl('animate',{attributeName:'opacity',values:'1;0.3;1',dur:'1.5s',repeatCount:'indefinite'});
+  g.appendChild(a); p.appendChild(g);
+}
+function drawGlitchSpike(p,x,y,col='#ff4455') {
+  if(!SHOW_VIO) return;
+  const pts=`${x-5},${y} ${x-2},${y} ${x},${y-14} ${x+2},${y} ${x+5},${y}`;
+  const spike=mkEl('polyline',{points:pts,fill:'none',stroke:col,'stroke-width':2});
+  const a=mkEl('animate',{attributeName:'opacity',values:'0;1;0',dur:'0.8s',repeatCount:'indefinite'});
+  spike.appendChild(a); p.appendChild(spike);
+}
+function drawMetazone(p,x,y,w,h) {
+  if(!SHOW_VIO) return;
+  const r=mkEl('rect',{x,y,width:w,height:h,fill:'rgba(255,200,0,0.15)',stroke:'rgba(255,200,0,0.4)','stroke-width':1,'stroke-dasharray':'3,2'});
+  const a=mkEl('animate',{attributeName:'opacity',values:'0.4;0.9;0.4',dur:'1.5s',repeatCount:'indefinite'});
+  r.appendChild(a); p.appendChild(r);
+}
+
+// ---- Clock waveform decoration ----
+function drawClockSymbol(p,x,y,label,col) {
+  const pts=`${x},${y+8} ${x},${y} ${x+10},${y} ${x+10},${y+8} ${x+20},${y+8} ${x+20},${y} ${x+30},${y}`;
+  p.appendChild(mkEl('polyline',{points:pts,fill:'none',stroke:col,'stroke-width':1.5}));
+  const t=mkEl('text',{x:x+35,y:y+6,fill:col,'font-size':10,'font-family':'monospace'});
+  t.textContent=label; p.appendChild(t);
+}
+
+// ---- CIRCUIT DRAWING FUNCTIONS ----
+function draw_unsync_s2f(p) {
+  drawDomain(p,10,30,340,210,'A','clkA (慢时钟)');
+  drawDomain(p,440,30,340,210,'B','clkB (快时钟)');
+  drawClockSymbol(p,20,250,'clkA (慢)',getComputedStyle(document.documentElement).getPropertyValue('--clka-b').trim()||'#0064dc');
+  drawClockSymbol(p,450,250,'clkB (快)',getComputedStyle(document.documentElement).getPropertyValue('--clkb-b').trim()||'#dc6400');
+  // Source FF
+  const s=drawFF(p,60,100,'src_FF','clkA');
+  // Dest FF
+  const d=drawFF(p,560,100,'dst_FF','clkB','#cc6622');
+  // Wire across domain boundary - violation
+  drawWire(p,s.qx,s.qy, d.dx,d.qy,'#ff4455');
+  drawLabel(p,400,130,'⬅ 无同步器直接跨域','#ff4455',11);
+  // Domain boundary line
+  p.appendChild(mkEl('line',{x1:390,y1:25,x2:390,y2:248,'stroke':'#ffffff','stroke-width':1,'stroke-dasharray':'4,3',opacity:0.4}));
+  drawLabel(p,390,15,'时钟域边界','#888',10);
+  // Metastable zone
+  drawMetazone(p,555,90,66,68);
+  drawViolation(p,390,130);
+  drawLabel(p,400,165,'可能发生亚稳态！','#ff4455',10);
+  // Labels
+  drawLabel(p,90,220,'data_a','#7090b0',10);
+  drawLabel(p,590,220,'data_b (危险)','#ff6655',10);
+}
+function draw_unsync_f2s(p) {
+  drawDomain(p,10,30,340,210,'A','clkA (快时钟)');
+  drawDomain(p,440,30,340,210,'B','clkB (慢时钟)');
+  const s=drawFF(p,60,100,'src_FF','clkA');
+  const d=drawFF(p,560,100,'dst_FF','clkB','#cc6622');
+  drawWire(p,s.qx,s.qy,d.dx,d.qy,'#ff4455');
+  p.appendChild(mkEl('line',{x1:390,y1:25,x2:390,y2:248,'stroke':'#fff','stroke-width':1,'stroke-dasharray':'4,3',opacity:0.4}));
+  drawLabel(p,390,15,'时钟域边界','#888',10);
+  // Narrow pulse symbol
+  p.appendChild(mkEl('rect',{x:200,y:116,width:12,height:16,fill:'#00d4ff',opacity:0.7}));
+  drawLabel(p,210,145,'信号宽度不足','#ffaa22',10);
+  if(SHOW_VIO){
+    p.appendChild(mkEl('rect',{x:556,y:86,width:66,height:68,fill:'rgba(255,100,0,0.1)',stroke:'#ff6622','stroke-width':1,'stroke-dasharray':'3,2'}));
+    drawLabel(p,590,168,'慢时钟漏采！','#ff6655',10);
+  }
+  drawViolation(p,390,130);
+}
+function draw_unsync_multi(p) {
+  drawDomain(p,10,20,330,235,'A','clkA');
+  drawDomain(p,450,20,330,235,'B','clkB');
+  p.appendChild(mkEl('line',{x1:390,y1:15,x2:390,y2:262,'stroke':'#fff','stroke-width':1,'stroke-dasharray':'4,3',opacity:0.4}));
+  const colors=['#ff9944','#ff6655','#ff44aa','#cc55ff'];
+  const labels=['[3]','[2]','[1]','[0]'];
+  for(let i=0;i<4;i++) {
+    const y=45+i*50;
+    drawFF(p,50,y,`src[${3-i}]`,'clkA',colors[i]);
+    drawFF(p,490,y,`dst[${3-i}]`,'clkB',colors[i]);
+    drawWire(p,106,y+24,490,y+24,colors[i]);
+    drawLabel(p,200,y+18,`bit${labels[i]}`,colors[i],10);
+    drawViolation(p,390,y+24);
+  }
+  drawLabel(p,390,248,'多bit各自独立跨域 → 数据撕裂','#ff4455',10);
+}
+function draw_two_ff_sync(p) {
+  drawDomain(p,10,30,240,200,'A','clkA');
+  drawDomain(p,300,30,470,200,'B','clkB (同步器域)');
+  const s=drawFF(p,60,100,'src_FF','clkA');
+  const m=drawFF(p,360,100,'meta_FF','clkB','#0099cc');
+  const y2=drawFF(p,500,100,'sync_FF','clkB','#00cc66');
+  drawArrow(p,s.qx,s.qy,m.dx,m.qy,'#00d4ff');
+  drawArrow(p,m.qx,m.qy,y2.dx,y2.qy,'#00cc66');
+  drawLabel(p,390,80,'可能亚稳态','#ffaa22',10);
+  drawLabel(p,530,80,'已稳定输出','#00cc66',10);
+  p.appendChild(mkEl('line',{x1:280,y1:25,x2:280,y2:238,'stroke':'#fff','stroke-width':1,'stroke-dasharray':'4,3',opacity:0.4}));
+  drawCheck(p,658,125);
+  drawLabel(p,690,125,'正确!','#00cc66',11);
+  drawMetazone(p,355,90,66,68);
+  if(SHOW_VIO){
+    drawLabel(p,388,168,'第1级可能亚稳态\n概率指数衰减','#ffaa22',9);
+  }
+  drawLabel(p,570,220,'d_dst (稳定)','#00cc66',10);
+  drawLabel(p,90,220,'d_src','#7090b0',10);
+}
+function draw_pulse_sync(p) {
+  drawDomain(p,10,20,270,235,'A','clkA');
+  drawDomain(p,300,20,480,235,'B','clkB');
+  const t=drawFF(p,50,90,'toggle_FF','clkA','#44aaff');
+  const s1=drawFF(p,350,90,'sync1_FF','clkB','#0099cc');
+  const s2=drawFF(p,480,90,'sync2_FF','clkB','#0099cc');
+  const s3=drawFF(p,620,90,'edge_FF','clkB','#00cc66');
+  drawArrow(p,t.qx,t.qy,s1.dx,s1.qy,'#00d4ff');
+  drawArrow(p,s1.qx,s1.qy,s2.dx,s2.qy,'#00d4ff');
+  drawArrow(p,s2.qx,s2.qy,s3.dx,s3.qy,'#00cc66');
+  // XOR gate
+  drawGate(p,680,84,'XOR','XOR');
+  drawWire(p,s2.qx,s2.qy, 680, 100,'#44aacc');
+  drawWire(p,s3.qx, s3.qy, 680, 115,'#44aacc');
+  drawArrow(p,716,100,760,100,'#00cc66');
+  drawLabel(p,770,104,'pulse_out','#00cc66',10);
+  drawLabel(p,180,65,'toggle信号','#44aaff',10);
+  p.appendChild(mkEl('line',{x1:285,y1:15,x2:285,y2:260,'stroke':'#fff','stroke-width':1,'stroke-dasharray':'4,3',opacity:0.4}));
+  drawCheck(p,750,145);
+  drawLabel(p,60,220,'pulse_in','#7090b0',10);
+}
+function draw_handshake(p) {
+  drawDomain(p,10,15,260,235,'A','clkA');
+  drawDomain(p,390,15,390,235,'B','clkB');
+  p.appendChild(mkEl('line',{x1:305,y1:10,x2:305,y2:255,'stroke':'#fff','stroke-width':1,'stroke-dasharray':'4,3',opacity:0.4}));
+  // REQ path
+  const rq=drawFF(p,50,50,'REQ_FF','clkA','#44aaff');
+  const rs1=drawFF(p,420,50,'REQ_S1','clkB','#0099cc');
+  const rs2=drawFF(p,540,50,'REQ_S2','clkB','#0099cc');
+  drawArrow(p,rq.qx,rq.qy,rs1.dx,rs1.qy,'#00d4ff');
+  drawArrow(p,rs1.qx,rs1.qy,rs2.dx,rs2.qy,'#00d4ff');
+  drawLabel(p,308,65,'→ REQ→','#44aaff',10);
+  // DATA latch
+  p.appendChild(mkEl('rect',{x:50,y:140,width:120,height:36,rx:4,fill:'#0d2030',stroke:'#aaaacc','stroke-width':1.5}));
+  const dl=mkEl('text',{x:110,y:164,fill:'#aaaacc','font-size':11,'font-family':'monospace','text-anchor':'middle'});
+  dl.textContent='DATA LATCH'; p.appendChild(dl);
+  drawWire(p,170,158,490,158,'#ccaa44',true);
+  drawLabel(p,308,152,'—data→','#ccaa44',10);
+  // ACK path
+  const aks=drawFF(p,420,185,'ACK_S1','clkB','#cc6622');
+  const ak=drawFF(p,50,185,'ACK_FF','clkA','#cc6622');
+  drawArrow(p,aks.qx,aks.qy,700,209,'#cc6622');
+  drawWire(p,480,209,aks.dx,aks.qy,'#cc6622');
+  drawArrow(p,aks.dx,aks.qy,ak.qx+56,ak.qy,'#cc6622');
+  drawLabel(p,308,210,'← ACK←','#cc6622',10);
+  drawCheck(p,730,130);
+  drawLabel(p,155,235,'clkA域','#0064dc',9);
+  drawLabel(p,585,235,'clkB域','#dc6400',9);
+}
+function draw_async_fifo(p) {
+  drawDomain(p,10,20,330,220,'A','写时钟域 (clk_wr)');
+  drawDomain(p,450,20,330,220,'B','读时钟域 (clk_rd)');
+  // FIFO memory
+  p.appendChild(mkEl('rect',{x:310,y:80,width:170,height:90,rx:4,fill:'#0d1a28',stroke:'#556688','stroke-width':1.5,'stroke-dasharray':'5,3'}));
+  drawLabel(p,395,130,'FIFO Memory','#6688aa',12);
+  drawLabel(p,395,148,'(双口RAM)','#556677',10);
+  // Write pointer
+  const wp=drawFF(p,60,80,'WPTR','clk_wr','#44aaff');
+  drawArrow(p,wp.qx,wp.qy,310,128,'#44aaff');
+  drawLabel(p,200,110,'wptr_gray →','#44aaff',10);
+  // Read pointer
+  const rp=drawFF(p,480,170,'RPTR','clk_rd','#cc6622');
+  drawArrow(p,rp.dx,rp.qy,480,128,'#cc6622');
+  drawLabel(p,600,200,'← rptr_gray','#cc6622',10);
+  // Sync wptr to read domain
+  const ws1=drawFF(p,490,50,'W_S1','clk_rd','#0099cc');
+  const ws2=drawFF(p,620,50,'W_S2','clk_rd','#0099cc');
+  drawArrow(p,wp.qx,wp.qy,ws1.dx,ws1.qy,'#44aaff');
+  drawArrow(p,ws1.qx,ws1.qy,ws2.dx,ws2.qy,'#00d4ff');
+  drawLabel(p,575,40,'同步写指针→读域','#0099cc',9);
+  p.appendChild(mkEl('line',{x1:395,y1:15,x2:395,y2:248,'stroke':'#fff','stroke-width':1,'stroke-dasharray':'4,3',opacity:0.4}));
+  drawCheck(p,760,125);
+  drawLabel(p,770,140,'格雷码','#00cc66',10);
+  drawLabel(p,770,155,'✓ 安全','#00cc66',10);
+}
+function draw_mux_sync(p) {
+  drawDomain(p,10,20,300,220,'A','clkA');
+  drawDomain(p,340,20,440,220,'B','clkB');
+  // MUX
+  drawGate(p,120,85,'MUX','MUX');
+  drawLabel(p,140,75,'data_a','#aaaacc',10);
+  drawLabel(p,140,90,'data_b','#aaaacc',10);
+  drawLabel(p,80,120,'sel','#ccaa44',10);
+  // EN sync chain
+  const en1=drawFF(p,370,50,'EN_S1','clkB','#44aaff');
+  const en2=drawFF(p,500,50,'EN_S2','clkB','#44aaff');
+  drawArrow(p,en1.qx,en1.qy,en2.dx,en2.qy,'#44aaff');
+  drawLabel(p,160,148,'data_en →','#44aaff',10);
+  drawWire(p,160,180,370,75,'#44aaff',true);
+  // Data latch
+  const latch=drawFF(p,500,150,'D_LATCH','clkB','#00cc66');
+  drawWire(p,160,130,500,174,'#ccaa44',true);
+  drawArrow(p,en2.qx,en2.qy,650,74,'#44aaff');
+  drawLabel(p,300,170,'保证EN有效时data稳定','#ffaa22',9);
+  p.appendChild(mkEl('line',{x1:325,y1:15,x2:325,y2:248,'stroke':'#fff','stroke-width':1,'stroke-dasharray':'4,3',opacity:0.4}));
+  drawCheck(p,740,130);
+}
+function draw_conv01(p) {
+  drawDomain(p,10,15,260,235,'A','clkA');
+  drawDomain(p,300,15,480,235,'B','clkB');
+  const fa=drawFF(p,50,70,'sig_a_FF','clkA');
+  const fb=drawFF(p,50,160,'sig_b_FF','clkA');
+  const sa=drawFF(p,340,70,'sync_a1','clkB','#0099cc');
+  const sa2=drawFF(p,460,70,'sync_a2','clkB','#0099cc');
+  const sb=drawFF(p,340,160,'sync_b1','clkB','#cc6622');
+  const sb2=drawFF(p,460,160,'sync_b2','clkB','#cc6622');
+  drawArrow(p,fa.qx,fa.qy,sa.dx,sa.qy,'#44aaff');
+  drawArrow(p,sa.qx,sa.qy,sa2.dx,sa2.qy,'#0099cc');
+  drawArrow(p,fb.qx,fb.qy,sb.dx,sb.qy,'#ffaa44');
+  drawArrow(p,sb.qx,sb.qy,sb2.dx,sb2.qy,'#cc6622');
+  // AND gate
+  drawGate(p,580,100,'AND','AND');
+  drawWire(p,sa2.qx,sa2.qy,580,114,'#0099cc');
+  drawWire(p,sb2.qx,sb2.qy,580,128,'#cc6622');
+  drawArrow(p,616,114,660,114,'#ccaa44');
+  drawLabel(p,305,55,'各自独立同步器','#ffaa22',10);
+  drawLabel(p,305,45,'cycle uncertainty ±1','#ffaa22',9);
+  drawWarning(p,618,103);
+  p.appendChild(mkEl('line',{x1:295,y1:10,x2:295,y2:255,'stroke':'#fff','stroke-width':1,'stroke-dasharray':'4,3',opacity:0.4}));
+}
+function draw_conv02(p) {
+  drawDomain(p,10,15,260,235,'A','clkA');
+  drawDomain(p,300,15,480,235,'B','clkB');
+  const fa=drawFF(p,50,70,'sig_a_FF','clkA');
+  const fb=drawFF(p,50,155,'sig_b_FF','clkA');
+  const sa=drawFF(p,340,70,'sync_a','clkB','#0099cc');
+  const sb=drawFF(p,340,155,'sync_b','clkB','#cc6622');
+  drawArrow(p,fa.qx,fa.qy,sa.dx,sa.qy,'#44aaff');
+  drawArrow(p,fb.qx,fb.qy,sb.dx,sb.qy,'#ffaa44');
+  // AND gate直接在FF前
+  drawGate(p,500,100,'AND','AND');
+  drawWire(p,sa.qx,sa.qy,500,114,'#0099cc');
+  drawWire(p,sb.qx,sb.qy+5,500,128,'#cc6622');
+  // FF after AND
+  const out=drawFF(p,610,103,'out_FF','clkB','#00cc66');
+  drawArrow(p,536,114,out.dx,out.qy,'#ccaa44');
+  drawGlitchSpike(p,548,114);
+  drawWarning(p,548,103);
+  drawLabel(p,548,168,'FF前组合逻辑聚合\n可能有glitch被FF采','#ffaa22',9);
+  p.appendChild(mkEl('line',{x1:295,y1:10,x2:295,y2:255,'stroke':'#fff','stroke-width':1,'stroke-dasharray':'4,3',opacity:0.4}));
+}
+function draw_conv03(p) {
+  drawDomain(p,10,15,220,115,'A','clkA');
+  drawDomain(p,10,140,220,105,'C','clkC');
+  drawDomain(p,300,15,480,235,'B','clkB');
+  const fa=drawFF(p,50,50,'FA','clkA');
+  const fc=drawFF(p,50,165,'FC','clkC');
+  const sa=drawFF(p,330,50,'SA','clkB','#0099cc');
+  const sa2=drawFF(p,450,50,'SA2','clkB','#0099cc');
+  const sc=drawFF(p,330,165,'SC','clkB','#9900cc');
+  const sc2=drawFF(p,450,165,'SC2','clkB','#9900cc');
+  drawArrow(p,fa.qx,fa.qy,sa.dx,sa.qy,'#44aaff');
+  drawArrow(p,sa.qx,sa.qy,sa2.dx,sa2.qy,'#0099cc');
+  drawArrow(p,fc.qx,fc.qy,sc.dx,sc.qy,'#cc44ff');
+  drawArrow(p,sc.qx,sc.qy,sc2.dx,sc2.qy,'#9900cc');
+  drawGate(p,580,100,'AND','AND');
+  drawWire(p,sa2.qx,sa2.qy,580,114,'#0099cc');
+  drawWire(p,sc2.qx,sc2.qy,580,128,'#9900cc');
+  drawViolation(p,618,114);
+  drawLabel(p,610,158,'不同源域聚合\n时序关系不确定','#ff4455',9);
+  p.appendChild(mkEl('line',{x1:295,y1:10,x2:295,y2:255,'stroke':'#fff','stroke-width':1,'stroke-dasharray':'4,3',opacity:0.4}));
+}
+function draw_conv04(p) {
+  drawDomain(p,10,15,280,235,'A','clkA');
+  drawDomain(p,340,15,440,235,'B','clkB');
+  const colors=['#ff9944','#ff6655','#ff44aa','#cc55ff'];
+  for(let i=0;i<4;i++) {
+    const y=35+i*50;
+    drawFF(p,40,y,`cnt[${3-i}]`,'clkA',colors[i]);
+    drawFF(p,420,y,`sync[${3-i}]`,'clkB',colors[i]);
+    drawWire(p,96,y+24,420,y+24,colors[i]);
+    drawViolation(p,310,y+24);
+    drawLabel(p,200,y+15,`bit${3-i}可能同时跳变`,colors[i],9);
+  }
+  drawLabel(p,310,248,'未用格雷码→多bit同时翻转','#ff4455',10);
+  p.appendChild(mkEl('line',{x1:310,y1:10,x2:310,y2:260,'stroke':'#fff','stroke-width':1,'stroke-dasharray':'4,3',opacity:0.4}));
+}
+function draw_glitch01(p) {
+  drawDomain(p,10,20,320,220,'A','clkA');
+  drawDomain(p,380,20,400,220,'B','clkB');
+  // Signals
+  drawLabel(p,100,65,'data_a','#aaaacc',10);
+  drawLabel(p,100,90,'sel','#ccaa44',10);
+  drawGate(p,170,70,'MUX','MUX');
+  // Wire with glitch
+  drawWire(p,210,90,390,90,'#ff4455');
+  drawGlitchSpike(p,310,90);
+  drawLabel(p,310,112,'← 组合MUX毛刺!','#ff4455',10);
+  // Sync FFs
+  const m=drawFF(p,420,70,'meta','clkB','#cc4422');
+  const s=drawFF(p,555,70,'sync','clkB','#0099cc');
+  drawArrow(p,390,90,m.dx,m.qy,'#ff4455');
+  drawArrow(p,m.qx,m.qy,s.dx,s.qy,'#0099cc');
+  drawViolation(p,390,90);
+  drawMetazone(p,415,62,66,64);
+  p.appendChild(mkEl('line',{x1:380,y1:15,x2:380,y2:248,'stroke':'#fff','stroke-width':1,'stroke-dasharray':'4,3',opacity:0.4}));
+  drawLabel(p,200,200,'源域先寄存一拍消除glitch再跨域','#ffaa22',11);
+}
+function draw_glitch02(p) {
+  drawDomain(p,10,15,320,230,'A','clkA');
+  drawDomain(p,390,15,390,230,'B','clkB');
+  const src=drawFF(p,50,110,'src_FF','clkA');
+  // Fanout paths
+  drawWire(p,src.qx,src.qy,240,src.qy,'#44aaff');
+  drawWire(p,240,src.qy,240,80,'#44aaff');
+  drawWire(p,240,src.qy,240,170,'#44aaff');
+  drawGate(p,240,55,'AND','AND');
+  drawGate(p,240,155,'OR','OR');
+  // Reconvergence
+  drawGate(p,295,100,'XOR','XOR');
+  drawWire(p,276,68,295,114,'#ccaa44');
+  drawWire(p,276,168,295,128,'#ccaa44');
+  drawGlitchSpike(p,340,114);
+  drawViolation(p,385,114);
+  drawWire(p,331,114,385,114,'#ff4455');
+  const s=drawFF(p,430,95,'sync1','clkB','#cc4422');
+  drawArrow(p,385,114,s.dx,s.qy,'#ff4455');
+  p.appendChild(mkEl('line',{x1:385,y1:10,x2:385,y2:250,'stroke':'#fff','stroke-width':1,'stroke-dasharray':'4,3',opacity:0.4}));
+  drawLabel(p,310,210,'同源扇出重汇聚→竞争→毛刺','#ff4455',10);
+}
+function draw_glitch03(p) {
+  drawDomain(p,10,20,330,215,'A','clkA');
+  drawDomain(p,400,20,380,215,'B','clkB');
+  // Combo logic box
+  p.appendChild(mkEl('rect',{x:60,y:80,width:130,height:60,rx:4,fill:'#1a1020',stroke:'#cc4488','stroke-width':1.5}));
+  drawLabel(p,125,114,'组合逻辑','#cc4488',12);
+  drawLabel(p,125,130,'(state==IDLE)&dv','#cc4488',9);
+  drawWire(p,190,110,400,110,'#ff4455');
+  drawGlitchSpike(p,300,110);
+  drawViolation(p,400,110);
+  drawLabel(p,295,132,'可能有毛刺!','#ff4455',10);
+  const m=drawFF(p,440,90,'meta','clkB','#cc4422');
+  const s=drawFF(p,580,90,'sync','clkB','#0099cc');
+  drawArrow(p,400,110,m.dx,m.qy,'#ff4455');
+  drawArrow(p,m.qx,m.qy,s.dx,s.qy,'#0099cc');
+  drawMetazone(p,435,82,66,64);
+  p.appendChild(mkEl('line',{x1:400,y1:15,x2:400,y2:242,'stroke':'#fff','stroke-width':1,'stroke-dasharray':'4,3',opacity:0.4}));
+  drawLabel(p,200,200,'修复：先在clkA域寄存一拍再跨域','#ffaa22',10);
+}
+function draw_cdc01(p) {
+  drawDomain(p,10,15,330,230,'A','clkA (快时钟)');
+  drawDomain(p,400,15,380,230,'B','clkB (慢时钟)');
+  const src=drawFF(p,60,90,'src_FF','clkA');
+  const dst=drawFF(p,480,90,'dst_FF','clkB','#cc6622');
+  drawWire(p,src.qx,src.qy,480,src.qy,'#ff4455',false);
+  // Narrow pulse representation
+  p.appendChild(mkEl('rect',{x:200,y:106,width:14,height:16,fill:'#00d4ff',opacity:0.8}));
+  drawLabel(p,207,136,'窄脉冲','#00d4ff',9);
+  // Slow clock sampling
+  if(SHOW_VIO){
+    p.appendChild(mkEl('rect',{x:476,y:82,width:66,height:64,fill:'rgba(255,80,0,0.1)',stroke:'#ff6622','stroke-width':1,'stroke-dasharray':'3,2'}));
+    drawLabel(p,509,158,'慢时钟漏采!','#ff6655',10);
+  }
+  drawViolation(p,395,114);
+  drawLabel(p,395,145,'信号太窄!','#ff4455',10);
+  p.appendChild(mkEl('line',{x1:395,y1:10,x2:395,y2:250,'stroke':'#fff','stroke-width':1,'stroke-dasharray':'4,3',opacity:0.4}));
+  // Fast clock ticks (more)
+  for(let i=0;i<8;i++) {
+    const x=30+i*35;
+    p.appendChild(mkEl('line',{x1:x,y1:200,x2:x,y2:215,stroke:'#0064dc','stroke-width':1,opacity:0.5}));
+  }
+  // Slow clock ticks (fewer)
+  for(let i=0;i<3;i++) {
+    const x=420+i*100;
+    p.appendChild(mkEl('line',{x1:x,y1:200,x2:x,y2:215,stroke:'#dc6400','stroke-width':1,opacity:0.5}));
+  }
+  drawLabel(p,170,228,'clkA: 快速采样','#0064dc',9);
+  drawLabel(p,580,228,'clkB: 慢速采样','#dc6400',9);
+}
+function draw_datahold(p) {
+  // Timing diagram style
+  p.appendChild(mkEl('rect',{x:0,y:0,width:800,height:268,fill:'#080e14'}));
+  drawLabel(p,400,20,'数据保持时序图 (Ac_datahold01a)','#00d4ff',13);
+  const signals=[
+    {name:'clkA',y:50,type:'clk',col:'#0064dc',period:60},
+    {name:'EN',y:100,type:'level',col:'#44aaff',events:[{x:180,v:0},{x:240,v:1},{x:420,v:0}]},
+    {name:'DATA',y:150,type:'level',col:'#ccaa44',events:[{x:180,v:0},{x:250,v:1},{x:400,v:0}]},
+    {name:'CLK_B',y:200,type:'clk',col:'#dc6400',period:120},
+    {name:'OUT',y:250,type:'level',col:'#00cc66',events:[{x:180,v:0},{x:370,v:1},{x:520,v:0}]}
+  ];
+  signals.forEach(s=>{
+    drawLabel(p,65,s.y+5,s.name,'#7090b0',11);
+    p.appendChild(mkEl('line',{x1:100,y1:s.y+10,x2:790,y2:s.y+10,stroke:'rgba(255,255,255,0.05)','stroke-width':1}));
+    if(s.type==='clk'){
+      let pts='';
+      for(let x=100;x<790;x+=s.period/2){
+        const isHi=Math.floor((x-100)/(s.period/2))%2===0;
+        pts+=`${x},${s.y+(isHi?-10:10)} ${x+s.period/2},${s.y+(isHi?-10:10)} `;
+      }
+      p.appendChild(mkEl('polyline',{points:pts,fill:'none',stroke:s.col,'stroke-width':1.5}));
+    } else {
+      let lastx=100,lastv=0;
+      s.events.forEach(e=>{
+        p.appendChild(mkEl('line',{x1:lastx,y1:s.y+(lastv?-10:10),x2:e.x,y2:s.y+(lastv?-10:10),stroke:s.col,'stroke-width':2}));
+        p.appendChild(mkEl('line',{x1:e.x,y1:s.y-10,x2:e.x,y2:s.y+10,stroke:s.col,'stroke-width':2}));
+        lastx=e.x;lastv=e.v;
+      });
+      p.appendChild(mkEl('line',{x1:lastx,y1:s.y+(lastv?-10:10),x2:790,y2:s.y+(lastv?-10:10),stroke:s.col,'stroke-width':2}));
+    }
+  });
+  if(SHOW_VIO){
+    p.appendChild(mkEl('rect',{x:240,y:135,width:20,height:30,fill:'rgba(255,80,0,0.3)',stroke:'#ff4444','stroke-width':1}));
+    drawLabel(p,250,180,'DATA在EN有效后更新!','#ff4455',9);
+  }
+}
+function draw_rst_unsync(p) {
+  p.appendChild(mkEl('rect',{x:0,y:0,width:800,height:268,fill:'#080e14'}));
+  // rstn input
+  p.appendChild(mkEl('rect',{x:30,y:120,width:80,height:36,rx:4,fill:'#2a0a10',stroke:'#ff4455','stroke-width':1.5}));
+  drawLabel(p,70,143,'rstn_ext','#ff4455',11);
+  // Multiple FFs
+  const ffs=[{x:200,l:'FF_A'},{x:340,l:'FF_B'},{x:480,l:'FF_C'},{x:620,l:'FF_D'}];
+  ffs.forEach(f=>{
+    drawFF(p,f.x,90,f.l,'clk','#cc4422');
+    drawWire(p,110,138,f.x+28,f.x===200?148:148,'#ff4455',true);
+    drawLabel(p,f.x+28,170,'↑RST','#ff4455',9);
+    drawViolation(p,f.x+28,188);
+  });
+  drawLabel(p,400,235,'rstn直接驱动多个FF的异步复位端 → 复位竞争','#ff4455',11);
+  drawLabel(p,400,250,'各FF在不同时钟周期退出复位!','#ffaa22',10);
+}
+function draw_rst_async_deassert(p) {
+  draw_rst_unsync(p);
+  if(SHOW_VIO) {
+    drawLabel(p,400,20,'问题：异步复位释放时序','#ff4455',13);
+    drawLabel(p,400,40,'rstn release发生在时钟沿附近→不同FF在不同周期退出复位','#ffaa22',10);
+  }
+}
+function draw_rst_sync_correct(p) {
+  p.appendChild(mkEl('rect',{x:0,y:0,width:800,height:268,fill:'#080e14'}));
+  p.appendChild(mkEl('rect',{x:20,y:100,width:90,height:36,rx:4,fill:'#0a2010',stroke:'#00cc66','stroke-width':1.5}));
+  drawLabel(p,65,123,'rstn_in','#00cc66',11);
+  // FF1 D=1
+  drawFF(p,200,90,'SYNC_FF1','clk','#0099cc');
+  p.appendChild(mkEl('line',{x1:200,y1:70,x2:200,y2:40,stroke:'#00cc66','stroke-width':2}));
+  p.appendChild(mkEl('line',{x1:190,y1:40,x2:260,y2:40,stroke:'#00cc66','stroke-width':2}));
+  drawLabel(p,225,35,"D = 1'b1",'#00cc66',10);
+  // FF2 D=1
+  drawFF(p,370,90,'SYNC_FF2','clk','#0099cc');
+  p.appendChild(mkEl('line',{x1:370,y1:70,x2:370,y2:40,stroke:'#00cc66','stroke-width':2}));
+  p.appendChild(mkEl('line',{x1:360,y1:40,x2:430,y2:40,stroke:'#00cc66','stroke-width':2}));
+  drawLabel(p,395,35,"D = 1'b1",'#00cc66',10);
+  // Connections
+  drawArrow(p,110,138,200,138,'#ff4455');
+  drawLabel(p,155,155,'异步Assert','#ff4455',9);
+  drawArrow(p,256,114,370,114,'#00d4ff');
+  drawArrow(p,426,114,560,114,'#00cc66');
+  drawLabel(p,490,104,'rstn_out','#00cc66',11);
+  drawLabel(p,490,120,'(同步释放)','#00cc66',9);
+  drawCheck(p,620,114);
+  drawLabel(p,650,114,'正确!','#00cc66',11);
+  drawLabel(p,400,200,'异步Assert：复位立即生效','#aaaacc',11);
+  drawLabel(p,400,218,'同步Deassert：时钟沿统一释放所有FF','#00cc66',11);
+}
+function draw_coherency(p) {
+  drawDomain(p,10,20,240,220,'A','clkA');
+  drawDomain(p,310,20,470,110,'B','模块A clkB');
+  drawDomain(p,310,140,470,100,'B','模块B clkB');
+  const src=drawFF(p,50,110,'src_FF','clkA');
+  // Two separate syncers
+  const sa1=drawFF(p,340,50,'syncA_1','clkB','#0099cc');
+  const sa2=drawFF(p,460,50,'syncA_2','clkB','#0099cc');
+  const sb1=drawFF(p,340,160,'syncB_1','clkB','#cc6622');
+  const sb2=drawFF(p,460,160,'syncB_2','clkB','#cc6622');
+  drawArrow(p,src.qx,src.qy,sa1.dx,sa1.qy,'#44aaff');
+  drawArrow(p,sa1.qx,sa1.qy,sa2.dx,sa2.qy,'#0099cc');
+  drawArrow(p,src.qx,src.qy,sb1.dx,sb1.qy,'#ffaa44');
+  drawArrow(p,sb1.qx,sb1.qy,sb2.dx,sb2.qy,'#cc6622');
+  p.appendChild(mkEl('line',{x1:295,y1:15,x2:295,y2:248,'stroke':'#fff','stroke-width':1,'stroke-dasharray':'4,3',opacity:0.4}));
+  drawWarning(p,295,130);
+  drawLabel(p,295,150,'冗余','#ffaa22',10);
+  drawLabel(p,550,230,'建议：合并为一个同步器','#00cc66',11);
+}
+function draw_clk_glitch(p) {
+  p.appendChild(mkEl('rect',{x:0,y:0,width:800,height:268,fill:'#080e14'}));
+  // Clock path
+  p.appendChild(mkEl('rect',{x:30,y:110,width:80,height:36,rx:4,fill:'#1a0030',stroke:'#8844ff','stroke-width':1.5}));
+  drawLabel(p,70,133,'CLK_IN','#8844ff',11);
+  // Enable
+  p.appendChild(mkEl('rect',{x:30,y:180,width:80,height:36,rx:4,fill:'#0a1020',stroke:'#ccaa44','stroke-width':1.5}));
+  drawLabel(p,70,203,'enable','#ccaa44',11);
+  // AND gate (bad)
+  drawGate(p,200,110,'AND','AND');
+  drawWire(p,110,128,200,124,'#8844ff');
+  drawWire(p,110,198,200,129,'#ccaa44');
+  // Glitch on clock wire
+  drawWire(p,236,124,400,124,'#ff4455');
+  drawGlitchSpike(p,320,124);
+  drawLabel(p,320,108,'时钟上的毛刺!','#ff4455',11);
+  drawViolation(p,320,140);
+  // FF getting bad clock
+  drawFF(p,440,90,'FF_REG','CLK_GLITCH','#cc4422');
+  drawWire(p,400,124,440,148,'#ff4455');
+  drawViolation(p,440,135);
+  // ICG (correct)
+  p.appendChild(mkEl('rect',{x:200,y:180,width:80,height:40,rx:4,fill:'#0a2010',stroke:'#00cc66','stroke-width':2}));
+  drawLabel(p,240,205,'ICG','#00cc66',12);
+  drawWire(p,110,128,200,195,'#8844ff',true);
+  drawWire(p,110,198,200,205,'#ccaa44',true);
+  drawArrow(p,280,195,380,195,'#00cc66');
+  drawCheck(p,390,195);
+  drawLabel(p,450,195,'正确: 使用ICG','#00cc66',11);
+}
+
+
+/* ══ 新增场景 SVG 绘图函数 ══ */
+function draw_unsync03(p) {
+  drawDomain(p,10,20,320,225,'A','clkA');
+  drawDomain(p,450,20,330,225,'B','clkB');
+  p.appendChild(mkEl('line',{x1:390,y1:15,x2:390,y2:252,'stroke':'#fff','stroke-width':1,'stroke-dasharray':'4,3',opacity:0.4}));
+  var colors=['#ff9944','#00cc66','#00cc66','#ff6655'];
+  var synced=[false,true,true,false];
+  var lbls=['[3]MSB','[2]','[1]','[0]LSB'];
+  for(var i=0;i<4;i++){
+    var y=35+i*50;
+    drawFF(p,50,y,'src['+i+']','clkA',colors[i]);
+    if(synced[i]){
+      drawFF(p,490,y,'s1['+i+']','clkB','#0099cc');
+      drawFF(p,620,y,'s2['+i+']','clkB','#00cc66');
+      drawArrow(p,106,y+24,490,y+24,'#00d4ff');
+      drawArrow(p,546,y+24,620,y+24,'#00d4ff');
+      drawCheck(p,745,y+24);
+    } else {
+      drawWire(p,106,y+24,490,y+24,'#ff4455');
+      drawViolation(p,390,y+24);
+      drawLabel(p,745,y+24,'⚠未同步','#ff4455',10);
+    }
+    drawLabel(p,200,y+14,lbls[i],colors[i],10);
+  }
+  drawLabel(p,390,248,'部分bit未同步 → 与已同步bit组合产生隐蔽功能错误','#ff4455',10);
+}
+
+function draw_sync_reconv01(p) {
+  drawDomain(p,10,8,780,58,'A','clkA（源时钟域）');
+  drawDomain(p,10,90,370,150,'B','子模块A — clkB');
+  drawDomain(p,420,90,370,150,'B','子模块B — clkB');
+  var src=drawFF(p,350,18,'src_FF','clkA');
+  var ma1=drawFF(p,40,125,'A_s1','clkB','#0099cc');
+  var ma2=drawFF(p,170,125,'A_s2','clkB','#0099cc');
+  var mb1=drawFF(p,450,125,'B_s1','clkB','#cc6622');
+  var mb2=drawFF(p,580,125,'B_s2','clkB','#cc6622');
+  drawArrow(p,src.qx,src.qy,40,149,'#44aaff');
+  drawArrow(p,src.qx,src.qy,450,149,'#ffaa44');
+  drawArrow(p,ma1.qx,ma1.qy,ma2.dx,ma2.qy,'#0099cc');
+  drawArrow(p,mb1.qx,mb1.qy,mb2.dx,mb2.qy,'#cc6622');
+  drawDomain(p,260,262,280,48,'C','SoC顶层汇聚点');
+  drawWire(p,ma2.qx,ma2.qy,320,262,'#0099cc');
+  drawWire(p,mb2.qx,mb2.qy,480,262,'#cc6622');
+  drawGate(p,362,265,'AND','AND');
+  drawViolation(p,399,266);
+  drawLabel(p,220,165,'±1 cycle','#ffaa22',9);
+  drawLabel(p,560,165,'±1 cycle','#ffaa22',9);
+  drawLabel(p,400,140,'跨模块独立同步','#ffaa22',9);
+  drawLabel(p,400,325,'Global Reconvergence：两路同步输出在SoC顶层汇聚，cycle uncertainty叠加','#ff4455',10);
+}
+
+function draw_datahold01b(p) {
+  p.appendChild(mkEl('rect',{x:0,y:0,width:800,height:268,fill:'#080e14'}));
+  drawLabel(p,400,16,'时序图：Ac_datahold01b — Qualifier去高后数据过早更新','#00d4ff',12);
+  var LB=90, W=790;
+  var sigs=[
+    {name:'clkA',  y:44, type:'clk',  col:'#4488dd',period:56},
+    {name:'EN',    y:85, type:'lv',   col:'#44aaff',  evs:[{x:155,v:0},{x:210,v:1},{x:390,v:0}]},
+    {name:'DATA',  y:126,type:'lv',   col:'#ccaa44',  evs:[{x:155,v:0},{x:400,v:1},{x:590,v:0}]},
+    {name:'clkB',  y:170,type:'clk',  col:'#dd7733',period:112},
+    {name:'DST_Q', y:215,type:'lv',   col:'#ff6655',  evs:[{x:155,v:0},{x:495,v:1},{x:670,v:0}]}
+  ];
+  sigs.forEach(function(s){
+    var t=mkEl('text',{x:LB-4,y:s.y+5,fill:s.col,'font-size':10,'font-family':'"Microsoft YaHei",sans-serif','text-anchor':'end'});
+    t.textContent=s.name; p.appendChild(t);
+    p.appendChild(mkEl('line',{x1:LB,y1:s.y+8,x2:W,y2:s.y+8,stroke:'rgba(255,255,255,0.05)','stroke-width':1}));
+    if(s.type==='clk'){
+      var pts='';
+      for(var x=LB;x<W;x+=s.period/2){
+        var hi=Math.floor((x-LB)/(s.period/2))%2===0;
+        pts+=x+','+(s.y+(hi?-8:8))+' '+(x+s.period/2)+','+(s.y+(hi?-8:8))+' ';
+      }
+      p.appendChild(mkEl('polyline',{points:pts,fill:'none',stroke:s.col,'stroke-width':1.5}));
+    } else {
+      var lx=LB,lv=0;
+      s.evs.forEach(function(e){
+        p.appendChild(mkEl('line',{x1:lx,y1:s.y+(lv?-8:8),x2:e.x,y2:s.y+(lv?-8:8),stroke:s.col,'stroke-width':2}));
+        p.appendChild(mkEl('line',{x1:e.x,y1:s.y-8,x2:e.x,y2:s.y+8,stroke:s.col,'stroke-width':2}));
+        lx=e.x; lv=e.v;
+      });
+      p.appendChild(mkEl('line',{x1:lx,y1:s.y+(lv?-8:8),x2:W,y2:s.y+(lv?-8:8),stroke:s.col,'stroke-width':2}));
+    }
+  });
+  /* danger zone */
+  if(SHOW_VIO){
+    p.appendChild(mkEl('rect',{x:386,y:115,width:24,height:26,fill:'rgba(255,68,85,0.3)',stroke:'#ff4455','stroke-width':1.5}));
+    drawLabel(p,430,138,'EN去高后data立即更新!','#ff4455',9);
+    p.appendChild(mkEl('line',{x1:390,y1:92,x2:390,y2:230,stroke:'rgba(255,68,85,0.4)','stroke-width':1,'stroke-dasharray':'3,2'}));
+  }
+  drawLabel(p,400,250,'修复：EN去高后保持data稳定 ≥ 同步链级数+1 个clkB周期','#00cc66',10);
+}
+
+function draw_datahold01c(p) {
+  drawDomain(p,10,20,310,215,'A','clkA');
+  drawDomain(p,370,20,410,215,'B','clkB');
+  drawGate(p,80,88,'MUX','MUX');
+  var tA=mkEl('text',{x:55,y:98,fill:'#aaaacc','font-size':9,'font-family':'monospace'}); tA.textContent='da'; p.appendChild(tA);
+  var tB=mkEl('text',{x:55,y:114,fill:'#aaaacc','font-size':9,'font-family':'monospace'}); tB.textContent='db'; p.appendChild(tB);
+  var tS=mkEl('text',{x:60,y:140,fill:'#ccaa44','font-size':9,'font-family':'monospace'}); tS.textContent='sel→'; p.appendChild(tS);
+  drawWire(p,120,106,385,106,'#ff4455');
+  if(SHOW_VIO){drawGlitchSpike(p,248,106);drawGlitchSpike(p,268,106);}
+  drawLabel(p,248,88,'EN有效期间sel变化→glitch','#ff4455',9);
+  var e1=drawFF(p,385,48,'EN_S1','clkB','#44aaff');
+  var e2=drawFF(p,515,48,'EN_S2','clkB','#44aaff');
+  drawArrow(p,e1.qx,e1.qy,e2.dx,e2.qy,'#44aaff');
+  var latch=drawFF(p,515,148,'LATCH','clkB','#ff6655');
+  drawArrow(p,385,106,latch.dx,latch.qy,'#ff4455');
+  drawViolation(p,385,106);
+  drawWire(p,e2.qx,e2.qy,660,72,'#44aaff');
+  p.appendChild(mkEl('line',{x1:370,y1:15,x2:370,y2:242,'stroke':'#fff','stroke-width':1,'stroke-dasharray':'4,3',opacity:0.4}));
+  drawLabel(p,400,238,'修复：源域先寄存MUX输出一拍，再跨域（消除组合glitch）','#ffaa22',10);
+  drawLabel(p,400,252,'或：改用握手协议替代MUX同步','#00cc66',10);
+}
+
+function draw_abstract_val01(p) {
+  /* Block (left) */
+  p.appendChild(mkEl('rect',{x:10,y:28,width:305,height:222,rx:6,fill:'rgba(0,100,220,0.08)',stroke:'#0064dc','stroke-width':1.5,'stroke-dasharray':'6,3'}));
+  drawLabel(p,162,46,'Block（子模块）','#0064dc',11);
+  drawFF(p,48,96,'src_FF','clkA');
+  drawLabel(p,76,82,'clkA域','#4488dd',9);
+  p.appendChild(mkEl('rect',{x:218,y:88,width:82,height:38,rx:3,fill:'#1a1020',stroke:'#ff4455','stroke-width':1.5}));
+  var pt=mkEl('text',{x:259,y:108,fill:'#ff4455','font-size':10,'font-family':'monospace','text-anchor':'middle'}); pt.textContent='port: clkA'; p.appendChild(pt);
+  drawWire(p,104,120,218,107,'#44aaff');
+  drawLabel(p,161,104,'cdc_model','#4488dd',9);
+  /* cdc_model file icon */
+  p.appendChild(mkEl('rect',{x:80,y:188,width:150,height:44,rx:3,fill:'#0a1520',stroke:'#556688','stroke-width':1}));
+  var ft=mkEl('text',{x:155,y:208,fill:'#7090b0','font-size':10,'font-family':'monospace','text-anchor':'middle'}); ft.textContent='cdc_model.tcl'; p.appendChild(ft);
+  var ft2=mkEl('text',{x:155,y:222,fill:'#ff4455','font-size':9,'font-family':'monospace','text-anchor':'middle'}); ft2.textContent='声明: clkA域'; p.appendChild(ft2);
+  /* mismatch arrow */
+  drawWire(p,300,107,390,107,'#ff4455',true);
+  drawLabel(p,345,96,'不一致!','#ff4455',10);
+  /* SoC top (right) */
+  p.appendChild(mkEl('rect',{x:380,y:28,width:410,height:222,rx:6,fill:'rgba(220,100,0,0.08)',stroke:'#dc6400','stroke-width':1.5,'stroke-dasharray':'6,3'}));
+  drawLabel(p,585,46,'SoC顶层','#dc6400',11);
+  p.appendChild(mkEl('rect',{x:390,y:88,width:82,height:38,rx:3,fill:'#1a1020',stroke:'#ff4455','stroke-width':1.5}));
+  var pt2=mkEl('text',{x:431,y:108,fill:'#ff4455','font-size':10,'font-family':'monospace','text-anchor':'middle'}); pt2.textContent='port: clkA'; p.appendChild(pt2);
+  var dst=drawFF(p,580,96,'soc_FF','clkB','#cc6622');
+  drawWire(p,472,107,580,120,'#ff4455');
+  drawViolation(p,530,107);
+  drawLabel(p,530,86,'实际接到clkB!','#ff4455',9);
+  drawLabel(p,400,258,'Block端口声明clkA，SoC顶层实际接clkB → Ac_abstract_validation01 ⚠','#ff4455',10);
+}
+
+function draw_ar_combo01(p) {
+  p.appendChild(mkEl('rect',{x:0,y:0,width:800,height:268,fill:'#080e14'}));
+  /* rstn_in */
+  p.appendChild(mkEl('rect',{x:18,y:108,width:82,height:34,rx:4,fill:'#2a0a10',stroke:'#ff4455','stroke-width':1.5}));
+  var r1=mkEl('text',{x:59,y:130,fill:'#ff4455','font-size':11,'font-family':'"Microsoft YaHei",sans-serif','text-anchor':'middle'}); r1.textContent='rstn_in'; p.appendChild(r1);
+  /* func_en */
+  p.appendChild(mkEl('rect',{x:18,y:168,width:82,height:34,rx:4,fill:'#1a1020',stroke:'#ccaa44','stroke-width':1.5}));
+  var r2=mkEl('text',{x:59,y:190,fill:'#ccaa44','font-size':11,'font-family':'"Microsoft YaHei",sans-serif','text-anchor':'middle'}); r2.textContent='func_en'; p.appendChild(r2);
+  /* AND gate */
+  drawGate(p,150,113,'AND','AND');
+  drawWire(p,100,125,150,122,'#ff4455');
+  drawWire(p,100,185,150,130,'#ccaa44');
+  /* glitch wire */
+  drawWire(p,186,122,320,122,'#ff4455');
+  if(SHOW_VIO){drawGlitchSpike(p,248,122);}
+  drawLabel(p,248,106,'复位路径毛刺!','#ff4455',10);
+  drawViolation(p,186,122);
+  /* FFs */
+  var ffs=[{x:355,l:'FF_A'},{x:475,l:'FF_B'},{x:595,l:'FF_C'}];
+  ffs.forEach(function(f){
+    drawFF(p,f.x,88,f.l,'clk','#cc4422');
+    drawWire(p,320,122,f.x+28,146,'#ff4455',true);
+    drawLabel(p,f.x+28,166,'误复位!','#ff4455',9);
+    if(SHOW_VIO){drawViolation(p,f.x+28,144);}
+  });
+  /* correct path */
+  p.appendChild(mkEl('rect',{x:148,y:192,width:124,height:48,rx:4,fill:'#0a2010',stroke:'#00cc66','stroke-width':2}));
+  var ct=mkEl('text',{x:210,y:213,fill:'#00cc66','font-size':10,'font-family':'"Microsoft YaHei",sans-serif','text-anchor':'middle'}); ct.textContent='rst_sync_gated'; p.appendChild(ct);
+  var ct2=mkEl('text',{x:210,y:228,fill:'#00cc66','font-size':9,'font-family':'"Microsoft YaHei",sans-serif','text-anchor':'middle'}); ct2.textContent='(含内部门控逻辑)'; p.appendChild(ct2);
+  drawWire(p,100,125,148,208,'#00cc66',true);
+  drawWire(p,100,185,148,220,'#ccaa44',true);
+  drawArrow(p,272,216,340,216,'#00cc66');
+  drawCheck(p,348,216);
+  drawLabel(p,400,255,'修复：复位门控逻辑必须移入复位同步器内部，消除复位路径组合逻辑毛刺','#00cc66',10);
+}
+
+function draw_mutual_excl(p) {
+  p.appendChild(mkEl('rect',{x:0,y:0,width:800,height:268,fill:'#080e14'}));
+  /* clkA box */
+  p.appendChild(mkEl('rect',{x:20,y:48,width:90,height:34,rx:4,fill:'rgba(0,100,220,0.15)',stroke:'#0064dc','stroke-width':1.5}));
+  var ca=mkEl('text',{x:65,y:70,fill:'#4488dd','font-size':13,'font-family':'monospace','text-anchor':'middle'}); ca.textContent='clkA'; p.appendChild(ca);
+  /* clkB box */
+  p.appendChild(mkEl('rect',{x:20,y:128,width:90,height:34,rx:4,fill:'rgba(220,100,0,0.15)',stroke:'#dc6400','stroke-width':1.5}));
+  var cb=mkEl('text',{x:65,y:150,fill:'#dd7733','font-size':13,'font-family':'monospace','text-anchor':'middle'}); cb.textContent='clkB'; p.appendChild(cb);
+  /* MUX */
+  drawGate(p,168,78,'MUX','MUX');
+  drawWire(p,110,65,168,92,'#4488dd');
+  drawWire(p,110,145,168,104,'#dd7733');
+  drawLabel(p,158,143,'clk_sel','#ccaa44',10);
+  /* clk_out */
+  drawWire(p,208,92,320,92,'#00cc66');
+  drawLabel(p,264,80,'clk_out','#00cc66',10);
+  /* FFs */
+  var fA=drawFF(p,330,68,'FF_1','clk_out','#00cc66');
+  var fB=drawFF(p,460,68,'FF_2','clk_out','#00cc66');
+  drawArrow(p,fA.qx,fA.qy,fB.dx,fB.qy,'#00cc66');
+  /* SpyGlass false detection */
+  p.appendChild(mkEl('rect',{x:320,y:52,width:268,height:80,rx:4,fill:'rgba(255,170,34,0.05)',stroke:'#ffaa22','stroke-width':1,'stroke-dasharray':'4,3'}));
+  drawLabel(p,455,46,'SpyGlass误判区域','#ffaa22',10);
+  if(SHOW_VIO){
+    drawViolation(p,455,92);
+    drawLabel(p,530,130,'假违例 (False Positive)','#ffaa22',10);
+  }
+  /* SGDC fix */
+  p.appendChild(mkEl('rect',{x:18,y:188,width:764,height:58,rx:4,fill:'#0a1520',stroke:'#00cc66','stroke-width':1.5}));
+  var ft=mkEl('text',{x:400,y:207,fill:'#00cc66','font-size':11,'font-family':'"Microsoft YaHei",sans-serif','text-anchor':'middle'}); ft.textContent='修复：SGDC声明互斥时钟组'; p.appendChild(ft);
+  var fc=mkEl('text',{x:400,y:226,fill:'#aaddff','font-size':10,'font-family':'monospace','text-anchor':'middle'}); fc.textContent='set_clock_groups -logically_exclusive -group clkA -group clkB'; p.appendChild(fc);
+  drawCheck(p,728,214);
+  drawLabel(p,400,170,'clk_sel必须在两时钟均低电平无效期间切换（glitch-free）','#ffaa22',10);
+}
+
+const CIRCUIT_DRAW = {
+  unsync_s2f:draw_unsync_s2f, unsync_f2s:draw_unsync_f2s,
+  unsync_multi:draw_unsync_multi, two_ff_sync:draw_two_ff_sync,
+  pulse_sync:draw_pulse_sync, handshake:draw_handshake,
+  async_fifo:draw_async_fifo, mux_sync:draw_mux_sync,
+  conv01:draw_conv01, conv02:draw_conv02,
+  conv03:draw_conv03, conv04:draw_conv04,
+  glitch01:draw_glitch01, glitch02:draw_glitch02,
+  glitch03:draw_glitch03, cdc01:draw_cdc01,
+  datahold:draw_datahold, rst_unsync:draw_rst_unsync,
+  rst_async_deassert:draw_rst_async_deassert,
+  rst_sync_correct:draw_rst_sync_correct,
+  coherency:draw_coherency, clk_glitch:draw_clk_glitch,
+ unsync03:draw_unsync03,
+ sync_reconv01:draw_sync_reconv01,
+ datahold01b:draw_datahold01b,
+ datahold01c:draw_datahold01c,
+ abstract_val01:draw_abstract_val01,
+ ar_combo01:draw_ar_combo01,
+ mutual_excl:draw_mutual_excl
+};
+
+function renderCircuit(sc) {
+  const svg=getSvg();
+  while(svg.firstChild) svg.removeChild(svg.firstChild);
+  const fn=CIRCUIT_DRAW[sc.svgType];
+  if(fn) fn(svg);
+  else drawLabel(svg,400,134,'电路图待实现','#556677',14);
+}
+
+// ===================== WAVEFORM ENGINE =====================
+const WF_LABELS = {
+  unsync_s2f:  ['clkA (慢)','clkB (快)','data_a','data_b (危险)'],
+  unsync_f2s:  ['clkA (快)','clkB (慢)','signal_a','dst (漏采)'],
+  unsync_multi:['clkA','clkB','bus[3:0]','dst (撕裂)'],
+  two_ff_sync: ['clkA','clkB','d_src','d_dst (稳定)'],
+  pulse_sync:  ['clkA','clkB','pulse_in','pulse_out'],
+  handshake:   ['clkA','clkB','REQ','data_b'],
+  async_fifo:  ['clk_wr','clk_rd','wptr','rptr_sync'],
+  mux_sync:    ['clkA','clkB','EN','data_b'],
+  conv01:      ['clkA','clkB','sync_a','sync_b'],
+  glitch01:    ['clkA','clkB','mux_out','sync_out'],
+  cdc01:       ['clkA (快)','clkB (慢)','signal','dst (失效)'],
+  datahold:    ['clkA','clkB','EN','DATA'],
+  rst_unsync:  ['clk','rstn_ext','FF_A','FF_B'],
+  rst_sync:    ['clk','rstn_raw','rstn_sync','FF_out'],
+  clk_glitch:  ['CLK_IN','enable','clk_glitch','FF_Q'],
+ unsync03:       ['clkA','clkB','bus[3:0]','dst(部分未同步)'],
+ sync_reconv01:  ['clkA','clkB','sync_A','sync_B'],
+ datahold01b:    ['clkA','clkB','EN(qual)','DATA'],
+ datahold01c:    ['clkA','clkB','EN','data_mux'],
+ abstract_val01: ['clkA','clkB','port_out','soc_conn'],
+ ar_combo01:     ['clk','rstn_in','func_en','FF_rst'],
+ mutual_excl:    ['clkA','clkB','clk_sel','clk_out']
+};
+
+function renderWaveform(sc, t) {
+  const canvas = document.getElementById('wfCanvas');
+  const cont = document.querySelector('.wf-area');
+  canvas.width = cont.offsetWidth;
+  canvas.height = cont.offsetHeight;
+  const ctx = canvas.getContext('2d');
+  const W = canvas.width, H = canvas.height;
+  const LB = 85; // label column width
+  const labels = WF_LABELS[sc.wfType] || ['CLK_A','CLK_B','DATA','OUT'];
+  const nRows = labels.length;
+  const rowH = H / nRows;
+  const margin = 10, sigH = rowH * 0.38;
+
+  // Background
+  ctx.fillStyle = '#080e14';
+  ctx.fillRect(0, 0, W, H);
+  
+  // Label column background
+  ctx.fillStyle = 'rgba(10,20,35,0.8)';
+  ctx.fillRect(0, 0, LB, H);
+  ctx.strokeStyle = 'rgba(30,50,80,0.8)';
+  ctx.lineWidth = 1;
+  ctx.beginPath(); ctx.moveTo(LB, 0); ctx.lineTo(LB, H); ctx.stroke();
+  
+  // Draw signal labels
+  labels.forEach((lbl, i) => {
+    const cy = (i + 0.5) * rowH;
+    ctx.fillStyle = i===0?'#4488dd':i===1?'#dd7733':i===2?'#44aaff':'#00cc66';
+    ctx.font = '10px "Microsoft YaHei",sans-serif';
+    ctx.textAlign = 'right';
+    ctx.fillText(lbl, LB - 4, cy + 4);
+  });
+  ctx.textAlign = 'left';
+
+  // Grid (only in waveform area)
+  ctx.strokeStyle = 'rgba(255,255,255,0.04)';
+  ctx.lineWidth = 1;
+  for (let x = LB; x < W; x += 40) {
+    ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, H); ctx.stroke();
+  }
+
+  // Time cursor
+  const curX = LB + t * (W - LB);
+
+  // Draw waveforms
+  for (let row = 0; row < nRows; row++) {
+    const cy = (row + 0.5) * rowH;
+    const hiY = cy - sigH;
+    const loY = cy + sigH;
+
+    // Draw baseline
+    ctx.strokeStyle = 'rgba(255,255,255,0.07)';
+    ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(LB, cy); ctx.lineTo(W, cy); ctx.stroke();
+
+    let col = '#00d4ff';
+    if (row === 0) col = '#4488dd';
+    else if (row === 1) col = '#dd7733';
+    else if (row === 2) col = '#44aaff';
+    else col = '#00cc66';
+
+    // Error color for last row if error scenario
+    if (row === 3 && sc.sev === 'Error' && sc.wfType !== 'two_ff_sync' && sc.wfType !== 'rst_sync') {
+      col = '#ff6655';
+    }
+
+    ctx.strokeStyle = col;
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+
+    const isClkA = row === 0;
+    const isClkB = row === 1;
+    // Clock periods
+    let periodA = 40, periodB = 80;
+    if (sc.wfType === 'unsync_f2s' || sc.wfType === 'cdc01') { periodA = 30; periodB = 100; }
+    if (sc.wfType === 'unsync_s2f') { periodA = 70; periodB = 40; }
+    if (sc.wfType === 'rst_sync' || sc.wfType === 'rst_unsync') { periodA = 40; periodB = 40; }
+
+    if (isClkA) {
+      // Draw clock A
+      let x = LB;
+      while (x < W) {
+        const hi = Math.floor((x-LB) / (periodA / 2)) % 2 === 0;
+        const nx = x + periodA / 2;
+        if (x === LB) ctx.moveTo(x, hi ? hiY : loY);
+        ctx.lineTo(Math.min(nx, W), hi ? hiY : loY);
+        if (nx < W) { ctx.moveTo(nx, hi ? loY : hiY); ctx.lineTo(nx, hi ? hiY : loY); }
+        x = nx;
+      }
+    } else if (isClkB) {
+      let x = LB;
+      while (x < W) {
+        const hi = Math.floor((x-LB) / (periodB / 2)) % 2 === 0;
+        const nx = x + periodB / 2;
+        if (x === LB) ctx.moveTo(x, hi ? hiY : loY);
+        ctx.lineTo(Math.min(nx, W), hi ? hiY : loY);
+        if (nx < W) { ctx.moveTo(nx, hi ? loY : hiY); ctx.lineTo(nx, hi ? hiY : loY); }
+        x = nx;
+      }
+    } else {
+      // Data/signal waveforms based on wfType
+      let events = [];
+      if (sc.wfType === 'unsync_s2f' || sc.wfType === 'unsync_f2s' || sc.wfType === 'unsync_multi') {
+        if (row === 2) events = [0,0,0,1,1,1,1,1,0,0,0,0,1,1,0,0];
+        else           events = [0,0,0,0,0,1,1,1,0,0,0,0,0,1,0,0];
+      } else if (sc.wfType === 'two_ff_sync') {
+        if (row === 2) events = [0,0,1,1,1,1,1,0,0,0,1,1,0,0,0,0];
+        else           events = [0,0,0,0,1,1,1,1,1,0,0,0,1,1,0,0];
+      } else if (sc.wfType === 'pulse_sync') {
+        if (row === 2) events = [0,0,1,0,0,0,0,1,0,0,0,0,1,0,0,0];
+        else           events = [0,0,0,0,0,1,0,0,0,0,0,1,0,0,0,1];
+      } else if (sc.wfType === 'cdc01') {
+        if (row === 2) events = [0,0,1,0,0,0,0,0,0,0,1,0,0,0,0,0];
+        else           events = [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0];
+      } else if (sc.wfType === 'datahold') {
+        if (row === 2) events = [0,0,0,1,1,1,1,0,0,0,1,1,1,0,0,0];
+        else           events = [0,0,0,0,1,0,1,0,0,0,0,1,0,1,0,0];
+      } else if (sc.wfType === 'rst_unsync' || sc.wfType === 'rst_sync') {
+        if (row === 2) events = [1,1,1,0,0,0,0,0,1,1,1,1,1,1,1,1];
+        else           events = [1,1,1,0,0,0,0,0,1,1,1,1,1,1,1,1];
+      } else if (sc.wfType === 'glitch01') {
+        if (row === 2) events = [0,0,0,1,1,1,0,1,1,0,0,1,0,0,0,0];
+        else           events = [0,0,0,0,0,1,1,1,0,0,0,1,0,0,0,0];
+      } else {
+        if (row === 2) events = [0,0,1,1,0,0,1,1,0,0,1,1,0,0,0,0];
+        else           events = [0,0,0,0,0,1,1,0,0,0,0,0,1,1,0,0];
+      }
+      const segW = (W - LB) / events.length;
+      ctx.moveTo(LB, events[0] ? hiY : loY);
+      for (let i = 0; i < events.length; i++) {
+        const x = LB + i * segW;
+        const nx = LB + (i + 1) * segW;
+        const curVal = events[i];
+        const nxtVal = events[Math.min(i + 1, events.length - 1)];
+        ctx.lineTo(Math.min(nx, W), curVal ? hiY : loY);
+        if (curVal !== nxtVal && nx < W) {
+          ctx.moveTo(nx, curVal ? loY : hiY);
+          ctx.lineTo(nx, nxtVal ? hiY : loY);
+        }
+      }
+    }
+    ctx.stroke();
+
+    // Metastability zone for error scenarios on row 3
+    if (row === 3 && sc.sev === 'Error' && (
+        sc.wfType === 'unsync_s2f' || sc.wfType === 'unsync_f2s' || sc.wfType === 'unsync_multi'
+    )) {
+      ctx.save();
+      ctx.fillStyle = 'rgba(255,200,0,0.12)';
+      ctx.strokeStyle = 'rgba(255,200,0,0.4)';
+      ctx.lineWidth = 1;
+      ctx.setLineDash([3, 2]);
+      const wfW = W - LB;
+      ctx.fillRect(LB + wfW * 0.28, cy - sigH - 4, wfW * 0.15, sigH * 2 + 8);
+      ctx.strokeRect(LB + wfW * 0.28, cy - sigH - 4, wfW * 0.15, sigH * 2 + 8);
+      ctx.restore();
+      ctx.fillStyle = 'rgba(255,200,0,0.7)';
+      ctx.font = '9px monospace';
+      ctx.fillText('亚稳态?', LB + wfW * 0.3, cy - sigH - 6);
+    }
+    // Missed sample zone for cdc01
+    if (sc.wfType === 'cdc01' && row === 3) {
+      ctx.save();
+      ctx.fillStyle = 'rgba(255,80,0,0.15)';
+      ctx.fillRect(LB, cy - sigH - 4, W - LB, sigH * 2 + 8);
+      ctx.restore();
+      ctx.fillStyle = '#ff6655';
+      ctx.font = '10px sans-serif';
+      ctx.fillText('慢时钟漏采 — 信号丢失!', LB + (W-LB) * 0.3, cy - sigH - 6);
+    }
+  }
+
+  // Time cursor
+  ctx.save();
+  ctx.strokeStyle = 'rgba(0,212,255,0.6)';
+  ctx.lineWidth = 1.5;
+  ctx.setLineDash([4, 3]);
+  ctx.beginPath();
+  ctx.moveTo(curX, 0);
+  ctx.lineTo(curX, H);
+  ctx.stroke();
+  ctx.restore();
+}
+
+// ===================== ANIMATION =====================
+let isPlaying = false, animT = 0, animSpeed = 1, rafId = null, lastTs = null;
+
+function animLoop(ts) {
+  if (lastTs === null) lastTs = ts;
+  const dt = (ts - lastTs) / 1000;
+  lastTs = ts;
+  animT += dt * animSpeed * 0.12;
+  if (animT > 1) animT = 0;
+  if (curSc) renderWaveform(curSc, animT);
+  document.getElementById('pbf').style.width = (animT * 100) + '%';
+  if (isPlaying) rafId = requestAnimationFrame(animLoop);
+}
+
+function togglePlay() {
+  isPlaying = !isPlaying;
+  const btn = document.getElementById('playBtn');
+  if (isPlaying) {
+    btn.textContent = '⏸ 暂停';
+    btn.classList.add('act');
+    lastTs = null;
+    rafId = requestAnimationFrame(animLoop);
+  } else {
+    btn.textContent = '▶ 播放';
+    cancelAnimationFrame(rafId);
+  }
+}
+function resetAnim() {
+  animT = 0;
+  if (curSc) renderWaveform(curSc, animT);
+  document.getElementById('pbf').style.width = '0%';
+}
+function setSpeed(v) { animSpeed = parseFloat(v); }
+function seekAnim(e) {
+  const pb = document.getElementById('pb');
+  const rect = pb.getBoundingClientRect();
+  animT = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
+  if (curSc) renderWaveform(curSc, animT);
+  document.getElementById('pbf').style.width = (animT * 100) + '%';
+}
+
+// ===================== UI LOGIC =====================
+let curSc = null, curIdx = 0;
+
+function buildSidebar() {
+  const sb = document.getElementById('sb');
+  sb.innerHTML = '';
+  CATS.forEach((cat, ci) => {
+    const hd = document.createElement('div');
+    hd.className = 'cat-hd';
+    hd.innerHTML = `<span>${cat.icon} ${cat.name}</span><span class="ar">▼</span>`;
+    hd.onclick = function() {
+      this.classList.toggle('col');
+      const items = this.nextElementSibling;
+      items.style.maxHeight = this.classList.contains('col') ? '0' : '600px';
+    };
+    sb.appendChild(hd);
+    const wrap = document.createElement('div');
+    wrap.className = 'cat-items';
+    wrap.style.maxHeight = '600px';
+    cat.ids.forEach(id => {
+      const sc = SC.find(s => s.id === id);
+      if (!sc) return;
+      const item = document.createElement('div');
+      item.className = 'si';
+      item.id = 'si_' + id;
+      const sevClass = {Error:'de',Warning:'dw',Ok:'dok',Info:'di'}[sc.sev] || 'di';
+      item.innerHTML = `<span class="dot ${sevClass}"></span><span style="font-size:12px;flex:1">${sc.title}</span><span class="rid">${sc.ruleName}</span>`;
+      item.onclick = () => selectScenario(id);
+      wrap.appendChild(item);
+    });
+    sb.appendChild(wrap);
+  });
+}
+
+function selectScenario(id) {
+  const sc = SC.find(s => s.id === id);
+  if (!sc) return;
+  curSc = sc;
+  curIdx = SC.findIndex(s => s.id === id);
+  // Sidebar highlight
+  document.querySelectorAll('.si').forEach(el => el.classList.remove('active'));
+  const si = document.getElementById('si_' + id);
+  if (si) { si.classList.add('active'); si.scrollIntoView({block:'nearest'}); }
+  // Title
+  document.getElementById('sTitle').textContent = sc.title;
+  document.getElementById('rBadge').textContent = sc.ruleName;
+  const sb = document.getElementById('sBadge');
+  const sevMap = {Error:['e','错误'],Warning:['w','警告'],Ok:['k','正确'],Info:['i','信息']};
+  const [cls, txt] = sevMap[sc.sev] || ['i','信息'];
+  sb.className = 'sbadge ' + cls;
+  sb.textContent = txt;
+  // Info panel
+  const tagRow = document.getElementById('tagRow');
+  tagRow.innerHTML = '';
+  [{k:'规则',v:sc.ruleName},{k:'严重度',v:sc.sev},{k:'类别',v:CATS[sc.cat]?.name||''}].forEach(({k,v})=>{
+    const t = document.createElement('span');
+    t.className = 'tag';
+    t.textContent = k + ': ' + v;
+    tagRow.appendChild(t);
+  });
+  document.getElementById('rDesc').textContent = sc.desc;
+  document.getElementById('rRoot').textContent = sc.root;
+  document.getElementById('rImpact').textContent = sc.impact;
+  document.getElementById('fDesc').textContent = sc.fixDesc;
+  document.getElementById('fCode').textContent = sc.fixCode;
+  document.getElementById('fSgdc').textContent = sc.sgdc;
+  document.getElementById('wCond').textContent = sc.waiveCond;
+  document.getElementById('wCode').textContent = sc.waiveCode;
+  document.getElementById('wNote').textContent = sc.waiveNote;
+  // Render
+  renderCircuit(sc);
+  renderWaveform(sc, animT);
+}
+
+function swTab(el, tabId) {
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.tc').forEach(t => t.classList.remove('active'));
+  el.classList.add('active');
+  document.getElementById(tabId).classList.add('active');
+}
+
+function toggleVio() {
+  SHOW_VIO = !SHOW_VIO;
+  const btn = document.getElementById('vBtn');
+  if (SHOW_VIO) {
+    btn.classList.add('vio');
+    btn.textContent = '🔴 隐藏违例';
+  } else {
+    btn.classList.remove('vio');
+    btn.textContent = '🔴 显示违例';
+  }
+  if (curSc) renderCircuit(curSc);
+}
+
+// Keyboard navigation
+document.addEventListener('keydown', function(e) {
+  if (e.key === 'ArrowRight') {
+    const next = SC[Math.min(curIdx + 1, SC.length - 1)];
+    if (next) selectScenario(next.id);
+  } else if (e.key === 'ArrowLeft') {
+    const prev = SC[Math.max(curIdx - 1, 0)];
+    if (prev) selectScenario(prev.id);
+  }
+});
+
+// Resize canvas on window resize
+window.addEventListener('resize', () => { if (curSc) renderWaveform(curSc, animT); });
+
+// Init
+window.onload = function() {
+  buildSidebar();
+  // Place waveform labels
+  selectScenario(SC[0].id);
+  // Auto-start animation
+  // togglePlay();
+};
+</script>
+</body>
+</html>

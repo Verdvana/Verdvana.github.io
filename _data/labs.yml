@@ -5,7 +5,7 @@
     支持商贷/公积金、利率变更与提前还款的房贷计算器，秒算月供与总利息
   thumb: /assets/labs/thumbs/mortgage_calculator.jpg
   tags: [Finance]
-  order: 2
+  order: 5
 
 - slug: visionmatrix
   title: 视觉阵列转换器
@@ -13,7 +13,7 @@
     专为嵌入式开发打造的视觉阵列转换工具，集成Base64、字符画及多位深RGB/灰度点阵生成，一键完成图像到硬件代码的高效转换
   thumb: /assets/labs/thumbs/visionmatrix.jpg
   tags: [Image Processing]
-  order: 1
+  order: 2
 
 - slug: random_picker
   title: 随机抽取器
@@ -29,4 +29,12 @@
     纯客户端在线加密工具箱，支持哈希（MD5/SHA）、HMAC、AES加解密、Base64/Hex/URL编解码、JWT解析及随机密码生成。
   thumb: /assets/labs/thumbs/crypto_toolbox.jpg
   tags: [Algorithm]
-  order: 2
+  order: 3
+
+- slug: cdc_interactive
+  title: CDC跨时钟域交互演示
+  desc: >
+    CDC 跨时钟域问题交互演示工具，涵盖 SpyGlass 29 个典型场景，含电路动画、波形、修复与 Waive 方案。
+  thumb: /assets/labs/thumbs/cdc_interactive.jpg
+  tags: [ASIC]
+  order: 1
