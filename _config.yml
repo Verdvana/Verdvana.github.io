@@ -115,12 +115,12 @@ jekyll-theme-WuK: # 用了wu-kan的主题，自定义样式都在这个命名空
       <div id="waline">
         <i class="fas fa-spinner fa-pulse"></i>
       </div>
-      <link rel="stylesheet" href="https://unpkg.com/@waline/client@v2/dist/waline.css"/>
+      <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@waline/client@v2/dist/waline.css"/>
       <script type="module">
-        import { init } from 'https://unpkg.com/@waline/client@v2/dist/waline.mjs';
+        import { init } from 'https://cdn.jsdelivr.net/npm/@waline/client@v2/dist/waline.mjs';
         init({
           el: '#waline',
-          serverURL: 'https://vercelproject-gold-one.vercel.app',
+          serverURL: 'https://comments.verdvana.cn',
           placeholder: '在这里评论吧！（上面可以填写您的昵称、邮箱和网址）',
           dark: 'auto',
           search: false,
