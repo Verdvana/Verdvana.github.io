@@ -79,7 +79,7 @@ body{background:var(--bg);color:var(--text);font-family:"Microsoft YaHei",Segoe 
   <span class="sub">基于 SpyGlass CDC Rules &amp; Qualcomm CDC Guidelines</span>
   <div style="display:flex;gap:6px;margin-left:auto">
     <span class="badge">SpyGlass VC</span>
-    <span class="badge">29 个场景</span>
+    <span class="badge">37 个场景</span>
     <span class="badge" style="color:#7090b0">← → 切换场景</span>
   </div>
 </div>
@@ -486,16 +486,252 @@ const SC = [
  waiveNote:'高通CDC Waivers文档将"Mutual Exclusive Clocks"列为标准waiver tag。需同时验证：①MUX切换glitch-free；②select信号CDC已处理；③两时钟不会同时有效。',
  svgType:'mutual_excl',wfType:'clk_glitch'}
 
+
+,
+{id:'ac_unsync04',ruleName:'Ac_unsync04',cat:0,title:'异步FIFO读写指针未用格雷码',sev:'Error',
+ desc:'异步FIFO的读指针或写指针使用普通二进制计数器直接跨时钟域同步，而非格雷码。二进制计数器递增时多个bit同时翻转，经2-FF同步器后目标域可能采到非法中间值，导致FIFO满/空判断错误。',
+ root:'异步FIFO正确性的基础在于指针每次只变化1bit（格雷码特性），使2-FF同步器能安全传输。二进制计数器如从7（0111）跳到8（1000），4个bit同时翻转，同步器无法保证目标域采到合法值。',
+ impact:'FIFO满/空判断错误：可能误判为空（丢数据）或误判为满（停止写入），导致数据丢失或系统死锁。此问题在特定读写频率比下才出现，随机仿真难以完全覆盖。',
+ fixDesc:'读写指针必须使用格雷码编码后再跨时钟域同步。SGDC中用gray_signal声明格雷码指针，SpyGlass才能识别为合法多bit同步结构。',
+ fixCode:`// 错误：二进制指针直接同步
+reg [PTR_W:0] wptr_bin;
+// 直接2-FF同步二进制指针 → 危险！
+
+// 正确：先转格雷码再同步
+wire [PTR_W:0] wptr_gray = wptr_bin ^ (wptr_bin >> 1);
+reg [PTR_W:0] wg_s1, wg_s2;
+always @(posedge clk_rd or negedge rstn)
+  if (!rstn) {wg_s2,wg_s1} <= 0;
+  else {wg_s2,wg_s1} <= {wg_s1, wptr_gray};
+function [PTR_W:0] gray2bin;
+  input [PTR_W:0] g; integer i;
+  begin
+    gray2bin[PTR_W] = g[PTR_W];
+    for (i=PTR_W-1;i>=0;i=i-1)
+      gray2bin[i] = gray2bin[i+1] ^ g[i];
+  end
+endfunction`,
+ sgdc:`# 声明格雷码指针
+gray_signal -name wptr_gray[PTR_W:0]
+gray_signal -name rptr_gray[PTR_W:0]
+sync_cell -name wptr_sync_inst -from_clk clk_wr -to_clk clk_rd
+sync_cell -name rptr_sync_inst -from_clk clk_rd -to_clk clk_wr`,
+ waiveCond:'仅当读写时钟已知为同步时钟（整数倍关系且相位已知），且通过STA保证指针不会被错误采样。此情况极少，需架构师书面确认。',
+ waiveCode:`waive -rule Ac_unsync04 \\
+  -from wptr_bin -to clk_rd_domain \\
+  -comment "读写时钟同步，STA保证安全，架构确认"`,
+ waiveNote:'异步FIFO设计中格雷码指针是铁律，任何违反都可能导致数据完整性问题。建议使用经验证的FIFO IP而非自行设计。',
+ svgType:'async_fifo',wfType:'unsync_multi'}
+,
+{id:'three_ff_sync',ruleName:'正确结构',cat:1,title:'三级FF同步器（高速/高可靠）',sev:'Ok',
+ desc:'在标准2-FF同步器基础上增加第三级触发器。适用于目标时钟频率极高（如GHz级）、亚稳态解析时间不足一个时钟周期，或对MTBF要求极高（如安全关键设计）的场景。第三级FF进一步降低亚稳态传播概率至可忽略水平。',
+ root:'亚稳态概率P ∝ exp(−T_res/τ)，其中T_res为解析时间，τ为工艺参数。目标时钟频率越高，每级FF可用于亚稳态解析的时间越短，需要更多级FF来保证MTBF达到设计要求（通常>1000年）。',
+ impact:'正确结构。相比2-FF同步器，MTBF提升约exp(Tclk/τ)倍，适用于超高频设计。代价是增加2个FF的面积和多1个时钟周期的延迟。',
+ fixDesc:'第三级FF与前两级同时声明在sync_cell中。注意：3级同步仅适用于单比特控制信号，多bit数据仍需格雷码/握手/FIFO方案。',
+ fixCode:`// 三级FF同步器
+module sync_3ff #(parameter W=1) (
+  input  clk_dst, rstn,
+  input  [W-1:0] d_src,
+  output [W-1:0] d_dst
+);
+  (* ASYNC_REG = "TRUE" *)
+  reg [W-1:0] meta, sync1, sync2;
+  always @(posedge clk_dst or negedge rstn)
+    if (!rstn) {sync2,sync1,meta} <= 0;
+    else {sync2,sync1,meta} <= {sync1,meta,d_src};
+  assign d_dst = sync2;
+endmodule
+// 适用：目标时钟 > 2GHz，或MTBF要求 > 10^6年`,
+ sgdc:`# 声明三级同步器
+sync_cell -name sync_3ff -from_clk clkA -to_clk clkB
+# 高通项目中部分IP要求声明级数
+sync_cell -name sync_3ff -stages 3 -from_clk clkA -to_clk clkB`,
+ waiveCond:'此为正确结构，无需waive。若SpyGlass误报，通过sync_cell约束声明即可。',
+ waiveCode:`# 无需waive，sync_cell正确声明即可`,
+ waiveNote:'3级FF同步仅在必要时使用（超高频或安全关键），通常2级FF已足够。过度使用3级同步会增加延迟，影响跨域响应时间。',
+ svgType:'two_ff_sync',wfType:'two_ff_sync'}
+,
+{id:'ac_conv05',ruleName:'Ac_conv05',cat:2,title:'同步后信号含反馈弧重入源域',sev:'Warning',
+ desc:'信号A从clkA域同步到clkB域后，clkB域的处理结果通过组合逻辑或直接反馈回clkA域的另一路径，形成跨时钟域的反馈弧（Feedback Arc）。SpyGlass在聚合分析中将此识别为Ac_conv05：同步链存在反馈路径，破坏了单向同步的拓扑假设。',
+ root:'正向同步（clkA→clkB）与反向反馈路径（clkB→clkA）形成跨域环路。若两条路径的传播延迟之和小于握手协议所需的最小间隔，可能在目标域采样到不稳定的中间状态，且环路可能导致死锁或活锁。',
+ impact:'若反馈路径未经适当同步，clkA域可能在前一次传输尚未完成时启动新传输，导致数据覆盖或握手状态机进入非法状态。问题仅在高压力场景（频繁传输）下出现，难以通过低频率测试覆盖。',
+ fixDesc:'①确保反馈路径（clkB→clkA）也经过独立2-FF同步器；②在clkA域的状态机中，必须等待反馈同步完成（ACK确认）才能发起下一次传输；③SGDC中声明双向同步结构。',
+ fixCode:`// 错误：反馈路径未同步
+always @(posedge clkA)
+  if (ack_b_raw) // 直接用clkB域信号！
+    state <= IDLE;
+
+// 正确：反馈也需要2-FF同步
+reg ack_s1, ack_s2;
+always @(posedge clkA or negedge rstn)
+  if (!rstn) {ack_s2,ack_s1} <= 2'b0;
+  else {ack_s2,ack_s1} <= {ack_s1, ack_b_raw};
+always @(posedge clkA)
+  if (ack_s2) state <= IDLE;`,
+ sgdc:`# 正向同步
+sync_cell -name fwd_sync -from_clk clkA -to_clk clkB
+# 反馈同步（反向）
+sync_cell -name bwd_sync -from_clk clkB -to_clk clkA
+# qualifier声明
+qualifier -name req_qual -from_clk clkA -to_clk clkB -enable "top.req"`,
+ waiveCond:'仅当反馈路径已经过独立2-FF同步，且状态机设计保证不会在ACK确认前发起新传输，经仿真验证无死锁/活锁。',
+ waiveCode:`waive -rule Ac_conv05 \\
+  -from ack_b_raw -to clkA_domain \\
+  -comment "反馈路径已有bwd_sync同步，握手状态机保证安全"`,
+ waiveNote:'跨时钟域反馈弧是SoC设计中容易被忽视的高风险结构，架构评审时必须专门检查反馈路径的同步完整性。',
+ svgType:'conv01',wfType:'conv01'}
+,
+{id:'ac_glitch04',ruleName:'Ac_glitch04',cat:3,title:'时钟使能（CE）跨域毛刺',sev:'Error',
+ desc:'时钟使能信号（CE/CEN）从一个时钟域跨越到另一个时钟域，未经同步或同步结构不正确。CE信号直接控制FF的时钟使能端，若在时钟有效沿附近发生亚稳态或毛刺，等效于时钟本身出现问题，危害程度与时钟毛刺相当。',
+ root:'CE端的亚稳态与D端不同：D端亚稳态只影响当前FF的输出值，而CE端亚稳态决定"是否采样"，会导致FF在不确定的时刻锁存数据，或应该锁存时未锁存，造成整行/整片FF状态不确定。',
+ impact:'CE端亚稳态导致受控FF的采样行为不确定，比D端亚稳态影响范围更大（一个CE可能控制数十个FF）。若CE未同步，相关所有FF的数据都处于不可信状态，可能导致整个功能模块行为异常。',
+ fixDesc:'时钟使能信号跨域必须使用2-FF同步器，且同步器的输出必须在目标时钟域中稳定后才连接到FF的CE端。若CE需要精确的时序对齐，改用数据路径控制（将CE转为数据有效标志）。',
+ fixCode:`// 错误：CE信号直接跨域
+always @(posedge clkB)
+  if (ce_a_raw) // 未同步的CE！
+    data_reg <= data_in;
+
+// 正确：CE信号必须先同步
+reg ce_s1, ce_s2;
+always @(posedge clkB or negedge rstn)
+  if (!rstn) {ce_s2,ce_s1} <= 2'b0;
+  else {ce_s2,ce_s1} <= {ce_s1, ce_a_raw};
+always @(posedge clkB)
+  if (ce_s2) data_reg <= data_in;
+// 注意：同步引入2周期延迟，需调整协议时序`,
+ sgdc:`sync_cell -name ce_sync_inst -from_clk clkA -to_clk clkB
+# 若CE为准静态
+quasi_static -name ce_a_raw`,
+ waiveCond:'仅当CE信号已确认为准静态（配置完成后不再变化），且SpyGlass能通过quasi_static约束识别，或CE在两个时钟域均有效时已通过STA证明无亚稳态风险。',
+ waiveCode:`waive -rule Ac_glitch04 \\
+  -from ce_a_raw -to clkB_domain \\
+  -comment "CE为准静态配置信号，上电后不变，quasi_static约束已声明"`,
+ waiveNote:'CE端亚稳态的危害往往被低估。一个CE控制多个FF时，单次亚稳态可能造成整个寄存器组的状态错误，必须与D端跨域同等对待。',
+ svgType:'glitch01',wfType:'glitch01'}
+,
+{id:'ac_datahold02',ruleName:'Ac_datahold02',cat:4,title:'多周期路径跨时钟域数据保持违例',sev:'Error',
+ desc:'设计中存在跨时钟域的多周期路径（Multi-Cycle Path），SDC中声明了set_multicycle_path约束，但CDC分析工具未正确识别该约束，或约束与实际时序不一致，导致数据在跨域传输时保持时间不足。',
+ root:'多周期路径意味着数据在源域保持N个时钟周期后才被目标域采样。若同步器的级数与多周期约束不匹配（如2-FF同步器配合3周期路径），或qualifier的有效窗口未覆盖数据保持的全部周期，会产生采样窗口与数据有效窗口的错位。',
+ impact:'目标域在数据仍在过渡的周期内采样，采到的值既非旧值也非新值，产生与Ac_datahold01a类似但更难定位的数据错误。由于多周期路径在时序分析中被"放宽"，问题更容易被STA遗漏。',
+ fixDesc:'①多周期路径跨域时，qualifier的有效窗口必须覆盖所有N个源时钟周期；②同步器级数与多周期数匹配（N周期路径建议使用N级同步或加宽qualifier有效窗口）；③SGDC中set_multicycle_path与qualifier约束需联合声明。',
+ fixCode:`// SDC: set_multicycle_path 3 -from [get_cells src_reg]
+// 意味着data_a在src更新后保持3个clkA周期
+
+// 错误：qualifier只维持1个周期
+always @(posedge clkA) begin en <= 1; data <= new_val; end
+always @(posedge clkA) en <= 0; // 1周期后即去低！
+
+// 正确：qualifier保持足够周期
+reg [2:0] en_cnt;
+always @(posedge clkA or negedge rstn)
+  if (!rstn) en_cnt <= 0;
+  else if (send) en_cnt <= 3'd6;
+  else if (en_cnt>0) en_cnt <= en_cnt-1;
+assign data_en = (en_cnt > 0);`,
+ sgdc:`qualifier -name mcp_qual -from_clk clkA -to_clk clkB -enable "top.data_en"
+set_multicycle_path 3 -from [get_clocks clkA] -to [get_clocks clkB]`,
+ waiveCond:'通过详细时序分析和定向仿真确认：qualifier有效窗口完全覆盖多周期路径的数据有效期，且同步器输出稳定时数据已满足保持要求。',
+ waiveCode:`waive -rule Ac_datahold02 \\
+  -from data_mcp -to dst_ff \\
+  -comment "MCP=3，qualifier保持6周期，仿真验证采样窗口安全"`,
+ waiveNote:'多周期路径跨域是高级CDC问题，需要STA工程师与CDC工程师联合分析，不能单独依赖其中一方的工具结论。',
+ svgType:'datahold',wfType:'datahold'}
+,
+{id:'ar_unsync02',ruleName:'Ar_unsync02',cat:5,title:'复位信号跨时钟域未同步（多域不一致）',sev:'Error',
+ desc:'系统中存在多个时钟域，一个域的本地复位信号（已经过该域的复位同步器处理）被直接用于驱动另一个时钟域的触发器复位端，未经目标时钟域的复位同步器重新同步。两个域的复位释放时刻在各自时钟下不一致。',
+ root:'即使每个时钟域都有自己的复位同步器，clkA域的rstn_a与clkB域的rstn_b在各自时钟沿释放，两者之间不存在固定的相位关系。将rstn_a直接用于clkB域FF，等效于用一个与clkB不同步的信号驱动其异步复位端。',
+ impact:'复位释放后，跨域的FF可能在不同时钟周期退出复位状态，造成SoC级的复位不一致。在复位刚释放时，已退出复位的域可能向仍在复位中的域发送数据或控制信号，引发随机功能错误，且仅在复位序列中出现，正常仿真难以覆盖。',
+ fixDesc:'每个时钟域必须有自己独立的复位同步器，使用本域时钟对原始复位信号进行同步。禁止将一个域同步后的复位直接用于另一个域。如需要跨域复位顺序控制，应通过专用的复位序列控制器（Reset Sequencer）实现。',
+ fixCode:`// 错误：clkA域的同步复位驱动clkB域FF
+always @(posedge clkB or negedge rstn_a) // 错误！
+  if (!rstn_a) state_b <= IDLE;
+
+// 正确：各域使用本域时钟的复位同步器
+rst_sync u_rst_a(.clk(clkA),.rstn_in(rstn_raw),.rstn_out(rstn_a));
+rst_sync u_rst_b(.clk(clkB),.rstn_in(rstn_raw),.rstn_out(rstn_b));
+always @(posedge clkB or negedge rstn_b) // 正确
+  if (!rstn_b) state_b <= IDLE;`,
+ sgdc:`sync_cell -name u_rst_a -reset -to_clk clkA
+sync_cell -name u_rst_b -reset -to_clk clkB
+reset -name rstn_raw -async -value 0`,
+ waiveCond:'仅当能证明两个时钟域存在固定的相位关系（如clkB由clkA分频产生，且已知相位），使rstn_a的释放时刻在clkB域也满足Recovery时序。此情况需后端STA全工艺角验证。',
+ waiveCode:`waive -rule Ar_unsync02 \\
+  -from rstn_a -to clkB_domain \\
+  -comment "clkB由clkA 2分频，相位固定，STA全角验证Recovery满足"`,
+ waiveNote:'多时钟域复位不一致是SoC集成中的高频问题。建议在系统级架构阶段规划统一的复位网络，每个时钟域均配备独立复位同步器。',
+ svgType:'rst_unsync',wfType:'rst_unsync'}
+,
+{id:'ac_cdc_fanout01',ruleName:'Ac_cdc_fanout01',cat:7,title:'跨时钟域信号扇出过多',sev:'Warning',
+ desc:'源时钟域的单个信号经过一个同步器后，其同步输出在目标域扇出到大量后级逻辑（通常扇出数>32或跨越多个子模块）。高扇出信号在布局布线后存在较大的时钟树偏斜（Clock Skew）风险，且单点故障影响面积大。',
+ root:'同步器输出的高扇出路径在物理实现中需要大量Buffer树，引入额外的传播延迟和时序不确定性。在极端工艺角下，扇出末端的FF实际建立/保持时间与标称值偏差较大，可能在本应安全的同步路径上出现时序违例。',
+ impact:'高扇出同步信号在后端实现中时序签收困难，可能需要多次迭代修复。若扇出末端的时序违例未被发现，会导致部分FF采样到亚稳态值，而其他FF已正确采样，产生局部不一致的状态。',
+ fixDesc:'①在目标域对同步器输出寄存一拍后再分发（Pipeline Buffer）；②将高扇出同步信号通过专用的时钟分发网络分发；③评估是否需要多个独立同步器分别驱动不同子模块（需注意Ac_coherency06的权衡）。',
+ fixCode:`// 问题：同步器输出直接高扇出
+wire sig_sync; // 扇出到100+个FF！
+sync_2ff u1(.clk(clkB),.d(sig_a),.q(sig_sync));
+
+// 修复：插入流水线缓冲级
+reg sig_pipe;
+always @(posedge clkB)
+  sig_pipe <= sig_sync;
+// sig_pipe 再分发，时序更容易满足
+
+// 或分组分发
+always @(posedge clkB) begin
+  grp_a_en <= sig_sync;
+  grp_b_en <= sig_sync;
+end`,
+ sgdc:`sync_cell -name u1 -from_clk clkA -to_clk clkB`,
+ waiveCond:'高扇出同步信号已经过后端时序签收（所有扇出末端FF的建立/保持时间在所有PVT角均满足），且后端工程师书面确认。',
+ waiveCode:`waive -rule Ac_cdc_fanout01 \\
+  -from sig_sync -comment "后端STA全角已签收，扇出时序满足"`,
+ waiveNote:'高扇出CDC信号是前端与后端协作的边界问题，建议在物理设计阶段早期评估，避免在Signoff阶段才发现时序收敛困难。',
+ svgType:'coherency',wfType:'two_ff_sync'}
+,
+{id:'ac_quasi_static01',ruleName:'Ac_quasi_static01',cat:7,title:'准静态信号跨域时源域未静止',sev:'Error',
+ desc:'信号被声明为准静态（quasi_static）以waive CDC违例，但在实际工作中，该信号在目标域采样期间仍然发生了变化（源域未能保证在跨域传输期间信号稳定）。SpyGlass的quasi_static约束是基于设计意图的声明，工具本身无法验证运行时是否真正静止。',
+ root:'quasi_static的前提是：信号只在系统初始化或特定配置窗口期间改变，正常功能运行时保持稳定。若软件/固件在功能运行期间修改了该寄存器，或硬件逻辑在非配置期间也会更新该信号，则quasi_static声明与实际行为不符，CDC问题未被真正修复。',
+ impact:'quasi_static waive掩盖了真实的CDC违例。目标域在信号变化期间采样，产生亚稳态，但由于SpyGlass已waive该路径，不会有任何工具告警。这是最危险的CDC问题之一：问题被掩盖但实际存在，只在特定软件配置序列下暴露，量产后极难调试。',
+ fixDesc:'①严格审查所有quasi_static声明，确认是否有机制保证"采样期间信号稳定"；②建议用硬件锁定机制（如配置锁寄存器）防止功能运行期间修改quasi_static信号；③若信号在功能期间可能变化，必须改用2-FF同步器或握手协议，不能依赖quasi_static。',
+ fixCode:`// 危险：quasi_static声明但实际可变
+// SGDC: quasi_static -name cfg_reg ← 声明为准静态
+// 但软件可能在任何时候写该寄存器！
+
+// 修复方案1：硬件锁定
+reg cfg_lock;
+always @(posedge clk)
+  if (!cfg_lock) cfg_reg <= apb_wdata;
+
+// 修复方案2：若必须动态变化，改用2-FF同步
+reg cs1, cs2;
+always @(posedge clkB or negedge rstn)
+  if (!rstn) {cs2,cs1} <= 0;
+  else {cs2,cs1} <= {cs1, cfg_reg};
+assign cfg_b = cs2;`,
+ sgdc:`# quasi_static声明（仅当真正静止时使用！）
+quasi_static -name cfg_reg
+# 或改用2-FF同步（推荐）
+sync_cell -name cfg_sync -from_clk clkA -to_clk clkB`,
+ waiveCond:'不建议在quasi_static已出问题的情况下继续waive。必须从根本上修复：要么通过硬件保证信号真正静止，要么改用正规同步结构。',
+ waiveCode:`# 强烈不建议waive此问题
+# 若确认信号通过硬件锁定机制保证静止：
+waive -rule Ac_quasi_static01 \\
+  -from cfg_reg \\
+  -comment "硬件cfg_lock寄存器保证功能期间不可写，已验证"`,
+ waiveNote:'⚠ quasi_static是最容易被滥用的CDC豁免机制。高通CDC审查中，对quasi_static声明的审核与Error级别违例同等严格，每条声明必须有明确的硬件保证机制文档。',
+ svgType:'mux_sync',wfType:'mux_sync'}
 ];
 
 const CATS = [
-  {name:'未同步跨时钟',icon:'🔴',ids:['ac_unsync01_s2f','ac_unsync01_f2s','ac_unsync02','ac_unsync03']},
-  {name:'同步结构（正确）',icon:'🟢',ids:['two_ff_sync','pulse_sync','handshake','async_fifo','mux_sync']},
-  {name:'聚合问题',icon:'🟡',ids:['ac_conv01','ac_conv02','ac_conv03','ac_conv04','ac_sync_reconv01']},
-  {name:'毛刺问题',icon:'🔴',ids:['ac_glitch01','ac_glitch02','ac_glitch03']},
-  {name:'数据保持问题',icon:'🔴',ids:['ac_cdc01','ac_datahold01a','ac_datahold01b','ac_datahold01c']},
-  {name:'复位同步',icon:'🟠',ids:['ar_unsync01','ar_asyncdeassert01','reset_sync_correct','ar_combo01']},
+  {name:'未同步跨时钟',icon:'🔴',ids:['ac_unsync01_s2f','ac_unsync01_f2s','ac_unsync02','ac_unsync03','ac_unsync04']},
+  {name:'同步结构（正确）',icon:'🟢',ids:['two_ff_sync','pulse_sync','handshake','async_fifo','mux_sync','three_ff_sync']},
+  {name:'聚合问题',icon:'🟡',ids:['ac_conv01','ac_conv02','ac_conv03','ac_conv04','ac_sync_reconv01','ac_conv05']},
+  {name:'毛刺问题',icon:'🔴',ids:['ac_glitch01','ac_glitch02','ac_glitch03','ac_glitch04']},
+  {name:'数据保持问题',icon:'🔴',ids:['ac_cdc01','ac_datahold01a','ac_datahold01b','ac_datahold01c','ac_datahold02']},
+  {name:'复位同步',icon:'🟠',ids:['ar_unsync01','ar_asyncdeassert01','reset_sync_correct','ar_combo01','ar_unsync02']},
   {name:'特殊情况',icon:'🟡',ids:['ac_coherency06','clock_glitch05','ac_abstract_validation01','mutual_exclusive_clocks']}
+
+  ,{name:'时钟域结构问题',icon:'🔵',ids:['ac_cdc_fanout01','ac_quasi_static01']}
 ];
 
 // ===================== CIRCUIT ENGINE =====================
