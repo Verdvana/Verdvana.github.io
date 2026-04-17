@@ -79,7 +79,7 @@ body{background:var(--bg);color:var(--text);font-family:"Microsoft YaHei",Segoe 
   <span class="sub">基于 SpyGlass CDC Rules &amp; Qualcomm CDC Guidelines</span>
   <div style="display:flex;gap:6px;margin-left:auto">
     <span class="badge">SpyGlass VC</span>
-    <span class="badge">46 个场景</span>
+    <span class="badge">55 个场景</span>
     <span class="badge" style="color:#7090b0">← → 切换场景</span>
   </div>
 </div>
@@ -999,18 +999,287 @@ ISO_AND u_iso (.A(signal_from_pd), .EN(iso_en), .Y(signal_to_aon));`,
  waiveNote:'⚠ 缺少ISO Cell是低功耗芯片的致命设计缺陷，必须在UPF/CPF流程中完整声明所有电源域边界，并通过SpyGlass LP专项lint确认无遗漏。',
  svgType:'unsync_s2f',wfType:'unsync_s2f'}
 
+,
+
+// ══════════════════════════════════════════════════════════════════
+//  补充遗漏场景（9 个）
+// ══════════════════════════════════════════════════════════════════
+
+// ── Cat 0：未同步跨时钟 ────────────────────────────────────────────
+{id:'ac_unsync06',ruleName:'Ac_unsync06',cat:0,title:'复位衍生使能信号跨时钟域未同步',sev:'Error',
+ desc:'由复位信号衍生出的使能/有效信号（如复位释放后产生的 init_done、power_on_en 等），从复位域直接传入数据时钟域，未经同步处理。这类信号虽然语义上是"静态配置"，但其产生时刻与目标时钟域无相位关系，存在亚稳态风险；SpyGlass 不会因信号名称而自动豁免。',
+ root:'复位衍生信号的 Assert / Deassert 时刻由复位同步器决定，与数据时钟域时钟相位无关。若直接作为数据时钟域 FF 的使能或数据输入，目标 FF 采样时可能处于信号跳变边沿，触发亚稳态。',
+ impact:'数据时钟域 FF 在上电或复位释放阶段采到亚稳态，导致初始状态不确定；相关控制逻辑可能在复位刚释放时进入非法状态，引发启动时序紊乱，且仅在特定上电时序窗口下出现，难以复现。',
+ fixDesc:'复位衍生的使能信号也必须经过目标时钟域的 2-FF 同步器。建议将此类信号封装为专用"域间初始化同步"路径，并在 SGDC 中声明 sync_cell。',
+ fixCode:`// 错误：复位衍生信号直接跨域
+wire init_done = ~rstn_raw; // 复位释放后拉高
+always @(posedge clk_data)
+  if (init_done) state <= ACTIVE; // 未同步！
+
+// 正确：经 2-FF 同步器传入数据域
+reg init_s1, init_s2;
+always @(posedge clk_data or negedge rstn_raw)
+  if (!rstn_raw) {init_s2,init_s1} <= 2'b0;
+  else {init_s2,init_s1} <= {init_s1, init_done_src};
+assign init_done_sync = init_s2;`,
+ sgdc:`# 声明同步器
+sync_cell -name u_init_sync \\
+  -from_clk clk_rst -to_clk clk_data
+# 若 init_done 确为准静态
+quasi_static -name init_done_src`,
+ waiveCond:'仅当复位衍生信号在目标时钟域使用时已确保至少经过 2 个目标时钟周期的稳定窗口，且架构师书面确认信号在跨域采样时刻已完全稳定。',
+ waiveCode:`waive -rule Ac_unsync06 \\
+  -from init_done_src -to clk_data_domain \\
+  -comment "复位释放后保持稳定超过 10 个 clk_data 周期，架构确认"`,
+ waiveNote:'复位衍生信号容易被误认为"上电后静态"而忽视同步需求。高通 CDC 审查中，此类信号需与普通控制信号同等对待，必须有 sync_cell 声明或 quasi_static 书面确认。',
+ svgType:'unsync_s2f',wfType:'rst_unsync'},
+
+// ── Cat 1：同步结构正确 ────────────────────────────────────────────
+{id:'reset_sync_multi',ruleName:'正确结构',cat:1,title:'多时钟域独立复位同步链（正确结构）',sev:'Ok',
+ desc:'SoC 中存在多个时钟域时，每个时钟域都应有独立的复位同步器，统一对原始异步复位信号（por_n / rstn_raw）进行同步处理。各域同步器使用本域时钟，输出的 rstn_x 彼此独立、与本域时钟对齐，是 ASIC 多时钟域复位的工业标准做法。',
+ root:'多时钟域设计中，不同时钟域的复位必须分别同步，才能保证各域的复位释放时序与本域时钟对齐。共用一个同步器或跨域使用他域同步后复位，都会引入复位时序不确定性。',
+ impact:'正确结构。每个域独立同步复位，保证各域内 FF 在同一时钟沿退出复位，是 SoC 多域复位设计的基础规范。代价是面积略有增加（每域 2 个 FF），完全可以接受。',
+ fixDesc:'封装通用 rst_sync 模块，在顶层为每个时钟域各实例化一次；SGDC 中每个实例均需声明 sync_cell -reset。',
+ fixCode:`// 顶层：各时钟域独立复位同步
+rst_sync u_rst_a(.clk(clkA),.rstn_in(por_n),.rstn_out(rstn_a));
+rst_sync u_rst_b(.clk(clkB),.rstn_in(por_n),.rstn_out(rstn_b));
+rst_sync u_rst_c(.clk(clkC),.rstn_in(por_n),.rstn_out(rstn_c));
+
+// 各域 FF 使用本域同步后的复位
+always @(posedge clkA or negedge rstn_a)
+  if (!rstn_a) state_a <= IDLE; // 正确
+always @(posedge clkB or negedge rstn_b)
+  if (!rstn_b) state_b <= IDLE; // 正确`,
+ sgdc:`# 各域复位同步器声明
+sync_cell -name u_rst_a -reset -to_clk clkA
+sync_cell -name u_rst_b -reset -to_clk clkB
+sync_cell -name u_rst_c -reset -to_clk clkC
+reset -name por_n -async -value 0`,
+ waiveCond:'此为正确结构，无需 waive。',
+ waiveCode:`# 无需 waive，确保每个域均有独立 sync_cell -reset 声明`,
+ waiveNote:'常见错误：仅在顶层实例化一个复位同步器，然后将其输出分发给多个时钟域——这等效于用一个域的同步复位驱动其他域，必须避免。',
+ svgType:'rst_sync_correct',wfType:'rst_sync'},
+
+// ── Cat 2：聚合问题 ────────────────────────────────────────────────
+{id:'ac_conv07',ruleName:'Ac_conv07',cat:2,title:'异步 FIFO 满/空标志同步后逻辑聚合',sev:'Warning',
+ desc:'异步 FIFO 的满标志（full）和空标志（empty）分别经独立同步器同步到各自时钟域后，在下游控制逻辑中与其他信号（如另一 FIFO 的状态或外部使能）聚合，产生组合聚合（convergence）。两路标志的同步延迟独立，聚合后可能出现短暂的不一致状态。',
+ root:'FIFO 满/空标志是基于格雷码指针计算的，本身已是合法的单 bit 跨域信号，但同步后的标志与其他信号聚合时，各路信号的 cycle uncertainty 叠加，目标域控制逻辑可能在某个时钟周期看到"两个标志同时有效"或"标志与外部使能不一致"的中间状态。',
+ impact:'下游流控逻辑（如同时判断 FIFO 非满且外部 ready）可能在某个时钟周期做出错误判断，导致多写一笔数据（overflow）或错误停止写入（underflow）。在高速数据流场景下，此类概率性错误极难定位。',
+ fixDesc:'① 对满/空标志聚合的下游逻辑增加一级寄存器，使各路信号在同一时钟沿对齐后再做判断；② 使用握手协议替代直接标志聚合；③ SGDC 中用 cdc_filter_coherency 声明已保证一致性。',
+ fixCode:`// 问题：满/空标志直接聚合
+assign can_write = !fifo_full_sync && ext_ready; // 可能短暂不一致
+
+// 修复：先寄存一拍对齐
+reg full_r, ready_r;
+always @(posedge clk_wr)
+  {full_r, ready_r} <= {fifo_full_sync, ext_ready};
+assign can_write = !full_r && ready_r; // 安全`,
+ sgdc:`# 声明已保证一致性
+cdc_filter_coherency \\
+  -unrelated fifo_full_sync ext_ready \\
+  -comment "各路信号已寄存一拍对齐，控制逻辑可接受一周期延迟"`,
+ waiveCond:'当下游逻辑对满/空标志的一周期不确定性不敏感（如流控裕量 > 1 个时钟周期），且通过功能仿真验证无 overflow/underflow。',
+ waiveCode:`waive -rule Ac_conv07 \\
+  -from {fifo_full_sync ext_ready} \\
+  -comment "流控裕量充足，仿真验证无溢出"`,
+ waiveNote:'FIFO 满/空标志聚合问题在低负载仿真中不会出现，必须在高压力（接近满/空边界）场景下专项测试，才能覆盖此类概率性错误。',
+ svgType:'conv01',wfType:'conv01'},
+
+// ── Cat 3：毛刺问题 ────────────────────────────────────────────────
+{id:'ac_glitch06',ruleName:'Ac_glitch06',cat:3,title:'DFT 扫描模式下的时钟毛刺（Scan Clock Glitch）',sev:'Error',
+ desc:'在 DFT（Design For Test）扫描模式下，扫描时钟（scan_clk）与功能时钟（func_clk）通过时钟 MUX 切换。若扫描使能信号（scan_en）的跳变不满足时钟 MUX 的建立保持时间，或扫描时钟 MUX 不是 glitch-free 结构，切换时会在时钟网络上产生毛刺，导致 FF 被误触发，损坏扫描链数据完整性。',
+ root:'扫描模式下 scan_en 信号的时序通常不受功能时序约束管控（被 set_false_path 豁免），若 scan_en 在时钟高电平期间跳变，普通时钟 MUX 会输出窄脉冲（glitch）。扫描链 FF 被误触发后，扫描数据链被破坏，导致测试向量无效，掩盖实际的制造缺陷。',
+ impact:'扫描测试覆盖率下降，漏测芯片制造缺陷；严重时导致 ATE 测试无法正常运行，芯片无法出货。在高频设计（GHz 级）中，时钟 MUX 切换毛刺概率更高，影响更严重。',
+ fixDesc:'① 扫描时钟 MUX 必须使用 glitch-free 单元（工艺库提供的 CLKMUX）；② scan_en 信号必须满足时钟 MUX 的建立保持时间（通常在时钟低电平期间切换）；③ DFT 工程师必须在扫描插入时指定 glitch-free 时钟 MUX，并在 SGDC 中声明。',
+ fixCode:`// 错误：普通 MUX 做扫描时钟切换
+assign clk_dft = scan_en ? scan_clk : func_clk; // 产生毛刺！
+
+// 正确：使用 glitch-free 扫描时钟 MUX（工艺库单元）
+CLKMUX_DFT u_scan_mux (
+  .CLK0(func_clk),  // 功能时钟
+  .CLK1(scan_clk),  // 扫描时钟
+  .SEL(scan_en),    // 扫描使能（需满足建立保持）
+  .CLKOUT(clk_out)  // Glitch-free 输出
+);
+// scan_en 必须在 clk_out 低电平期间稳定切换`,
+ sgdc:`# 声明扫描时钟 MUX 为 glitch-free
+glitchfree_cell -names CLKMUX_DFT -type clock
+# 声明 DFT 时钟与功能时钟互斥
+set_clock_groups -logically_exclusive \\
+  -group [get_clocks func_clk] \\
+  -group [get_clocks scan_clk]`,
+ waiveCond:'仅当 DFT 工程师通过 ATPG 工具验证扫描链数据完整性（所有向量 shift/capture 正确），且 STA 验证 scan_en 在所有工艺角满足时钟 MUX 建立保持时间。',
+ waiveCode:`waive -rule Ac_glitch06 \\
+  -from scan_en -to clk_out \\
+  -comment "ATPG 覆盖率 100%，STA PVT 全角 scan_en 满足 MUX 建立保持"`,
+ waiveNote:'⚠ 扫描时钟毛刺是 DFT 与 CDC 的交叉问题，需要 DFT 工程师与 CDC 工程师联合确认。流片前必须通过完整的扫描链连通性测试（Scan Chain Continuity Test）。',
+ svgType:'clk_glitch',wfType:'clk_glitch'},
+
+// ── Cat 4：数据保持问题 ────────────────────────────────────────────
+{id:'ac_datahold03',ruleName:'Ac_datahold03',cat:4,title:'同步器输出经组合逻辑后二次跨域的数据保持违例',sev:'Error',
+ desc:'信号从 clkA 域同步到 clkB 域后，clkB 域对同步器输出做了组合逻辑变换（如取反、与运算），然后将组合逻辑结果再次传回 clkA 域或第三个时钟域 clkC。二次跨域时，组合逻辑引入的额外延迟和可能的 glitch，叠加到同步器输出的时序不确定性上，产生新的数据保持违例。',
+ root:'第一次同步已引入 2 个 clkB 周期延迟，组合逻辑进一步引入组合延迟（非整周期）。第二次跨域时，目标域采样窗口与实际数据有效窗口的对齐关系变得更加复杂，SpyGlass 需要追踪两次跨域的组合时序，往往出现误报或漏报。',
+ impact:'二次跨域的数据在目标域（clkA 或 clkC）可能采到组合逻辑的过渡值或 glitch，产生错误功能。此类问题极难通过单独的 Block 级 CDC 分析发现，只有在 SoC flat CDC 中才能暴露完整的跨域链。',
+ fixDesc:'① 避免同步器输出直接进入组合逻辑后再次跨域；② 在 clkB 域先寄存一拍消除组合延迟，再进行第二次跨域；③ 如必须二次跨域，确保第二次也经过完整的 2-FF 同步器，并在 SGDC 中声明完整的同步链。',
+ fixCode:`// 错误：同步器输出经组合逻辑直接二次跨域
+wire sig_b_sync;
+sync_2ff u1(.clk(clkB),.d(sig_a),.q(sig_b_sync));
+wire combo = sig_b_sync & ctrl_b; // 组合逻辑
+always @(posedge clkA) result <= combo; // 未经同步直接跨回 clkA！
+
+// 正确：clkB 域先寄存一拍消除组合不确定性
+reg combo_r;
+always @(posedge clkB) combo_r <= sig_b_sync & ctrl_b;
+// 再经完整 2-FF 同步器传回 clkA
+sync_2ff u2(.clk(clkA),.d(combo_r),.q(result_sync));`,
+ sgdc:`# 声明双向同步链
+sync_cell -name u1 -from_clk clkA -to_clk clkB
+sync_cell -name u2 -from_clk clkB -to_clk clkA
+# 确保 combo_r 为 clkB 域寄存输出，非组合直接跨域`,
+ waiveCond:'仅当通过形式验证（Formal Verification）证明二次跨域的组合逻辑输出在目标域采样时刻完全稳定，且所有工艺角 PVT 均满足建立保持时间。',
+ waiveCode:`waive -rule Ac_datahold03 \\
+  -from combo -to clkA_domain \\
+  -comment "形式验证通过，combo 在 clkA 采样时刻稳定，STA 全角满足"`,
+ waiveNote:'二次跨域的组合路径是 CDC 分析的盲区，强烈建议在架构设计时避免此类结构；若确实存在，务必在 SoC flat CDC 中专项检查。',
+ svgType:'datahold',wfType:'datahold'},
+
+// ── Cat 5：复位同步 ────────────────────────────────────────────────
+{id:'ar_seq01',ruleName:'Ar_seq01',cat:5,title:'复位释放顺序错误（子模块先于系统释放）',sev:'Error',
+ desc:'SoC 中存在复位释放顺序依赖关系时，子模块的复位先于系统顶层（或其依赖的模块）释放，导致子模块在系统尚未就绪时开始运行。典型场景：PHY 在控制器之前退出复位，PHY 开始输出数据但控制器仍在复位中，数据被丢弃且 PHY 状态机进入非法状态。',
+ root:'复位释放顺序问题源于：① 不同时钟域的复位同步器释放时刻不同；② 软件/PMU 对复位序列控制不当；③ 硬件复位网络中某些域的复位路径传播延迟更短，导致意外的早释放。',
+ impact:'先释放的子模块在系统未就绪时发出请求或数据，造成握手超时、数据丢失、总线协议违规；严重时导致整个系统上电初始化失败。此类问题极难通过功能仿真覆盖，往往在硅后测试中才暴露。',
+ fixDesc:'使用专用复位序列控制器（Reset Sequencer）：按照系统架构要求的顺序，逐级释放各域复位，保证依赖关系（如控制器复位先于 PHY 复位释放）。高通标准流程中，PMU 负责管理复位释放顺序。',
+ fixCode:`// 复位序列控制器（简化示例）
+module reset_sequencer(
+  input  por_n, pmu_done,
+  input  clkA, clkB,
+  output rstn_ctrl, // 控制器复位（先释放）
+  output rstn_phy   // PHY 复位（后释放）
+);
+  // 第 1 步：控制器复位同步释放
+  rst_sync u_ctrl(.clk(clkA),.rstn_in(por_n),.rstn_out(rstn_ctrl));
+  // 第 2 步：等控制器初始化完成（pmu_done）再释放 PHY 复位
+  wire phy_rst_src = por_n & pmu_done;
+  rst_sync u_phy(.clk(clkB),.rstn_in(phy_rst_src),.rstn_out(rstn_phy));
+endmodule`,
+ sgdc:`# 声明复位同步器
+sync_cell -name u_ctrl -reset -to_clk clkA
+sync_cell -name u_phy  -reset -to_clk clkB
+reset -name por_n -async -value 0
+# PMU done 信号同步
+sync_cell -name u_pmu_sync -from_clk pmu_clk -to_clk clkA`,
+ waiveCond:'仅当系统验证平台（SVP）通过完整的上电/复位场景（含所有复位顺序组合）验证，确认子模块早释放不影响系统正确性，且系统架构师书面确认。',
+ waiveCode:`waive -rule Ar_seq01 \\
+  -from rstn_phy \\
+  -comment "SVP 验证：PHY 早释放场景下控制器已通过其他机制保护，架构确认"`,
+ waiveNote:'⚠ 复位释放顺序问题在 RTL 仿真中极难覆盖，强烈建议使用专用 Reset Sequencer IP，并在门级仿真中加入上电复位专项场景。',
+ svgType:'rst_unsync',wfType:'rst_unsync'},
+
+// ── Cat 6：特殊情况 ────────────────────────────────────────────────
+{id:'ac_blackbox01',ruleName:'Ac_blackbox01',cat:6,title:'黑盒模块 CDC 边界未声明（Black Box）',sev:'Warning',
+ desc:'在层次化 CDC 分析中，某子模块以黑盒（Black Box）方式集成（无 RTL 代码，仅有端口定义），SpyGlass 无法分析其内部时钟域结构。若黑盒模块的端口未通过 cdc_model.tcl 声明时钟域归属，工具对所有与该模块交互的信号均无法给出确定的 CDC 分析结论，可能大量漏报真实违例。',
+ root:'黑盒模块的内部 CDC 由 IP 供应商或其他团队负责，但与外部的接口信号的时钟域归属必须通过 cdc_model 声明。若 cdc_model 缺失或不完整，SpyGlass 分析顶层时无法确定黑盒端口所属时钟域，相关跨域路径被标记为"不可分析"或按保守假设处理。',
+ impact:'漏报黑盒边界的真实 CDC 违例（最危险），或产生大量假违例需人工排查（效率极低）。在 SoC 集成中，黑盒 IP 的 CDC 边界疏漏是导致 Chip 级 CDC 分析不完整的主要原因之一。',
+ fixDesc:'① 向 IP 供应商索取 cdc_model.tcl 或 SGDC 端口声明；② 若无法获取，由集成工程师根据 IP 数据手册手动编写 cdc_model，声明每个端口的时钟域归属；③ SoC CDC lint 必须检查所有黑盒模块的 cdc_model 完整性。',
+ fixCode:`# 黑盒 IP 端口时钟域声明示例（cdc_model.tcl）
+# 输入端口（从外部接收，已由外部同步）
+cdc_model -port {data_in[7:0] ctrl_in} \\
+  -clk clkA -combo no -direction in
+# 输出端口（由 IP 内部 clkB 域驱动）
+cdc_model -port {data_out[7:0] status_out} \\
+  -clk clkB -combo no -direction out
+# 异步端口（需在顶层同步）
+cdc_model -port irq_out \\
+  -clk async -direction out`,
+ sgdc:`# SoC 顶层引用黑盒 IP 的 cdc_model
+read_file -type sgdc ./ip_blk/ip_cdc_model.tcl
+# 或手动声明
+cdc_model -instance u_ip_blk \\
+  -port data_out -clk clkB -combo no`,
+ waiveCond:'仅当黑盒模块已由 IP 供应商提供经过认证的 CDC 分析报告（清零违例），且集成工程师验证了 cdc_model 与实际接口行为一致，经 CDC owner 审核。',
+ waiveCode:`waive -rule Ac_blackbox01 \\
+  -instance u_ip_blk \\
+  -comment "IP 已通过供应商 CDC 认证，cdc_model 由供应商提供并经 CDC owner 审核"`,
+ waiveNote:'⚠ 黑盒 CDC 是 SoC 集成中的高风险盲区。建议在 IP 采购合同中明确要求供应商提供 cdc_model.tcl，并将其纳入 IP 验收标准。',
+ svgType:'coherency',wfType:'two_ff_sync'},
+
+// ── Cat 7：时钟域结构问题 ──────────────────────────────────────────
+{id:'ac_generated_clk01',ruleName:'Ac_generated_clk01',cat:7,title:'衍生时钟未正确声明导致误判为异步时钟',sev:'Warning',
+ desc:'衍生时钟（Generated Clock）是由源时钟经分频、倍频、相移或门控产生的时钟。若在 SDC/SGDC 中未正确声明衍生时钟与源时钟的关系（create_generated_clock），SpyGlass 和 STA 工具会将其视为与源时钟完全异步的时钟，对两者之间的所有路径报告 CDC 违例，产生大量假违例；同时真正需要同步的路径也可能被漏报。',
+ root:'工具的时钟关系推断依赖 SDC 约束中的 clock_groups 和 generated_clock 声明。若衍生时钟未声明，工具默认两时钟之间没有已知相位关系（即异步），触发保守的 CDC 检查。反之，若错误地将两个真正异步的时钟声明为衍生关系，则会漏报真实的 CDC 违例。',
+ impact:'假违例大量涌现，淹没真实 CDC 问题，Signoff 效率极低；或因错误声明漏报真实 CDC 违例，芯片存在隐患。对于整数倍分频时钟，间路径已满足多周期时序约束但被工具误判为异步，会产生不必要的修复工作。',
+ fixDesc:'① 所有分频/门控衍生时钟必须在 SDC 中用 create_generated_clock 正确声明源时钟和分频比；② 在 SGDC 中声明时钟关系（同步/异步/互斥）；③ 对整数倍分频同步时钟间的路径，用 set_multicycle_path 放宽时序约束，无需 CDC 同步器。',
+ fixCode:`// SDC：声明衍生时钟
+create_clock -name clkA -period 10 [get_ports CLK_IN]
+create_generated_clock -name clkB_div2 \\
+  -source [get_ports CLK_IN] \\
+  -divide_by 2 \\
+  [get_pins u_div/CLK_OUT]
+// clkA 与 clkB_div2 为同步关系（整数倍分频）
+// 无需 CDC 同步器，但需多周期路径约束
+set_multicycle_path 2 -setup \\
+  -from [get_clocks clkA] \\
+  -to   [get_clocks clkB_div2]`,
+ sgdc:`# SGDC 声明时钟关系
+clock_group -name sync_grp \\
+  -synchronous {clkA clkB_div2}
+# 若两时钟真正异步（非整数倍分频）
+clock_group -name async_grp \\
+  -asynchronous {clkA clkC_pll}`,
+ waiveCond:'仅当通过详细时序分析确认衍生时钟与源时钟之间的所有路径已满足多周期时序约束，且不存在真正的亚稳态风险（相位关系完全已知且固定）。',
+ waiveCode:`waive -rule Ac_generated_clk01 \\
+  -from_clock clkA -to_clock clkB_div2 \\
+  -comment "clkB_div2 为 clkA 整数倍分频，SDC 已声明 generated_clock，MCP 约束满足"`,
+ waiveNote:'⚠ 衍生时钟声明错误是 CDC 假违例的最大来源之一。建议在项目早期完整建立时钟树规范文档，并在第一次 SpyGlass 运行前完成所有 create_generated_clock 声明。',
+ svgType:'clk_glitch',wfType:'clk_glitch'},
+
+{id:'ac_cdc_power01',ruleName:'Ac_cdc_power01',cat:7,title:'电源门控期间 CDC 路径状态丢失（State Retention）',sev:'Error',
+ desc:'当某个电源域（Power Domain）被关断时，跨越该域边界的 CDC 路径会失去状态：关断域内的寄存器状态丢失，常开域仍在运行并可能尝试读取已丢失的数据。若未使用状态保留寄存器（Retention Register）或未通过握手协议在关断前完成数据转移，重新上电后系统状态不一致，导致功能错误。',
+ root:'标准触发器在掉电后状态全部丢失。若跨电源域的 CDC 路径在域关断前未完成数据交换，或关断域内的同步器状态在重新上电后不确定，常开域将读取到无效数据。PMU 的关断时序与 CDC 数据传输时序之间的配合是问题根源。',
+ impact:'电源域重新上电后，系统处于不一致状态：关断域内寄存器被清零（或保留错误的上次值），但常开域的控制逻辑仍认为数据有效，产生功能错误；严重时导致芯片在低功耗场景下频繁挂死，且仅在特定功耗状态切换序列下复现。',
+ fixDesc:'① 对关键状态寄存器使用保留寄存器（Retention Register / Always-On FF）；② 在 PMU 关断前，通过握手协议将关断域内的重要状态保存到常开域或非易失存储器；③ 使用 UPF/CPF 声明保留策略，由工具自动插入保留单元；④ ISO Cell 与 Retention Register 必须配合使用。',
+ fixCode:`// UPF 声明状态保留策略
+create_power_domain -name PD_sw  -elements {u_data_proc}
+create_power_domain -name PD_aon -elements {u_ctrl}
+
+// 声明保留寄存器（关键状态）
+set_retention -domain PD_sw \\
+  -save_signal    {pmu_save    high} \\
+  -restore_signal {pmu_restore high} \\
+  -elements {u_data_proc/state_reg*}
+
+// RTL 层：关断前通过握手保存状态
+always @(posedge clk_sw)
+  if (pmu_shutdown_req) begin
+    state_save   <= current_state; // 保存到 AON 域
+    pmu_save_ack <= 1;             // 确认保存完成
+  end`,
+ sgdc:`# SpyGlass LP 模式声明保留寄存器
+retention_cell -name RETEN_FF \\
+  -save_pin SAVE -restore_pin RESTORE
+# 声明电源域
+power_domain -name PD_sw  -primary_power_net VDD_SW
+power_domain -name PD_aon -primary_power_net VDD_AON`,
+ waiveCond:'仅当经过完整的低功耗场景仿真（含所有关断/上电序列），确认：① 关断域内无需保留的状态在上电后会被正确初始化；② 跨域 CDC 路径在关断前已通过握手完成数据转移，且常开域有保护机制避免读取无效数据。',
+ waiveCode:`waive -rule Ac_cdc_power01 \\
+  -from PD_sw.state_reg -to PD_aon \\
+  -comment "关断前 PMU 握手保证数据转移完成，上电后初始化序列重建状态，低功耗仿真验证通过"`,
+ waiveNote:'⚠ 电源门控与 CDC 的交叉问题（CDC + Low Power）是最复杂的 SoC 设计挑战之一，需要 CDC 工程师、低功耗架构师和验证工程师三方联合分析，建议使用 SpyGlass LP+CDC 联合模式进行专项 lint。',
+ svgType:'mux_sync',wfType:'mux_sync'}
+
+
 ];
 
 const CATS = [
-  {name:'未同步跨时钟',icon:'🔴',ids:['ac_unsync01_s2f','ac_unsync01_f2s','ac_unsync02','ac_unsync03','ac_unsync04','ac_unsync05']},
-  {name:'同步结构（正确）',icon:'🟢',ids:['two_ff_sync','pulse_sync','handshake','async_fifo','mux_sync','three_ff_sync','open_loop_sync']},
-  {name:'聚合问题',icon:'🟡',ids:['ac_conv01','ac_conv02','ac_conv03','ac_conv04','ac_sync_reconv01','ac_conv05','ac_conv06']},
-  {name:'毛刺问题',icon:'🔴',ids:['ac_glitch01','ac_glitch02','ac_glitch03','ac_glitch04','ac_glitch05']},
-  {name:'数据保持问题',icon:'🔴',ids:['ac_cdc01','ac_datahold01a','ac_datahold01b','ac_datahold01c','ac_datahold02','ac_cdc02']},
-  {name:'复位同步',icon:'🟠',ids:['ar_unsync01','ar_asyncdeassert01','reset_sync_correct','ar_combo01','ar_unsync02','ar_domain01']},
-  {name:'特殊情况',icon:'🟡',ids:['ac_coherency06','clock_glitch05','ac_abstract_validation01','mutual_exclusive_clocks','false_path_cdc']}
+  {name:'未同步跨时钟',icon:'🔴',ids:['ac_unsync01_s2f','ac_unsync01_f2s','ac_unsync02','ac_unsync03','ac_unsync04','ac_unsync05','ac_unsync06']},
+  {name:'同步结构（正确）',icon:'🟢',ids:['two_ff_sync','pulse_sync','handshake','async_fifo','mux_sync','three_ff_sync','open_loop_sync','reset_sync_multi']},
+  {name:'聚合问题',icon:'🟡',ids:['ac_conv01','ac_conv02','ac_conv03','ac_conv04','ac_sync_reconv01','ac_conv05','ac_conv06','ac_conv07']},
+  {name:'毛刺问题',icon:'🔴',ids:['ac_glitch01','ac_glitch02','ac_glitch03','ac_glitch04','ac_glitch05','ac_glitch06']},
+  {name:'数据保持问题',icon:'🔴',ids:['ac_cdc01','ac_datahold01a','ac_datahold01b','ac_datahold01c','ac_datahold02','ac_cdc02','ac_datahold03']},
+  {name:'复位同步',icon:'🟠',ids:['ar_unsync01','ar_asyncdeassert01','reset_sync_correct','ar_combo01','ar_unsync02','ar_domain01','ar_seq01']},
+  {name:'特殊情况',icon:'🟡',ids:['ac_coherency06','clock_glitch05','ac_abstract_validation01','mutual_exclusive_clocks','false_path_cdc','ac_blackbox01']}
 
-  ,{name:'时钟域结构问题',icon:'🔵',ids:['ac_cdc_fanout01','ac_quasi_static01','ac_clkdomain01','ac_isolation01']}
+  ,{name:'时钟域结构问题',icon:'🔵',ids:['ac_cdc_fanout01','ac_quasi_static01','ac_clkdomain01','ac_isolation01','ac_generated_clk01','ac_cdc_power01']}
 ];
 
 // ===================== CIRCUIT ENGINE =====================
