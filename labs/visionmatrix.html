@@ -97,6 +97,11 @@
         nav .nav-links { display: flex; gap: 30px; }
         nav a { text-decoration: none; color: #ffffff; font-size: 14px; font-weight: 500; transition: color 0.2s; }
         nav a:hover { color: #8e8e93; }
+        @media (max-width: 900px) {
+            nav { padding: 15px 20px; }
+            nav .nav-links { gap: 15px; }
+            nav .nav-links a { font-size: 13px; }
+        }
 
         /* ── Floating Back Button ───────────────────────────────────── */
         #fabBack {
