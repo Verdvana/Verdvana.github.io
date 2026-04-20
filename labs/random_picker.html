@@ -113,8 +113,7 @@
     
     
     
-    .main{ flex: 1 1 auto; min-width: 0; }
-    .sb-top{ display:flex; align-items:center; gap: 10px; }
+
     
     
     
@@ -137,13 +136,7 @@
     
     
 
-    @media (max-width: 720px){
-      
-      .main{ margin-left: 64px; }
-      
-      body
-    }
-    @media print{  .main{ margin-left: 0; } }
+
 
     /* ====== App extra ====== */
     .mode-tabs{ display:flex; gap:10px; flex-wrap:wrap; }
@@ -232,19 +225,16 @@
 </nav>
 <main class="main" id="mainContent">
 <div class="wrap">
-<div class="topbar">
-<div class="brand">
-<div aria-hidden="true" class="brand-icon"></div>
-<div>
-<h1>随机抽取器（输入去重 / 开始停止 / 不放回可选）</h1>
-<div class="subtitle">输入框模式 / CSV 扁平拆分模式 / CSV 行聚合模式（每行一个元素；逗号列转空格；\, 转义为字面逗号）</div>
-</div>
+<header style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px;">
+<div style="flex:1;">
+<h1 style="margin:0; font-size: 24px; letter-spacing: -0.5px;">随机抽取器（输入去重 / 开始停止 / 不放回可选）</h1>
+<p style="margin:4px 0 0; opacity: 0.5; font-size: 13px;">输入框模式 / CSV 扁平拆分模式 / CSV 行聚合模式（每行一个元素；逗号列转空格；\, 转义为字面逗号）</p>
 </div>
 <div style="display:flex; gap:12px; align-items:center; flex-wrap:wrap; justify-content:flex-end;">
 
 <div class="pill"><span>🎲</span><span>逗号可用 <span style="font-family:var(--mono);">\,</span> 转义</span></div>
 </div>
-</div>
+</header>
 <div class="grid">
 <!-- 左：输入 -->
 <div class="card">

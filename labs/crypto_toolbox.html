@@ -140,57 +140,6 @@ footer.foot{text-align:center;padding:24px;color:var(--faint);font-size:12px;bor
 
       
 
-/* ====== Left sidebar (OpenAI-like) + overlay ====== */
-
-
-
-
-.main{ flex: 1 1 auto; min-width: 0; }
-
-.sb-top{ display:flex; align-items:center; gap: 10px; }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-/* Backdrop overlay (mobile when expanded) */
-
-
-
-/* Mobile: sidebar overlays content when expanded */
-@media (max-width: 720px){
-  
-  .main{ margin-left: 64px; }
-  
-  body
-}
-
-@media print{
-  
-  .main{ margin-left: 0; }
-}
-
-
-
-
         /* ── Fixed Navigation (from index.html) ─────────────────────── */
         nav {
             position: fixed;
@@ -288,18 +237,15 @@ footer.foot{text-align:center;padding:24px;color:var(--faint);font-size:12px;bor
 <main class="main" id="mainContent">
 <div class="wrap">
 <!-- Topbar -->
-<div class="topbar">
-<div class="brand">
-<div class="brand-icon"><i class="fa-solid fa-lock"></i></div>
-<div>
-<h1>在线加密工具箱</h1>
-<p class="subtitle">纯客户端 · 数据不上传 · 支持哈希 / 对称加密 / 编解码 / JWT 等</p>
-</div>
+<header style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px;">
+<div style="flex:1;">
+<h1 style="margin:0; font-size: 24px; letter-spacing: -0.5px;">在线加密工具箱</h1>
+<p style="margin:4px 0 0; opacity: 0.5; font-size: 13px;">纯客户端 · 数据不上传 · 支持哈希 / 对称加密 / 编解码 / JWT 等</p>
 </div>
 <div style="display:flex; gap:12px; align-items:center; flex-wrap:wrap; justify-content:flex-end;">
 
 </div>
-</div>
+</header>
 <!-- Tabs -->
 <div class="tabs">
 <button class="tab-btn active" onclick="switchTab('hash',this)"><i class="fa-solid fa-hashtag"></i> 哈希</button>

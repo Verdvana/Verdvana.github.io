@@ -313,56 +313,6 @@
 
       
 
-/* ====== Left sidebar (OpenAI-like) + overlay ====== */
-
-
-
-
-.main{ flex: 1 1 auto; min-width: 0; }
-
-.sb-top{ display:flex; align-items:center; gap: 10px; }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-/* Backdrop overlay (mobile when expanded) */
-
-
-
-/* Mobile: sidebar overlays content when expanded */
-@media (max-width: 720px){
-  
-  .main{ margin-left: 64px; }
-  
-  body
-}
-
-@media print{
-  
-  .main{ margin-left: 0; }
-}
-
-
-
         /* ── Fixed Navigation (from index.html) ─────────────────────── */
         nav {
             position: fixed;
@@ -459,13 +409,10 @@
 </nav>
 <main class="main" id="mainContent">
 <div class="wrap">
-<div class="topbar">
-<div class="brand">
-<div aria-hidden="true" class="brand-icon"></div>
-<div>
-<h1>房贷计算器（支持利率变更 &amp; 提前还款）</h1>
-<div class="subtitle">商贷 / 公积金 · 等额本息 / 等额本金 · 多次利率更新 · 提前还款（缩短年限 / 减少月供）</div>
-</div>
+<header style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px;">
+<div style="flex:1;">
+<h1 style="margin:0; font-size: 24px; letter-spacing: -0.5px;">房贷计算器（支持利率变更 &amp; 提前还款）</h1>
+<p style="margin:4px 0 0; opacity: 0.5; font-size: 13px;">商贷 / 公积金 · 等额本息 / 等额本金 · 多次利率更新 · 提前还款（缩短年限 / 减少月供）</p>
 </div>
 <div style="display:flex; gap:12px; align-items:center; flex-wrap:wrap; justify-content:flex-end;">
 
@@ -474,7 +421,7 @@
 <span>规则可按你的银行口径调整</span>
 </div>
 </div>
-</div>
+</header>
 <div class="grid">
 <!-- 左侧：输入 -->
 <div class="card">
