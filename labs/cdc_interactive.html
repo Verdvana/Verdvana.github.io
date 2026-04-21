@@ -79,7 +79,7 @@ body{background:var(--bg);color:var(--text);font-family:"Microsoft YaHei",Segoe 
   <span class="sub">基于 SpyGlass CDC Rules &amp; Qualcomm CDC Guidelines</span>
   <div style="display:flex;gap:6px;margin-left:auto">
     <span class="badge">SpyGlass VC</span>
-    <span class="badge">55 个场景</span>
+    <span class="badge">69 个场景</span>
     <span class="badge" style="color:#7090b0">← → 切换场景</span>
   </div>
 </div>
@@ -1266,20 +1266,364 @@ power_domain -name PD_aon -primary_power_net VDD_AON`,
   -comment "关断前 PMU 握手保证数据转移完成，上电后初始化序列重建状态，低功耗仿真验证通过"`,
  waiveNote:'⚠ 电源门控与 CDC 的交叉问题（CDC + Low Power）是最复杂的 SoC 设计挑战之一，需要 CDC 工程师、低功耗架构师和验证工程师三方联合分析，建议使用 SpyGlass LP+CDC 联合模式进行专项 lint。',
  svgType:'mux_sync',wfType:'mux_sync'}
+,{id:'ac_unsync07',ruleName:'Ac_unsync07',cat:0,title:'多驱动源CDC路径（Multiple Drivers）',sev:'Error',
+ desc:'同一目标域的触发器被来自多个不同时钟域的信号共同驱动（如多路选择器的多路输入分别来自clkA和clkB）。SpyGlass检测到该FF可能被多个异步时钟域的信号激励，报告多驱动源CDC违例。这是SoC数据通路MUX场景下常见但容易被忽视的问题。',
+ root:'多路选择器或组合逻辑汇聚了来自不同时钟域的路径。当sel切换时，目标FF在新旧时钟域数据的边界附近采样，亚稳态概率显著上升；同时sel信号本身若未经同步，也会引入额外的不确定性，使问题更加复杂。',
+ impact:'目标FF在时钟域切换瞬间采到不确定的中间值，产生亚稳态。问题仅在特定的sel切换时序下出现，随机仿真难以覆盖，量产后可能出现随机失效，定位难度极大。',
+ fixDesc:'①将多路输入统一收敛到同一时钟域后再经MUX选择（MUX前同步）；②若MUX必须跨域，对每路输入分别加2-FF同步器，sel信号也需单独同步；③或改用异步FIFO统一管理多源数据，彻底消除多驱动源问题。',
+ fixCode:`// ❌ 错误：MUX多路输入来自不同时钟域
+wire out = sel ? data_a : data_b;
+// data_a来自clkA，data_b来自clkB
+// sel切换时存在多源CDC风险！
 
+// ✅ 正确：MUX前分别同步各路输入到目标域clkC
+reg a_s1,a_s2,b_s1,b_s2;
+always @(posedge clkC or negedge rstn)
+  if(!rstn) {a_s2,a_s1,b_s2,b_s1} <= 4'b0;
+  else      {a_s2,a_s1,b_s2,b_s1} <= {a_s1,data_a,b_s1,data_b};
+
+// sel也需同步到clkC
+reg sel_s1, sel_sync;
+always @(posedge clkC or negedge rstn)
+  if(!rstn) {sel_sync,sel_s1} <= 2'b0;
+  else      {sel_sync,sel_s1} <= {sel_s1,sel};
+
+// MUX在目标域clkC中操作已同步数据
+wire out_safe = sel_sync ? a_s2 : b_s2;`,
+ sgdc:`# 对每路输入分别声明同步器
+sync_cell -name u_sync_a \\
+  -from_clk clkA -to_clk clkC \\
+  -cell_type flop2
+sync_cell -name u_sync_b \\
+  -from_clk clkB -to_clk clkC \\
+  -cell_type flop2
+# sel信号同步器
+sync_cell -name u_sel_sync \\
+  -from_clk clkA -to_clk clkC \\
+  -cell_type flop2`,
+ waiveCond:'仅当通过架构分析确认MUX的sel切换只发生在两路数据均稳定的窗口期，且经完整的功能仿真验证在所有sel切换场景下目标FF不处于亚稳态风险窗口。',
+ waiveCode:`waive -rule Ac_unsync07 \\
+  -from {data_a data_b} \\
+  -to dest_ff \\
+  -comment "sel切换时两路数据均已稳定，仿真验证所有切换场景通过"`,
+ waiveNote:'多驱动源CDC是SoC设计中容易被忽视的风险，尤其在数据通路MUX场景。建议在架构设计时明确规定：跨域MUX必须在目标时钟域内操作已充分同步的数据，禁止在MUX前混合不同时钟域的未同步信号。',
+ svgType:'conv03',wfType:'unsync_multi'}
+
+,{id:'cdc_model_correct',ruleName:'CDC_Model',cat:1,title:'层次化CDC模型声明（cdc_model正确结构）',sev:'Ok',
+ desc:'在层次化CDC分析中，Block级CDC通过cdc_model.tcl向SoC顶层声明端口的时钟域归属、同步状态和组合逻辑属性。正确完整的cdc_model声明是SoC级CDC分析准确性的基础，也是高通CDC Signoff流程的强制要求。',
+ root:'SoC级CDC分析需要了解每个子模块端口的时钟域信息。cdc_model通过-clk声明端口所属时钟域，通过-combo声明是否含组合逻辑，通过-direction声明输入/输出方向，使SpyGlass在SoC级分析时正确追踪跨域路径，避免Block内部已处理好的同步路径被顶层重复误报。',
+ impact:'正确结构。cdc_model完整准确时，SoC级CDC分析可精确识别真实跨域路径，大幅减少假违例；同时确保Block内部已收敛的同步路径不被SoC级重复分析，显著提升Signoff效率。高通规范要求所有IP在集成前必须提供完整的cdc_model。',
+ fixDesc:'Block CDC收敛后，由CDC Owner更新cdc_model.tcl，覆盖所有输入/输出/双向端口；SoC集成时通过read_file引用；高通标准流程要求每次RTL Freeze后必须重新验证cdc_model的完整性和准确性。',
+ fixCode:`# Block级cdc_model.tcl完整示例
+
+# 输出端口：由内部clkA域FF驱动，无组合逻辑
+cdc_model -port data_out[7:0] \\
+  -clk clkA -combo no -direction out
+
+# 输入端口：外部连接到clkB域信号
+cdc_model -port ctrl_in \\
+  -clk clkB -combo no -direction in
+
+# 输出端口：经组合逻辑驱动（combo yes）
+cdc_model -port status_out \\
+  -clk clkA -combo yes -direction out
+
+# 双向端口
+cdc_model -port bus[15:0] \\
+  -clk clkA -combo no -direction inout
+
+# 异步端口（需在顶层同步）
+cdc_model -port irq_out \\
+  -clk async -direction out`,
+ sgdc:`# SoC顶层引用各Block的cdc_model
+read_file -type sgdc \\
+  ./block_a/block_a_cdc_model.tcl
+read_file -type sgdc \\
+  ./block_b/block_b_cdc_model.tcl
+
+# 验证模型完整性（SpyGlass命令）
+# check_cdc_model -instance u_block_a
+# check_cdc_model -instance u_block_b`,
+ waiveCond:'此为正确结构，无需waive。若工具报告cdc_model声明不完整（缺少端口），必须补充缺失的端口声明，不可用waive代替补全。',
+ waiveCode:`# 此为正确结构，无需waive
+# 若收到 cdc_model_incomplete 告警，
+# 请补全所有缺失端口的 cdc_model 声明`,
+ waiveNote:'高通内部规定：cdc_model.tcl由Block CDC Owner维护，每次RTL Freeze后必须更新并经CDC Owner签字确认。SoC集成工程师负责验证所有Block的cdc_model版本与当前RTL版本严格一致，版本不一致时禁止进行SoC级CDC Signoff。',
+ svgType:'coherency',wfType:'two_ff_sync'}
+
+,{id:'ac_conv08',ruleName:'Ac_conv08',cat:2,title:'格雷码解码后直接聚合违例',sev:'Warning',
+ desc:'异步FIFO的格雷码指针在目标域经2-FF同步后，进行格雷码到二进制的解码操作（纯组合逻辑）。解码后的二进制指针直接与其他信号在FF前组合逻辑中聚合，产生聚合违例。这是异步FIFO设计中常见的"同步正确但聚合违规"问题。',
+ root:'格雷码同步保证了指针传输的安全性，但格雷码到二进制的解码是纯组合逻辑。解码输出的各bit在组合逻辑传播过程中存在时序差异。若解码结果直接与其他同步信号在FF前聚合，各路信号到达时刻不同，可能在某时钟周期产生短暂的非法中间值被后级FF采样。',
+ impact:'解码后的二进制指针与其他信号聚合时，可能在某个时钟周期出现短暂的非法中间值，导致FIFO满/空判断短暂出错，引发偶发性的数据溢出或下溢。问题出现概率低但极难复现，只在特定指针差值的边界条件下触发。',
+ fixDesc:'方案1：格雷码解码后在目标时钟域寄存一拍，消除组合逻辑传播的时序不确定性，再与其他信号聚合。方案2（推荐）：直接在格雷码域完成满/空比较，避免解码带来的时序问题，FIFO满/空判断逻辑可直接基于格雷码指针实现。',
+ fixCode:`// ❌ 问题：格雷码解码后立即在组合逻辑中聚合
+wire [3:0] bin_ptr = gray2bin(wptr_gray_sync); // 组合逻辑解码
+assign full = (bin_ptr == rptr_bin); // 立即聚合 → 违例！
+
+// ✅ 修复方案1：解码后寄存一拍再聚合
+reg [3:0] bin_ptr_r;
+always @(posedge clk_dst or negedge rstn)
+  if(!rstn) bin_ptr_r <= 4'b0;
+  else      bin_ptr_r <= gray2bin(wptr_gray_sync);
+assign full = (bin_ptr_r == rptr_r); // 安全聚合
+
+// ✅ 修复方案2（推荐）：直接在格雷码域比较
+assign full  = (wptr_gray == rptr_gray_sync);
+assign empty = (rptr_gray == wptr_gray_sync);`,
+ sgdc:`# 声明格雷码指针为gray_signal
+gray_signal -name wptr_gray[3:0]
+gray_signal -name rptr_gray[3:0]
+
+# 声明同步器
+sync_cell -name u_wptr_sync \\
+  -from_clk clk_wr -to_clk clk_rd \\
+  -cell_type flop2
+sync_cell -name u_rptr_sync \\
+  -from_clk clk_rd -to_clk clk_wr \\
+  -cell_type flop2`,
+ waiveCond:'当FIFO深度设计留有足够裕量（如满标志在实际满之前N个条目触发，N>=2），且通过完整的边界条件功能仿真验证在所有指针差值下满/空判断无误，可以考虑waive。',
+ waiveCode:`waive -rule Ac_conv08 \\
+  -from bin_ptr -to full_flag \\
+  -comment "FIFO裕量>2，边界仿真验证满/空判断无误差"`,
+ waiveNote:'FIFO满/空判断逻辑是异步FIFO正确性的关键。强烈建议直接在格雷码域实现满/空比较，从根本上规避解码组合逻辑的时序不确定性，这也是业界异步FIFO设计的最佳实践。',
+ svgType:'conv01',wfType:'conv01'}
+
+,{id:'ac_glitch07',ruleName:'Ac_glitch07',cat:3,title:'复位释放瞬间跨域数据通路毛刺',sev:'Error',
+ desc:'复位信号释放（Deassert）瞬间，多个时钟域的FF同时退出复位开始工作。若跨域数据通路上的源域FF退出复位早于目标域，源域FF已开始驱动数据（通常为复位默认值0），而目标域同步器退出复位后的第一个时钟沿可能采到这个"无效"的初始值，在协议上造成误采，类似复位边沿产生的跨域毛刺。',
+ root:'不同时钟域的复位释放时刻相对各自时钟域内对齐，但跨域时两个域的"第一个有效时钟沿"不同步。源域FF在clkA的第一个沿产生输出（可能是复位默认值0），此时目标域同步器的第一级FF可能已退出复位并开始采样这个0值，触发协议状态机的错误响应。',
+ impact:'系统复位释放后，目标域在第一个时钟周期采到错误的初始值（来自源域复位状态而非正常握手数据），导致初始化状态机进入错误状态。问题仅在上电复位场景下出现，若初始值恰好为0且功能上合法，则仿真无法发现。',
+ fixDesc:'①使用复位序列控制器保证源域FF完成初始化输出有效初始值后，再释放目标域的复位；②在协议上增加"数据有效"握手信号（valid），目标域在收到同步后的valid信号后才使用跨域数据；③或采用power-on-reset后的专用初始化序列，在复位释放后执行固定周期的初始化握手。',
+ fixCode:`// ❌ 问题：复位释放时序无保证
+// clkA域rstn先释放 → clkA FF输出复位默认值0
+// clkB域rstn后释放 → clkB同步器采到0
+// 0是复位默认值还是有效数据？无法区分！
+
+// ✅ 修复方案：增加数据有效标志
+// clkA域：初始化完成后拉高 data_valid
+reg data_valid_a;
+always @(posedge clkA or negedge rstn_a)
+  if(!rstn_a)        data_valid_a <= 1'b0;
+  else if(init_done) data_valid_a <= 1'b1;
+
+// data_valid经2-FF同步到clkB域
+reg dv_s1, dv_sync;
+always @(posedge clkB or negedge rstn_b)
+  if(!rstn_b) {dv_sync,dv_s1} <= 2'b0;
+  else        {dv_sync,dv_s1} <= {dv_s1,data_valid_a};
+
+// clkB域：只有dv_sync有效后才使用跨域数据
+assign use_data = dv_sync & data_from_a_sync;`,
+ sgdc:`# 声明数据有效标志同步器
+sync_cell -name u_dv_sync \\
+  -from_clk clkA -to_clk clkB \\
+  -cell_type flop2
+# 声明数据同步器
+sync_cell -name u_data_sync \\
+  -from_clk clkA -to_clk clkB \\
+  -cell_type flop2
+# 声明复位同步器
+reset_sync -name u_rstn_sync_a \\
+  -clk clkA
+reset_sync -name u_rstn_sync_b \\
+  -clk clkB`,
+ waiveCond:'仅当协议设计保证：复位释放后源域输出的初始值（通常0）在功能上与任何有效数据值不冲突，目标域采到初始值不会触发任何错误行为，且经覆盖所有复位时序组合的完整上电场景仿真验证无误。',
+ waiveCode:`waive -rule Ac_glitch07 \\
+  -from rstn_release -to data_path \\
+  -comment "初始值0为合法空闲值，上电复位场景全覆盖仿真验证通过"`,
+ waiveNote:'复位释放时序引起的跨域问题是上电场景的特有问题，必须在验证计划中包含专项上电复位场景，覆盖所有时钟域复位释放时序的先后组合（最差情况：各域复位释放时刻差异最大的场景）。',
+ svgType:'rst_unsync',wfType:'rst_unsync'}
+
+,{id:'ac_datahold04',ruleName:'Ac_datahold04',cat:4,title:'CDC路径含锁存器（Latch）违例',sev:'Error',
+ desc:'跨时钟域数据路径中包含电平敏感锁存器（Latch），而非边沿触发触发器（FF）。Latch在使能信号有效期间输出随输入实时变化（透明状态），无法提供明确的时序边界，使CDC分析工具无法确定数据的稳定窗口，产生不可分析或违例报告。',
+ root:'CDC分析依赖FF的时钟沿提供明确的数据稳定时间点。Latch的透明窗口使数据稳定时间不确定：若Latch在使能有效期间源时钟域数据发生变化，Latch输出实时跟随变化，目标域同步器的第一级FF可能采到过渡中间值，产生亚稳态。',
+ impact:'目标域同步器的第一级FF可能采到Latch在透明窗口内的过渡值（既非旧值也非新值），产生功能错误；同时SpyGlass无法对含Latch的CDC路径给出确定性分析结论，CDC lint报告可信度受影响，可能导致真实违例被掩盖。',
+ fixDesc:'跨时钟域路径上严禁使用Latch，必须替换为边沿触发FF。将Latch替换为FF后，数据在时钟沿采样，稳定时间明确，满足CDC分析前提。若Latch是为节省面积而刻意使用，需在架构层面重新评估。',
+ fixCode:`// ❌ 错误：跨域路径含Latch（电平敏感）
+always @(en or data_a)
+  if(en) latch_out = data_a; // 透明Latch！
+
+// latch_out直接驱动跨域同步器 → 稳定窗口不确定
+reg sync1, sync2;
+always @(posedge clkB)
+  {sync2, sync1} <= {sync1, latch_out}; // 危险！
+
+// ✅ 正确：替换为边沿触发FF
+reg ff_out;
+always @(posedge clkA or negedge rstn)
+  if(!rstn)    ff_out <= 1'b0;
+  else if(en)  ff_out <= data_a; // 边沿采样，稳定时间明确
+
+// ff_out再驱动同步器，安全
+reg sync1, sync2;
+always @(posedge clkB or negedge rstn)
+  {sync2, sync1} <= {sync1, ff_out}; // 安全`,
+ sgdc:`# Latch路径不应在SGDC中被豁免
+# 正确做法：替换为FF，直接声明标准同步器
+sync_cell -name u_sync \\
+  -from_clk clkA -to_clk clkB \\
+  -cell_type flop2
+
+# 若极少数情况Latch不可避免（强烈不推荐）：
+# 只能在Latch保持状态时声明为quasi_static
+# quasi_static -name latch_out`,
+ waiveCond:'极度不建议waive。仅当通过STA全工艺角（SS/FF/TT）确认Latch使能信号在目标域所有采样时刻均已完全失效（Latch处于稳定保持状态，无任何翻转风险），且经CDC Owner和STA Owner联合签字确认。',
+ waiveCode:`waive -rule Ac_datahold04 \\
+  -from latch_out -to dest_ff \\
+  -comment "STA全工艺角确认Latch使能在目标域采样时已失效，CDC+STA Owner联合确认"`,
+ waiveNote:'⚠ 跨时钟域路径上使用Latch是ASIC设计的严重违规。高通CDC规范明确禁止在CDC路径上使用Latch，任何此类结构必须在架构设计阶段消除，绝不允许带入Tapeout流程。',
+ svgType:'datahold',wfType:'datahold'}
+
+,{id:'ac_sdc_cdc_conflict',ruleName:'SDC_CDC_Conflict',cat:6,title:'SDC时序约束与CDC分析结论冲突',sev:'Warning',
+ desc:'STA（静态时序分析）使用的SDC约束与CDC lint分析的SGDC约束存在逻辑冲突：SDC将某路径设为false_path或multicycle_path而CDC分析认为该路径需要同步器；或SGDC声明了合法同步结构而SDC对同步器路径施加了过宽松的时序约束，导致两个分析结论互相矛盾，无法给出可信的Signoff结论。',
+ root:'STA和CDC是两个独立的分析框架，SDC和SGDC约束需要保持一致。常见冲突：①SDC用set_false_path豁免了CDC lint需要同步的跨域路径；②SDC对CDC同步器路径使用set_multicycle_path放宽时序，导致同步器实际不满足建立时间；③时钟域在SDC（create_clock）和SGDC（domain声明）中名称或频率不匹配。',
+ impact:'SDC与SGDC冲突导致Signoff结论不可信：可能出现"STA通过但CDC失败"或"CDC通过但STA失败"的矛盾。更危险的情况：两个工具各自独立通过，但实际电路同时存在时序和亚稳态双重风险，导致量产后出现无法复现的随机失效。',
+ fixDesc:'①建立SDC与SGDC联合审查机制，所有set_false_path必须与CDC分析结论逐一对照；②CDC同步器路径在SDC中必须按单周期约束，严禁set_multicycle_path放松；③时钟定义在SDC和SGDC中名称和频率必须完全一致；④建立自动化的SDC-SGDC一致性检查脚本，每次约束文件更新后自动触发。',
+ fixCode:`// 典型冲突案例分析
+
+// ❌ 冲突1：SDC豁免了CDC需要同步的路径
+// SDC: set_false_path -from [get_clocks clkA] -to [get_clocks clkB]
+// SGDC: sync_cell -name u_sync -from_clk clkA -to_clk clkB
+// 结果：STA不检查该路径，但CDC要求有效同步 → 矛盾！
+
+// ❌ 冲突2：SDC放宽了同步器时序
+// SDC: set_multicycle_path 2 -from u_sync/Q -to u_sync2/D
+// 结果：同步器第一级FF时序裕量不足未被检查 → 危险！
+
+// ✅ 正确：CDC同步器路径按默认单周期约束
+// SDC中不加任何特殊约束，让工具按单周期检查同步器路径
+// 只对确认无功能关系的真正异步路径使用set_false_path:
+// set_false_path -from [get_ports async_in]  ← 仅外部异步信号`,
+ sgdc:`# SGDC时钟域声明必须与SDC create_clock一致
+# SDC: create_clock -name clkA -period 10 [get_ports CLK_A]
+# SGDC下面的时钟名称、频率必须与SDC完全匹配
+domain -name domA -clock clkA  # 名称一致！
+
+# CDC同步器声明
+sync_cell -name u_sync \\
+  -from_clk clkA -to_clk clkB \\
+  -cell_type flop2
+# 对应SDC：该路径不得有false_path或multicycle_path约束
+
+# SDC-SGDC一致性检查（推荐自动化脚本）
+# check_sdc_sgdc_consistency -report ./sdc_sgdc_delta.rpt`,
+ waiveCond:'当SDC与SGDC冲突经人工审查确认为工具版本差异或约束管理误操作导致的已知不一致，实际电路已通过独立功能验证和STA确认无风险，且经STA工程师和CDC Owner联合签字确认后，可在限定期限内申请临时waive。',
+ waiveCode:`waive -rule SDC_CDC_Conflict \\
+  -from_clock clkA -to_clock clkB \\
+  -comment "STA与CDC Owner联合审查确认，SDC约束已对齐，过渡期临时waive，下版本修复"`,
+ waiveNote:'⚠ SDC与SGDC约束一致性是Signoff质量的基础。强烈建议在CI/CD流程中集成"SDC-SGDC交叉检查"步骤，每次约束文件提交后自动触发一致性验证，防止约束漂移积累成Tapeout风险。',
+ svgType:'coherency',wfType:'two_ff_sync'}
+
+
+
+
+,{id:'ac_unsync08',ruleName:'Ac_unsync08',cat:0,title:'FIFO写满溢出——跨域数据覆盖',sev:'Error',
+ desc:'发送端时钟域持续向异步FIFO写入数据，但因未正确检测写满信号（或深度设计不足），导致新数据覆盖旧数据，接收端读取到错误内容。与Ac_unsync04（格雷码指针未使用）不同，此场景FIFO结构本身正确，问题在于流控逻辑缺失或深度评估错误。',
+ root:'FIFO深度设计不足（未考虑最大突发传输长度）；或写端未正确采样满信号（经同步后存在1-2周期延迟，未预留Margin）；或接收端读取速率长期低于写入速率。',
+ impact:'数据静默丢失，可能导致协议帧错误、寄存器配置丢失等严重功能故障；在验证阶段难以复现，极易在流片后暴露。',
+ fixDesc:'①重新评估FIFO深度：深度 = 最大突发长度 + 同步延迟Margin（通常+4~8拍）；②写端在满信号同步后提前1-2拍停写（加Back-pressure）；③增加FIFO几乎满/溢出计数器连接告警中断；④RTL仿真中加入SVA断言覆盖溢出边界场景。',
+ fixCode:`// 修正：写端加 almost_full Back-pressure，提前停写\nalways @(posedge clk_wr or negedge rst_n) begin\n  if (!rst_n) wr_en <= 1'b0;\n  // almost_full 提前1拍预警（threshold = DEPTH-2）\n  else wr_en <= data_valid && !almost_full_sync;\nend\n// 深度计算示意：burst_max=64，sync延迟=3，margin=5\n// 最小深度 = 64+3+5=72 → 取 DEPTH=128\n// SVA断言示例\n// assert property (@(posedge clk_wr) !(full && wr_en));`,
+ sgdc:`gray_signal -name wptr_gray[PTR_W:0]\ngray_signal -name rptr_gray[PTR_W:0]\nsync_cell -name u_full_sync -from_clk clk_wr -to_clk clk_rd\n# almost_full 同步器\nsync_cell -name u_afull_sync -from_clk clk_wr -to_clk clk_rd`,
+ waiveCond:'仅当系统级文档明确证明：最大写入突发长度 ≤ FIFO深度 - 同步延迟Margin，且硬件流控保证写侧不会在满状态继续写入时，才可waive。',
+ waiveCode:`waive -rule Ac_unsync08 \\\n  -inst {u_fifo} \\\n  -comment "FIFO depth=128, max burst=64, sync latency=3; back-pressure guaranteed by upstream arbiter (doc: CDC_FIFO_REVIEW_v2.1)"`,
+ waiveNote:'Waive前必须在仿真/形式验证中覆盖最坏情况突发写入场景，waive注释须注明FIFO深度、最大突发长度、同步延迟及设计文档版本号。',
+ svgType:'async_fifo',wfType:'unsync_multi'}
+
+,{id:'two_phase_handshake',ruleName:'正确结构',cat:1,title:'两相握手同步（正确结构）',sev:'Ok',
+ desc:'两相握手（2-Phase / Toggle Handshake）：发送端每次请求时翻转 req 电平（Toggle），接收端检测到电平变化即采样数据，处理完成后翻转 ack 电平。无需 Return-to-zero，吞吐量比四相握手高约1倍，适用于低频控制信号或单比特脉冲传递。',
+ root:'N/A（正确结构，供参考）',
+ impact:'N/A',
+ fixDesc:'①req用边沿翻转而非高脉冲，避免脉冲宽度问题；②req进入接收域前加2级同步FF；③ack同理翻转且经同步后返回发送域；④发送端在req_toggle发出后等待ack_sync与上次ack不同后再发下一次请求；⑤与四相握手相比无Deassert等待阶段，适合高频控制传递。',
+ fixCode:`// ── 两相握手发送端 ──\nreg req_toggle;\nalways @(posedge clk_a or negedge rst_a_n) begin\n  if (!rst_a_n) req_toggle <= 0;\n  else if (send_req && !busy_a)\n    req_toggle <= ~req_toggle; // 每次请求翻转\nend\n// ── 接收端：2-FF同步 + 边沿检测 ──\nreg req_s1, req_s2, req_s2_d;\nalways @(posedge clk_b or negedge rst_b_n) begin\n  if (!rst_b_n) {req_s1,req_s2,req_s2_d} <= 3'b0;\n  else {req_s1,req_s2,req_s2_d} <= {req_toggle,req_s1,req_s2};\nend\nassign new_req = (req_s2 != req_s2_d); // 电平变化即为新请求`,
+ sgdc:`# 声明 req_toggle 和 ack_toggle 为跨域同步路径\nsync_cell -name u_req_sync \\\n  -from_clk clk_a -to_clk clk_b\nsync_cell -name u_ack_sync \\\n  -from_clk clk_b -to_clk clk_a\n# 数据信号声明为准静态（保持有效直到ack回来）\nquasi_static -name data_latch`,
+ waiveCond:'N/A（正确结构，工具通常不报违例；若工具误报 req_toggle 为未同步单比特信号，参照waiveCode处理）',
+ waiveCode:`waive -rule Ac_unsync01 \\\n  -signal {req_toggle} \\\n  -comment "Two-phase handshake: req_toggle synchronized by 2FF in clk_b domain; toggle protocol verified"`,
+ waiveNote:'两相握手的Toggle信号容易被工具误识别为未同步单比特信号，建议在SGDC中显式声明sync_cell，并在waiver注释中说明验证方式。',
+ svgType:'handshake',wfType:'handshake'}
+
+,{id:'ac_conv09',ruleName:'Ac_conv09',cat:2,title:'多级流水线寄存后跨域聚合',sev:'Warning',
+ desc:'信号A从clkA域经过多级寄存器流水线（Pipeline）到达clkB，另一条路径的信号B直接从clkA跨到clkB（路径更短）。两者在clkB域的逻辑锥中聚合，但由于流水延迟不同，聚合时数据窗口不匹配，形成隐式聚合违例（Implicit Reconvergence）。工具可能报Ac_conv或Ac_sync_reconv。',
+ root:'多路CDC信号在时序上存在流水深度差异，未对齐同步窗口即在目的域合并使用；常见于协议控制信号（经流水）与数据有效信号（直接跨域）聚合的场景。',
+ impact:'聚合逻辑在某些传输中采样到"旧数据+新控制"或"新数据+旧控制"的组合，产生功能错误，且在随机仿真中难以触发，属于高风险潜伏缺陷。',
+ fixDesc:'①在接收域重新对齐：统一同步至同一流水级深度后再使用；②增加Pipeline对齐寄存器，使短路径信号在clkB侧额外打拍以匹配长路径延迟；③使用握手或FIFO代替裸同步，确保控制与数据成对到达；④SGDC中显式声明聚合关系，帮助工具正确分析。',
+ fixCode:`// 修正前：data_b经1拍同步，ctrl_b已经过3级流水\n//   聚合时ctrl_b比data_b晚2拍 → 数据窗口不对齐\n// 修正后：在接收域对data_b追加2级对齐寄存器\nreg data_b_d1, data_b_d2;\nalways @(posedge clk_b) begin\n  data_b_d1 <= data_b_sync;   // 对齐第1拍\n  data_b_d2 <= data_b_d1;     // 对齐第2拍（与ctrl_b流水深度相同）\nend\n// 聚合使用对齐后的信号\nassign result = data_b_d2 & ctrl_b_pipe3; // 安全`,
+ sgdc:`# 显式声明聚合路径关系，说明对齐设计意图\ncdc_filter_coherency \\\n  -unrelated data_b_sync ctrl_b_pipe3 \\\n  -comment "Pipeline aligned: data_b delayed 2 extra FF stages to match ctrl_b depth"`,
+ waiveCond:'仅当通过形式验证或详细波形仿真确认，在所有操作模式下两路信号在聚合点的时序窗口始终对齐时，才可waive。',
+ waiveCode:`waive -rule Ac_conv09 \\\n  -inst {u_cdc_merge} \\\n  -comment "Pipeline reconvergence: data path realigned with 2 extra FF in clk_b; FV property verified"`,
+ waiveNote:'多级流水聚合错误极为隐蔽，waive前必须在形式验证工具（如JasperGold）中对聚合窗口进行专项验证，并将property名称写入waiver注释。',
+ svgType:'conv01',wfType:'conv01'}
+
+,{id:'ac_glitch08',ruleName:'Ac_glitch08',cat:3,title:'低功耗唤醒时钟切换毛刺',sev:'Error',
+ desc:'系统从低功耗睡眠模式唤醒时，时钟选择MUX从低速时钟（如RTC 32kHz）切换到高速时钟（如PLL 1GHz）。若切换时机不在时钟低电平期间完成，会在时钟输出端产生毛刺脉冲，导致下游寄存器误触发、FSM状态跳变或关键配置寄存器被错误写入。与ac_glitch06（扫描时钟切换）不同，此场景发生在功能模式的正常工作流程中。',
+ root:'时钟MUX切换控制信号与时钟上升沿存在竞争；PLL锁定后立即切换但未等待PLL输出稳定；时钟门控单元（ICG）切换时序不当；多级MUX级联时各级切换时序未对齐。',
+ impact:'下游寄存器采样到毛刺时钟边沿，导致数据错误捕获；FSM可能进入非法状态；若发生在配置寄存器写入时钟路径，可能导致芯片配置错误，难以软件复位恢复。',
+ fixDesc:'①使用Glitch-free MUX：确保选择信号仅在时钟低电平期间切换（双域同步ICG组合）；②切换序列：先关旧时钟→更新sel→等待1个旧时钟周期→开新时钟；③确认PLL锁定标志（lock）经同步后再触发切换；④低功耗IP文档中明确时钟切换时序spec并写入SDC约束。',
+ fixCode:`// Glitch-free 双域同步时钟切换\n// 旧时钟域：同步sel，低电平时关旧时钟\nreg sel_old1, sel_old2;\nalways @(posedge clk_old or negedge rst_n) begin\n  if (!rst_n) {sel_old1,sel_old2} <= 2'b0;\n  else        {sel_old1,sel_old2} <= {sel, sel_old1};\nend\nassign clk_old_en = !sel_old2;\n// 新时钟域：同步!sel，低电平时开新时钟\nreg sel_new1, sel_new2;\nalways @(posedge clk_new or negedge rst_n) begin\n  if (!rst_n) {sel_new1,sel_new2} <= 2'b11;\n  else        {sel_new1,sel_new2} <= {!sel, sel_new1};\nend\nassign clk_new_en = sel_new2;\nassign clk_out = (clk_old & clk_old_en) | (clk_new & clk_new_en);`,
+ sgdc:`clock_mux -name u_clk_mux \\\n  -select sel_old2 \\\n  -in_clocks {clk_old clk_new} \\\n  -out_clock clk_out\nglitchfree_cell -names CLKMUX_GF -type clock`,
+ waiveCond:'仅当时钟切换电路经过IP级仿真验证（覆盖最坏情况切换时序）且低功耗仿真通过时，才可对切换毛刺路径进行waive。',
+ waiveCode:`waive -rule Ac_glitch08 \\\n  -inst {u_clk_mux} \\\n  -comment "Glitch-free MUX: dual-domain ICG sync; verified in PM_SIM (CLK_MUX_VERIFY_v1.2)"`,
+ waiveNote:'功能模式时钟切换毛刺属于高优先级安全隐患，waive必须附上IP验证报告编号，并由时钟设计负责人签字确认。',
+ svgType:'clk_glitch',wfType:'clk_glitch'}
+
+,{id:'ac_datahold05',ruleName:'Ac_datahold05',cat:4,title:'复位释放期间跨域多比特数据保持违例',sev:'Error',
+ desc:'发送域clkA在复位释放后立即输出有效多比特数据，接收域clkB此时可能仍处于复位状态或刚完成复位。在clkB复位释放的第一个上升沿，部分数据位已变化而同步器尚未稳定，导致接收侧采样到亚稳态或错误数据。常见于具有独立PDN的多电源域设计及多时钟域SoC上电场景。',
+ root:'多电源域复位释放顺序不一致；clkA域复位释放早于clkB域，但数据在复位后立即有效；同步器在clkB复位期间被强制清零，掩盖了转换过程中的中间态。',
+ impact:'上电初始化或低功耗唤醒时，跨域配置数据被错误采样，可能导致系统初始化失败、寄存器默认值错误；在系统压力测试或极端温度下更容易触发。',
+ fixDesc:'①设计复位释放顺序控制器（Reset Sequencer），确保clkB域的复位在clkA域数据稳定至少2个clkB周期后才释放；②在clkA域增加"数据有效"标志信号并握手传递到clkB；③同步器采用带异步复位的2-FF结构，确保复位释放时第一个数据采样是已知安全值（0）；④SDC中用set_max_delay -datapath_only约束跨域复位路径。',
+ fixCode:`// 复位释放顺序控制器\n// 确保 rst_b_n 在 rst_a_n 释放后延迟4拍才释放\nreg [2:0] rst_cnt;\nreg rst_b_n_r;\nalways @(posedge clk_b or negedge por_n) begin\n  if (!por_n) begin\n    rst_cnt   <= 3'd0;\n    rst_b_n_r <= 1'b0;\n  end else if (!rst_b_n_r) begin\n    if (rst_a_sync && rst_cnt < 3'd4)\n      rst_cnt <= rst_cnt + 1'b1;\n    else if (rst_cnt == 3'd4)\n      rst_b_n_r <= 1'b1; // 延迟释放\n  end\nend\nassign rst_b_n = rst_b_n_r;`,
+ sgdc:`sync_cell -name u_rst_a -reset -to_clk clkA\nsync_cell -name u_rst_b -reset -to_clk clkB\nreset -name por_n -async -value 0\n# 复位期间数据路径声明为准静态\nquasi_static -name cfg_data`,
+ waiveCond:'仅当复位释放顺序由硬件控制器严格保证，且仿真覆盖了上电/唤醒/软复位多种复位序列下的数据保持行为时，才可waive。',
+ waiveCode:`waive -rule Ac_datahold05 \\\n  -from {cfg_data} -to clkB_domain \\\n  -comment "Reset sequencer guarantees rst_b_n delayed 4+ clkB cycles; verified in POR/LPM sim"`,
+ waiveNote:'复位期间数据保持违例在低功耗设计中极为常见且危险。waive前必须确认复位控制器已通过独立仿真验证，并注明所有复位场景（上电、软复位、低功耗唤醒）均已覆盖。',
+ svgType:'datahold',wfType:'datahold'}
+
+,{id:'ar_fanout01',ruleName:'Ar_fanout01',cat:5,title:'复位树高扇出导致复位时序偏差',sev:'Warning',
+ desc:'单一复位源（如全局POR或软件触发复位）直接驱动大量（数百至数千）寄存器的异步复位端。复位树未经缓冲或平衡，不同叶子节点的复位信号到达时间存在明显偏差（Reset Skew）。当复位释放时，某些寄存器先于其他寄存器退出复位，在极短窗口内形成"半复位"状态，可能触发未预期的逻辑行为。',
+ root:'复位信号未经复位树（Reset Tree）缓冲平衡，直接高扇出驱动大量触发器；布线工具将复位信号视为普通信号优化，导致路径长度严重不均匀；低功耗模式下复位树部分断电后唤醒，偏差更加明显。',
+ impact:'复位释放时序不一致，逻辑电路在"半复位"窗口内出现功能异常；在高速设计中复位偏差可能超过一个时钟周期，使某些寄存器在其他寄存器开始工作前已采样到无效数据。',
+ fixDesc:'①SDC中声明复位信号为理想网络（set_ideal_network）以要求物理实现工具平衡复位树；②将复位树拆分为层级缓冲树（Reset Buffer Tree），限制每级扇出（通常≤64）；③使用统一的复位同步器输出作为各域复位源，而不是直接使用原始复位信号；④SDC加入set_max_delay -from [get_ports rst_n]限制复位路径最大延迟。',
+ fixCode:`// RTL层面：使用标准化复位同步器统一产生各域复位\nmodule rst_sync (\n  input  wire clk, async_rst_n,\n  output reg  sync_rst_n\n);\n  reg rst_meta;\n  // ASYNC_REG属性使物理实现工具将两FF放置靠近\n  (* ASYNC_REG = "TRUE" *)\n  always @(posedge clk or negedge async_rst_n) begin\n    if (!async_rst_n) {rst_meta, sync_rst_n} <= 2'b00;\n    else              {rst_meta, sync_rst_n} <= {1'b1, rst_meta};\n  end\nendmodule\n// SDC: set_ideal_network [get_ports rst_n]\n// SDC: set_max_delay 2.0 -from [get_ports rst_n]`,
+ sgdc:`sync_cell -name u_rst_a -reset -to_clk clkA\nsync_cell -name u_rst_b -reset -to_clk clkB\nreset -name rst_n -async -value 0\n# 物理实现后通过PnR时序报告确认复位树偏差`,
+ waiveCond:'仅当综合及物理实现报告证明复位树偏差（Reset Skew）在功能时序窗口内（通常 < 0.5倍最小时钟周期），且未发现复位期间逻辑功能异常时，可waive此警告。',
+ waiveCode:`waive -rule Ar_fanout01 \\\n  -signal {rst_n} \\\n  -comment "Reset tree: 3-level buffer hierarchy, fanout per stage ≤32; skew < 200ps in PnR timing report TS_RESET_TREE_v2.3"`,
+ waiveNote:'复位高扇出违例必须配合物理实现（PnR）时序报告一起评估，纯RTL/CDC lint层面无法确认复位偏差，waiver注释须引用PnR时序报告版本号。',
+ svgType:'rst_unsync',wfType:'rst_unsync'}
+
+,{id:'ac_no_sync01',ruleName:'Ac_no_sync01',cat:6,title:'不可解析CDC路径（工具无法追踪同步结构）',sev:'Warning',
+ desc:'SpyGlass CDC工具在分析跨时钟域路径时，因以下原因无法确定路径是否经过有效同步器：①路径中存在黑盒（Blackbox）IP，工具无法看穿内部结构；②约束文件（SGDC）中缺少对该路径的时钟声明；③路径经过复杂条件赋值或多层组合逻辑后时钟域信息丢失；④路径跨越多层层次且中间层未声明时钟域。工具保守地将其报告为潜在未同步路径。',
+ root:'SGDC约束不完整（遗漏时钟声明或黑盒模型）；设计层次过深导致工具无法跨层追踪；黑盒IP未提供CDC模型；复杂组合逻辑打断了工具的时钟域追踪链路。',
+ impact:'若实际路径确实缺少同步器，则存在亚稳态风险；若仅为工具分析局限导致误报，掩盖此条报告可能使真实违例被忽视。不可解析路径是CDC分析中的"灰色地带"，需逐条人工核查。',
+ fixDesc:'①补充SGDC约束：为所有顶层端口和黑盒输入输出显式声明时钟域；②为黑盒IP提供CDC模型文件，描述IP内部同步结构；③简化路径上的组合逻辑或增加中间寄存器，帮助工具重建时钟域信息；④使用SpyGlass的-cdc_report_unresolvable命令输出所有不可解析路径并逐条评审；⑤优先修复真实缺少同步的路径，再对确认安全的路径waive。',
+ fixCode:`// 方案A：为黑盒IP补充CDC模型声明\n// 在cdc_model文件中说明端口时钟域：\n// cdc_model -port pll_lock_out -clk pll_clk -combo no\n\n// 方案B：增加中间寄存器打断复杂组合逻辑\n// 修正前（时钟域信息在组合逻辑中丢失）：\nassign data_cd = (func_mode ? data_a : 0) ^ mask;\n// 修正后（工具可追踪 data_staged 属于 clk_a 域）：\nreg data_staged;\nalways @(posedge clk_a)\n  data_staged <= func_mode ? data_a : 0;\nassign data_cd = data_staged ^ mask;`,
+ sgdc:`# 为黑盒输出显式声明时钟域\nport_domain -name ext_signal_in -clock clkA\ncdc_model -port {status_out[*]} -clk clkB -combo no\n# 显式声明已知跨域但工具无法追踪的路径\nsync_cell -name u_manual_sync \\\n  -from_clk clkA -to_clk clkB`,
+ waiveCond:'仅在以下两种情况下可waive：①经人工代码走读和波形验证，确认该路径实际不存在跨时钟域传输（工具误判）；②路径确实跨域但已有内部同步结构（有IP规格说明证明），且SGDC因黑盒限制无法解析。',
+ waiveCode:`waive -rule Ac_no_sync01 \\\n  -signal {u_blackbox/status_out} \\\n  -comment "Blackbox IP: datasheet Sec.5.2 confirms 2FF sync to clk_b internally; cdc_model provided"`,
+ waiveNote:'不可解析路径的waive是CDC审查中风险最高的操作之一，必须附上IP规格文档或代码走读记录，且需要经过CDC负责人审批。建议建立专项台账追踪所有Ac_no_sync01的waive记录及验证状态。',
+ svgType:'coherency',wfType:'two_ff_sync'}
+
+,{id:'ac_output_port01',ruleName:'Ac_output_port01',cat:7,title:'SoC顶层输出端口CDC未声明',sev:'Warning',
+ desc:'SoC或IP顶层的输出端口信号由某个内部时钟域（如clkA）驱动，但SGDC约束文件中未声明该端口属于哪个时钟域。当外部系统在另一时钟域中采样本端口时，将形成未受约束的跨域路径，工具可能漏报或误报。缺少端口时钟声明还会导致跨模块集成时的CDC分析不完整，引发集成级CDC违例。',
+ root:'顶层SGDC文件中遗漏port_domain声明；IP交付给集成者时未附带端口时钟域映射文档；IP重用时端口时钟域随设计迭代变化但约束文件未同步更新。',
+ impact:'集成层CDC分析时，工具将顶层输出端口视为"无时钟域信号"，导致跨模块CDC路径被漏检；外部采样端口的电路若不清楚端口时序，可能省略同步器；在SoC集成验证中引入遗漏的亚稳态风险。',
+ fixDesc:'①在顶层SGDC中为每个输出端口显式声明时钟域（port_domain）；②建立端口时钟域映射表（Port-to-Clock-Domain Matrix）作为IP交付文档的必要组成部分；③对驱动输出端口的信号路径进行完整CDC分析；④在IP集成checklist中加入"端口时钟域声明完整性"必过检查项。',
+ fixCode:`// 修正前：直接输出组合逻辑结果（时钟域不明）\n// assign status_out = reg_a & ctrl_b; // 危险！\n\n// 修正后：由已知时钟域的寄存器驱动输出端口\nreg status_out_r;\nalways @(posedge clk_a or negedge rst_a_n) begin\n  if (!rst_a_n) status_out_r <= 1'b0;\n  else          status_out_r <= reg_a & ctrl_b_sync;\nend\nassign status_out = status_out_r; // clk_a域寄存器驱动，时钟域明确`,
+ sgdc:`# 为顶层输出端口声明时钟域（顶层SGDC中必须添加）\nport_domain -name status_out   -clock clkA\nport_domain -name irq_out      -clock clkA\nport_domain -name cfg_rdy_out  -clock clkA\nport_domain -name rx_data_out  -clock clkB\nport_domain -name rx_valid_out -clock clkB\n# 若端口来自多个时钟域（时分复用），注明复用规则\n# port_domain -name mux_data_out -clock {clkA clkB}`,
+ waiveCond:'不建议直接waive端口时钟域未声明警告；正确做法是补充SGDC约束。若因工具版本限制无法解析某些端口类型，可在补充文档说明的前提下进行有限waive。',
+ waiveCode:`waive -rule Ac_output_port01 \\\n  -port {mux_data_out} \\\n  -comment "Port clock domain in Port_Clock_Matrix_v1.3; SpyGlass limitation on multi-domain port; upgrade planned Q3"`,
+ waiveNote:'顶层端口时钟域声明是IP交付质量的基础要求。建议在团队CDC checklist中将"所有输出端口已在SGDC中完成时钟域声明"列为必过项，不允许以waive替代补充约束。',
+ svgType:'unsync_s2f',wfType:'unsync_s2f'}
 
 ];
 
 const CATS = [
-  {name:'未同步跨时钟',icon:'🔴',ids:['ac_unsync01_s2f','ac_unsync01_f2s','ac_unsync02','ac_unsync03','ac_unsync04','ac_unsync05','ac_unsync06']},
-  {name:'同步结构（正确）',icon:'🟢',ids:['two_ff_sync','pulse_sync','handshake','async_fifo','mux_sync','three_ff_sync','open_loop_sync','reset_sync_multi']},
-  {name:'聚合问题',icon:'🟡',ids:['ac_conv01','ac_conv02','ac_conv03','ac_conv04','ac_sync_reconv01','ac_conv05','ac_conv06','ac_conv07']},
-  {name:'毛刺问题',icon:'🔴',ids:['ac_glitch01','ac_glitch02','ac_glitch03','ac_glitch04','ac_glitch05','ac_glitch06']},
-  {name:'数据保持问题',icon:'🔴',ids:['ac_cdc01','ac_datahold01a','ac_datahold01b','ac_datahold01c','ac_datahold02','ac_cdc02','ac_datahold03']},
-  {name:'复位同步',icon:'🟠',ids:['ar_unsync01','ar_asyncdeassert01','reset_sync_correct','ar_combo01','ar_unsync02','ar_domain01','ar_seq01']},
-  {name:'特殊情况',icon:'🟡',ids:['ac_coherency06','clock_glitch05','ac_abstract_validation01','mutual_exclusive_clocks','false_path_cdc','ac_blackbox01']}
+  {name:'未同步跨时钟',icon:'🔴',ids:['ac_unsync01_s2f','ac_unsync01_f2s','ac_unsync02','ac_unsync03','ac_unsync04','ac_unsync05','ac_unsync06','ac_unsync07','ac_unsync08']},
+  {name:'同步结构（正确）',icon:'🟢',ids:['two_ff_sync','pulse_sync','handshake','async_fifo','mux_sync','three_ff_sync','open_loop_sync','reset_sync_multi','cdc_model_correct','two_phase_handshake']},
+  {name:'聚合问题',icon:'🟡',ids:['ac_conv01','ac_conv02','ac_conv03','ac_conv04','ac_sync_reconv01','ac_conv05','ac_conv06','ac_conv07','ac_conv08','ac_conv09']},
+  {name:'毛刺问题',icon:'🔴',ids:['ac_glitch01','ac_glitch02','ac_glitch03','ac_glitch04','ac_glitch05','ac_glitch06','ac_glitch07','ac_glitch08']},
+  {name:'数据保持问题',icon:'🔴',ids:['ac_cdc01','ac_datahold01a','ac_datahold01b','ac_datahold01c','ac_datahold02','ac_cdc02','ac_datahold03','ac_datahold04','ac_datahold05']},
+  {name:'复位同步',icon:'🟠',ids:['ar_unsync01','ar_asyncdeassert01','reset_sync_correct','ar_combo01','ar_unsync02','ar_domain01','ar_seq01','ar_fanout01']},
+  {name:'特殊情况',icon:'🟡',ids:['ac_coherency06','clock_glitch05','ac_abstract_validation01','mutual_exclusive_clocks','false_path_cdc','ac_blackbox01','ac_sdc_cdc_conflict','ac_no_sync01']}
 
-  ,{name:'时钟域结构问题',icon:'🔵',ids:['ac_cdc_fanout01','ac_quasi_static01','ac_clkdomain01','ac_isolation01','ac_generated_clk01','ac_cdc_power01']}
+  ,{name:'时钟域结构问题',icon:'🔵',ids:['ac_cdc_fanout01','ac_quasi_static01','ac_clkdomain01','ac_isolation01','ac_generated_clk01','ac_cdc_power01','ac_output_port01']}
 ];
 
 // ===================== CIRCUIT ENGINE =====================
