@@ -205,7 +205,7 @@ layout: null
                 radial-gradient(circle at 50% 80%, rgba(0, 220, 150, 0.15), transparent 60%);
             background-size: 150% 150%;
             filter: blur(80px);
-            animation: ambientFlow 8s ease-in-out infinite alternate;
+            animation: ambientFlow 4s ease-in-out infinite alternate;
         }
 
         @keyframes ambientFlow {
@@ -287,8 +287,11 @@ layout: null
             position: absolute;
             inset: 0;
             border-radius: 16px;
-            padding: 1px;
-            background: conic-gradient(from var(--angle), rgba(255,255,255,0.1), rgba(0,113,227,0.5), rgba(255,255,255,0.1));
+            padding: 0.75px;
+            background: conic-gradient(
+                from var(--angle),
+                #ff6ec7, #a78bfa, #60a5fa, #34d399, #fbbf24, #f87171, #ff6ec7
+            );
             -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
             -webkit-mask-composite: xor;
             mask-composite: exclude;
@@ -375,8 +378,11 @@ layout: null
             position: absolute;
             inset: 0;
             border-radius: 16px;
-            padding: 1px;
-            background: conic-gradient(from var(--angle), rgba(255,255,255,0.1), rgba(0,113,227,0.5), rgba(255,255,255,0.1));
+            padding: 0.75px;
+            background: conic-gradient(
+                from var(--angle),
+                #ff6ec7, #a78bfa, #60a5fa, #34d399, #fbbf24, #f87171, #ff6ec7
+            );
             -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
             -webkit-mask-composite: xor;
             mask-composite: exclude;
@@ -1745,7 +1751,7 @@ layout: null
                 <h2>The Blog</h2>
             </div>
             <div class="highlight-content blog-grid">
-                {% for post in site.posts limit:6 %}
+                {% for post in site.posts limit:10 %}
                 <a class="blog-card" href="{{ post.url | relative_url }}">
                     <h3>{{ post.title }}</h3>
                     <span class="post-date">{{ post.date | date: "%Y.%m.%d" }}</span>
