@@ -38,3 +38,11 @@
   thumb: /assets/labs/thumbs/cdc_interactive.jpg
   tags: [ASIC]
   order: 1
+
+- slug: ai_comparison
+  title: AI大模型评测
+  desc: >
+    多维度评测大模型综合表现，包含评测工具与评测结果
+  thumb: /assets/labs/thumbs/ai_comparison.jpg
+  tags: [AI]
+  order: 6

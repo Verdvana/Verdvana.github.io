@@ -1,0 +1,472 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>AI & Agent 全面性能与价格对比</title>
+<style>
+:root {
+  --bg: #0b0f14; --bg2: #111820; --bg3: #192130; --border: #1e3050;
+  --accent: #00d4ff; --accent2: #0088cc;
+  --openai: #10a37f; --openai-bg: rgba(16,163,127,0.1);
+  --claude: #d97757; --claude-bg: rgba(217,119,87,0.1);
+  --gemini: #8ab4f8; --gemini-bg: rgba(138,180,248,0.1);
+  --error: #ff4455; --warn: #ffaa22; --ok: #00cc66; --info: #8888ff;
+  --text: #c8d8e8; --text2: #7090b0; --card: #131e2a;
+  
+  --agent-codex: #333333; --agent-codex-bg: rgba(255,255,255,0.05);
+  --agent-ag: #fbbc04; --agent-ag-bg: rgba(251,188,4,0.1);
+  --agent-cc: #d97757;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { height: 100%; overflow: hidden; }
+body {
+  background: radial-gradient(circle at 15% 50%, rgba(0,212,255,0.03), transparent 25%),
+              radial-gradient(circle at 85% 30%, rgba(16,163,127,0.03), transparent 25%),
+              var(--bg);
+  color: var(--text);
+  font-family: "Microsoft YaHei", "Inter", sans-serif;
+  font-size: 14px;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Scrollbar */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+::-webkit-scrollbar-corner { background: transparent; }
+
+/* ── Navigation ────────────────────── */
+nav {
+  padding: 20px 40px;
+  display: flex; justify-content: space-between; align-items: center;
+  z-index: 1000;
+  background: rgba(0, 0, 0, 0.7);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  flex-shrink: 0;
+}
+nav .logo-area { display: flex; align-items: center; gap: 12px; text-decoration: none; color: white; }
+nav .logo-area img { width: 32px; height: 32px; border-radius: 50%; border: 1px solid rgba(255,255,255,0.1); object-fit: cover; }
+nav .logo { font-size: 18px; font-weight: 700; letter-spacing: -0.5px; }
+nav .nav-links { display: flex; gap: 30px; }
+nav a { text-decoration: none; color: #ffffff; font-size: 14px; font-weight: 500; transition: color 0.2s; }
+nav a:hover { color: #8e8e93; }
+@media (max-width: 900px) {
+  nav { padding: 15px 20px; }
+  nav .nav-links { gap: 15px; }
+  nav .nav-links a { font-size: 13px; }
+}
+
+/* ── Floating Back Button ───────────────────────────────────── */
+#fabBack {
+  position: fixed; bottom: 32px; right: 32px; z-index: 999;
+  width: 52px; height: 52px; border-radius: 50%;
+  background: #0071e3; border: none; color: #fff;
+  font-size: 18px; cursor: pointer;
+  box-shadow: 0 8px 24px rgba(0,113,227,0.45);
+  display: flex; align-items: center; justify-content: center;
+  transition: background 0.2s, transform 0.15s, box-shadow 0.2s;
+}
+#fabBack:hover { background: #0077ed; transform: translateY(-2px); box-shadow: 0 12px 30px rgba(0,113,227,0.55); }
+#fabBack:active { transform: translateY(0); }
+
+/* Layout */
+.layout { display: flex; flex: 1; overflow: hidden; }
+
+/* Sidebar */
+.sb { width: 220px; background: rgba(17,24,32,0.7); backdrop-filter: blur(10px); border-right: 1px solid var(--border); padding: 16px 0; display: flex; flex-direction: column; gap: 4px; flex-shrink: 0; }
+.sb-item { padding: 12px 24px; color: var(--text2); cursor: pointer; display: flex; align-items: center; gap: 12px; transition: all 0.2s; border-left: 3px solid transparent; font-weight: 500; }
+.sb-item:hover { background: var(--bg3); color: var(--text); }
+.sb-item.active { background: rgba(0,212,255,0.1); border-left-color: var(--accent); color: var(--accent); }
+.sb-item i { font-style: normal; font-size: 16px; }
+
+/* Main Content */
+.main { flex: 1; overflow-y: auto; padding: 32px; scroll-behavior: smooth; position: relative; }
+
+/* Panels */
+.panel { display: none; animation: fadeIn 0.4s ease-out; }
+.panel.active { display: flex; flex-direction: column; gap: 24px; }
+@keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+.section-title { font-size: 24px; font-weight: 600; color: #fff; margin-bottom: 8px; display: flex; align-items: center; gap: 12px; }
+.section-desc { color: var(--text2); margin-bottom: 24px; line-height: 1.5; }
+
+/* Grid Layout */
+.grid-3 { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 24px; }
+
+/* Cards */
+.card { background: rgba(19,30,42,0.6); border: 1px solid var(--border); border-radius: 12px; padding: 24px; backdrop-filter: blur(12px); display: flex; flex-direction: column; gap: 16px; transition: transform 0.2s, box-shadow 0.2s; }
+.card:hover { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(0,0,0,0.2); }
+
+.brand-header { display: flex; align-items: center; gap: 12px; border-bottom: 1px solid var(--border); padding-bottom: 16px; }
+.brand-icon { width: 32px; height: 32px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 16px; color: #fff; }
+.b-openai { background: var(--openai); }
+.b-claude { background: var(--claude); }
+.b-gemini { background: var(--gemini); }
+.b-codex { background: #555; }
+.b-ag { background: var(--agent-ag); color: #000; }
+
+.brand-title { font-size: 18px; font-weight: 600; color: #fff; }
+
+.price-tag { font-size: 24px; font-weight: 700; color: var(--accent); margin: 8px 0; }
+.price-tag span { font-size: 13px; color: var(--text2); font-weight: 400; }
+
+.data-group { display: flex; flex-direction: column; gap: 12px; }
+.data-label { font-size: 12px; color: var(--text2); text-transform: uppercase; letter-spacing: 1px; font-weight: 600; margin-top: 8px; border-bottom: 1px dashed var(--border); padding-bottom: 4px; }
+
+.list-item { display: flex; align-items: flex-start; gap: 8px; font-size: 13px; line-height: 1.5; }
+.list-item::before { content: "•"; color: var(--accent); font-weight: bold; }
+
+/* Table Styles for API */
+.api-table { width: 100%; border-collapse: separate; border-spacing: 0; background: rgba(19,30,42,0.6); border-radius: 12px; border: 1px solid var(--border); overflow: hidden; backdrop-filter: blur(12px); }
+.api-table th { background: rgba(0,0,0,0.2); padding: 16px; text-align: left; font-weight: 600; color: #fff; border-bottom: 1px solid var(--border); font-size: 13px; text-transform: uppercase; letter-spacing: 0.5px; }
+.api-table td { padding: 16px; border-bottom: 1px solid rgba(255,255,255,0.03); font-size: 14px; vertical-align: top; }
+.api-table tr:last-child td { border-bottom: none; }
+.api-table tr:hover td { background: rgba(255,255,255,0.02); }
+
+.model-name { font-weight: 600; color: #fff; display: flex; align-items: center; gap: 8px; }
+.model-name span { font-size: 11px; padding: 2px 6px; border-radius: 4px; border: 1px solid var(--border); font-weight: normal; }
+.t-openai span { color: var(--openai); background: var(--openai-bg); border-color: rgba(16,163,127,0.3); }
+.t-claude span { color: var(--claude); background: var(--claude-bg); border-color: rgba(217,119,87,0.3); }
+.t-gemini span { color: var(--gemini); background: var(--gemini-bg); border-color: rgba(138,180,248,0.3); }
+
+.cost-box { display: flex; flex-direction: column; gap: 6px; }
+.cost-val { display: flex; justify-content: space-between; font-family: "JetBrains Mono", monospace; font-size: 13px; }
+.cost-val.in { color: var(--text); }
+.cost-val.out { color: var(--accent); }
+
+.badge { display: inline-block; padding: 3px 8px; border-radius: 4px; font-size: 11px; font-weight: 600; }
+</style>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono&display=swap" rel="stylesheet">
+<link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" referrerpolicy="no-referrer" rel="stylesheet"/>
+</head>
+<body>
+
+<nav>
+<a class="logo-area" href="/">
+<img alt="Verdvana" src="/static/img/avatar.jpg"/>
+<span class="logo">VERDVANA</span>
+</a>
+<div class="nav-links">
+<a href="/archive">Blog</a>
+<a href="/labs">Labs</a>
+<a href="/comments">Comments</a>
+<a href="https://github.com/Verdvana">GitHub</a>
+</div>
+</nav>
+
+<div class="layout">
+  <div class="sb">
+    <div class="sb-item active" onclick="switchTab('app', this)"><i>🌐</i> Web App 对比</div>
+    <div class="sb-item" onclick="switchTab('api', this)"><i>⚙️</i> API 定价与限额</div>
+    <div class="sb-item" onclick="switchTab('agent', this)"><i>🤖</i> 智能体 Agent 对比</div>
+  </div>
+
+  <div class="main">
+    
+    <header style="display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 24px; border-bottom: 1px solid var(--border); padding-bottom: 16px;">
+      <div>
+        <h1 style="margin:0; font-size: 24px; letter-spacing: -0.5px; color: #fff;">AI & Agent Intelligence</h1>
+        <p style="margin:4px 0 0; color: var(--text2); font-size: 13px;">全面性能与价格分析矩阵 (2026 最新版)</p>
+      </div>
+      <div style="font-size: 12px; color: var(--text2); display: flex; align-items: center; gap: 6px; background: rgba(0,0,0,0.2); padding: 4px 10px; border-radius: 4px; border: 1px solid var(--border);">
+        <i style="font-style:normal;">🕒</i> 数据更新截止: 2026年04月21日 13:07 (CST)
+      </div>
+    </header>
+
+    <!-- APP TAB -->
+    <div class="panel active" id="tab-app">
+      <div>
+        <div class="section-title">Web App 消费者端对比</div>
+        <div class="section-desc">对比三大巨头面向普通用户和专业用户的网页端对话产品。所有 Plus/Pro 订阅标准定价均为 <b>$20/月</b>。</div>
+      </div>
+
+      <div class="grid-3">
+        <!-- OpenAI -->
+        <div class="card">
+          <div class="brand-header">
+            <div class="brand-icon b-openai">O</div>
+            <div class="brand-title">ChatGPT (OpenAI)</div>
+          </div>
+          
+          <div class="data-group">
+            <div class="data-label">Free 免费版</div>
+            <div class="list-item">默认模型: <b>GPT-5.4 mini</b></div>
+            <div class="list-item">有限访问 <b>GPT-5.4</b> (根据系统负载动态限制)</div>
+            <div class="list-item">支持全双工语音与实时视觉互动</div>
+          </div>
+
+          <div class="data-group">
+            <div class="data-label">Plus 订阅版 ($20/月)</div>
+            <div class="list-item">核心模型: <b>GPT-5.4</b> (智能体工作流原生支持)</div>
+            <div class="list-item">推理模型: <b>o3-mini / o4系列</b></div>
+            <div class="list-item">上下文窗口: <b>128K Tokens</b> (支持长期记忆存储与跨端对话级联)</div>
+            <div class="list-item">独占功能: Sora 视频生成，跨模态无缝切换，高级数据分析</div>
+          </div>
+
+          <div class="data-group">
+            <div class="data-label">Pro 尊享版 ($200/月)</div>
+            <div class="list-item">针对 <b>GPT-5.4 Pro</b> 与高端推理模型的无限量访问</div>
+            <div class="list-item">独享计算密集型模式 (Compute Intensive Mode) 以获取极强分析深度</div>
+          </div>
+        </div>
+
+        <!-- Anthropic -->
+        <div class="card">
+          <div class="brand-header">
+            <div class="brand-icon b-claude">C</div>
+            <div class="brand-title">Claude (Anthropic)</div>
+          </div>
+          
+          <div class="data-group">
+            <div class="data-label">Free 免费版</div>
+            <div class="list-item">默认模型: <b>Claude 4.6 Sonnet</b></div>
+            <div class="list-item">支持核心的 Artifacts (沉浸式应用与代码预览 UI)</div>
+          </div>
+
+          <div class="data-group">
+            <div class="data-label">Pro 订阅版 ($20/月)</div>
+            <div class="list-item">模型选择: <b>Claude 4.6 Sonnet</b>, <b>Claude 4 Opus</b></div>
+            <div class="list-item">长上下文窗口: <b>1M (一百万) Tokens</b>，适合上传巨型代码库与数据集</div>
+            <div class="list-item">独占功能: Projects (项目级系统提示词与专属知识库共享)，Computer Use 代理</div>
+          </div>
+        </div>
+
+        <!-- Google -->
+        <div class="card">
+          <div class="brand-header">
+            <div class="brand-icon b-gemini">G</div>
+            <div class="brand-title">Gemini (Google)</div>
+          </div>
+          
+          <div class="data-group">
+            <div class="data-label">Free 免费版</div>
+            <div class="list-item">默认模型: <b>Gemini 3.1 Flash</b> (近乎零延迟)</div>
+            <div class="list-item">天然支持 Google 基础生态集成 (Maps, Flights, Workspace基础版)</div>
+          </div>
+
+          <div class="data-group">
+            <div class="data-label">Advanced 订阅版 ($20/月)</div>
+            <div class="list-item">核心模型: <b>Gemini 3.1 Pro</b></div>
+            <div class="list-item">超大上下文窗口: <b>2M+ Tokens</b> 视频/音频/代码库一键分析</div>
+            <div class="list-item">独占功能: 深度整合 Google Workspace，原生云端计算代理 (Cloud Compute Agent)</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- API TAB -->
+    <div class="panel" id="tab-api">
+      <div>
+        <div class="section-title">API 开发者定价与限额</div>
+        <div class="section-desc">对比各家最新旗舰模型的 API 调用成本 (2026年标准)。价格单位为：<b>美元 ($) / 每 100 万 (1M) Tokens</b>。</div>
+      </div>
+
+      <table class="api-table">
+        <thead>
+          <tr>
+            <th width="25%">模型 (Model)</th>
+            <th width="35%">价格 (Input / Output)</th>
+            <th width="40%">上下文与典型限额 (Context & Limits)</th>
+          </tr>
+        </thead>
+        <tbody>
+          <!-- OpenAI API -->
+          <tr>
+            <td>
+              <div class="model-name t-openai">GPT-5.4 <span>OpenAI</span></div>
+            </td>
+            <td>
+              <div class="cost-box">
+                <div class="cost-val in"><span>输入 (Input):</span> <span>$2.50</span></div>
+                <div class="cost-val out"><span>输出 (Output):</span> <span>$15.00</span></div>
+                <div class="cost-val" style="color:var(--text2); font-size:11px; margin-top:4px;">* 开启 Prompt Caching: 输入仅 $0.25</div>
+              </div>
+            </td>
+            <td>
+              <div class="list-item">上下文窗口: <b>128K</b> (支持动态扩展)</div>
+              <div class="list-item">最稳定的全能模型，深度集成代理动作与视觉推理</div>
+            </td>
+          </tr>
+          <tr>
+            <td>
+              <div class="model-name t-openai">GPT-5.4 Pro <span>OpenAI</span></div>
+            </td>
+            <td>
+              <div class="cost-box">
+                <div class="cost-val in"><span>输入 (Input):</span> <span>$30.00</span></div>
+                <div class="cost-val out"><span>输出 (Output):</span> <span>$180.00</span></div>
+              </div>
+            </td>
+            <td>
+              <div class="list-item">针对极其复杂的科研与推理级任务设计的超算级模型</div>
+            </td>
+          </tr>
+          
+          <!-- Anthropic API -->
+          <tr>
+            <td>
+              <div class="model-name t-claude">Claude 4.6 Sonnet <span>Anthropic</span></div>
+            </td>
+            <td>
+              <div class="cost-box">
+                <div class="cost-val in"><span>输入 (Input):</span> <span>$3.00</span></div>
+                <div class="cost-val out"><span>输出 (Output):</span> <span>$15.00</span></div>
+                <div class="cost-val" style="color:var(--text2); font-size:11px; margin-top:4px;">* 开启 Prompt Caching (命中): 输入约降至 10%</div>
+              </div>
+            </td>
+            <td>
+              <div class="list-item">上下文窗口: <b>1M (一百万)</b></div>
+              <div class="list-item">目前公认<b>最强代码与系统架构模型</b>，内置 Extended Thinking 选项计入输出费用</div>
+            </td>
+          </tr>
+
+          <!-- Google API -->
+          <tr>
+            <td>
+              <div class="model-name t-gemini">Gemini 3.1 Pro <span>Google</span></div>
+            </td>
+            <td>
+              <div class="cost-box">
+                <div class="cost-val in"><span>输入 (≤200K / >200K):</span> <span>$2.00 / $4.00</span></div>
+                <div class="cost-val out"><span>输出 (≤200K / >200K):</span> <span>$12.00 / $18.00</span></div>
+                <div class="cost-val" style="color:var(--text2); font-size:11px; margin-top:4px;">* 支持 Context Caching ($4.50/1M/hour 存储)</div>
+              </div>
+            </td>
+            <td>
+              <div class="list-item">上下文窗口: <b>高达 2M+</b></div>
+              <div class="list-item">极强多模态解析能力，并可通过 Google Search 进行系统级 Grounding</div>
+            </td>
+          </tr>
+          <tr>
+            <td>
+              <div class="model-name t-gemini">Gemini 3.1 Flash <span>Google</span></div>
+            </td>
+            <td>
+              <div class="cost-box">
+                <div class="cost-val in"><span>输入 (≤200K / >200K):</span> <span>$0.05 / $0.10</span></div>
+                <div class="cost-val out"><span>输出 (≤200K / >200K):</span> <span>$0.20 / $0.40</span></div>
+                <div class="cost-val" style="color:var(--text2); font-size:11px; margin-top:4px;">* 开启 Context Caching ($1.00/1M/hour 存储)</div>
+              </div>
+            </td>
+            <td>
+              <div class="list-item">上下文窗口: <b>1M</b></div>
+              <div class="list-item">极具性价比的推理分发与大规模数据处理引擎</div>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- AGENT TAB -->
+    <div class="panel" id="tab-agent">
+      <div>
+        <div class="section-title">智能代码 Agent (Coding Agents) 深度对比</div>
+        <div class="section-desc">对比2026年市面上主流的三大 AI 编程助手与自主 Agent 框架，它们代表了从 "辅助生成" 到 "系统级托管" 的不同层级。</div>
+      </div>
+
+      <div class="grid-3">
+        <!-- Codex -->
+        <div class="card">
+          <div class="brand-header">
+            <div class="brand-icon b-codex">Cx</div>
+            <div class="brand-title">Codex</div>
+          </div>
+          <div class="price-tag">$10<span> / 月 (Individual)</span></div>
+          
+          <div class="data-group">
+            <div class="data-label">引擎与架构</div>
+            <div class="list-item">支持随意切换 <b>GPT-5.4</b>、<b>Claude 4.6 Sonnet</b> 等多家最新旗舰模型。</div>
+            <div class="list-item">与 VS Code, IntelliJ, Visual Studio 深度集成。</div>
+          </div>
+
+          <div class="data-group">
+            <div class="data-label">核心功能层级: 高级协作型</div>
+            <div class="list-item"><b>行级补全 (Ghost Text)</b>: 毫秒级低延迟的精准代码流预测。</div>
+            <div class="list-item"><b>Codex Edits & Workspace</b>: 基于全项目视角的跨文件联调、自动修复编译错误与生成测试。</div>
+          </div>
+        </div>
+
+        <!-- Antigravity -->
+        <div class="card" style="border-color: rgba(251,188,4,0.3);">
+          <div class="brand-header">
+            <div class="brand-icon b-ag">Ag</div>
+            <div class="brand-title">Antigravity (Google)</div>
+          </div>
+          <div class="price-tag">高级自主型 Agent<span> (系统级)</span></div>
+          
+          <div class="data-group">
+            <div class="data-label">引擎与架构</div>
+            <div class="list-item">基于 <b>Gemini 3.1 Pro</b> 极长上下文深度定制的智能系统架构。</div>
+          </div>
+
+          <div class="data-group">
+            <div class="data-label">核心功能层级: 托管自主型</div>
+            <div class="list-item"><b>长时效规划 (Planning Mode)</b>: 自动检索超大型 Repo，生成严格的 Implementation Plan。</div>
+            <div class="list-item"><b>环境接管</b>: 可在后台拉取分支、使用终端工具、运行集成测试并在浏览器中自动化截屏对比。</div>
+            <div class="list-item">胜任 "升级整个项目的核心框架并解决所有 Break Changes" 这类宏大任务。</div>
+          </div>
+        </div>
+
+        <!-- Claude Code -->
+        <div class="card">
+          <div class="brand-header">
+            <div class="brand-icon b-claude" style="background:var(--agent-cc)">Cc</div>
+            <div class="brand-title">Claude Code</div>
+          </div>
+          <div class="price-tag">API 计费<span> (按需付费)</span></div>
+          
+          <div class="data-group">
+            <div class="data-label">引擎与架构</div>
+            <div class="list-item">强烈推荐配合地表最强代码引擎 <b>Claude 4.6 Sonnet</b>。</div>
+            <div class="list-item">以 CLI 工具形式驻留在终端系统内 (`claude` 命令)。</div>
+          </div>
+
+          <div class="data-group">
+            <div class="data-label">核心功能层级: 极客终端智能体</div>
+            <div class="list-item"><b>自动愈合 (Auto-healing)</b>: 从终端读取报错信息，自主打开并编辑相关文件，然后重试运行直到彻底修复。</div>
+            <div class="list-item"><b>Prompt Caching 优化</b>: 连续的 Agent 迭代对话会自动缓存庞大的工作区上下文，将大量修改和查错成本降至极低。</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+function switchTab(tabId, el) {
+  // Update sidebar
+  document.querySelectorAll('.sb-item').forEach(item => item.classList.remove('active'));
+  el.classList.add('active');
+  
+  // Update panels
+  document.querySelectorAll('.panel').forEach(panel => {
+    panel.classList.remove('active');
+    // small delay for animation restart
+    panel.style.animation = 'none';
+    panel.offsetHeight; /* trigger reflow */
+    panel.style.animation = null; 
+  });
+  document.getElementById('tab-' + tabId).classList.add('active');
+}
+</script>
+
+<button aria-label="返回上一层" id="fabBack" title="返回上一层"><i class="fa fa-arrow-left"></i></button>
+<script>
+    document.getElementById('fabBack').addEventListener('click', function () {
+        try { if (history.length > 1) { history.back(); return; } } catch (e) {}
+        try {
+            var u = new URL(window.location.href);
+            var p = u.pathname.replace(/\/+$/, '');
+            var idx = p.lastIndexOf('/');
+            if (idx > 0) { u.pathname = p.slice(0, idx + 1); window.location.assign(u.toString()); return; }
+        } catch (e) {}
+        window.location.assign('https://verdvana.cn/labs/');
+    });
+</script>
+</body>
+</html>
