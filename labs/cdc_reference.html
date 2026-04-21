@@ -1,0 +1,1105 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SpyGlass CDC Rule Reference | Interactive Dashboard</title>
+    <style>
+        :root {
+            --bg-color: #0f172a;
+            --sidebar-bg: #1e293b;
+            --card-bg: rgba(30, 41, 59, 0.7);
+            --accent-color: #38bdf8;
+            --text-main: #f8fafc;
+            --text-dim: #94a3b8;
+            --border-color: #334155;
+            --highlight: #0ea5e9;
+            --danger: #ef4444;
+            --warning: #f59e0b;
+            --success: #10b981;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            height: 100vh;
+            display: flex;
+            overflow: hidden;
+        }
+
+        /* Sidebar Styles */
+        aside {
+            width: 300px;
+            background-color: var(--sidebar-bg);
+            border-right: 1px solid var(--border-color);
+            display: flex;
+            flex-direction: column;
+            flex-shrink: 0;
+        }
+
+        .sidebar-header {
+            padding: 24px;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .sidebar-header h1 {
+            font-size: 1.25rem;
+            font-weight: 700;
+            color: var(--accent-color);
+            margin-bottom: 8px;
+        }
+
+        .search-box {
+            width: 100%;
+            padding: 10px 16px;
+            background: #0f172a;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            color: white;
+            font-size: 0.9rem;
+            outline: none;
+        }
+
+        .rule-list {
+            flex: 1;
+            overflow-y: auto;
+            padding: 16px 0;
+        }
+
+        .category-group {
+            margin-bottom: 24px;
+        }
+
+        .category-title {
+            padding: 0 24px 8px;
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: var(--text-dim);
+            font-weight: 600;
+        }
+
+        .rule-item {
+            padding: 12px 24px;
+            cursor: pointer;
+            transition: all 0.2s;
+            border-left: 3px solid transparent;
+            font-size: 0.95rem;
+        }
+
+        .rule-item:hover {
+            background: rgba(56, 189, 248, 0.1);
+            color: var(--accent-color);
+        }
+
+        .rule-item.active {
+            background: rgba(56, 189, 248, 0.15);
+            border-left-color: var(--accent-color);
+            color: var(--accent-color);
+            font-weight: 500;
+        }
+
+        /* Main Content */
+        main {
+            flex: 1;
+            display: flex;
+            overflow: hidden;
+        }
+
+        /* Visualization Area */
+        .viz-panel {
+            flex: 3;
+            padding: 40px;
+            display: flex;
+            flex-direction: column;
+            gap: 24px;
+            overflow-y: auto;
+            background: radial-gradient(circle at 50% 50%, #1e293b 0%, #0f172a 100%);
+        }
+
+        .viz-card {
+            background: var(--card-bg);
+            backdrop-filter: blur(12px);
+            border: 1px solid var(--border-color);
+            border-radius: 16px;
+            padding: 32px;
+            min-height: 300px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.2);
+        }
+
+        .viz-card h3 {
+            position: absolute;
+            top: 20px;
+            left: 24px;
+            font-size: 0.9rem;
+            color: var(--text-dim);
+            font-weight: 500;
+        }
+
+        /* Detail Panel */
+        .detail-panel {
+            flex: 2;
+            background: #111827;
+            border-left: 1px solid var(--border-color);
+            padding: 40px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 32px;
+        }
+
+        .detail-header h2 {
+            font-size: 1.75rem;
+            margin-bottom: 8px;
+        }
+
+        .severity-badge {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 9999px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+
+        .severity-error { background: rgba(239, 68, 68, 0.2); color: #f87171; border: 1px solid rgba(239, 68, 68, 0.3); }
+        .severity-warning { background: rgba(245, 158, 11, 0.2); color: #fbbf24; border: 1px solid rgba(245, 158, 11, 0.3); }
+
+        .info-section h3 {
+            font-size: 1.1rem;
+            margin-bottom: 16px;
+            color: var(--accent-color);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .info-section p {
+            line-height: 1.6;
+            color: var(--text-main);
+            font-size: 1rem;
+        }
+
+        .fix-box {
+            background: rgba(16, 185, 129, 0.1);
+            border-left: 4px solid var(--success);
+            padding: 20px;
+            border-radius: 4px 12px 12px 4px;
+        }
+
+        .waive-box {
+            background: rgba(245, 158, 11, 0.1);
+            border-left: 4px solid var(--warning);
+            padding: 20px;
+            border-radius: 4px 12px 12px 4px;
+        }
+
+        /* SVG & Animation Styles */
+        .circuit-svg {
+            width: 100%;
+            max-width: 600px;
+            height: auto;
+            display: block;
+        }
+
+        #circuitContainer, #waveformContainer {
+            width: 100%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .signal-line {
+            stroke: var(--text-dim);
+            stroke-width: 2;
+            fill: none;
+        }
+
+        .signal-pulse {
+            stroke: var(--accent-color);
+            stroke-width: 3;
+            stroke-dasharray: 10;
+            animation: flow 2s linear infinite;
+        }
+
+        @keyframes flow {
+            from { stroke-dashoffset: 20; }
+            to { stroke-dashoffset: 0; }
+        }
+
+        .flop {
+            fill: var(--sidebar-bg);
+            stroke: var(--accent-color);
+            stroke-width: 2;
+        }
+
+        .gate {
+            fill: rgba(56, 189, 248, 0.1);
+            stroke: var(--accent-color);
+            stroke-width: 2;
+        }
+
+        /* Scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: var(--border-color);
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: var(--text-dim);
+        }
+
+        .empty-state {
+            text-align: center;
+            color: var(--text-dim);
+        }
+        
+        /* Waveform Styles */
+        .waveform-container {
+            width: 100%;
+            height: 200px;
+            background: #020617;
+            border-radius: 12px;
+            padding: 20px;
+            overflow: hidden;
+        }
+
+        .clock-trace { stroke: #64748b; stroke-width: 1.5; fill: none; }
+        .data-trace { stroke: var(--accent-color); stroke-width: 2; fill: none; }
+        .error-trace { stroke: var(--danger); stroke-width: 2; fill: none; }
+        
+        .label { font-size: 12px; fill: #94a3b8; }
+    </style>
+</head>
+<body>
+
+<aside>
+    <div class="sidebar-header">
+        <h1>CDC Reference</h1>
+        <input type="text" class="search-box" placeholder="搜索规则名称..." id="ruleSearch">
+    </div>
+    <div class="rule-list" id="ruleList">
+        <!-- Categories and rules will be injected here -->
+    </div>
+</aside>
+
+<main>
+    <div class="viz-panel">
+        <div class="viz-card" id="circuitCard">
+            <h3>电路拓扑 (Circuit Topology)</h3>
+            <div id="circuitContainer"></div>
+        </div>
+        <div class="viz-card" id="waveformCard">
+            <h3>波形示例 (Waveform Animation)</h3>
+            <div id="waveformContainer"></div>
+        </div>
+    </div>
+
+    <div class="detail-panel" id="detailPanel">
+        <div class="empty-state" id="emptyState">
+            <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="12" cy="12" r="10"></circle>
+                <line x1="12" y1="16" x2="12" y2="12"></line>
+                <line x1="12" y1="8" x2="12.01" y2="8"></line>
+            </svg>
+            <p style="margin-top: 16px;">请在左侧选择一个规则查看详情</p>
+        </div>
+        
+        <div id="detailContent" style="display: none;">
+            <div class="detail-header">
+                <h2 id="ruleName">Ac_unsync01</h2>
+                <div id="ruleSeverity" class="severity-badge">ERROR</div>
+            </div>
+
+            <div class="info-section">
+                <h3><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 16h.01M12 8h.01M12 12h.01M3 21h18L12 3 3 21z"></path></svg> 规则描述</h3>
+                <p id="ruleDesc"></p>
+            </div>
+
+            <div class="info-section">
+                <h3><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 13l4 4L19 7"></path></svg> 修复建议 (Fix)</h3>
+                <div class="fix-box" id="ruleFix"></div>
+            </div>
+
+            <div class="info-section">
+                <h3><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6L9 17l-5-5"></path></svg> Waive 建议</h3>
+                <div class="waive-box" id="ruleWaive"></div>
+            </div>
+        </div>
+    </div>
+</main>
+
+<script>
+    const rulesData = [
+  {
+    "category": "CDC 跨域 (CDC Crossing)",
+    "rules": [
+      {
+        "name": "Ac_cdc08",
+        "description": "<strong>Ac_cdc08</strong><br><br>The Ac_cdc08 rule reports synchronized control-bus clock domain crossings that do not follow gray encoding. The Ac_cdc08 rule checks only those multi-bit control buses that are synchronized based on the following synchronization schemes: • The Conventional Multi-Flop Synchronization Scheme • The Synchronizing Cell Synchronization Scheme provided you have specified the synchronizer cells by using the synchronize_cells parameter (for cells whose output pin is connected to a scalar net) or by using the synchronize_data_cells parameter (for cells for which an output pin is connected to a vector net).",
+        "fix": "请参考 SpyGlass 官方文档进行具体电路修复。",
+        "waive": "如果该路径在功能上是不可能的，或者信号是准静态（Quasi-static）的，可以考虑设置 waiver。",
+        "severity": "ERROR"
+      }
+    ]
+  },
+  {
+    "category": "一致性 (Coherency)",
+    "rules": [
+      {
+        "name": "Ac_coherency06",
+        "description": "<strong>Ac_coherency06</strong><br><br>Ac_coherency06 Reports signals that are synchronized multiple times in the same clock domain When to Use Use this rule to detect signals that are synchronized multiple times in the same clock domain. Description The Ac_coherency06 rule reports signals that are synchronized multiple times in the same clock domain by using any of the following synchronization schemes: • Conventional Multi-Flop Synchronization Scheme • Synchronizing Cell Synchronization Scheme • Qualifier Synchronization Scheme Using qualifier -crossing The following figure shows the rule-violating scenario: Figure 308 Scenario for the Ac_coherency06 Rule Violation out1 src1 c1 out2 c2 In the above figure, src1 is synchronized multiple times in the same domain by using the Conventional Multi-Flop Synchronization Scheme.",
+        "fix": "请参考 SpyGlass 官方文档进行具体电路修复。",
+        "waive": "如果该路径在功能上是不可能的，或者信号是准静态（Quasi-static）的，可以考虑设置 waiver。",
+        "severity": "WARNING"
+      },
+      {
+        "name": "Ac_coherencybus01",
+        "description": "<strong>Ac_coherencybus01</strong><br><br>The Ac_coherencybus01 rule reports synchronized buses by scalar conventional multi flops or sync cells.",
+        "fix": "请参考 SpyGlass 官方文档进行具体电路修复。",
+        "waive": "如果该路径在功能上是不可能的，或者信号是准静态（Quasi-static）的，可以考虑设置 waiver。",
+        "severity": "WARNING"
+      }
+    ]
+  },
+  {
+    "category": "其他规则 (Other Rules)",
+    "rules": [
+      {
+        "name": "Ac_datahold01a",
+        "description": "<strong>Ac_datahold01a</strong><br><br>The Ac_datahold01a rule reports synchronized data clock domain crossings where data can be unstable when the enable is active. Note: This rule checks synchronized data crossings detected by the Ac_sync01 and Ac_sync02 rules.",
+        "fix": "请参考 SpyGlass 官方文档进行具体电路修复。",
+        "waive": "如果该路径在功能上是不可能的，或者信号是准静态（Quasi-static）的，可以考虑设置 waiver。",
+        "severity": "ERROR"
+      },
+      {
+        "name": "Ac_timing01",
+        "description": "<strong>Ac_timing01</strong><br><br>This rule reports all the structures where source is driving synchronous and asynchronous destination. Structure should be reported regardless of ie.",
+        "fix": "请参考 SpyGlass 官方文档进行具体电路修复。",
+        "waive": "如果该路径在功能上是不可能的，或者信号是准静态（Quasi-static）的，可以考虑设置 waiver。",
+        "severity": "WARNING"
+      },
+      {
+        "name": "Ac_crossing01",
+        "description": "<strong>Ac_crossing01</strong><br><br>The Ac_crossing01 rule generates The CrossingMatrix Spreadsheet that shows a summary of crossings per pair of clocks along with their clock domains.",
+        "fix": "请参考 SpyGlass 官方文档进行具体电路修复。",
+        "waive": "如果该路径在功能上是不可能的，或者信号是准静态（Quasi-static）的，可以考虑设置 waiver。",
+        "severity": "ERROR"
+      },
+      {
+        "name": "Ac_repeater01",
+        "description": "<strong>Ac_repeater01</strong><br><br>Ac_repeater01 Reports invalid repeater insertion in a design When to Use Use this rule to check if Repeaters are correctly inserted in a design. Prerequisites Specify Repeaters in the design by using the repeater constraint.",
+        "fix": "请参考 SpyGlass 官方文档进行具体电路修复。",
+        "waive": "如果该路径在功能上是不可能的，或者信号是准静态（Quasi-static）的，可以考虑设置 waiver。",
+        "severity": "WARNING"
+      },
+      {
+        "name": "Ar_asyncdeassert01",
+        "description": "<strong>Ar_asyncdeassert01</strong><br><br>Ar_asyncdeassert01 Reports if reset signal is asynchronously de-asserted Reset Synchronization Rules When To Use Use this rule to perform metastability checks at a Functional Flip-Flop. Prerequisites The Ar_asyncdeassert01 rule works only with the Advanced_CDC and adv_checker license features.",
+        "fix": "请参考 SpyGlass 官方文档进行具体电路修复。",
+        "waive": "如果该路径在功能上是不可能的，或者信号是准静态（Quasi-static）的，可以考虑设置 waiver。",
+        "severity": "WARNING"
+      },
+      {
+        "name": "Ar_syncdeassert01",
+        "description": "<strong>Ar_syncdeassert01</strong><br><br>The Ar_syncdeassert01 rule reports reset/preset pins of sequential elements when they satisfy any of following conditions: • If a reset is specified by using the input constraint and it is used by a flip-flop whose domain matches with the domain of a clock specified by the -clock argument of the input constraint. An example is shown in the following figure: Figure 269 Scenario 1 - Ar_syncdeassert01 Rule Violation clk rst input -name rst -clock clk • If at least one Reset Flip-Flop exists in the path of a reset and a Functional Flip- Flop.",
+        "fix": "请参考 SpyGlass 官方文档进行具体电路修复。",
+        "waive": "如果该路径在功能上是不可能的，或者信号是准静态（Quasi-static）的，可以考虑设置 waiver。",
+        "severity": "WARNING"
+      }
+    ]
+  },
+  {
+    "category": "基础同步 (Basic Sync)",
+    "rules": [
+      {
+        "name": "Ac_unsync01",
+        "description": "<strong>Ac_unsync01</strong><br><br>The Ac_unsync01 rule reports asynchronous clock domain crossings for the scalar signals having at least one unsynchronized source. This rule also reports the reason for unsynchronized crossings.",
+        "fix": "在目的时钟域增加同步器（如 2-FF），或使用异步 FIFO。",
+        "waive": "如果该路径在功能上是不可能的，或者信号是准静态（Quasi-static）的，可以考虑设置 waiver。",
+        "severity": "ERROR"
+      },
+      {
+        "name": "Ac_unsync02",
+        "description": "<strong>Ac_unsync02</strong><br><br>The Ac_unsync02 rule reports asynchronous clock domain crossings for vector signals that have at least one unsynchronized source. This rule also reports the reason for unsynchronized crossings.",
+        "fix": "在目的时钟域增加同步器（如 2-FF），或使用异步 FIFO。",
+        "waive": "如果该路径在功能上是不可能的，或者信号是准静态（Quasi-static）的，可以考虑设置 waiver。",
+        "severity": "ERROR"
+      },
+      {
+        "name": "Ac_sync01",
+        "description": "<strong>Ac_sync01</strong><br><br>The Ac_sync01 rule reports asynchronous clock domain crossings for scalar signals that have all sources synchronized. To know about the cases in which a source is considered as synchronized, see Reasons for Synchronized Crossings Reported by Ac_sync_group Rules.",
+        "fix": "请参考 SpyGlass 官方文档进行具体电路修复。",
+        "waive": "如果该路径在功能上是不可能的，或者信号是准静态（Quasi-static）的，可以考虑设置 waiver。",
+        "severity": "INFO"
+      },
+      {
+        "name": "Ac_sync02",
+        "description": "<strong>Ac_sync02</strong><br><br>The Ac_sync02 rule reports asynchronous clock domain crossings for vector signals that have all sources synchronized. To know the cases in which a source is considered as synchronized, see Reasons for Synchronized Crossings Reported by Ac_sync_group Rules.",
+        "fix": "请参考 SpyGlass 官方文档进行具体电路修复。",
+        "waive": "如果该路径在功能上是不可能的，或者信号是准静态（Quasi-static）的，可以考虑设置 waiver。",
+        "severity": "INFO"
+      },
+      {
+        "name": "Ac_sync_cell01",
+        "description": "<strong>Ac_sync_cell01</strong><br><br>The Ac_sync_cell01 rule reports back to back synchronizers from different clock domains.",
+        "fix": "请参考 SpyGlass 官方文档进行具体电路修复。",
+        "waive": "如果该路径在功能上是不可能的，或者信号是准静态（Quasi-static）的，可以考虑设置 waiver。",
+        "severity": "WARNING"
+      },
+      {
+        "name": "Clock_sync03",
+        "description": "<strong>Clock_sync03</strong><br><br>Clock_sync03 Reports converging signals. The Clock_sync03 rule runs the Clock_sync03a and Clock_sync03b rules.",
+        "fix": "请参考 SpyGlass 官方文档进行具体电路修复。",
+        "waive": "如果该路径在功能上是不可能的，或者信号是准静态（Quasi-static）的，可以考虑设置 waiver。",
+        "severity": "WARNING"
+      },
+      {
+        "name": "Clock_sync03a",
+        "description": "<strong>Clock_sync03a</strong><br><br>The Clock_sync03a rule reports converging signals coming from the same source domain and are synchronized in the same destination domain by using any of the following synchronization schemes: • Conventional Multi-Flop Synchronization Scheme • Synchronizing Cell Synchronization Scheme The following figure shows convergence of signals coming from the same source clock domains. Figure 390 Convergence of Signals from Same Source Domain Rule-violat Combinational In the above example, the Clock_sync03a rule reports convergence only if a signal reaches on the MUX select pin along with the signals that are reaching one or more MUX input pins.",
+        "fix": "请参考 SpyGlass 官方文档进行具体电路修复。",
+        "waive": "如果该路径在功能上是不可能的，或者信号是准静态（Quasi-static）的，可以考虑设置 waiver。",
+        "severity": "WARNING"
+      },
+      {
+        "name": "Clock_sync03b",
+        "description": "<strong>Clock_sync03b</strong><br><br>Clock_sync03b Reports convergence of signals from different domains Note: The Clock_sync03b rule will be deprecated in a future release. The rule is not included in CDC GuideWare goals now and do not perform checks until specifically included in the user-defined goal options.",
+        "fix": "请参考 SpyGlass 官方文档进行具体电路修复。",
+        "waive": "如果该路径在功能上是不可能的，或者信号是准静态（Quasi-static）的，可以考虑设置 waiver。",
+        "severity": "ERROR"
+      },
+      {
+        "name": "Clock_sync05",
+        "description": "<strong>Clock_sync05</strong><br><br>The Clock_sync05 rule reports primary inputs that are sampled by more than one of the following elements clocked by different clock domains: • D inputs, load enable, set/reset pins of sequential elements • A non-clock pin of a black box • A primary output port This rule skips combinational logic between primary inputs and the above-specified elements. Example of an MSD The following figure shows an example of an MSD: Figure 317 Example of MSD c Multi-S ample c clka and clkb are in different Note: Transparent latches (enabled latch) are also considered as combinational elements.",
+        "fix": "请参考 SpyGlass 官方文档进行具体电路修复。",
+        "waive": "如果该路径在功能上是不可能的，或者信号是准静态（Quasi-static）的，可以考虑设置 waiver。",
+        "severity": "WARNING"
+      },
+      {
+        "name": "Clock_sync05a",
+        "description": "<strong>Clock_sync05a</strong><br><br>The Clock_sync05a rule reports primary inputs for which the domain is automatically inferred using the abstract_module constraint and the input port is sampled by multiple clock domains.",
+        "fix": "请参考 SpyGlass 官方文档进行具体电路修复。",
+        "waive": "如果该路径在功能上是不可能的，或者信号是准静态（Quasi-static）的，可以考虑设置 waiver。",
+        "severity": "WARNING"
+      },
+      {
+        "name": "Clock_sync06",
+        "description": "<strong>Clock_sync06</strong><br><br>The Clock_sync06 rule reports primary outputs that are driven by more than one of the following elements clocked by different clock domains: • D inputs or load enable inputs of sequential elements • A non-clock pin of a black box • A primary output port The following figure shows an example of MTD: Figure 326 Example of MTD c Multi-Tra nsition c clka and clkb are in different This rule reports any two different domain flip-flops driving a port. You can expand the schematic to view other flip-flops driving the port.",
+        "fix": "请参考 SpyGlass 官方文档进行具体电路修复。",
+        "waive": "如果该路径在功能上是不可能的，或者信号是准静态（Quasi-static）的，可以考虑设置 waiver。",
+        "severity": "WARNING"
+      },
+      {
+        "name": "Clock_sync06a",
+        "description": "<strong>Clock_sync06a</strong><br><br>The Clock_sync06a rule reports primary outputs for which domain is automatically inferred by using the abstract_module constraint and the output port is driven by multiple clock domain flip-flops or latches.",
+        "fix": "请参考 SpyGlass 官方文档进行具体电路修复。",
+        "waive": "如果该路径在功能上是不可能的，或者信号是准静态（Quasi-static）的，可以考虑设置 waiver。",
+        "severity": "WARNING"
+      },
+      {
+        "name": "Clock_sync08a",
+        "description": "<strong>Clock_sync08a</strong><br><br>The Clock_sync08a rule reports bus-bits that are synchronized by using the Conventional Multi-Flop Synchronization Scheme, and the output signals of the destination flip-flop and synchronizing flip-flops are bits of the same bus or are part of FIFO read/write pointers. Note: Please note the following: • Do not separately synchronize each bit by using standard control synchronization techniques, such as Conventional Multi-Flop Synchronization Scheme.",
+        "fix": "请参考 SpyGlass 官方文档进行具体电路修复。",
+        "waive": "如果该路径在功能上是不可能的，或者信号是准静态（Quasi-static）的，可以考虑设置 waiver。",
+        "severity": "ERROR"
+      },
+      {
+        "name": "Clock_sync09",
+        "description": "<strong>Clock_sync09</strong><br><br>The Clock_sync09 rule reports signals at clock domain crossings that are synchronized more than once in the same clock domain by using the Conventional Multi-Flop Synchronization Scheme or Qualifier Synchronization Scheme Using qualifier -crossing. The following figure shows such a scenario: Figure 330 Scenario of the Clock_sync09 Rule Violation out1 src1 out2 In the above figure, src1 is synchronized multiple times in the same domain by using the Conventional Multi-Flop Synchronization Scheme.",
+        "fix": "请参考 SpyGlass 官方文档进行具体电路修复。",
+        "waive": "如果该路径在功能上是不可能的，或者信号是准静态（Quasi-static）的，可以考虑设置 waiver。",
+        "severity": "ERROR"
+      },
+      {
+        "name": "Ar_unsync01",
+        "description": "<strong>Ar_unsync01</strong><br><br>The Ar_unsync01 rule reports reset pins of flip-flops that do not have a reset synchronizer in any of the paths between an asynchronous reset source and flip-flops. This rule reports following reasons in the violation message: • Missing synchronizer This reason is reported if a reset synchronizer is not present in any of the paths.",
+        "fix": "在目的时钟域增加同步器（如 2-FF），或使用异步 FIFO。",
+        "waive": "如果该路径在功能上是不可能的，或者信号是准静态（Quasi-static）的，可以考虑设置 waiver。",
+        "severity": "ERROR"
+      },
+      {
+        "name": "Ar_sync01",
+        "description": "<strong>Ar_sync01</strong><br><br>The Ar_sync01 rule reports reset pins of flip-flops that have at least one reset synchronizer in any of the paths between an asynchronous reset source and flip-flops. This rule reports one flip-flop per Reset Cone.",
+        "fix": "请参考 SpyGlass 官方文档进行具体电路修复。",
+        "waive": "如果该路径在功能上是不可能的，或者信号是准静态（Quasi-static）的，可以考虑设置 waiver。",
+        "severity": "WARNING"
+      },
+      {
+        "name": "Reset_sync01",
+        "description": "<strong>Reset_sync01</strong><br><br>Reset_sync01 Reports asynchronous reset signals that are not de-asserted synchronously Note: The Reset_sync01 rule will be deprecated in a future release. The rule is not included in CDC GuideWare goals now and do not perform checks until specifically included in the user-defined goal options.",
+        "fix": "请参考 SpyGlass 官方文档进行具体电路修复。",
+        "waive": "如果该路径在功能上是不可能的，或者信号是准静态（Quasi-static）的，可以考虑设置 waiver。",
+        "severity": "ERROR"
+      },
+      {
+        "name": "Reset_sync02",
+        "description": "<strong>Reset_sync02</strong><br><br>Reset_sync02 Reports asynchronous reset signals that are generated in asynchronous clock domain or are generated from unconstrained source clocks Reset Synchronization Rules When to Use Use this rule to detect asynchronous reset signals that are used in a particular clock domain but are generated in an asynchronous clock domain or are generated from an unconstrained source clock. Prerequisites Specify clock signals in any of the following ways: • By using the clock constraint • By setting the use_inferred_clocks parameter to yes to use auto-generated clock signals • By using a combination of both the above methods Specify reset signals in any of the following ways to identify valid reset synchronization structures in a design: • By using the reset constraint • By setting the use_inferred_resets parameter to yes to use auto-generated reset signals In such cases, the Reset_sync02 rule does not report a violation for reset pins of flip-flops that are a part of valid reset synchronizers.",
+        "fix": "请参考 SpyGlass 官方文档进行具体电路修复。",
+        "waive": "如果该路径在功能上是不可能的，或者信号是准静态（Quasi-static）的，可以考虑设置 waiver。",
+        "severity": "WARNING"
+      },
+      {
+        "name": "Reset_sync03",
+        "description": "<strong>Reset_sync03</strong><br><br>Reset_sync03 Reports multi-flop reset synchronizers in a design Note: The Reset_sync03 rule will be deprecated in a future release. The rule is not included in CDC GuideWare goals now and do not perform checks until specifically included in the user-defined goal options.",
+        "fix": "请参考 SpyGlass 官方文档进行具体电路修复。",
+        "waive": "如果该路径在功能上是不可能的，或者信号是准静态（Quasi-static）的，可以考虑设置 waiver。",
+        "severity": "WARNING"
+      },
+      {
+        "name": "Reset_sync04",
+        "description": "<strong>Reset_sync04</strong><br><br>The Reset_sync04 rule reports a violation for asynchronous resets that are synchronized multiple times in the same clock domain. Reset Synchronization Rules This rule reports any two destinations on which a source reset is synchronized in the same domain.",
+        "fix": "请参考 SpyGlass 官方文档进行具体电路修复。",
+        "waive": "如果该路径在功能上是不可能的，或者信号是准静态（Quasi-static）的，可以考虑设置 waiver。",
+        "severity": "WARNING"
+      }
+    ]
+  },
+  {
+    "category": "复位与特殊 (Reset & Special)",
+    "rules": [
+      {
+        "name": "Ac_resetcross01",
+        "description": "<strong>Ac_resetcross01</strong><br><br>Ac_resetcross01 Reports invalid reset ordering between sequential elements of the same clock domain When to Use Use this rule when different asynchronous resets are used in flip-flops, which are connected in the data path. Prerequisites Specify the following information before running this rule: • Specify reset signals by using the reset constraint.",
+        "fix": "请参考 SpyGlass 官方文档进行具体电路修复。",
+        "waive": "如果该路径在功能上是不可能的，或者信号是准静态（Quasi-static）的，可以考虑设置 waiver。",
+        "severity": "ERROR"
+      },
+      {
+        "name": "Ac_resetvalue01",
+        "description": "<strong>Ac_resetvalue01</strong><br><br>The Ac_resetvalue01 rule reports a violation if the -value argument of the reset constraint is not specified. By default, SpyGlass assumes the value of such resets to be active high.",
+        "fix": "请参考 SpyGlass 官方文档进行具体电路修复。",
+        "waive": "如果该路径在功能上是不可能的，或者信号是准静态（Quasi-static）的，可以考虑设置 waiver。",
+        "severity": "WARNING"
+      },
+      {
+        "name": "Ar_resetcross01",
+        "description": "<strong>Ar_resetcross01</strong><br><br>Ar_resetcross01 The Ar_resetcross01 rule reports unsynchronized crossings because of the following reasons (starting from the highest priority): Reason - Gating logic not accepted: qualifier merges with reconverging source Reason - Gating logic not accepted: gate-type invalid Reason - Qualifier not propagated: clock reaching at qualifier does not match destination Reason - Qualifier not propagated: reset reaching at qualifier does not match destination Reason - Qualifier not found • Reason - Gating logic not accepted: qualifier merges with reconverging source This reason is reported when a source diverges and the diverged source path merges with a valid qualifier before re-converging. For example, SpyGlass reports this reason in the scenario shown in Figure 79 where s1_reg is diverging and one of the diverged path merges with the qualifier before re-converging on the AND gate.",
+        "fix": "请参考 SpyGlass 官方文档进行具体电路修复。",
+        "waive": "如果该路径在功能上是不可能的，或者信号是准静态（Quasi-static）的，可以考虑设置 waiver。",
+        "severity": "ERROR"
+      },
+      {
+        "name": "Reset_check01",
+        "description": "<strong>Reset_check01</strong><br><br>The Reset_check01 rule reports reset signals that are not used in the same mode as their respective synthesis pragma modes. For example, this rule reports the reset signal that is used in: • An asynchronous manner when the corresponding synthesis pragma, sync_set_reset, exists for that signal.",
+        "fix": "请参考 SpyGlass 官方文档进行具体电路修复。",
+        "waive": "如果该路径在功能上是不可能的，或者信号是准静态（Quasi-static）的，可以考虑设置 waiver。",
+        "severity": "WARNING"
+      },
+      {
+        "name": "Reset_check02",
+        "description": "<strong>Reset_check02</strong><br><br>The Reset_check02 rule reports latches, tristate signals, or XOR/XNOR gates in a reset tree. This rule checks for such gates and reports them under informational message if: • An enable pin of a latch or a tristate gate is tied to a constant logic value.",
+        "fix": "请参考 SpyGlass 官方文档进行具体电路修复。",
+        "waive": "如果该路径在功能上是不可能的，或者信号是准静态（Quasi-static）的，可以考虑设置 waiver。",
+        "severity": "WARNING"
+      },
+      {
+        "name": "Reset_check03",
+        "description": "<strong>Reset_check03</strong><br><br>The Reset_check03 rule reports reset signals that are used on both levels, that is, active high and active low, to set or reset flip-flops synchronously. This rule reports any one active-high usage and one active-low usage for a synchronous reset in a design.",
+        "fix": "请参考 SpyGlass 官方文档进行具体电路修复。",
+        "waive": "如果该路径在功能上是不可能的，或者信号是准静态（Quasi-static）的，可以考虑设置 waiver。",
+        "severity": "WARNING"
+      },
+      {
+        "name": "Reset_check04",
+        "description": "<strong>Reset_check04</strong><br><br>The Reset_check04 rule reports reset signals that are used as both asynchronous and synchronous reset signals for different flip-flops. This rule reports any one occurrence where an asynchronous reset is used synchronously or vice-versa.",
+        "fix": "请参考 SpyGlass 官方文档进行具体电路修复。",
+        "waive": "如果该路径在功能上是不可能的，或者信号是准静态（Quasi-static）的，可以考虑设置 waiver。",
+        "severity": "WARNING"
+      }
+    ]
+  },
+  {
+    "category": "收敛性 (Convergence)",
+    "rules": [
+      {
+        "name": "Ac_conv01",
+        "description": "<strong>Ac_conv01</strong><br><br>Ac_conv01 Reports signals from the same domain that are synchronized in the same destination domain and converge after any number of sequential elements When to Use Use this rule to check sequential convergences of same-domain signals synchronized in the same destination domain. Description The details of the Ac_conv01 rule are covered under the following topics: • Reason for the Ac_conv01 Rule Violation • Features of the Ac_conv01 Rule • Handling MUXes by the Ac_conv01 Rule • Rule Exceptions Reason for the Ac_conv01 Rule Violation The Ac_conv01 rule reports a violation for two cases, Case 1 and Case 2.",
+        "fix": "在源端合并信号，或在目的端寄存后再汇聚。",
+        "waive": "如果该路径在功能上是不可能的，或者信号是准静态（Quasi-static）的，可以考虑设置 waiver。",
+        "severity": "WARNING"
+      },
+      {
+        "name": "Ac_conv02",
+        "description": "<strong>Ac_conv02</strong><br><br>Ac_conv02 Reports same-domain signals that are synchronized in the same destination domain and converge before sequential elements. When to Use Use this rule to check combinational convergences of the same domain signals synchronized in the same destination domain.",
+        "fix": "在源端合并信号，或在目的端寄存后再汇聚。",
+        "waive": "如果该路径在功能上是不可能的，或者信号是准静态（Quasi-static）的，可以考虑设置 waiver。",
+        "severity": "WARNING"
+      },
+      {
+        "name": "Ac_conv02Setup01",
+        "description": "<strong>Ac_conv02Setup01</strong><br><br>This rule generates an info message about the unrelated_coherent_signals.sgdc file generated for the violations of the Ac_conv02 rule.",
+        "fix": "在源端合并信号，或在目的端寄存后再汇聚。",
+        "waive": "如果该路径在功能上是不可能的，或者信号是准静态（Quasi-static）的，可以考虑设置 waiver。",
+        "severity": "WARNING"
+      },
+      {
+        "name": "Ac_conv03",
+        "description": "<strong>Ac_conv03</strong><br><br>Ac_conv03 Checks different domain signals synchronized in the same destination domain and are converging When to Use Use this rule to check convergences of different domain signals that are synchronized in the same domain. Prerequisites Specify clock signals in any of the following ways: • By using the clock constraint • By using the automatically generated clock signals after setting the use_inferred_clocks parameter to yes • By using a combination of both the above methods Description The details of the Ac_conv03 rule are covered under the following topics: • Reasons for the Ac_conv03 Rule Violation • Features of the Ac_conv03 Rule • Handling MUXes by the Ac_conv03 Rule Reasons for the Ac_conv03 Rule Violation The Ac_conv03 rule reports different domain signals that converge after satisfying the following conditions: • Signals are synchronized by using any of the following schemes: ◦ Conventional Multi-Flop Synchronization Scheme ◦ Synchronizing Cell Synchronization Scheme ◦ Qualifier Synchronization Scheme • Signals from different source domains are synchronized in the same destination domain.",
+        "fix": "在源端合并信号，或在目的端寄存后再汇聚。",
+        "waive": "如果该路径在功能上是不可能的，或者信号是准静态（Quasi-static）的，可以考虑设置 waiver。",
+        "severity": "WARNING"
+      },
+      {
+        "name": "Ac_conv04",
+        "description": "<strong>Ac_conv04</strong><br><br>Ac_conv04 Checks all the control-bus clock domain crossings that neither converge nor follow gray encoding When to Use Use this rule to check for coherency issues in the synchronized clock domain crossings to control bus signals. Description The Ac_conv04 rule reports a violation in the following cases: • Synchronized control-bus clock domain crossings do not follow gray encoding Only those synchronized control-bus clock domain crossings are checked by this rule that do not converge and therefore, are not reported by Ac_conv01 and Ac_conv02 rules.",
+        "fix": "在源端合并信号，或在目的端寄存后再汇聚。",
+        "waive": "如果该路径在功能上是不可能的，或者信号是准静态（Quasi-static）的，可以考虑设置 waiver。",
+        "severity": "WARNING"
+      },
+      {
+        "name": "Ac_conv05",
+        "description": "<strong>Ac_conv05</strong><br><br>The Ac_conv05 rule reports the status of gray encoding check performed on the signals specified by the gray_signals constraint.",
+        "fix": "在源端合并信号，或在目的端寄存后再汇聚。",
+        "waive": "如果该路径在功能上是不可能的，或者信号是准静态（Quasi-static）的，可以考虑设置 waiver。",
+        "severity": "WARNING"
+      },
+      {
+        "name": "Ac_conv01a",
+        "description": "<strong>Ac_conv01a</strong><br><br>This rule reports a violation if multiple qualifiers with same source and destination domain reach multiple input ports after going through sequential elements and if such input ports are included as convergence_ports in abstract model. The Ac_conv01a rule runs only when the enable_conv_check_at_soc parameter is set to yes.",
+        "fix": "在源端合并信号，或在目的端寄存后再汇聚。",
+        "waive": "如果该路径在功能上是不可能的，或者信号是准静态（Quasi-static）的，可以考虑设置 waiver。",
+        "severity": "WARNING"
+      },
+      {
+        "name": "Ac_conv02a",
+        "description": "<strong>Ac_conv02a</strong><br><br>The Ac_conv02a rule reports a violation only if multiple qualifiers with same source and destination domain reach multiple input ports and those input ports are generated as convergence_ports in the abstract model. The Ac_conv02a rule runs only when the enable_conv_check_at_soc parameter is set to yes.",
+        "fix": "在源端合并信号，或在目的端寄存后再汇聚。",
+        "waive": "如果该路径在功能上是不可能的，或者信号是准静态（Quasi-static）的，可以考虑设置 waiver。",
+        "severity": "WARNING"
+      },
+      {
+        "name": "Ac_conv03a",
+        "description": "<strong>Ac_conv03a</strong><br><br>The Ac_conv03a rule reports a violation only if multiple qualifiers with same destination domain and different source domains reach multiple input ports and those input ports are generated as convergence_ports in the abstract model. The rule reports the violation only if the enable_conv_check_at_soc parameter is set to yes.",
+        "fix": "在源端合并信号，或在目的端寄存后再汇聚。",
+        "waive": "如果该路径在功能上是不可能的，或者信号是准静态（Quasi-static）的，可以考虑设置 waiver。",
+        "severity": "WARNING"
+      },
+      {
+        "name": "Ac_converge01",
+        "description": "<strong>Ac_converge01</strong><br><br>The details of the Ac_converge01 rule reports enable signals that diverge and then reconverge before being used as a clock in the clock path. For example, this rule reports a violation for the 'd' signal in the following scenario: Figure 442 Clock Divergence and Reconvergence The Ac_converge01 rule only checks for combinational convergences and does not report a violation if an enable signal converges after sequential elements.",
+        "fix": "在源端合并信号，或在目的端寄存后再汇聚。",
+        "waive": "如果该路径在功能上是不可能的，或者信号是准静态（Quasi-static）的，可以考虑设置 waiver。",
+        "severity": "ERROR"
+      },
+      {
+        "name": "Clock_converge01",
+        "description": "<strong>Clock_converge01</strong><br><br>The Clock_converge01 rule reports clocks for which multiple fan-outs converge. See Figure 430.",
+        "fix": "在源端合并信号，或在目的端寄存后再汇聚。",
+        "waive": "如果该路径在功能上是不可能的，或者信号是准静态（Quasi-static）的，可以考虑设置 waiver。",
+        "severity": "WARNING"
+      },
+      {
+        "name": "Ar_converge01",
+        "description": "<strong>Ar_converge01</strong><br><br>Ar_converge01 Reports asynchronous reset signals that have multiple converging fan-outs When to Use Use this rule to catch glitches on an asynchronous reset tree due to divergence and convergence of reset signals. Reset Checking Rules Prerequisites Following are the prerequisites for running this rule: • Use the Advanced_CDC and adv_checker licenses for running this rule.",
+        "fix": "在源端合并信号，或在目的端寄存后再汇聚。",
+        "waive": "如果该路径在功能上是不可能的，或者信号是准静态（Quasi-static）的，可以考虑设置 waiver。",
+        "severity": "ERROR"
+      },
+      {
+        "name": "Ar_converge02",
+        "description": "<strong>Ar_converge02</strong><br><br>The Ar_converge02 rule reports a reset signal that diverges into multiple paths and reconverges on the data/enable and reset/set pin of the same flip-flop. This rule automatically infers resets in a design.",
+        "fix": "在源端合并信号，或在目的端寄存后再汇聚。",
+        "waive": "如果该路径在功能上是不可能的，或者信号是准静态（Quasi-static）的，可以考虑设置 waiver。",
+        "severity": "WARNING"
+      }
+    ]
+  },
+  {
+    "category": "数据丢失 (Data Loss)",
+    "rules": [
+      {
+        "name": "Ac_cdc01",
+        "description": "<strong>Ac_cdc01</strong><br><br>Ac_cdc01 Checks data loss on clock domain crossings The Ac_cdc01 rule group runs the Ac_cdc01a, Ac_cdc01b, and Ac_cdc01c rules.",
+        "fix": "使用脉冲扩展器（Pulse Extender）确保源端脉冲宽度至少覆盖目的端时钟的一个完整周期。",
+        "waive": "如果该路径在功能上是不可能的，或者信号是准静态（Quasi-static）的，可以考虑设置 waiver。",
+        "severity": "WARNING"
+      },
+      {
+        "name": "Ac_cdc01a",
+        "description": "<strong>Ac_cdc01a</strong><br><br>Ac_cdc01a Checks data loss for multi flop or sync cell or qualifier synchronized clock domain crossings When to Use Use this rule to identify clock domain crossings that are prone to data loss. Prerequisites Following are the prerequisites: • Use the Advanced_CDC and adv_checker license.",
+        "fix": "使用脉冲扩展器（Pulse Extender）确保源端脉冲宽度至少覆盖目的端时钟的一个完整周期。",
+        "waive": "如果该路径在功能上是不可能的，或者信号是准静态（Quasi-static）的，可以考虑设置 waiver。",
+        "severity": "WARNING"
+      },
+      {
+        "name": "Ac_cdc01b",
+        "description": "<strong>Ac_cdc01b</strong><br><br>Ac_cdc01b Checks data loss for crossings synchronized by a technique other than multi flop, sync cell, or qualifier synchronization scheme When to Use Use this rule to identify clock domain crossings that are prone to data loss. Prerequisites Following are the prerequisites: • Use the Advanced_CDC and adv_checker license.",
+        "fix": "使用脉冲扩展器（Pulse Extender）确保源端脉冲宽度至少覆盖目的端时钟的一个完整周期。",
+        "waive": "如果该路径在功能上是不可能的，或者信号是准静态（Quasi-static）的，可以考虑设置 waiver。",
+        "severity": "WARNING"
+      },
+      {
+        "name": "Ac_cdc01c",
+        "description": "<strong>Ac_cdc01c</strong><br><br>The Ac_cdc01c rule checks crossings that are unsynchronized. By default, the type of crossings checked are: • Fast-to-slow crossings only, and • Same period clocks.",
+        "fix": "使用脉冲扩展器（Pulse Extender）确保源端脉冲宽度至少覆盖目的端时钟的一个完整周期。",
+        "waive": "如果该路径在功能上是不可能的，或者信号是准静态（Quasi-static）的，可以考虑设置 waiver。",
+        "severity": "ERROR"
+      },
+      {
+        "name": "Ac_cdc01d",
+        "description": "<strong>Ac_cdc01d</strong><br><br>The Ac_cdc01d rule checks all sequential elements and reports scenarios in which a same domain signal is prone to data loss because the signal is traversing from a fast clock domain to a slower clock domain. If multiple sources are reaching a destination, the rule reports the fastest source.",
+        "fix": "使用脉冲扩展器（Pulse Extender）确保源端脉冲宽度至少覆盖目的端时钟的一个完整周期。",
+        "waive": "如果该路径在功能上是不可能的，或者信号是准静态（Quasi-static）的，可以考虑设置 waiver。",
+        "severity": "WARNING"
+      }
+    ]
+  },
+  {
+    "category": "时钟相关 (Clock Rules)",
+    "rules": [
+      {
+        "name": "Ac_xclock01",
+        "description": "<strong>Ac_xclock01</strong><br><br>The Ac_xclock01 rule reports the cases in which X values can be present on a clock path resulting in non-deterministic shifting during the scan operation. This rule detects the logic value on the clock pin of positive and negative edge flip-flops when the clock driving the clock-gating cells is 0 and 1 and determines whether a non- deterministic edge can occur.",
+        "fix": "请参考 SpyGlass 官方文档进行具体电路修复。",
+        "waive": "如果该路径在功能上是不可能的，或者信号是准静态（Quasi-static）的，可以考虑设置 waiver。",
+        "severity": "WARNING"
+      },
+      {
+        "name": "Clock_check01",
+        "description": "<strong>Clock_check01</strong><br><br>The Clock_check01 rule reports unexpected cells, such as latches, tristate gates, or XOR/ XNOR gates found in a clock tree. This rule reports only first found instance of an unexpected cell even if that cell is instantiated in more than one clock-tree.",
+        "fix": "请参考 SpyGlass 官方文档进行具体电路修复。",
+        "waive": "如果该路径在功能上是不可能的，或者信号是准静态（Quasi-static）的，可以考虑设置 waiver。",
+        "severity": "WARNING"
+      },
+      {
+        "name": "Clock_check02",
+        "description": "<strong>Clock_check02</strong><br><br>The Clock_check02 rule reports clock nets that have a fan-out greater than the value specified by the clock_fanout_max rule parameter, and these clock nets are not driven by the instances of cells specified by the CTS_placeholder_cells parameter.",
+        "fix": "请参考 SpyGlass 官方文档进行具体电路修复。",
+        "waive": "如果该路径在功能上是不可能的，或者信号是准静态（Quasi-static）的，可以考虑设置 waiver。",
+        "severity": "WARNING"
+      },
+      {
+        "name": "Clock_check03",
+        "description": "<strong>Clock_check03</strong><br><br>The Clock_check03 rule reports bits of bus signals that are used as clocks or latch enables. It also reports bus signals present in the fan-in cone of the pin of a flip-flop or enable pin of a latch enable.",
+        "fix": "请参考 SpyGlass 官方文档进行具体电路修复。",
+        "waive": "如果该路径在功能上是不可能的，或者信号是准静态（Quasi-static）的，可以考虑设置 waiver。",
+        "severity": "WARNING"
+      },
+      {
+        "name": "Clock_check04",
+        "description": "<strong>Clock_check04</strong><br><br>The Clock_check04 rule reports the usage of both edges of a clock. Note the following points: • This rule reports one violation per clock signal.",
+        "fix": "请参考 SpyGlass 官方文档进行具体电路修复。",
+        "waive": "如果该路径在功能上是不可能的，或者信号是准静态（Quasi-static）的，可以考虑设置 waiver。",
+        "severity": "WARNING"
+      }
+    ]
+  },
+  {
+    "category": "毛刺 (Glitch)",
+    "rules": [
+      {
+        "name": "Ac_glitch01",
+        "description": "<strong>Ac_glitch01</strong><br><br>The Ac_glitch01 rule reports unsynchronized clock domain crossings that are subject to glitches because of glitch-prone MUX implementations. The following figure illustrates a MUX implementation that can generate glitches.",
+        "fix": "消除组合逻辑毛刺，或在跨域前/后寄存信号。",
+        "waive": "如果该路径在功能上是不可能的，或者信号是准静态（Quasi-static）的，可以考虑设置 waiver。",
+        "severity": "ERROR"
+      },
+      {
+        "name": "Ac_glitch02",
+        "description": "<strong>Ac_glitch02</strong><br><br>The Ac_glitch02 rule reports clock domain crossings in which a source reaches to the destination through multiple paths, as shown in the following figure. Figure 395 Ac_glitch02 Rule Violation Co Crossings Checked by the Ac_glitch02 Rule By default, the Ac_glitch02 rule checks the following crossings: • Synchronized crossings from the Conventional Multi-Flop Synchronization Scheme, Synchronizing Cell Synchronization Scheme, or Qualifier Synchronization Scheme Using qualifier -crossing and the crossings have a combinational logic between the crossing path (the allow_combo_logic constraint is set) • Unsynchronized crossings from Conventional Multi-Flop Synchronization Scheme, Synchronizing Cell Synchronization Scheme, or Qualifier Synchronization Scheme Using qualifier -crossing and these crossings are unsynchronized because of a combinational logic between the crossing path (allow_combo_logic constraint is not set) Note: The Ac_glitch03 rule reports all the cases reported by the Ac_glitch02 rule.",
+        "fix": "消除组合逻辑毛刺，或在跨域前/后寄存信号。",
+        "waive": "如果该路径在功能上是不可能的，或者信号是准静态（Quasi-static）的，可以考虑设置 waiver。",
+        "severity": "ERROR"
+      },
+      {
+        "name": "Ac_glitch03",
+        "description": "<strong>Ac_glitch03</strong><br><br>The details of the Ac_glitch03 rule are covered in the following topics: • Reason for the Ac_glitch03 rule Violation • Unsynchronized Crossing Reported by the Ac_glitch03 Rule • Unate/Binate Analysis • Checks Performed by the Ac_glitch03 Rule • Status Reported by the Ac_glitch03 Rule",
+        "fix": "消除组合逻辑毛刺，或在跨域前/后寄存信号。",
+        "waive": "如果该路径在功能上是不可能的，或者信号是准静态（Quasi-static）的，可以考虑设置 waiver。",
+        "severity": "ERROR"
+      },
+      {
+        "name": "Ac_glitch04",
+        "description": "<strong>Ac_glitch04</strong><br><br>The Ac_glitch04 rule checks glitch-prone combinational logic on the synchronized data crossings or Unsynchronized crossings. This rule detects two types of glitches: Glitch on Synchronized Data Path Glitch on Unsynchronized Path Glitch on Synchronized Data Path A synchronized data path would always have a combo gate in its path because there will be some qualifier merging with the source at some point.",
+        "fix": "消除组合逻辑毛刺，或在跨域前/后寄存信号。",
+        "waive": "如果该路径在功能上是不可能的，或者信号是准静态（Quasi-static）的，可以考虑设置 waiver。",
+        "severity": "ERROR"
+      },
+      {
+        "name": "Clock_glitch01",
+        "description": "<strong>Clock_glitch01</strong><br><br>The Clock_glitch01 rule reports enable signals that are gating clocks but are not the output of a flip-flop. This rule checks for clock-gating done by using gates, such as AND gate, NAND gate, and NOR gate.",
+        "fix": "消除组合逻辑毛刺，或在跨域前/后寄存信号。",
+        "waive": "如果该路径在功能上是不可能的，或者信号是准静态（Quasi-static）的，可以考虑设置 waiver。",
+        "severity": "INFO"
+      },
+      {
+        "name": "Clock_glitch02",
+        "description": "<strong>Clock_glitch02</strong><br><br>The Clock_glitch02 rule reports a violation if a clock signal is gated by using the normal AND/OR/NOR/NAND gate, and an enable signal is provided directly without latching the enable signal. The gating enable signal should be latched with an inverted clock going to the enable pin of the latch.",
+        "fix": "消除组合逻辑毛刺，或在跨域前/后寄存信号。",
+        "waive": "如果该路径在功能上是不可能的，或者信号是准静态（Quasi-static）的，可以考虑设置 waiver。",
+        "severity": "ERROR"
+      },
+      {
+        "name": "Clock_glitch03",
+        "description": "<strong>Clock_glitch03</strong><br><br>The Clock_glitch03 rule reports clock signals that reconverge back on the same MUX. In such cases, outputs of a MUX after passing through a clock-pin of flip-flop/latches reconverge back on the same MUX.",
+        "fix": "消除组合逻辑毛刺，或在跨域前/后寄存信号。",
+        "waive": "如果该路径在功能上是不可能的，或者信号是准静态（Quasi-static）的，可以考虑设置 waiver。",
+        "severity": "INFO"
+      },
+      {
+        "name": "Clock_glitch04",
+        "description": "<strong>Clock_glitch04</strong><br><br>The Clock_glitch04 rule reports flip-flops that converge on a flip-flop clock pin through a combinational logic. Such cases result in the creation of a clock glitch when a combinational logic is used to generate clocks.",
+        "fix": "消除组合逻辑毛刺，或在跨域前/后寄存信号。",
+        "waive": "如果该路径在功能上是不可能的，或者信号是准静态（Quasi-static）的，可以考虑设置 waiver。",
+        "severity": "INFO"
+      },
+      {
+        "name": "Clock_glitch05",
+        "description": "<strong>Clock_glitch05</strong><br><br>The Clock_glitch05 rule reports asynchronous source signals, which gate the clock, but are not in the same domain as the clock signal. One violation per clock cone per asynchronous source is reported.",
+        "fix": "消除组合逻辑毛刺，或在跨域前/后寄存信号。",
+        "waive": "如果该路径在功能上是不可能的，或者信号是准静态（Quasi-static）的，可以考虑设置 waiver。",
+        "severity": "ERROR"
+      },
+      {
+        "name": "Clock_glitch07",
+        "description": "<strong>Clock_glitch07</strong><br><br>The Clock_glitch07 rule reports safe and unsafe clock gating structures in the design. This rule detects the presence of clock gating structures in the design and structurally checks if they are safe clock gating structures or unsafe clock gating structures.",
+        "fix": "消除组合逻辑毛刺，或在跨域前/后寄存信号。",
+        "waive": "如果该路径在功能上是不可能的，或者信号是准静态（Quasi-static）的，可以考虑设置 waiver。",
+        "severity": "ERROR"
+      },
+      {
+        "name": "Ar_glitch01",
+        "description": "<strong>Ar_glitch01</strong><br><br>Ar_glitch01 Glitch in reset paths When To Use Use this rule to detect glitch-prone reset circuits. Description Some glitches on the reset pin of a flip-flop might result in a metastable state.",
+        "fix": "消除组合逻辑毛刺，或在跨域前/后寄存信号。",
+        "waive": "如果该路径在功能上是不可能的，或者信号是准静态（Quasi-static）的，可以考虑设置 waiver。",
+        "severity": "ERROR"
+      },
+      {
+        "name": "Ar_glitch03",
+        "description": "<strong>Ar_glitch03</strong><br><br>There are two type of glitches that could be produced in the design. • 010 type glitch • 101 type glitch Some glitches on the reset pin of a flip-flop might result in a metastable state.",
+        "fix": "消除组合逻辑毛刺，或在跨域前/后寄存信号。",
+        "waive": "如果该路径在功能上是不可能的，或者信号是准静态（Quasi-static）的，可以考虑设置 waiver。",
+        "severity": "ERROR"
+      }
+    ]
+  }
+];
+
+    // Initialize Sidebar
+    const ruleList = document.getElementById('ruleList');
+    const searchInput = document.getElementById('ruleSearch');
+
+    function renderRules(filter = '') {
+        ruleList.innerHTML = '';
+        rulesData.forEach(cat => {
+            const filteredRules = cat.rules.filter(r => r.name.toLowerCase().includes(filter.toLowerCase()));
+            if (filteredRules.length === 0) return;
+
+            const group = document.createElement('div');
+            group.className = 'category-group';
+            
+            const title = document.createElement('div');
+            title.className = 'category-title';
+            title.textContent = cat.category;
+            group.appendChild(title);
+
+            filteredRules.forEach(rule => {
+                const item = document.createElement('div');
+                item.className = 'rule-item';
+                item.textContent = rule.name;
+                item.onclick = () => selectRule(rule, item);
+                group.appendChild(item);
+            });
+
+            ruleList.appendChild(group);
+        });
+    }
+
+    function selectRule(rule, element) {
+        // Update UI state
+        document.querySelectorAll('.rule-item').forEach(i => i.classList.remove('active'));
+        element.classList.add('active');
+
+        document.getElementById('emptyState').style.display = 'none';
+        document.getElementById('detailContent').style.display = 'flex';
+
+        // Update Text
+        document.getElementById('ruleName').textContent = rule.name;
+        document.getElementById('ruleDesc').innerHTML = rule.description;
+        document.getElementById('ruleFix').innerHTML = rule.fix || '暂无详细修复建议';
+        document.getElementById('ruleWaive').innerHTML = rule.waive || '暂无 Waive 建议';
+        
+        const severityBadge = document.getElementById('ruleSeverity');
+        severityBadge.textContent = rule.severity;
+        severityBadge.className = `severity-badge severity-${rule.severity.toLowerCase()}`;
+
+        // Render Visuals
+        renderCircuit(rule.name);
+        renderWaveform(rule.name);
+    }
+
+    function renderCircuit(ruleName) {
+        const container = document.getElementById('circuitContainer');
+        let svgHtml = '';
+
+        if (ruleName.includes('unsync')) {
+            svgHtml = `
+                <svg viewBox="0 0 400 200" class="circuit-svg">
+                    <text x="20" y="30" class="label">Clock Domain A</text>
+                    <rect x="50" y="70" width="40" height="60" class="flop" rx="4" />
+                    <text x="62" y="105" fill="white" font-size="12">FF</text>
+                    
+                    <line x1="90" y1="100" x2="300" y2="100" class="signal-line signal-pulse" />
+                    
+                    <text x="280" y="30" class="label">Clock Domain B</text>
+                    <rect x="300" y="70" width="40" height="60" class="flop" rx="4" />
+                    <text x="312" y="105" fill="white" font-size="12">FF</text>
+                    
+                    <circle cx="195" cy="100" r="20" fill="none" stroke="#ef4444" stroke-width="2" stroke-dasharray="4">
+                        <animate attributeName="stroke-dashoffset" from="0" to="20" dur="1s" repeatCount="indefinite" />
+                    </circle>
+                    <text x="145" y="145" fill="#ef4444" font-size="14" font-weight="bold">UNSYNCHRONIZED!</text>
+                </svg>
+            `;
+        } else if (ruleName.includes('cdc01a')) {
+             svgHtml = `
+                <svg viewBox="0 0 400 200" class="circuit-svg">
+                    <text x="20" y="30" class="label">Fast Domain</text>
+                    <rect x="50" y="70" width="40" height="60" class="flop" rx="4" />
+                    
+                    <rect x="130" y="80" width="80" height="40" class="gate" rx="4" />
+                    <text x="140" y="105" fill="#38bdf8" font-size="10">Pulse Extender</text>
+                    
+                    <line x1="90" y1="100" x2="130" y2="100" class="signal-line" />
+                    <line x1="210" y1="100" x2="300" y2="100" class="signal-line" />
+                    
+                    <text x="280" y="30" class="label">Slow Domain</text>
+                    <rect x="300" y="70" width="30" height="50" class="flop" rx="2" />
+                    <rect x="340" y="70" width="30" height="50" class="flop" rx="2" />
+                    <text x="310" y="140" class="label">2-FF Sync</text>
+                </svg>
+            `;
+        } else if (ruleName.includes('conv')) {
+             svgHtml = `
+                <svg viewBox="0 0 400 200" class="circuit-svg">
+                    <rect x="50" y="40" width="30" height="40" class="flop" rx="2" />
+                    <rect x="50" y="110" width="30" height="40" class="flop" rx="2" />
+                    
+                    <line x1="80" y1="60" x2="150" y2="60" class="signal-line" />
+                    <line x1="80" y1="130" x2="150" y2="130" class="signal-line" />
+                    
+                    <rect x="150" y="40" width="30" height="40" class="flop" rx="2" stroke="#10b981" />
+                    <rect x="150" y="110" width="30" height="40" class="flop" rx="2" stroke="#10b981" />
+                    
+                    <path d="M180 60 L240 60 L260 95 L240 130 L180 130 Z" class="gate" />
+                    <text x="210" y="100" fill="#38bdf8" font-size="14">&</text>
+                    
+                    <line x1="260" y1="95" x2="320" y2="95" class="signal-line" />
+                    <circle cx="260" cy="95" r="15" fill="none" stroke="#f59e0b" stroke-width="2" stroke-dasharray="4" />
+                    <text x="240" y="155" fill="#f59e0b" font-size="12">CONVERGENCE</text>
+                </svg>
+            `;
+        } else if (ruleName.includes('glitch')) {
+             svgHtml = `
+                <svg viewBox="0 0 400 200" class="circuit-svg">
+                    <rect x="50" y="50" width="40" height="30" class="gate" rx="4" />
+                    <text x="55" y="70" fill="#38bdf8" font-size="10">Comb Logic</text>
+                    
+                    <path d="M150 40 L180 60 L150 80 Z" class="gate" />
+                    <text x="155" y="65" fill="#38bdf8" font-size="8">MUX</text>
+                    
+                    <line x1="90" y1="65" x2="150" y2="65" class="signal-line" />
+                    <line x1="180" y1="60" x2="300" y2="60" class="signal-line signal-pulse" style="animation-duration: 0.5s" />
+                    
+                    <text x="185" y="50" fill="#ef4444" font-size="12" font-weight="bold">GLITCH!</text>
+                    <path d="M300 40 L340 40 L340 80 L300 80 Z" class="flop" rx="4" />
+                </svg>
+            `;
+        } else {
+             // Default Generic CDC Path
+             svgHtml = `
+                <svg viewBox="0 0 400 200" class="circuit-svg">
+                    <text x="20" y="30" class="label">Source Domain</text>
+                    <rect x="50" y="70" width="40" height="60" class="flop" rx="4" />
+                    <text x="62" y="105" fill="white" font-size="10">FF</text>
+                    
+                    <line x1="90" y1="100" x2="150" y2="100" class="signal-line signal-pulse" />
+                    
+                    <rect x="150" y="80" width="60" height="40" class="gate" rx="4" />
+                    <text x="158" y="105" fill="#38bdf8" font-size="8">CDC Path</text>
+                    
+                    <line x1="210" y1="100" x2="300" y2="100" class="signal-line" />
+                    
+                    <text x="280" y="30" class="label">Destination Domain</text>
+                    <rect x="300" y="70" width="40" height="60" class="flop" rx="4" />
+                    <text x="312" y="105" fill="white" font-size="10">FF</text>
+                    
+                    <text x="120" y="160" fill="#38bdf8" font-size="12" font-weight="bold">${ruleName} 拓扑结构</text>
+                </svg>
+            `;
+        }
+        container.innerHTML = svgHtml;
+    }
+
+    function renderWaveform(ruleName) {
+        const container = document.getElementById('waveformContainer');
+        const isDataLoss = ruleName.includes('cdc01a') || ruleName.includes('cdc01c');
+        const isUnsync = ruleName.includes('unsync');
+        const isGlitch = ruleName.includes('glitch');
+        
+        container.innerHTML = `
+            <svg viewBox="0 0 400 150" class="waveform-container">
+                <!-- CLK A -->
+                <text x="10" y="30" class="label">CLK_A</text>
+                <path d="M60 35 L80 35 L80 15 L100 15 L100 35 L120 35 L120 15 L140 15 L140 35 L160 35 L160 15 L180 15 L180 35 L200 35 L200 15 L220 15 L220 35" class="clock-trace" />
+                
+                <!-- DATA A -->
+                <text x="10" y="70" class="label">DATA_A</text>
+                ${isGlitch ? `
+                    <path d="M60 75 L100 75 L105 60 L110 75 L160 75" class="data-trace" style="stroke: #ef4444">
+                        <animate attributeName="d" values="M60 75 L100 75 L105 60 L110 75 L160 75; M60 75 L100 75 L102 65 L104 75 L160 75; M60 75 L100 75 L105 60 L110 75 L160 75" dur="0.2s" repeatCount="indefinite" />
+                    </path>
+                ` : `
+                    <path d="M60 75 L100 75 L100 60 L120 60 L120 75 L220 75" class="data-trace" />
+                `}
+
+                <!-- CLK B -->
+                <text x="10" y="110" class="label">CLK_B</text>
+                <path d="M60 115 L130 115 L130 95 L200 95 L200 115 L270 115" class="clock-trace" />
+
+                ${isDataLoss ? `
+                    <circle cx="110" cy="105" r="10" fill="rgba(239, 68, 68, 0.4)">
+                        <animate attributeName="opacity" values="0;1;0" dur="0.8s" repeatCount="indefinite" />
+                    </circle>
+                    <text x="125" y="135" fill="#ef4444" font-size="12" font-weight="bold">MISS!</text>
+                ` : ''}
+
+                ${isUnsync ? `
+                    <rect x="130" y="95" width="2" height="20" fill="#ef4444">
+                         <animate attributeName="opacity" values="1;0;1" dur="0.5s" repeatCount="indefinite" />
+                    </rect>
+                    <text x="140" y="135" fill="#ef4444" font-size="10">Metastability Risk</text>
+                ` : ''}
+            </svg>
+        `;
+    }
+
+    searchInput.oninput = (e) => renderRules(e.target.value);
+    
+    // Initial Render
+    renderRules();
+    
+    // Automatically select the first rule to show diagrams immediately
+    const firstRuleItem = document.querySelector('.rule-item');
+    if (firstRuleItem) {
+        firstRuleItem.click();
+    }
+</script>
+</body>
+</html>
