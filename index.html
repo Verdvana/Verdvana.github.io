@@ -181,114 +181,238 @@ layout: null
             text-shadow: 0 0 10px rgba(255,255,255,0.5);
         }
 
-        /* Split Section: Blog & Labs */
-        .entries-container {
-            display: flex;
+        /* Ambient Flowing Gradient Background */
+        #ambient-bg {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            z-index: -1;
+            pointer-events: none;
+            background: 
+                radial-gradient(circle at 15% 50%, rgba(0, 113, 227, 0.12), transparent 50%),
+                radial-gradient(circle at 85% 30%, rgba(88, 86, 214, 0.1), transparent 50%),
+                radial-gradient(circle at 50% 80%, rgba(52, 199, 89, 0.08), transparent 50%);
+            background-size: 150% 150%;
+            animation: ambientFlow 15s ease-in-out infinite alternate;
+        }
+
+        @keyframes ambientFlow {
+            0% { background-position: 0% 0%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 50% 100%; }
+        }
+
+        /* Highlight Sections (Blog & Labs) */
+        .highlight-section {
+            padding: 120px 10%;
             border-bottom: 1px solid var(--border-color);
-            min-height: 600px;
-        }
-
-        .entry-block {
-            flex: 1;
             position: relative;
-            text-decoration: none;
-            color: white;
-            display: flex;
-            flex-direction: column;
-            justify-content: flex-start;
-            padding: 80px 10%;
-            overflow: hidden;
-            border-right: 1px solid var(--border-color);
-            background-size: cover;
-            background-position: center;
         }
 
-        .entry-block:last-child { border-right: none; }
-
-        .entry-block .overlay {
+        .highlight-section::before {
+            content: '';
             position: absolute;
             top: 0; left: 0; width: 100%; height: 100%;
-            background: linear-gradient(to top, rgba(0,0,0,0.95) 0%, rgba(0,0,0,0.7) 100%);
-            z-index: 1;
-        }
-
-        .entry-block .bg-image {
-            position: absolute;
-            top: 0; left: 0; width: 100%; height: 100%;
-            background-size: cover;
-            background-position: center;
-            opacity: 0.3;
-            transition: opacity 0.6s ease, transform 0.8s cubic-bezier(0.16, 1, 0.3, 1);
-            transform: scale(1.05);
+            background: linear-gradient(135deg, rgba(255,255,255,0.02) 0%, rgba(0,0,0,0) 100%);
+            pointer-events: none;
             z-index: 0;
         }
 
-        .entry-block:hover .bg-image {
-            opacity: 0.5;
-            transform: scale(1);
-        }
-
-        .entry-block .content {
+        .highlight-section > * {
             position: relative;
-            z-index: 2;
-            width: 100%;
+            z-index: 1;
         }
 
-        .entry-block .label {
+        .highlight-header {
+            margin-bottom: 50px;
+        }
+
+        .highlight-header .label {
             font-size: 14px;
             text-transform: uppercase;
             letter-spacing: 2px;
             color: var(--accent-color);
-            margin-bottom: 16px;
+            margin-bottom: 12px;
             display: block;
         }
 
-        .entry-block h3 {
-            font-size: 56px;
+        .highlight-header h2 {
+            font-size: 48px;
             font-weight: 700;
-            letter-spacing: -2px;
-            margin-bottom: 50px;
+            letter-spacing: -1.5px;
+            margin-bottom: 0;
         }
 
-        /* Recent Posts/Labs List */
-        .recent-list {
-            list-style: none;
+        .highlight-footer {
+            margin-top: 50px;
+            text-align: center;
+        }
+
+        /* Blog Grid */
+        .blog-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+            gap: 24px;
+        }
+
+        .blog-card {
+            background: var(--glass);
+            border: 1px solid var(--border-color);
+            border-radius: 16px;
+            padding: 30px;
+            text-decoration: none;
+            color: white;
+            transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
             display: flex;
             flex-direction: column;
-            gap: 15px;
-            margin-bottom: 40px;
-        }
-
-        .list-link {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 10px 0;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-            text-decoration: none;
-            color: #d1d1d6;
-            font-size: 16px;
-            transition: all 0.2s;
-        }
-
-        .list-link:hover {
-            color: white;
-            border-bottom-color: var(--accent-color);
-            padding-left: 5px;
-        }
-
-        .list-link .item-title {
-            white-space: nowrap;
+            gap: 12px;
+            position: relative;
             overflow: hidden;
-            text-overflow: ellipsis;
-            margin-right: 20px;
         }
 
-        .list-link .item-meta {
+        .blog-card::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            border-radius: 16px;
+            padding: 1px;
+            background: conic-gradient(from var(--angle), rgba(255,255,255,0.1), rgba(0,113,227,0.5), rgba(255,255,255,0.1));
+            -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+            -webkit-mask-composite: xor;
+            mask-composite: exclude;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+            pointer-events: none;
+        }
+
+        .blog-card:hover {
+            transform: translateY(-5px);
+            background: rgba(255, 255, 255, 0.08);
+            border-color: transparent;
+            box-shadow: 0 12px 32px rgba(0, 0, 0, 0.4);
+        }
+
+        .blog-card:hover::before {
+            opacity: 1;
+            animation: rainbow-spin 3s linear infinite;
+        }
+
+        .blog-card h3 {
+            font-size: 20px;
+            font-weight: 600;
+            line-height: 1.4;
+            margin: 0;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
+
+        .blog-card .post-date {
             font-family: monospace;
+            font-size: 13px;
+            color: var(--accent-color);
+        }
+
+        .blog-card .post-excerpt {
             font-size: 14px;
             color: var(--secondary-text);
+            line-height: 1.5;
+            display: -webkit-box;
+            -webkit-line-clamp: 3;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
+
+        /* Labs Grid */
+        .labs-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 24px;
+        }
+
+        .lab-card-inner {
+            background: var(--glass);
+            border: 1px solid var(--border-color);
+            border-radius: 16px;
+            padding: 24px;
+            display: flex;
+            align-items: center;
+            gap: 20px;
+            transition: all 0.3s ease;
+            height: 100%;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .lab-card {
+            text-decoration: none;
+            color: white;
+            display: block;
+        }
+
+        .lab-card:hover .lab-card-inner {
+            transform: translateY(-5px);
+            background: rgba(255, 255, 255, 0.08);
+            border-color: transparent;
+            box-shadow: 0 12px 32px rgba(0, 0, 0, 0.4);
+        }
+
+        .lab-card-inner::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            border-radius: 16px;
+            padding: 1px;
+            background: conic-gradient(from var(--angle), rgba(255,255,255,0.1), rgba(0,113,227,0.5), rgba(255,255,255,0.1));
+            -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+            -webkit-mask-composite: xor;
+            mask-composite: exclude;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+            pointer-events: none;
+        }
+
+        .lab-card:hover .lab-card-inner::before {
+            opacity: 1;
+            animation: rainbow-spin 3s linear infinite;
+        }
+
+        .lab-card-inner .lab-icon {
+            width: 56px;
+            height: 56px;
+            background: rgba(0, 113, 227, 0.1);
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            color: var(--accent-color);
             flex-shrink: 0;
+            border: 1px solid rgba(0, 113, 227, 0.2);
+        }
+
+        .lab-card-inner .lab-info {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .lab-card-inner .lab-info h3 {
+            font-size: 18px;
+            font-weight: 600;
+            margin: 0;
+        }
+
+        .lab-card-inner .lab-info .lab-tag {
+            font-size: 12px;
+            color: var(--secondary-text);
+            background: rgba(255, 255, 255, 0.05);
+            padding: 2px 8px;
+            border-radius: 4px;
+            align-self: flex-start;
         }
 
         /* Section General Styling */
@@ -637,9 +761,9 @@ layout: null
             section { padding: 60px 6%; }
             section h2 { font-size: 28px; margin-bottom: 30px; }
 
-            .entries-container { flex-direction: column; }
-            .entry-block { padding: 40px 6%; border-right: none; border-bottom: 1px solid var(--border-color); min-height: auto; }
-            .entry-block h3 { font-size: 32px; margin-bottom: 20px; }
+            .highlight-section { padding: 80px 6%; }
+            .highlight-header h2 { font-size: 36px; }
+            .blog-grid, .labs-grid { grid-template-columns: 1fr; }
             
             /* Mobile Timeline Optimization */
             .career-item { 
@@ -1108,6 +1232,7 @@ layout: null
 </style>
     </head>
     <body>
+        <div id="ambient-bg"></div>
         <nav>
             <a class="logo-area" href="/">
             <img alt="Verdvana" src="/static/img/avatar.jpg"/>
@@ -1603,43 +1728,49 @@ layout: null
             </div>
         </section>
         <!-- Blog & Labs Section -->
-        <div class="entries-container">
-            <!-- The Blog -->
-            <div class="entry-block">
-                <div class="overlay">
-                </div>
-                <div class="bg-image" style="background-image: url('/static/img/wallpaper2.jpg');">
-                </div>
-                <div class="content">
-                    <span class="label">Research &amp; Thoughts</span>
-                    <h3>
-                        The Blog
-                    </h3>
-                    <!-- <p style="font-size: 13px; color: var(--secondary-text); margin-bottom: 20px; margin-top: -30px;">Articles are primarily written in <span style="color: #fff;">Chinese</span> · 技术博客</p> -->
-                    <div class="recent-list">
-                        {% for post in site.posts limit:8 %}<a class="list-link" href="{{ post.url | relative_url }}"><span class="item-title">{{ post.title }}</span><span class="item-meta">{{ post.date | date: "%Y.%m.%d" }}</span></a>{% endfor %}
-                    </div>
-                    <a class="pill" href="/archive" style="display: inline-block; background: transparent; color: #fff; border: 1px solid #fff; text-decoration: none;">View All Posts</a>
-                </div>
+        <!-- The Blog Section -->
+        <section id="blog-highlight" class="highlight-section">
+            <div class="highlight-header">
+                <span class="label">Research &amp; Thoughts</span>
+                <h2>The Blog</h2>
             </div>
-            <!-- The Labs -->
-            <div class="entry-block">
-                <div class="overlay">
-                </div>
-                <div class="bg-image" style="background-image: url('/static/img/wallpaper3.jpg');">
-                </div>
-                <div class="content">
-                    <span class="label">Experiments &amp; Tools</span>
-                    <h3>
-                        The Labs
-                    </h3>
-                    <div class="recent-list">
-                        {% for lab in site.data.labs limit:8 %}<a class="list-link" href="/labs/{{ lab.slug }}.html"><span class="item-title">{{ lab.title }}</span><span class="item-meta">{{ lab.tags | first }}</span></a>{% endfor %}
-                    </div>
-                    <a class="pill" href="/labs" style="display: inline-block; background: transparent; color: #fff; border: 1px solid #fff; text-decoration: none;">Enter Labs</a>
-                </div>
+            <div class="highlight-content blog-grid">
+                {% for post in site.posts limit:6 %}
+                <a class="blog-card" href="{{ post.url | relative_url }}">
+                    <h3>{{ post.title }}</h3>
+                    <span class="post-date">{{ post.date | date: "%Y.%m.%d" }}</span>
+                    <p class="post-excerpt">{{ post.excerpt | strip_html | truncatewords: 20 }}</p>
+                </a>
+                {% endfor %}
             </div>
-        </div>
+            <div class="highlight-footer">
+                <a class="pill outline" href="/archive">View All Posts</a>
+            </div>
+        </section>
+
+        <!-- The Labs Section -->
+        <section id="labs-highlight" class="highlight-section">
+            <div class="highlight-header">
+                <span class="label">Experiments &amp; Tools</span>
+                <h2>The Labs</h2>
+            </div>
+            <div class="highlight-content labs-grid">
+                {% for lab in site.data.labs limit:8 %}
+                <a class="lab-card" href="/labs/{{ lab.slug }}.html">
+                    <div class="lab-card-inner">
+                        <div class="lab-icon"><i class="fa-solid fa-flask"></i></div>
+                        <div class="lab-info">
+                            <h3>{{ lab.title }}</h3>
+                            <span class="lab-tag">{{ lab.tags | first }}</span>
+                        </div>
+                    </div>
+                </a>
+                {% endfor %}
+            </div>
+            <div class="highlight-footer">
+                <a class="pill outline" href="/labs">Enter Labs</a>
+            </div>
+        </section>
         <!-- Footer -->
         <footer>
             <div class="footer-content">
@@ -1772,6 +1903,8 @@ layout: null
             document.getElementById("run_time_minute").innerHTML = setzero(minsOld);
             document.getElementById("run_time_second").innerHTML = setzero(secondsOld);
         }, 1000);
+
+
     </script>
     </body>
 </html>
