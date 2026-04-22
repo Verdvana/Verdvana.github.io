@@ -1,9 +1,9 @@
 ---
 layout: post
 title:  从逻辑门到深层神经网络：用FPGA实现手写数字识别"
-date:   2026-04-22 19:15:00 +0700
+date:   2026-04-22 18:15:00 +0700
 tags: 
-  - 
+  - AI
   - RTL
   - Verilog HDL
   - FPGA
