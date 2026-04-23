@@ -52,5 +52,5 @@
   desc: >
     用动画展示全连接双层神经网络如何逐步识别 3×3 格子上的横线、竖线与斜线。
   thumb: /assets/labs/thumbs/neural_network_visualization.jpg
-  tags: [Algorithm]
+  tags: [Neural Networks]
   order: 3
