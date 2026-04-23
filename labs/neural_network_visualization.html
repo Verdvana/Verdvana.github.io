@@ -9,10 +9,10 @@ html { scrollbar-gutter: stable; }
 body{background:#0d0d1a;color:#e0e0ff;font-family:'Segoe UI',Arial,sans-serif;min-height:100vh;display:flex;flex-direction:column;align-items:center;padding-top:80px}
 h1{text-align:center;color:#7eb8f7;padding:16px 0 4px;font-size:1.45em;letter-spacing:2px;text-shadow:0 0 16px #4af}
 .sub{text-align:center;color:#8888bb;font-size:0.9em;margin-bottom:10px}
-.layout{display:flex;flex-direction:row;align-items:flex-start;gap:16px;width:99vw;max-width:1360px;padding:0 8px 12px}
+.layout{display:flex;flex-direction:row;align-items:flex-start;gap:16px;width:100%;max-width:1360px;padding:0 8px 12px}
 
 /* LEFT */
-.left{display:flex;flex-direction:column;align-items:center;gap:9px;min-width:188px;max-width:208px}
+.left{display:flex;flex-direction:column;align-items:center;gap:9px;width:200px;flex-shrink:0}
 .ptitle{color:#7eb8f7;font-size:0.95em;font-weight:bold;letter-spacing:1px;text-shadow:0 0 8px #4af}
 .grid{display:grid;grid-template-columns:repeat(3,54px);grid-template-rows:repeat(3,54px);gap:5px;background:#161628;border:2px solid #2a2a5a;border-radius:10px;padding:9px}
 .cell{width:54px;height:54px;border-radius:8px;background:#1c1c3a;border:2px solid #333366;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:0.78em;color:#555588;transition:all 0.18s;user-select:none}
@@ -52,8 +52,8 @@ h1{text-align:center;color:#7eb8f7;padding:16px 0 4px;font-size:1.45em;letter-sp
 .pb{height:100%;background:linear-gradient(90deg,#2563eb,#60a5fa);border-radius:4px;transition:width 0.3s}
 
 /* RIGHT */
-.right{min-width:338px;max-width:385px;display:flex;flex-direction:column;gap:8px}
-.mpanel{background:#10101f;border:1.5px solid #22224a;border-radius:12px;padding:12px 14px;min-height:555px;max-height:645px;overflow-y:auto}
+.right{width:380px;flex-shrink:0;display:flex;flex-direction:column;gap:8px}
+.mpanel{background:#10101f;border:1.5px solid #22224a;border-radius:12px;padding:12px 14px;min-height:555px;max-height:645px;overflow-y:auto;scrollbar-gutter:stable}
 .mpanel::-webkit-scrollbar{width:5px}
 .mpanel::-webkit-scrollbar-thumb{background:#2a2a5a;border-radius:4px}
 .mstitle{color:#7eb8f7;font-size:1em;font-weight:bold;margin-bottom:8px;border-bottom:1px solid #22224a;padding-bottom:5px;text-shadow:0 0 8px #4af}
