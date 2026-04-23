@@ -1,6 +1,5 @@
 # 每一项用 slug 对应 labs/ 目录下的 html 文件名（不含 .html）
 # group: 分组名称 (ASIC & Hardware, Visual & AI, Tools & Utilities)
-# level: 复杂度级别 (Core, Experiment, Utility)
 
 - slug: neural_network_visualization
   title: 神经网络动画演示
@@ -9,7 +8,6 @@
   thumb: /assets/labs/thumbs/neural_network_visualization.jpg
   tags: [Neural Networks]
   group: Visual & AI
-  level: Experiment
   order: 1
 
 - slug: visionmatrix
@@ -19,7 +17,6 @@
   thumb: /assets/labs/thumbs/visionmatrix.jpg
   tags: [Image Processing, Hardware]
   group: Visual & AI
-  level: Utility
   order: 2
 
 - slug: cdc_interactive
@@ -29,7 +26,6 @@
   thumb: /assets/labs/thumbs/cdc_interactive.jpg
   tags: [ASIC, Digital Logic]
   group: ASIC & Hardware
-  level: Core
   order: 3
 
 - slug: crypto_toolbox
@@ -39,7 +35,6 @@
   thumb: /assets/labs/thumbs/crypto_toolbox.jpg
   tags: [Algorithm, Security]
   group: Tools & Utilities
-  level: Utility
   order: 4
 
 - slug: mortgage_calculator
@@ -49,7 +44,6 @@
   thumb: /assets/labs/thumbs/mortgage_calculator.jpg
   tags: [Finance]
   group: Tools & Utilities
-  level: Utility
   order: 5
 
 - slug: random_picker
@@ -59,5 +53,4 @@
   thumb: /assets/labs/thumbs/random_picker.jpg
   tags: [Others]
   group: Tools & Utilities
-  level: Utility
   order: 6
