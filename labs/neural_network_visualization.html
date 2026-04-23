@@ -5,7 +5,8 @@
 <title>神经网络线条识别演示</title>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
-body{background:#0d0d1a;color:#e0e0ff;font-family:'Segoe UI',Arial,sans-serif;min-height:100vh;display:flex;flex-direction:column;align-items:center}
+html { scrollbar-gutter: stable; }
+body{background:#0d0d1a;color:#e0e0ff;font-family:'Segoe UI',Arial,sans-serif;min-height:100vh;display:flex;flex-direction:column;align-items:center;padding-top:80px}
 h1{text-align:center;color:#7eb8f7;padding:16px 0 4px;font-size:1.45em;letter-spacing:2px;text-shadow:0 0 16px #4af}
 .sub{text-align:center;color:#8888bb;font-size:0.9em;margin-bottom:10px}
 .layout{display:flex;flex-direction:row;align-items:flex-start;gap:16px;width:99vw;max-width:1360px;padding:0 8px 12px}
@@ -62,9 +63,83 @@ h1{text-align:center;color:#7eb8f7;padding:16px 0 4px;font-size:1.45em;letter-sp
 .mr{background:#0e1e10;border-radius:6px;padding:5px 9px;font-size:0.8em;color:#6ee7b7;white-space:pre-wrap;font-family:'Consolas',monospace;border-left:3px solid #10b981;line-height:1.65;margin-bottom:3px}
 .mhl{background:#15152f;border-radius:6px;padding:8px 10px;font-size:0.95em;color:#fbbf24;font-weight:bold;text-align:center;border:1.5px solid #f59e0b55;margin-top:4px}
 .pos{color:#4ade80}.neg{color:#f87171}
+
+        /* ── Fixed Navigation (exact from index.html) ─────────────────────── */
+        nav {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            padding: 20px 40px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            z-index: 1000;
+            background: rgba(0, 0, 0, 0.7);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            line-height: 1.6;
+        }
+
+        nav .logo-area {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            text-decoration: none;
+            color: #ffffff;
+        }
+
+        nav .logo-area img {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            object-fit: cover;
+        }
+
+        nav .logo {
+            font-size: 18px;
+            font-weight: 700;
+            letter-spacing: -0.5px;
+            color: #ffffff;
+        }
+
+        nav .nav-links {
+            display: flex;
+            gap: 30px;
+        }
+
+        nav a {
+            text-decoration: none;
+            color: #ffffff;
+            font-size: 14px;
+            font-weight: 500;
+            transition: color 0.2s;
+        }
+
+        nav a:hover {
+            color: #8e8e93;
+        }
+
+        @media (max-width: 900px) {
+            nav { padding: 15px 20px; }
+            nav .nav-links { gap: 15px; }
+            nav .nav-links a { font-size: 13px; }
+        }
 </style>
 </head>
 <body>
+<nav>
+    <a class="logo-area" href="/">
+        <img alt="Verdvana" src="/static/img/avatar.jpg"/>
+        <span class="logo">VERDVANA</span>
+    </a>
+    <div class="nav-links">
+        <a href="/archive">Blog</a><a href="/labs">Labs</a><a href="/comments">Comments</a><a href="https://github.com/Verdvana">GitHub</a>
+    </div>
+</nav>
 <h1>&#129504; 全连接双层神经网络 &middot; 线条识别</h1>
 <div class="sub">在 3&times;3 格子上画线 &rarr; 点击「开始识别」&rarr; 逐步查看数学计算过程</div>
 
