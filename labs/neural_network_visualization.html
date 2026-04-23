@@ -1,0 +1,524 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>神经网络线条识别演示</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:#0d0d1a;color:#e0e0ff;font-family:'Segoe UI',Arial,sans-serif;min-height:100vh;display:flex;flex-direction:column;align-items:center}
+h1{text-align:center;color:#7eb8f7;padding:16px 0 4px;font-size:1.45em;letter-spacing:2px;text-shadow:0 0 16px #4af}
+.sub{text-align:center;color:#8888bb;font-size:0.9em;margin-bottom:10px}
+.layout{display:flex;flex-direction:row;align-items:flex-start;gap:16px;width:99vw;max-width:1360px;padding:0 8px 12px}
+
+/* LEFT */
+.left{display:flex;flex-direction:column;align-items:center;gap:9px;min-width:188px;max-width:208px}
+.ptitle{color:#7eb8f7;font-size:0.95em;font-weight:bold;letter-spacing:1px;text-shadow:0 0 8px #4af}
+.grid{display:grid;grid-template-columns:repeat(3,54px);grid-template-rows:repeat(3,54px);gap:5px;background:#161628;border:2px solid #2a2a5a;border-radius:10px;padding:9px}
+.cell{width:54px;height:54px;border-radius:8px;background:#1c1c3a;border:2px solid #333366;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:0.78em;color:#555588;transition:all 0.18s;user-select:none}
+.cell.on{background:#2563eb;border-color:#60a5fa;box-shadow:0 0 14px #2563ebcc,0 0 4px #60a5fa;color:#fff}
+.ivalues{background:#12122a;border:1.5px solid #2a2a5a;border-radius:9px;padding:8px 10px;font-size:0.82em;width:100%}
+.ivalues .ivt{color:#7eb8f7;margin-bottom:4px;font-weight:bold}
+.ivgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:2px}
+.ivc{text-align:center;padding:3px 2px;border-radius:4px;color:#8888bb;font-size:0.92em}
+.ivc.on{color:#60a5fa;font-weight:bold}
+.pbtns{display:flex;flex-direction:column;gap:5px;width:100%}
+.pbtn{background:#1a1a38;border:1.5px solid #3a3a6a;color:#a0c4ff;border-radius:7px;padding:6px 0;cursor:pointer;font-size:0.88em;transition:background 0.15s;width:100%}
+.pbtn:hover{background:#22226a;border-color:#6080dd}
+.brow{display:flex;gap:7px;width:100%}
+.bmain{flex:1;background:linear-gradient(135deg,#1e3a8a,#2563eb);border:none;color:#fff;border-radius:8px;padding:9px 0;cursor:pointer;font-size:1em;font-weight:bold;letter-spacing:1px;box-shadow:0 0 12px #2563eb88;transition:all 0.15s}
+.bmain:hover{background:linear-gradient(135deg,#2563eb,#3b82f6);box-shadow:0 0 22px #2563ebc0}
+.breset{background:#1a1a38;border:1.5px solid #3a3a6a;color:#f87171;border-radius:8px;padding:9px 13px;cursor:pointer;font-size:0.95em;transition:background 0.15s}
+.breset:hover{background:#2e0a0a}
+.legend{display:flex;gap:10px;justify-content:center;margin-top:2px}
+.litem{display:flex;align-items:center;gap:4px;font-size:0.8em;color:#8888bb}
+.ldot{width:11px;height:11px;border-radius:50%}
+
+/* CENTER */
+.mid{flex:1;display:flex;flex-direction:column;align-items:center;min-width:0}
+#svgwrap{
+    aspect-ratio: 620 / 570;
+    overflow: hidden;
+    flex-shrink: 0;width:100%;background:#10101f;border:1.5px solid #22224a;border-radius:12px;overflow:hidden}
+#nnsvg{
+    height: 100%;width:100%;display:block}
+.sctrl{display:flex;align-items:center;gap:8px;margin-top:8px;width:100%;justify-content:center}
+.sbtn{background:#1a1a38;border:1.5px solid #3a3a6a;color:#a0c4ff;border-radius:7px;padding:6px 13px;cursor:pointer;font-size:0.88em;transition:background 0.15s;white-space:nowrap}
+.sbtn:hover{background:#22226a}
+.sbtn:disabled{color:#444466;cursor:default}
+.sbtn.ap{background:#1a3a1a;border-color:#3a8a3a;color:#6fe86f}
+#slbl{color:#8888bb;font-size:0.86em;min-width:72px;text-align:center}
+.pbwrap{width:100%;height:7px;background:#1a1a38;border-radius:4px;overflow:hidden;margin-top:6px}
+.pb{height:100%;background:linear-gradient(90deg,#2563eb,#60a5fa);border-radius:4px;transition:width 0.3s}
+
+/* RIGHT */
+.right{min-width:338px;max-width:385px;display:flex;flex-direction:column;gap:8px}
+.mpanel{background:#10101f;border:1.5px solid #22224a;border-radius:12px;padding:12px 14px;min-height:555px;max-height:645px;overflow-y:auto}
+.mpanel::-webkit-scrollbar{width:5px}
+.mpanel::-webkit-scrollbar-thumb{background:#2a2a5a;border-radius:4px}
+.mstitle{color:#7eb8f7;font-size:1em;font-weight:bold;margin-bottom:8px;border-bottom:1px solid #22224a;padding-bottom:5px;text-shadow:0 0 8px #4af}
+.msect{margin-bottom:10px}
+.mstit{color:#a0c4ff;font-size:0.88em;font-weight:bold;margin-bottom:3px}
+.mf{background:#191932;border-radius:6px;padding:5px 9px;font-size:0.8em;color:#c0d8ff;margin-bottom:3px;white-space:pre-wrap;font-family:'Consolas',monospace;border-left:3px solid #2563eb;line-height:1.65}
+.mr{background:#0e1e10;border-radius:6px;padding:5px 9px;font-size:0.8em;color:#6ee7b7;white-space:pre-wrap;font-family:'Consolas',monospace;border-left:3px solid #10b981;line-height:1.65;margin-bottom:3px}
+.mhl{background:#15152f;border-radius:6px;padding:8px 10px;font-size:0.95em;color:#fbbf24;font-weight:bold;text-align:center;border:1.5px solid #f59e0b55;margin-top:4px}
+.pos{color:#4ade80}.neg{color:#f87171}
+</style>
+</head>
+<body>
+<h1>&#129504; 全连接双层神经网络 &middot; 线条识别</h1>
+<div class="sub">在 3&times;3 格子上画线 &rarr; 点击「开始识别」&rarr; 逐步查看数学计算过程</div>
+
+<div class="layout">
+  <!-- LEFT -->
+  <div class="left">
+    <div class="ptitle">&#128399; 输入画板</div>
+    <div class="grid" id="grid"></div>
+    <div class="ivalues">
+      <div class="ivt">输入值 x&#x2081;~x&#x2089;</div>
+      <div class="ivgrid" id="ivgrid"></div>
+    </div>
+    <div class="pbtns">
+      <div class="ptitle" style="font-size:0.83em">&#128204; 预设示例</div>
+      <button class="pbtn" onclick="pre('v')">&#128207; 竖线（第2列亮）</button>
+      <button class="pbtn" onclick="pre('h')">&#128208; 横线（第2行亮）</button>
+      <button class="pbtn" onclick="pre('d1')">&#8600; 主对角线</button>
+      <button class="pbtn" onclick="pre('d2')">&#8601; 副对角线</button>
+    </div>
+    <div class="brow">
+      <button class="bmain" onclick="start()">&#128269; 开始识别</button>
+      <button class="breset" onclick="reset()">&#8635;</button>
+    </div>
+    <div class="legend">
+      <div class="litem"><div class="ldot" style="background:#3b82f6"></div>竖线</div>
+      <div class="litem"><div class="ldot" style="background:#a855f7"></div>横线</div>
+      <div class="litem"><div class="ldot" style="background:#f59e0b"></div>斜线</div>
+    </div>
+  </div>
+
+  <!-- CENTER -->
+  <div class="mid">
+    <div class="ptitle" style="margin-bottom:6px">&#128376;&#65039; 神经网络结构可视化</div>
+    <div id="svgwrap">
+      <svg id="nnsvg" viewBox="0 0 620 570" xmlns="http://www.w3.org/2000/svg"></svg>
+    </div>
+    <div class="sctrl">
+      <button class="sbtn" id="bprev" onclick="prev()" disabled>&#9664; 上一步</button>
+      <span id="slbl">步骤 0/8</span>
+      <button class="sbtn" id="bnext" onclick="next()" disabled>下一步 &#9654;</button>
+      <button class="sbtn" id="bauto" onclick="togAuto()" disabled>&#9654; 自动播放</button>
+    </div>
+    <div class="pbwrap"><div class="pb" id="pb" style="width:0%"></div></div>
+  </div>
+
+  <!-- RIGHT -->
+  <div class="right">
+    <div class="ptitle">&#128208; 数学计算过程</div>
+    <div class="mpanel" id="mp">
+      <div class="mstitle">等待识别...</div>
+      <div style="color:#555577;font-size:0.87em">点击「开始识别」后，此处将逐步展示完整数学推导。</div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ════════════════════════════════════════════
+// 网络权重 (手工设计，保证正确分类)
+// 格子编号 (行优先):  x0 x1 x2
+//                     x3 x4 x5
+//                     x6 x7 x8
+//
+// 隐藏层 6个神经元:
+//   h0: 检测第0列 (x0,x3,x6) → 竖线
+//   h1: 检测第1列 (x1,x4,x7) → 竖线
+//   h2: 检测第2列 (x2,x5,x8) → 竖线
+//   h3: 检测第0行 (x0,x1,x2) → 横线
+//   h4: 检测第1行 (x3,x4,x5) → 横线
+//   h5: 检测第2行 (x6,x7,x8) → 横线
+// 输出层 3个神经元: out0=竖线 out1=横线 out2=斜线
+// ════════════════════════════════════════════
+const W1=[
+  [ 3,-1,-1, 3,-1,-1, 3,-1,-1],  // h0: col0
+  [-1, 3,-1,-1, 3,-1,-1, 3,-1],  // h1: col1
+  [-1,-1, 3,-1,-1, 3,-1,-1, 3],  // h2: col2
+  [ 3, 3, 3,-1,-1,-1,-1,-1,-1],  // h3: row0
+  [-1,-1,-1, 3, 3, 3,-1,-1,-1],  // h4: row1
+  [-1,-1,-1,-1,-1,-1, 3, 3, 3],  // h5: row2
+];
+const b1=[-4.5,-4.5,-4.5,-4.5,-4.5,-4.5];
+const W2=[
+  [ 4, 4, 4,-3,-3,-3],   // out0: 竖线 (列检测器激活→高分)
+  [-3,-3,-3, 4, 4, 4],   // out1: 横线 (行检测器激活→高分)
+  [-4,-4,-4,-4,-4,-4],   // out2: 斜线 (列行均未激活→偏置兜底)
+];
+const b2=[0,0,6];  // 斜线偏置+6，当其他检测器沉默时胜出
+
+// ════════════════════════════
+// 状态
+// ════════════════════════════
+const PRESETS={
+  v:[0,1,0,0,1,0,0,1,0],
+  h:[0,0,0,1,1,1,0,0,0],
+  d1:[1,0,0,0,1,0,0,0,1],
+  d2:[0,0,1,0,1,0,1,0,0],
+};
+let gs=[0,0,0,0,0,0,0,0,0];
+let step=-1, tot=8, tmr=null, C=null;
+
+// ════════════════════════════
+// UI
+// ════════════════════════════
+const XS=['x₁','x₂','x₃','x₄','x₅','x₆','x₇','x₈','x₉'];
+
+function buildGrid(){
+  const g=document.getElementById('grid'); g.innerHTML='';
+  for(let i=0;i<9;i++){
+    const d=document.createElement('div');
+    d.className='cell'+(gs[i]?' on':'');
+    d.textContent=XS[i];
+    d.onclick=()=>{gs[i]^=1;buildGrid();buildIV();};
+    g.appendChild(d);
+  }
+}
+function buildIV(){
+  const g=document.getElementById('ivgrid'); g.innerHTML='';
+  for(let i=0;i<9;i++){
+    const d=document.createElement('div');
+    d.className='ivc'+(gs[i]?' on':'');
+    d.textContent=XS[i]+'='+gs[i];
+    g.appendChild(d);
+  }
+}
+function pre(t){gs=[...PRESETS[t]];buildGrid();buildIV();clearCalc();}
+function reset(){gs=[0,0,0,0,0,0,0,0,0];buildGrid();buildIV();clearCalc();}
+
+// ════════════════════════════
+// Math
+// ════════════════════════════
+function sig(z){return 1/(1+Math.exp(-z));}
+function softmax(a){
+  const mx=Math.max(...a),e=a.map(v=>Math.exp(v-mx)),s=e.reduce((x,y)=>x+y,0);
+  return e.map(v=>v/s);
+}
+function f4(v){return v.toFixed(4);}
+function fw(w){return w>0?'<span class="pos">+'+w.toFixed(1)+'</span>':'<span class="neg">'+w.toFixed(1)+'</span>';}
+
+function fwd(x){
+  const z1=W1.map((r,j)=>r.reduce((s,w,i)=>s+w*x[i],0)+b1[j]);
+  const h=z1.map(sig);
+  const z2=W2.map((r,k)=>r.reduce((s,w,j)=>s+w*h[j],0)+b2[k]);
+  const out=softmax(z2);
+  return{x,z1,h,z2,out,pred:out.indexOf(Math.max(...out))};
+}
+
+// ════════════════════════════
+// 步骤控制
+// ════════════════════════════
+function start(){C=fwd(gs);step=0;stopAuto();en(true);view();}
+function prev(){if(step>0){step--;view();}}
+function next(){if(step<tot-1){step++;view();}}
+function togAuto(){
+  const b=document.getElementById('bauto');
+  if(tmr){stopAuto();return;}
+  b.textContent='⏸ 暂停';b.classList.add('ap');
+  if(step===tot-1)step=0;
+  tmr=setInterval(()=>{if(step<tot-1){step++;view();}else{stopAuto();}},1900);
+  view();
+}
+function stopAuto(){
+  if(tmr){clearInterval(tmr);tmr=null;}
+  const b=document.getElementById('bauto');
+  b.textContent='▶ 自动播放';b.classList.remove('ap');
+}
+function en(on){
+  document.getElementById('bprev').disabled=!on;
+  document.getElementById('bnext').disabled=!on;
+  document.getElementById('bauto').disabled=!on;
+}
+function clearCalc(){
+  step=-1;C=null;stopAuto();en(false);
+  document.getElementById('slbl').textContent='步骤 0/8';
+  document.getElementById('pb').style.width='0%';
+  drawSVG(null,-1);
+  document.getElementById('mp').innerHTML='<div class="mstitle">等待识别...</div><div style="color:#555577;font-size:0.87em">点击「开始识别」查看完整计算过程。</div>';
+}
+function view(){
+  drawSVG(C,step);
+  renderMath(C,step);
+  document.getElementById('slbl').textContent='步骤 '+(step+1)+'/'+tot;
+  document.getElementById('pb').style.width=(((step+1)/tot)*100)+'%';
+  document.getElementById('bprev').disabled=step===0;
+  document.getElementById('bnext').disabled=step===tot-1;
+}
+
+// ════════════════════════════
+// SVG绘制
+// ════════════════════════════
+const LX=[65,235,407,575];
+function ny(n,i){return 58+(560-116)/(n-1)*i;}
+
+function mkEl(tag,attrs,txt){
+  const e=document.createElementNS('http://www.w3.org/2000/svg',tag);
+  for(const[k,v]of Object.entries(attrs))e.setAttribute(k,v);
+  if(txt!==undefined)e.textContent=txt;
+  return e;
+}
+
+function drawSVG(C,step){
+  const svg=document.getElementById('nnsvg');
+  svg.innerHTML='';
+
+  // glow filter
+  const defs=mkEl('defs',{});
+  const flt=mkEl('filter',{id:'gl',x:'-60%',y:'-60%',width:'220%',height:'220%'});
+  flt.appendChild(mkEl('feGaussianBlur',{stdDeviation:'3.5',result:'b'}));
+  const fm=mkEl('feMerge',{});
+  fm.appendChild(mkEl('feMergeNode',{in:'b'}));
+  fm.appendChild(mkEl('feMergeNode',{in:'SourceGraphic'}));
+  flt.appendChild(fm);defs.appendChild(flt);svg.appendChild(defs);
+
+  const OC=['#3b82f6','#a855f7','#f59e0b'];
+  const inP=Array.from({length:9},(_,i)=>[LX[0],ny(9,i)]);
+  const hidP=Array.from({length:6},(_,i)=>[LX[1],ny(6,i)]);
+  const outP=Array.from({length:3},(_,i)=>[LX[3],ny(3,i)]);
+
+  // 层标签
+  [['输入层(9)',LX[0]],['隐藏层(6)',LX[1]],['输出层(3)',LX[3]]].forEach(([t,x])=>{
+    svg.appendChild(mkEl('text',{x,y:18,'text-anchor':'middle',fill:'#44446a','font-size':'11','font-family':'Arial'},t));
+    svg.appendChild(mkEl('line',{x1:x,y1:26,x2:x,y2:562,stroke:'#1a1a3a','stroke-width':'1','stroke-dasharray':'4 7'}));
+  });
+
+  // 输入→隐藏 连线
+  for(let j=0;j<6;j++)for(let i=0;i<9;i++){
+    const w=W1[j][i];
+    let op=0.09,sw=0.55,col=w>0?'#60a5fa':'#f87171';
+    if(step>=1&&C&&C.x[i]===1&&Math.abs(w)>1){op=0.45;sw=1.4;}
+    if(step>=3&&C&&C.h[j]>0.5&&C.x[i]===1&&Math.abs(w)>1){op=0.72;sw=1.9;}
+    svg.appendChild(mkEl('line',{x1:inP[i][0],y1:inP[i][1],x2:hidP[j][0],y2:hidP[j][1],stroke:col,'stroke-width':sw,opacity:op}));
+  }
+  // 隐藏→输出 连线
+  for(let k=0;k<3;k++)for(let j=0;j<6;j++){
+    const w=W2[k][j];
+    let op=0.09,sw=0.55,col=w>0?'#60a5fa':'#f87171';
+    if(step>=4&&C&&C.h[j]>0.5&&Math.abs(w)>1){op=0.58;sw=1.7;col=OC[k];}
+    if(step>=7&&C&&k===C.pred){op=0.82;sw=2.2;}
+    svg.appendChild(mkEl('line',{x1:hidP[j][0],y1:hidP[j][1],x2:outP[k][0],y2:outP[k][1],stroke:col,'stroke-width':sw,opacity:op}));
+  }
+
+  // 输入神经元
+  inP.forEach(([x,y],i)=>{
+    const act=C&&C.x[i]===1,hi=step>=0&&act;
+    svg.appendChild(mkEl('circle',{cx:x,cy:y,r:16,fill:hi?'#1d4ed8':'#1a1a3a',stroke:hi?'#60a5fa':'#334','stroke-width':hi?2.2:1.2,filter:hi?'url(#gl)':''}));
+    svg.appendChild(mkEl('text',{x,y:y-3,'text-anchor':'middle',fill:hi?'#93c5fd':'#555577','font-size':'10.5','font-family':'Arial','font-weight':hi?'bold':'normal'},XS[i]));
+    if(C)svg.appendChild(mkEl('text',{x,y:y+10,'text-anchor':'middle',fill:act?'#60a5fa':'#33336a','font-size':'9.5','font-family':'Consolas,Arial'},''+C.x[i]));
+  });
+
+  // 隐藏神经元
+  const HL=['h₁','h₂','h₃','h₄','h₅','h₆'];
+  const HS=['(列0)','(列1)','(列2)','(行0)','(行1)','(行2)'];
+  hidP.forEach(([x,y],j)=>{
+    let fc='#1a1a3a',sc='#334',gf='',tc='#555577';
+    if(step>=3&&C){
+      const h=C.h[j];
+      fc='rgb('+Math.round(16+h*30)+','+Math.round(40+h*140)+','+Math.round(50+h*100)+')';
+      sc=h>0.5?'#10b981':'#334';gf=h>0.5?'url(#gl)':'';tc=h>0.5?'#6ee7b7':'#555577';
+    }else if(step>=1){sc='#2a6';tc='#4a8';}
+    svg.appendChild(mkEl('circle',{cx:x,cy:y,r:22,fill:fc,stroke:sc,'stroke-width':sc==='#10b981'?2.5:1.2,filter:gf}));
+    svg.appendChild(mkEl('text',{x,y:y-6,'text-anchor':'middle',fill:tc,'font-size':'12','font-family':'Arial','font-weight':'bold'},HL[j]));
+    svg.appendChild(mkEl('text',{x,y:y+7,'text-anchor':'middle',fill:tc,'font-size':'9','font-family':'Arial'},HS[j]));
+    if(step>=3&&C)svg.appendChild(mkEl('text',{x,y:y+19,'text-anchor':'middle',fill:'#6ee7b7','font-size':'9','font-family':'Consolas,Arial'},f4(C.h[j])));
+  });
+
+  // 输出神经元
+  const OL=['竖线','横线','斜线'];
+  outP.forEach(([x,y],k)=>{
+    const win=step>=7&&C&&k===C.pred;
+    let fc='#1a1a3a';
+    if(step>=6&&C){const p=C.out[k],rgb=OC[k].match(/\w\w/g).map(h=>parseInt(h,16));fc='rgba('+rgb[0]+','+rgb[1]+','+rgb[2]+','+(0.1+p*0.55)+')';}
+    if(win)fc=OC[k];
+    svg.appendChild(mkEl('circle',{cx:x,cy:y,r:26,fill:fc,stroke:OC[k],'stroke-width':win?3:1.8,filter:win?'url(#gl)':''}));
+    svg.appendChild(mkEl('text',{x,y:y-4,'text-anchor':'middle',fill:win?'#fff':OC[k],'font-size':'12','font-family':'Arial','font-weight':'bold'},OL[k]));
+    if(step>=6&&C)svg.appendChild(mkEl('text',{x,y:y+12,'text-anchor':'middle',fill:win?'#fff':'#aaa','font-size':'10','font-family':'Consolas,Arial'},(C.out[k]*100).toFixed(1)+'%'));
+    if(win)svg.appendChild(mkEl('text',{x,y:y+28,'text-anchor':'middle',fill:'#fbbf24','font-size':'17','font-family':'Arial'},'★'));
+  });
+
+  if(step>=2)svg.appendChild(mkEl('text',{x:LX[1],y:564,'text-anchor':'middle',fill:'#333355','font-size':'9.5','font-family':'Consolas'},'σ(z)=1/(1+e⁻ᶻ)'));
+  if(step>=5)svg.appendChild(mkEl('text',{x:LX[3],y:564,'text-anchor':'middle',fill:'#333355','font-size':'9.5','font-family':'Consolas'},'softmax'));
+}
+
+// ════════════════════════════
+// 数学面板
+// ════════════════════════════
+const TITLES=[
+  '步骤 1/8 ▸ 读取输入值 x',
+  '步骤 2/8 ▸ 隐藏层加权求和  z⁽¹⁾ = W1 · x + b1',
+  '步骤 3/8 ▸ Sigmoid 激活  h = σ(z⁽¹⁾)',
+  '步骤 4/8 ▸ 隐藏层特征汇总',
+  '步骤 5/8 ▸ 输出层加权求和  z⁽²⁾ = W2 · h + b2',
+  '步骤 6/8 ▸ Softmax 概率归一化',
+  '步骤 7/8 ▸ 输出概率分布',
+  '步骤 8/8 ▸ 最终识别结果',
+];
+const HL6=['h₁(列0)','h₂(列1)','h₃(列2)','h₄(行0)','h₅(行1)','h₆(行2)'];
+const OL3=['out₁(竖线)','out₂(横线)','out₃(斜线)'];
+const OC3=['#3b82f6','#a855f7','#f59e0b'];
+const EM3=['📏','📐','↘'];
+const ON3=['竖线','横线','斜线'];
+
+function renderMath(C,step){
+  let h='<div class="mstitle">'+TITLES[step]+'</div>';
+
+  if(step===0){
+    h+=`<div class="msect">
+<div class="mstit">输入向量 x（3×3格子，行优先展开）</div>
+<div class="mf">x = [x₁, x₂, x₃, x₄, x₅, x₆, x₇, x₈, x₉]
+  = [${C.x.join(', ')}]</div>
+<div class="mf">格子示意：
+┌─────┬─────┬─────┐
+│x₁=${C.x[0]} │x₂=${C.x[1]} │x₃=${C.x[2]} │
+├─────┼─────┼─────┤
+│x₄=${C.x[3]} │x₅=${C.x[4]} │x₆=${C.x[5]} │
+├─────┼─────┼─────┤
+│x₇=${C.x[6]} │x₈=${C.x[7]} │x₉=${C.x[8]} │
+└─────┴─────┴─────┘</div>
+<div class="mstit" style="margin-top:8px">网络结构说明</div>
+<div class="mf">输入层  : 9个神经元 (x₁~x₉)
+隐藏层  : 6个神经元 (h₁~h₆)，Sigmoid激活
+  h₁: 检测第0列(x₁,x₄,x₇)是否全亮
+  h₂: 检测第1列(x₂,x₅,x₈)是否全亮
+  h₃: 检测第2列(x₃,x₆,x₉)是否全亮
+  h₄: 检测第0行(x₁,x₂,x₃)是否全亮
+  h₅: 检测第1行(x₄,x₅,x₆)是否全亮
+  h₆: 检测第2行(x₇,x₈,x₉)是否全亮
+输出层  : 3个神经元，Softmax激活
+  out₁→竖线  out₂→横线  out₃→斜线</div>
+</div>`;
+  }
+
+  else if(step===1){
+    h+=`<div class="mstit">公式：z⁽¹⁾ⱼ = Σᵢ W1[j,i]·xᵢ + b1[j]</div>
+<div class="mf">权重设计：正值(+3)检测目标格亮，负值(-1)抑制干扰
+偏置 b1 = -4.5 → 需要至少2个正权格子亮才输出正值</div>`;
+    for(let j=0;j<6;j++){
+      const terms=W1[j].map((w,i)=>fw(w)+'·'+C.x[i]).join(' + ');
+      h+=`<div class="mf">${HL6[j]}:
+z = ${terms} + (<span style="color:#94a3b8">${b1[j]}</span>)
+  = <b style="color:#fbbf24">${f4(C.z1[j])}</b></div>`;
+    }
+  }
+
+  else if(step===2){
+    h+=`<div class="mstit">激活函数：σ(z) = 1 / (1 + e⁻ᶻ)</div>
+<div class="mf">性质：
+  z ≫ 0  →  σ(z) → 1.0  （强激活）
+  z = 0  →  σ(z) = 0.5
+  z ≪ 0  →  σ(z) → 0.0  （未激活）
+判据：h > 0.5 → 检测到特征</div>`;
+    for(let j=0;j<6;j++){
+      const z=C.z1[j],hv=C.h[j],act=hv>0.5;
+      h+=`<div class="mf">${HL6[j]}:
+σ(${f4(z)}) = 1 / (1 + e^(${f4(-z)}))
+           = <b style="color:${act?'#6ee7b7':'#f87171'}">${hv.toFixed(6)}</b>  ${act?'✔ 激活':'✘ 未激活'}</div>`;
+    }
+  }
+
+  else if(step===3){
+    h+=`<div class="mstit">隐藏层激活向量 h</div>
+<div class="mf">h = [${C.h.map(v=>f4(v)).join(', ')}]</div>`;
+    const activeH=[];
+    for(let j=0;j<6;j++){
+      const act=C.h[j]>0.5;
+      if(act)activeH.push(HL6[j]);
+      h+=`<div class="mf" style="border-left-color:${act?'#10b981':'#555'}">${HL6[j]}: ${f4(C.h[j])}  ${act?'🟢 激活':'🔴 未激活'}</div>`;
+    }
+    h+=`<div class="mstit" style="margin-top:6px">特征解读</div>`;
+    if(activeH.length===0){
+      h+=`<div class="mr">无列/行检测器激活
+→ 图案不符合纯竖线或纯横线
+→ 将判断为斜线或无线条</div>`;
+    }else{
+      h+=`<div class="mr">激活的检测器：${activeH.join(', ')}
+→ 对应线条方向特征已检测到</div>`;
+    }
+  }
+
+  else if(step===4){
+    h+=`<div class="mstit">公式：z⁽²⁾ₖ = Σⱼ W2[k,j]·hⱼ + b2[k]</div>
+<div class="mf">输出层权重设计思路：
+out₁(竖线): 列检测器(h₁~h₃)各+4，行检测器(h₄~h₆)各-3
+out₂(横线): 行检测器(h₄~h₆)各+4，列检测器(h₁~h₃)各-3
+out₃(斜线): 所有检测器各-4 + 偏置b2=+6
+  → 当列/行检测器均沉默时，out₃凭借偏置胜出</div>`;
+    for(let k=0;k<3;k++){
+      const terms=W2[k].map((w,j)=>fw(w)+'·'+f4(C.h[j])).join(' + ');
+      h+=`<div class="mf">${OL3[k]}:
+z = ${terms} + (<span style="color:#94a3b8">${b2[k]}</span>)
+  = <b style="color:#fbbf24">${f4(C.z2[k])}</b></div>`;
+    }
+  }
+
+  else if(step===5){
+    const z=C.z2,mx=Math.max(...z),ep=z.map(v=>Math.exp(v-mx)),se=ep.reduce((a,b)=>a+b,0);
+    h+=`<div class="mstit">Softmax：P(k) = e^(z_k) / Σⱼ e^(z_j)</div>
+<div class="mf">数值稳定化 (减去最大值 ${f4(mx)} 防上溢)：
+z⁽²⁾ = [${z.map(f4).join(',  ')}]
+z'   = [${z.map(v=>f4(v-mx)).join(',  ')}]
+
+e^z'₁ = ${ep[0].toFixed(6)}
+e^z'₂ = ${ep[1].toFixed(6)}
+e^z'₃ = ${ep[2].toFixed(6)}
+∑    = ${se.toFixed(6)}</div>
+<div class="mr">P(竖线) = ${ep[0].toFixed(6)} / ${se.toFixed(6)}
+       = <b>${C.out[0].toFixed(6)}</b>
+P(横线) = ${ep[1].toFixed(6)} / ${se.toFixed(6)}
+       = <b>${C.out[1].toFixed(6)}</b>
+P(斜线) = ${ep[2].toFixed(6)} / ${se.toFixed(6)}
+       = <b>${C.out[2].toFixed(6)}</b></div>`;
+  }
+
+  else if(step===6){
+    h+=`<div class="mstit">概率分布可视化</div>`;
+    for(let k=0;k<3;k++){
+      const pct=(C.out[k]*100).toFixed(2),bw=Math.round(C.out[k]*210);
+      h+=`<div style="margin-bottom:9px">
+<span style="color:${OC3[k]};font-size:0.88em;display:inline-block;width:36px">${ON3[k]}</span>
+<div style="display:inline-block;width:${bw}px;height:17px;background:${OC3[k]};border-radius:4px;opacity:0.85;vertical-align:middle"></div>
+<span style="color:#ccc;font-size:0.88em;margin-left:6px">${pct}%</span>
+</div>`;
+    }
+    h+=`<div class="mf" style="margin-top:6px">校验（概率之和=1）：
+${C.out.map(v=>v.toFixed(6)).join(' + ')}
+= ${C.out.reduce((a,b)=>a+b,0).toFixed(6)} ≈ 1.000000 ✔</div>`;
+  }
+
+  else if(step===7){
+    const p=C.pred;
+    h+=`<div class="mhl" style="border-color:${OC3[p]};color:${OC3[p]};box-shadow:0 0 28px ${OC3[p]}44;font-size:1.45em">
+  ${EM3[p]}  识别结果：${ON3[p]}
+</div>
+<div class="mr" style="margin-top:10px">P(竖线) = ${(C.out[0]*100).toFixed(2)}%
+P(横线) = ${(C.out[1]*100).toFixed(2)}%
+P(斜线) = ${(C.out[2]*100).toFixed(2)}%
+
+ŷ = argmax P = ${p}  →  类别 "${ON3[p]}"
+置信度 = ${(C.out[p]*100).toFixed(2)}%</div>
+<div class="mstit" style="margin-top:10px">决策依据回顾</div>
+<div class="mf">1. 输入 x 经 W1 加权 → 隐藏层 z⁽¹⁾
+2. Sigmoid 激活 → h（列/行特征检测）
+3. h 经 W2 加权 → 输出层 z⁽²⁾
+4. Softmax 归一化 → 概率分布
+5. 取概率最大类别作为预测结果</div>`;
+    if(C.out[p]<0.5)h+=`<div style="color:#fbbf24;font-size:0.86em;margin-top:8px">⚠️ 置信度偏低，当前图案不典型，建议尝试预设示例</div>`;
+  }
+
+  document.getElementById('mp').innerHTML=h;
+}
+
+// ════════════════════════════
+// 初始化
+// ════════════════════════════
+buildGrid();
+buildIV();
+drawSVG(null,-1);
+</script>
+</body>
+</html>

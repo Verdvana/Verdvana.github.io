@@ -31,18 +31,26 @@
   tags: [Algorithm]
   order: 3
 
-- slug: cdc_interactive
-  title: CDC跨时钟域交互演示
-  desc: >
-    CDC跨时钟域问题交互演示工具，涵盖29个典型场景，含电路动画、波形、修复与Waive方案。
-  thumb: /assets/labs/thumbs/cdc_interactive.jpg
-  tags: [ASIC]
-  order: 1
+#- slug: cdc_interactive
+#  title: CDC跨时钟域交互演示
+#  desc: >
+#    CDC跨时钟域问题交互演示工具，涵盖29个典型场景，含电路动画、波形、修复与Waive方案。
+#  thumb: /assets/labs/thumbs/cdc_interactive.jpg
+#  tags: [ASIC]
+#  order: 1
 
-- slug: ai_comparison
-  title: AI大模型对比
+#- slug: ai_comparison
+#  title: AI大模型对比
+#  desc: >
+#    多维度对比AI大模型
+#  thumb: /assets/labs/thumbs/ai_comparison.jpg
+#  tags: [AI]
+#  order: 6
+
+- slug: neural_network_visualization
+  title: 神经网络动画演示
   desc: >
-    多维度对比AI大模型
-  thumb: /assets/labs/thumbs/ai_comparison.jpg
-  tags: [AI]
-  order: 6
+    用动画展示全连接双层神经网络如何逐步识别 3×3 格子上的横线、竖线与斜线。
+  thumb: /assets/labs/thumbs/neural_network_visualization.jpg
+  tags: [Algorithm]
+  order: 3
