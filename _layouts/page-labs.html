@@ -46,143 +46,35 @@ layout: default
         margin: 0 auto;
     }
 
-    .labs-group-section {
-        margin-bottom: 80px;
-    }
-
-    .labs-group-title {
-        font-size: 14px;
-        font-weight: 800;
-        color: var(--accent-color);
-        margin-bottom: 32px;
-        text-transform: uppercase;
-        letter-spacing: 4px;
-        display: flex;
-        align-items: center;
-        gap: 16px;
-        opacity: 0.8;
-    }
-
-    .labs-group-title::after {
-        content: '';
-        flex-grow: 1;
-        height: 1px;
-        background: linear-gradient(to right, rgba(0, 113, 227, 0.3), transparent);
-    }
-
     .labs-grid {
         display: grid;
-        grid-template-columns: repeat(auto-fill, minmax(360px, 1fr));
-        gap: 32px;
+        grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+        gap: 24px;
     }
 
-    /* Dynamic Card Styling */
     .labs-card {
-        position: relative;
-        background: rgba(255, 255, 255, 0.03);
-        border-radius: 24px;
-        border: 1px solid rgba(255, 255, 255, 0.08);
+        background: var(--glass);
+        border-radius: 16px;
+        border: 1px solid var(--border-color);
         overflow: hidden;
         text-decoration: none;
-        transition: all 0.5s cubic-bezier(0.23, 1, 0.32, 1);
-        display: flex; 
-        flex-direction: column; 
-        height: 100%;
-        backdrop-filter: blur(10px);
+        transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+        display: flex; flex-direction: column; height: 100%;
     }
 
-    .labs-card::before {
-        content: '';
-        position: absolute;
-        inset: 0;
-        background: radial-gradient(800px circle at var(--mouse-x) var(--mouse-y), rgba(255, 255, 255, 0.06), transparent 40%);
-        opacity: 0;
-        transition: opacity 0.5s;
-        z-index: 1;
-    }
+    .labs-card:hover { transform: translateY(-8px); background: rgba(255, 255, 255, 0.08); border-color: rgba(255, 255, 255, 0.2); }
 
-    .labs-card:hover {
-        transform: translateY(-12px) scale(1.02);
-        background: rgba(255, 255, 255, 0.06);
-        border-color: rgba(255, 255, 255, 0.2);
-        box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
-    }
+    .labs-thumb-wrapper { width: 100%; aspect-ratio: 16/9; overflow: hidden; background: #1c1c1e; position: relative; }
+    .labs-thumb { width: 100%; height: 100%; object-fit: cover; transition: transform 0.6s ease; }
+    .labs-card:hover .labs-thumb { transform: scale(1.05); }
+    .labs-thumb--empty { width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; color: var(--secondary-text); font-size: 14px; background: linear-gradient(45deg, #1c1c1e, #2c2c2e); }
 
-    .labs-card:hover::before {
-        opacity: 1;
-    }
-
-    .labs-thumb-wrapper { 
-        width: 100%; 
-        aspect-ratio: 16/10; 
-        overflow: hidden; 
-        background: #000; 
-        position: relative;
-        border-bottom: 1px solid rgba(255, 255, 255, 0.05);
-    }
-
-    .labs-thumb { 
-        width: 100%; 
-        height: 100%; 
-        object-fit: cover; 
-        transition: transform 0.8s cubic-bezier(0.16, 1, 0.3, 1); 
-        filter: saturate(0.8) brightness(0.9);
-    }
-
-    .labs-card:hover .labs-thumb { 
-        transform: scale(1.1); 
-        filter: saturate(1.1) brightness(1.1);
-    }
-
-    .labs-body { 
-        padding: 32px; 
-        display: flex; 
-        flex-direction: column; 
-        flex-grow: 1;
-        z-index: 2;
-    }
-
-    .labs-title { 
-        font-size: 22px; 
-        font-weight: 700; 
-        color: #fff; 
-        margin-bottom: 16px; 
-        line-height: 1.2;
-        transition: color 0.3s;
-    }
-
-    .labs-card:hover .labs-title { color: var(--accent-color); }
-
-    .labs-desc { 
-        font-size: 14px; 
-        color: #a1a1a6; 
-        margin-bottom: 24px; 
-        line-height: 1.7; 
-        flex-grow: 1; 
-    }
-
-    .labs-tags { display: flex; flex-wrap: wrap; gap: 8px; }
-    .labs-tag { 
-        font-size: 10px; 
-        padding: 4px 12px; 
-        border-radius: 100px; 
-        background: rgba(255, 255, 255, 0.05); 
-        color: #86868b; 
-        border: 1px solid rgba(255, 255, 255, 0.1); 
-        text-transform: uppercase; 
-        letter-spacing: 1px; 
-        font-weight: 700; 
-    }
-
-    /* Entrance Animation */
-    @keyframes fadeInUp {
-        from { opacity: 0; transform: translateY(30px); }
-        to { opacity: 1; transform: translateY(0); }
-    }
-
-    .labs-card {
-        animation: fadeInUp 0.8s cubic-bezier(0.23, 1, 0.32, 1) both;
-    }
+    .labs-body { padding: 24px; display: flex; flex-direction: column; flex-grow: 1; }
+    .labs-title { font-size: 20px; font-weight: 700; color: #fff; margin-bottom: 12px; line-height: 1.3; }
+    .labs-desc { font-size: 14px; color: #d1d1d6; margin-bottom: 20px; line-height: 1.6; flex-grow: 1; }
+    .labs-tags { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 16px; }
+    .labs-tag { font-size: 11px; padding: 4px 10px; border-radius: 6px; background: rgba(0, 113, 227, 0.1); color: var(--accent-color); border: 1px solid rgba(0, 113, 227, 0.2); text-transform: uppercase; letter-spacing: 0.5px; font-weight: 600; }
+    .labs-meta { font-size: 12px; color: var(--secondary-text); font-family: monospace; opacity: 0.6; word-break: break-all; }
 
     @media (max-width: 900px) {
         header.hero { height: 40vh; padding: 0 6%; }
@@ -191,25 +83,6 @@ layout: default
         .labs-grid { grid-template-columns: 1fr; }
     }
 </style>
-
-<script>
-    document.addEventListener('DOMContentLoaded', () => {
-        const cards = document.querySelectorAll('.labs-card');
-        cards.forEach((card, index) => {
-            // Staggered delay
-            card.style.animationDelay = `${index * 0.1}s`;
-            
-            // Mouse tracking for spotlight
-            card.addEventListener('mousemove', e => {
-                const rect = card.getBoundingClientRect();
-                const x = e.clientX - rect.left;
-                const y = e.clientY - rect.top;
-                card.style.setProperty('--mouse-x', `${x}px`);
-                card.style.setProperty('--mouse-y', `${y}px`);
-            });
-        });
-    });
-</script>
 
 <header class="hero">
     <h1>{{ page.title | default: "The Labs" }}</h1>
@@ -221,38 +94,29 @@ layout: default
         {% assign lab_static = site.static_files | where_exp: "f", "f.path contains '/labs/'" | where_exp: "f", "f.extname == '.html'" %}
         {% assign lab_pages = site.pages | where_exp: "p", "p.url contains '/labs/'" | where_exp: "p", "p.url contains '.html'" %}
         {% assign lab_files = lab_static | concat: lab_pages %}
-        
-        {% assign groups = "ASIC & Hardware,Visual & AI,Tools & Utilities" | split: "," %}
-        
-        {% for group_name in groups %}
-            {% assign group_metas = site.data.labs | where: "group", group_name | sort: "order" %}
-            {% if group_metas.size > 0 %}
-                <div class="labs-group-section">
-                    <h2 class="labs-group-title">{{ group_name }}</h2>
-                    <div class="labs-grid">
-                        {% for meta in group_metas %}
-                            {% assign found = nil %}
-                            {% for x in lab_files %}
-                                {% assign xslug = x.basename | default: x.name | remove: '.html' %}
-                                {% if xslug == meta.slug %}{% assign found = x %}{% endif %}
-                            {% endfor %}
-                            {% if found %}
-                                {% assign href = found.path | default: found.url %}
-                                <a class="labs-card" href="{{ href | relative_url }}">
-                                    <div class="labs-thumb-wrapper">
-                                        {% if meta.thumb %}<img class="labs-thumb" src="{{ meta.thumb | relative_url }}" alt="{{ meta.title }}">{% else %}<div class="labs-thumb--empty">No preview</div>{% endif %}
-                                    </div>
-                                    <div class="labs-body">
-                                        <h3 class="labs-title">{{ meta.title | default: meta.slug }}</h3>
-                                        {% if meta.desc %}<p class="labs-desc">{{ meta.desc }}</p>{% endif %}
-                                        {% if meta.tags %}<div class="labs-tags">{% for t in meta.tags %}<span class="labs-tag">{{ t }}</span>{% endfor %}</div>{% endif %}
-                                    </div>
-                                </a>
-                            {% endif %}
-                        {% endfor %}
-                    </div>
-                </div>
-            {% endif %}
-        {% endfor %}
+
+        <div class="labs-grid">
+            {% assign metas = site.data.labs | sort: "order" %}
+            {% for meta in metas %}
+                {% assign found = nil %}
+                {% for x in lab_files %}
+                    {% assign xslug = x.basename | default: x.name | remove: '.html' %}
+                    {% if xslug == meta.slug %}{% assign found = x %}{% endif %}
+                {% endfor %}
+                {% if found %}
+                    {% assign href = found.path | default: found.url %}
+                    <a class="labs-card" href="{{ href | relative_url }}">
+                        <div class="labs-thumb-wrapper">
+                            {% if meta.thumb %}<img class="labs-thumb" src="{{ meta.thumb | relative_url }}" alt="{{ meta.title }}">{% else %}<div class="labs-thumb--empty">No preview</div>{% endif %}
+                        </div>
+                        <div class="labs-body">
+                            <h3 class="labs-title">{{ meta.title | default: meta.slug }}</h3>
+                            {% if meta.desc %}<p class="labs-desc">{{ meta.desc }}</p>{% endif %}
+                            {% if meta.tags %}<div class="labs-tags">{% for t in meta.tags %}<span class="labs-tag">{{ t }}</span>{% endfor %}</div>{% endif %}
+                        </div>
+                    </a>
+                {% endif %}
+            {% endfor %}
+        </div>
     </div>
 </section>
