@@ -268,7 +268,7 @@ python3 export_weights.py
 
 ---
 
-## 6 第四阶段：FPGA 硬件实现 (RTL Implementation)
+## 6 FPGA 硬件实现 (RTL Implementation)
 
 &#160; &#160; &#160; &#160; 到了这一步，我们正式从“炼丹炉”进入了“加工厂”。硬件实现的本质就是**用有限的面积（Logic Cells/DSPs）去换取最大的速度**。
 
