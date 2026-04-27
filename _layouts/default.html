@@ -13,7 +13,7 @@
     <!-- KaTeX -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex/dist/katex.min.css">
     <script src="https://cdn.jsdelivr.net/npm/katex/dist/katex.min.js" defer></script>
-    <script src="https://cdn.jsdelivr.net/npm/katex/dist/contrib/auto-render.min.js" defer onload='renderMathInElement(document.body, { delimiters: [{ left: "$$", right: "$$", display: true }, { left: "$", right: "$", display: false }] })'></script>
+    <script src="https://cdn.jsdelivr.net/npm/katex/dist/contrib/auto-render.min.js" defer></script>
     <script src="https://cdn.jsdelivr.net/npm/katex/dist/contrib/mathtex-script-type.min.js" defer></script>
     
     <!-- Mermaid -->
@@ -300,7 +300,7 @@
         {{ page.header_append }}
     {% endif %}
 </head>
-<body onload="WaveDrom.ProcessAll()">
+<body>
     <nav>
         <a href="/" class="logo-area">
             <img src="/static/img/avatar.jpg" alt="Verdvana">
@@ -479,6 +479,26 @@
             document.getElementById("run_time_minute").innerHTML = setzero(minsOld);
             document.getElementById("run_time_second").innerHTML = setzero(secondsOld);
         }, 1000);
+
+        // Global Initialization
+        document.addEventListener("DOMContentLoaded", function() {
+            // Render Math
+            if (typeof renderMathInElement === 'function') {
+                renderMathInElement(document.body, {
+                    delimiters: [
+                        {left: "$$", right: "$$", display: true},
+                        {left: "$", right: "$", display: false},
+                        {left: "\\(", right: "\\)", display: false},
+                        {left: "\\[", right: "\\]", display: true}
+                    ],
+                    throwOnError: false
+                });
+            }
+            // Render Diagrams
+            if (typeof WaveDrom !== 'undefined') {
+                WaveDrom.ProcessAll();
+            }
+        });
     </script>
 </body>
 </html>

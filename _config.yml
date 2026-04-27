@@ -351,7 +351,7 @@ jekyll-theme-WuK: # 用了wu-kan的主题，自定义样式都在这个命名空
         <script
           src="https://cdn.jsdelivr.net/npm/katex/dist/contrib/auto-render.min.js"
           defer="defer"
-          onload='renderMathInElement(document.body, { delimiters: [{ left: "$$", right: "$$", display: true }, { left: "$", right: "$", display: false }] })'
+          onload='renderMathInElement(document.body, { delimiters: [{ left: "$$", right: "$$", display: true }, { left: "$", right: "$", display: false }, { left: "\\(", right: "\\)", display: false }, { left: "\\[", right: "\\]", display: true }] })'
         ></script>
         <script
           src="https://cdn.jsdelivr.net/npm/katex/dist/contrib/mathtex-script-type.min.js"
