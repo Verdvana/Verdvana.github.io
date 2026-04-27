@@ -452,35 +452,8 @@ Quantization complete. Hex files are in 'params_hex/'.
 
 &#160; &#160; &#160; &#160; 在实现 MLP（多层感知机）时，我们选择一种平衡的“层级复用”架构。通过设计一个通用的 **MAC 引擎 (Multiplier-Accumulator)**，利用状态机（FSM）切换不同的权重地址，实现对 784 -> 128 -> 64 -> 10 结构的顺序处理。
 
-```mermaid
-graph TD
-    subgraph "Input & Control"
-        IMG[784x16-bit Pixels] --> CTRL[FSM Controller]
-    end
+![fpga_mnist_architecture_diagram](从逻辑门到深层神经网络：用FPGA实现手写数字识别/fpga_mnist_architecture_diagram_v2.png)
 
-    subgraph "Memory System"
-        CTRL --> W_ADDR[Weight Address]
-        W_ADDR --> W_ROM[Weight BRAM/ROM]
-        CTRL --> B_ADDR[Bias Address]
-        B_ADDR --> B_ROM[Bias BRAM/ROM]
-    end
-
-    subgraph "Compute Engine (PE)"
-        W_ROM --> MULT[16x16 Signed Mult]
-        IMG --> MULT
-        MULT --> ACC[40-bit Accumulator]
-        B_ROM --> ADD_BIAS[Bias Addition]
-        ACC --> ADD_BIAS
-        ADD_BIAS --> RELU[ReLU Logic]
-    end
-
-    subgraph "Output"
-        RELU --> RAM_BUF[Activation RAMs]
-        RAM_BUF -->|Next Layer| CTRL
-        RELU --> ARGMAX[Argmax Comparator]
-        ARGMAX --> RESULT[Result: 0-9]
-    end
-```
 
 ### 7.2 核心模块：神经元 MAC 引擎
 
