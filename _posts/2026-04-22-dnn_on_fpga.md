@@ -441,9 +441,249 @@ Quantization complete. Hex files are in 'params_hex/'.
 &#160; &#160; &#160; &#160; 至此，数据侧的准备工作彻底收官。我们拿到了可以在FPGA内部快速流转的16位纯净版参数包（以2的补码十六进制表示）。例如导出的 `02a4`，代表十进制的 `676`，对应真实的浮点权重就是 `676 / 4096 ≈ 0.165`。
 
 
-&#160; &#160; &#160; &#160; 下一阶段正式步入**硬件架构设计**，利用这些Hex数据设计底层的MAC计算核心，并搭建起时序控制的骨架。
+----
+
+## 7 硬件架构设计 (Hardware Architecture Design)
+
+&#160; &#160; &#160; &#160; 本阶段是项目的核心，目标是实现一个**单时钟域、全硬编码 (ROM-first)** 的硬件加速器。我们将避开复杂的 AXI 总线，专注于神经网络在 FPGA 上的数学计算与时序控制。
+
+### 7.1 核心架构规划 (Architecture Strategy)
+
+#### 7.1.1 极简数据流
+*   **策略**：将一张 28x28 的测试图片和所有模型权重直接存储在 FPGA 内部的 **BRAM (ROM 模式)** 中。
+*   **验证**：通过 Vivado 仿真或 ILA 抓取输出寄存器，确认识别结果（0-9）是否正确。
+
+#### 7.1.2 硬件规格 (Specification)
+根据 `mnist_train.py` 的模型定义，硬件需支持以下 3 层全连接网络：
+*   **Layer 1**: 784 (输入) -> 128 (ReLU)
+*   **Layer 2**: 128 -> 64 (ReLU)
+*   **Layer 3**: 64 -> 10 (输出)
+*   **总存储需求**：约 218 KB (16-bit 定点数)，完全适配 PYNQ-Z2 (7020) 的 BRAM 资源。
+
+### 7.2 硬件架构详细说明 (Hardware Architecture Description)
+
+&#160; &#160; &#160; &#160; 以下是整个硬件加速器的工业级 RTL 架构图，清晰展示了顶层模块 `mnist_top` 内部的组件例化关系、数据流（Data Path）与控制流（Control Path）的每一个信号连线：
+
+```mermaid
+graph TD
+    %% 外部接口信号
+    CLK["clk, rst_n"] -.-> |"时钟与复位"| CTRL
+    CLK -.-> PE
+    START(["start"]) --> |"start"| CTRL
+    CTRL --> |"done"| DONE(["done"])
+    CTRL --> |"digit[3:0]"| DIGIT(["digit[3:0]"])
+
+    subgraph mnist_top["mnist_top (硬件架构顶层)"]
+        direction TB
+
+        %% 控制器模块
+        CTRL["mnist_controller<br/>(状态机 & 地址生成器)"]
+
+        %% 存储器模块 (BRAM)
+        subgraph MEM["BRAM / RAM 存储阵列"]
+            direction LR
+            IMG_ROM[("Image ROM<br/>(784 x 16-bit)")]
+            WT_ROM[("Weight ROM<br/>(109184 x 16-bit)")]
+            RAM_A[("Ping-Pong<br/>RAM Buffer A<br/>(128 x 16-bit)")]
+            RAM_B[("Ping-Pong<br/>RAM Buffer B<br/>(64 x 16-bit)")]
+        end
+
+        %% 数据选择器
+        MUX_DATA{"Data<br/>MUX"}
+
+        %% 计算核心模块
+        PE["pe_unit<br/>(16-bit MAC & ReLU)"]
+
+        %% 控制器到存储器的地址与控制信号连线
+        CTRL ==> |"img_addr"| IMG_ROM
+        CTRL ==> |"weight_addr"| WT_ROM
+        CTRL ==> |"act_addr / we_a"| RAM_A
+        CTRL ==> |"act_addr / we_b"| RAM_B
+
+        %% 数据流连线：存储器到MUX
+        IMG_ROM ==> |"img_data"| MUX_DATA
+        RAM_A ==> |"ram_a_data"| MUX_DATA
+        RAM_B ==> |"ram_b_data"| MUX_DATA
+        
+        WT_ROM ==> |"weight_data"| PE
+        MUX_DATA ==> |"x_data"| PE
+
+        %% 控制器到PE的控制信号
+        CTRL --> |"pe_en, acc_clr"| PE
+
+        %% PE到存储器的数据回写
+        PE ==> |"pe_out (16-bit Q4.12)"| RAM_A
+        PE ==> |"pe_out (16-bit Q4.12)"| RAM_B
+
+        %% 得分反馈给控制器进行动态预测
+        PE -.-> |"l3_score"| CTRL
+    end
+
+    %% 节点样式设置
+    classDef interface fill:#e0e0e0,stroke:#757575,stroke-width:2px;
+    classDef controller fill:#e1bee7,stroke:#8e24aa,stroke-width:2px,color:#000;
+    classDef memory fill:#bbdefb,stroke:#1976d2,stroke-width:2px,color:#000;
+    classDef compute fill:#ffe0b2,stroke:#f57c00,stroke-width:2px,color:#000;
+    classDef mux fill:#c8e6c9,stroke:#388e3c,stroke-width:2px,color:#000;
+
+    class START,DONE,DIGIT,CLK interface;
+    class CTRL controller;
+    class IMG_ROM,WT_ROM,RAM_A,RAM_B memory;
+    class PE compute;
+    class MUX_DATA mux;
+```
+
+#### 7.2.1 顶层接口 (Top-level Interface)
+系统仅包含一组同步时钟域，接口定义如下：
+```verilog
+module mnist_top (
+    input  wire        clk,      // 全局唯一时钟 (驱动所有逻辑)
+    input  wire        rst_n,    // 全局同步复位 (低电平有效)
+    input  wire        start,    // 启动脉冲 (触发一次完整的推理流程)
+    output wire        done,     // 完成标志 (计算结束且 digit 输出有效)
+    output wire [3:0]  digit     // 最终识别出的数字结果 (0-9)
+);
+```
+
+#### 7.2.2 核心模块逻辑定义
+1.  **全局控制器 (Global FSM)**：
+    *   **职责**：负责启动神经网络的生命周期管理。
+    *   **流程**：检测到 `start` 信号后，依次驱动 Layer 1、Layer 2 和 Layer 3 的计算逻辑。
+    *   **状态切换**：当一层计算完成后，负责切换寻址逻辑并更新 `layer_id` 信号。
+2.  **地址计算器 (Address Calculator)**：
+    *   **职责**：根据当前处理的神经元索引和输入索引，实时计算存储器的物理地址。
+    *   **逻辑**：根据 `layer_id` 的不同，分别计算读取 `Image ROM` 或 `Activation RAM` 的地址，以及读取 `Weight ROM` 中对应权重的偏移量。
+3.  **存储单元 (BRAM Storage)**：
+    *   **权重与图片**：所有 109,184 个权重和 784 个图片像素点均以 16-bit 定点数形式存储在初始化的 ROM (BRAM IP) 中。
+    *   **中间缓存**：使用一个大小为 128 (第一层神经元数) 的 **Ping-Pong Buffer**。计算第 N 层时，从 Buffer A 读，写回 Buffer B；下一层则反之。
+4.  **计算核心 (PE Core)**：
+    *   **职责**：核心 MAC (乘累加) 单元。
+    *   **逻辑**：从存储单元读取 `data` 和 `weight`，执行一次乘法并累加到 `acc_reg`。
+    *   **后处理**：在一个神经元的所有输入累加完毕后，依次执行 ReLU 激活和饱和截断，最后输出 16-bit 定点结果。
+
+### 7.3 系统运转时序 (System Workflow & Timing)
+
+&#160; &#160; &#160; &#160; 理解数据在时钟驱动下如何“流动”是 RTL 设计的关键。以下是系统从启动到结束的典型时序流程：
+
+1.  **触发阶段 (Trigger)**：
+    *   外部拉高 `start` 信号一个时钟周期。
+    *   **全局控制器**检测到信号，状态从 `IDLE` 跳转至 `LAYER1_RUN`，同时将 `layer_id` 设为 `0`。
+2.  **数据读取流水线 (Data Fetch Pipeline)**：
+    *   **地址计算器**立即输出 `img_addr = 0` 和 `weight_addr = 0`。
+    *   由于 BRAM 存在读取延迟，第 2 或第 3 个时钟周期后，第一个像素数据和第一个权重数据到达 **PE 核心**。
+3.  **神经元累加循环 (Neuron Accumulation)**：
+    *   **PE 核心**在每个时钟周期执行一次 $w \cdot x$ 乘法并累加到 `acc_reg`。
+    *   对于 Layer 1，该过程持续 784 个时钟周期。
+4.  **激活与回写 (Activation & Write-back)**：
+    *   当第 784 个输入累加完毕，**PE 核心**输出经过 ReLU 和量化后的 16-bit 结果。
+    *   **地址计算器**给出 `act_addr = 0`，将该结果写入 **Activation RAM (Buffer A)**。
+5.  **层级迭代 (Layer Iteration)**：
+    *   重复上述过程 128 次，完成 Layer 1 所有神经元的计算。
+    *   **全局控制器**将 `layer_id` 切换为 `1`。
+    *   **地址计算器**开始从 **Activation RAM (Buffer A)** 读取输入，并将 Layer 2 的计算结果写向 **Activation RAM (Buffer B)**。
+6.  **输出与完成 (Finish)**：
+    *   Layer 3 计算结束后，状态机进入 `DONE` 状态。
+    *   拉高 `done` 信号，并将最终识别出的数字索引锁定在 `digit` 总线上。
+
+### 7.4 任务详细拆解
+
+#### 7.4.1 第一步：数据准备与 BRAM 配置
+*   **任务**：将 Python 权重和测试图转换为 `.coe` 文件。
+*   **重点**：在 Vivado 中配置 `Block Memory Generator`。
+    *   `image_rom`: 784 x 16-bit
+    *   `weight_rom`: 存储所有层的连续权重。
+*   **产出**：初始化完成的 BRAM IP 核。
+
+#### 7.4.2 第二步：计算核心 (PE: Processing Element) 设计
+*   **任务**：实现 16-bit Q4.12 定点数乘累加。
+*   **权衡**：坚持使用 **单 PE 串行架构**（节省资源，逻辑简单）。
+*   **重点**：
+    *   处理 BRAM 读取延迟（通常为 1-2 个时钟周期）。
+    *   实现 ReLU 激活（`max(0, x)`）。
+    *   实现饱和截断逻辑，防止溢出。
+*   **产出**：`pe_unit.v`
+
+#### 7.4.3 第三步：地址生成器与状态控制 (FSM)
+*   **任务**：设计控制三层网络顺序执行的状态机。
+*   **重点**：
+    *   **三层循环寻址**：层 (Layer) -> 神经元 (Neuron) -> 输入 (Input)。
+    *   **Ping-Pong Buffer**：设计中间层缓存，确保 Layer N 的输出能正确写回并在 Layer N+1 被读出。
+*   **产出**：`addr_gen.v`, `main_fsm.v`
+
+#### 7.4.4 第四步：仿真验证 (Simulation)
+*   **任务**：编写 Testbench，对比 RTL 结果与 Python 金标数据。
+*   **重点**：观察 `acc_reg` 是否在每个神经元计算结束时被正确清零，以及识别结果是否符合预期。
+
+### 7.5 架构权衡：面积 vs. 速度 (Area vs. Speed Trade-off)
+
+| 维度 | 单 PE 方案 (本计划采用) | 多 PE 并行方案 |
+| :--- | :--- | :--- |
+| **DSP 消耗** | 1 个 | N 个 |
+| **逻辑复杂度** | 低 (一套地址线) | 高 (需数据分发与分库存储) |
+| **存储接口** | 单口 BRAM 即可 | 需多口 BRAM 或多库并行 |
+| **建议** | **调通首选** | **性能优化首选** |
+
+### 7.6 行动指南 (Action Items)
+1.  [x] 导出第一张测试图的 `.coe` 数据。
+2.  [x] 在 Vivado 中例化第一个 BRAM 并用仿真读出数据。
+3.  [x] 编写 `pe_unit.v` 并完成单元仿真。
+4.  [x] 编写 `mnist_controller.v` 整合寻址与 FSM。
+5.  [x] 编写 `mnist_top.v` 完成系统集成。
+6.  [x] 编写 Testbench 并通过功能仿真验证结果。
+
+----
+
+## 8 RTL 实现 (RTL Implementation)
+
+&#160; &#160; &#160; &#160; 在执行阶段，我们完成了以下核心模块的设计与实现。
+
+### 8.1 模块设计详解 (Module Design Details)
+
+#### 8.1.1 计算核心：`pe_unit.v`
+*   **设计思路**：作为加速器的“肌肉”，PE 核心采用单一计算单元并行化时分复用的策略。
+*   **关键特性**：
+    *   **40-bit 累加器**：在 784 次 MAC 运算中提供足够的位宽余量，防止中间溢出。
+    *   **流水线处理**：支持使能控制信号，方便与 BRAM 的延迟进行匹配。
+    *   **饱和逻辑**：当定点数计算结果超出 16-bit 有符号数范围（-32768~32767）时，自动钳位在边界值，保证算法的稳定性。
+
+#### 8.1.2 指挥中心：`mnist_controller.v`
+*   **设计思路**：负责调度数据在 ROM、PE 和 RAM 之间的流动。
+*   **关键特性**：
+    *   **三层网络状态机**：实现了 L1 -> L2 -> L3 的自动化跳转。
+        - Layer 1：读取 Image ROM 和 FC1 Weights，计算结果写入 RAM Buffer A。
+        - Layer 2：从 RAM Buffer A 读取输入，配合 FC2 Weights，计算结果写入 RAM Buffer B。
+        - Layer 3：从 RAM Buffer B 读取输入，配合 FC3 Weights，计算最终的 10 个神经元得分。
+    *   **延迟补偿 (Latency Matching)**：针对 BRAM 的 2 周期读取延迟，内置了 3 级移位寄存器来同步控制信号。
+    *   **偏置项集成**：在每层最后会自动插入一个权重读取周期（Bias），并将数据输入强制设为 1.0。
+    *   **动态预测**：在 L3 计算过程中实时比较得分，锁定最大概率的数字索引。
+
+#### 8.1.3 顶层集成与仿真模型
+*   **`mnist_top.v`**：将 Controller 与 PE 连接，并暴露标准的 `start`/`done` 接口，方便后续封装为 AXI IP。
+*   **`simulation_models.v`**：为了在无硬件环境下验证，编写了行为级 BRAM 模型，支持从 `weights.hex` 和 `image.hex` 加载预置数据。
+
+### 8.2 验证结论 (Verification Results)
+*   **输入样本**：测试集第一张图（标签为 7）。
+*   **识别结果**：仿真波形显示系统成功输出 `digit = 4'd7`。
+*   **精度表现**：16-bit Q4.12 定点化方案与 Python 浮点模拟结果完全一致。
+
+### 8.3 实施记录与交付物 (Implementation Record)
+
+| 步骤 | 交付文件 | 主要内容 |
+| :--- | :--- | :--- |
+| **数据准备** | `coe/generate_coe.py` | 权重与图片的量化转换脚本 |
+| | `coe/weights.coe`, `weights.hex` | 16-bit Q4.12 模型参数文件 |
+| | `coe/image.coe`, `image.hex` | 测试样本数据 |
+| **RTL 实现** | `rtl/pe_unit.v` | 乘累加计算核心 |
+| | `rtl/mnist_controller.v` | 全局状态机与地址生成逻辑 |
+| | `rtl/mnist_top.v` | 顶层模块集成 |
+| **验证体系** | `tb/simulation_models.v` | BRAM 与 RAM 的行为级仿真模型 |
+| | `tb/mnist_top_tb.v` | 系统级冒烟测试平台 |
+
+> [!IMPORTANT]
+> **设计原则**：始终保持单时钟域设计，禁止在加速器内部产生分频时钟。
 
 ---
+
 
 
 
