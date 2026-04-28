@@ -464,74 +464,7 @@ Quantization complete. Hex files are in 'params_hex/'.
 
 &#160; &#160; &#160; &#160; 以下是整个硬件加速器的工业级 RTL 架构图，清晰展示了顶层模块 `mnist_top` 内部的组件例化关系、数据流（Data Path）与控制流（Control Path）的每一个信号连线：
 
-```mermaid
-graph TD
-    %% 外部接口信号
-    CLK["clk, rst_n"] -.-> |"时钟与复位"| CTRL
-    CLK -.-> PE
-    START(["start"]) --> |"start"| CTRL
-    CTRL --> |"done"| DONE(["done"])
-    CTRL --> |"digit[3:0]"| DIGIT(["digit[3:0]"])
-
-    subgraph mnist_top["mnist_top (硬件架构顶层)"]
-        direction TB
-
-        %% 控制器模块
-        CTRL["mnist_controller<br/>(状态机 & 地址生成器)"]
-
-        %% 存储器模块 (BRAM)
-        subgraph MEM["BRAM / RAM 存储阵列"]
-            direction LR
-            IMG_ROM[("Image ROM<br/>(784 x 16-bit)")]
-            WT_ROM[("Weight ROM<br/>(109184 x 16-bit)")]
-            RAM_A[("Ping-Pong<br/>RAM Buffer A<br/>(128 x 16-bit)")]
-            RAM_B[("Ping-Pong<br/>RAM Buffer B<br/>(64 x 16-bit)")]
-        end
-
-        %% 数据选择器
-        MUX_DATA{"Data<br/>MUX"}
-
-        %% 计算核心模块
-        PE["pe_unit<br/>(16-bit MAC & ReLU)"]
-
-        %% 控制器到存储器的地址与控制信号连线
-        CTRL ==> |"img_addr"| IMG_ROM
-        CTRL ==> |"weight_addr"| WT_ROM
-        CTRL ==> |"act_addr / we_a"| RAM_A
-        CTRL ==> |"act_addr / we_b"| RAM_B
-
-        %% 数据流连线：存储器到MUX
-        IMG_ROM ==> |"img_data"| MUX_DATA
-        RAM_A ==> |"ram_a_data"| MUX_DATA
-        RAM_B ==> |"ram_b_data"| MUX_DATA
-        
-        WT_ROM ==> |"weight_data"| PE
-        MUX_DATA ==> |"x_data"| PE
-
-        %% 控制器到PE的控制信号
-        CTRL --> |"pe_en, acc_clr"| PE
-
-        %% PE到存储器的数据回写
-        PE ==> |"pe_out (16-bit Q4.12)"| RAM_A
-        PE ==> |"pe_out (16-bit Q4.12)"| RAM_B
-
-        %% 得分反馈给控制器进行动态预测
-        PE -.-> |"l3_score"| CTRL
-    end
-
-    %% 节点样式设置
-    classDef interface fill:#e0e0e0,stroke:#757575,stroke-width:2px;
-    classDef controller fill:#e1bee7,stroke:#8e24aa,stroke-width:2px,color:#000;
-    classDef memory fill:#bbdefb,stroke:#1976d2,stroke-width:2px,color:#000;
-    classDef compute fill:#ffe0b2,stroke:#f57c00,stroke-width:2px,color:#000;
-    classDef mux fill:#c8e6c9,stroke:#388e3c,stroke-width:2px,color:#000;
-
-    class START,DONE,DIGIT,CLK interface;
-    class CTRL controller;
-    class IMG_ROM,WT_ROM,RAM_A,RAM_B memory;
-    class PE compute;
-    class MUX_DATA mux;
-```
+![fpga_mnist_arch](从逻辑门到深层神经网络：用FPGA实现手写数字识别/fpga_mnist_arch.png)
 
 #### 7.2.1 顶层接口 (Top-level Interface)
 系统仅包含一组同步时钟域，接口定义如下：
