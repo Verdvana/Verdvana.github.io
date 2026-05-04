@@ -112,15 +112,14 @@ jekyll-theme-WuK: # 用了wu-kan的主题，自定义样式都在这个命名空
   comments:
     enable: true # 需要在script中引入
     alert: |
-      <div id="waline">
-        <i class="fas fa-spinner fa-pulse"></i>
-      </div>
-      <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@waline/client@v3/dist/waline.css"/>
+      <div id="waline"></div>
+      <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@waline/client@3.13.0/dist/waline.css"/>
       <script type="module">
-        import { init } from 'https://cdn.jsdelivr.net/npm/@waline/client@v3/dist/waline.js';
+        import { init } from 'https://cdn.jsdelivr.net/npm/@waline/client@3.13.0/dist/waline.js';
         init({
           el: '#waline',
           serverURL: 'https://comments.verdvana.cn',
+          path: window.location.pathname,
           placeholder: '在这里评论吧！（上面可以填写您的昵称、邮箱和网址）',
           dark: 'auto',
           search: false,
