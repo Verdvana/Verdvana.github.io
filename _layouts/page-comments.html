@@ -96,14 +96,18 @@ layout: default
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@waline/client@3.13.0/dist/waline.css"/>
 <script type="module">
     import { init } from 'https://cdn.jsdelivr.net/npm/@waline/client@3.13.0/dist/waline.js';
-    init({
-        el: '#waline',
-        serverURL: 'https://comments.verdvana.cn',
-        path: window.location.pathname,
-        placeholder: '在这里评论吧！（上面可以填写您的昵称、邮箱和网址）',
-        dark: 'auto',
-        search: false,
-    });
+    
+    // Use a small delay to ensure other scripts like KaTeX don't interfere with the initial render
+    setTimeout(() => {
+        init({
+            el: '#waline',
+            serverURL: 'https://comments.verdvana.cn',
+            path: window.location.pathname,
+            placeholder: '在这里评论吧！（上面可以填写您的昵称、邮箱和网址）',
+            dark: 'auto',
+            search: false,
+        });
+    }, 200);
 </script>
 
 

@@ -483,15 +483,19 @@
         // Global Initialization
         document.addEventListener("DOMContentLoaded", function() {
             // Render Math
+            const contentEl = document.querySelector('main') || document.body;
             if (typeof renderMathInElement === 'function') {
-                renderMathInElement(document.body, {
+                renderMathInElement(contentEl, {
                     delimiters: [
                         {left: "$$", right: "$$", display: true},
                         {left: "$", right: "$", display: false},
                         {left: "\\(", right: "\\)", display: false},
                         {left: "\\[", right: "\\]", display: true}
                     ],
-                    throwOnError: false
+                    throwOnError: false,
+                    // Avoid rendering math in Waline container to prevent conflicts
+                    ignoredTags: ["script", "noscript", "style", "textarea", "pre", "code", "audio", "video"],
+                    ignoredClasses: ["waline-comment-content", "wl-content"]
                 });
             }
             // Render Diagrams

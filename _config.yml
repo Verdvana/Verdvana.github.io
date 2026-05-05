@@ -116,14 +116,16 @@ jekyll-theme-WuK: # 用了wu-kan的主题，自定义样式都在这个命名空
       <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@waline/client@3.13.0/dist/waline.css"/>
       <script type="module">
         import { init } from 'https://cdn.jsdelivr.net/npm/@waline/client@3.13.0/dist/waline.js';
-        init({
-          el: '#waline',
-          serverURL: 'https://comments.verdvana.cn',
-          path: window.location.pathname,
-          placeholder: '在这里评论吧！（上面可以填写您的昵称、邮箱和网址）',
-          dark: 'auto',
-          search: false,
-        });
+        setTimeout(() => {
+          init({
+            el: '#waline',
+            serverURL: 'https://comments.verdvana.cn',
+            path: window.location.pathname,
+            placeholder: '在这里评论吧！（上面可以填写您的昵称、邮箱 and 网址）',
+            dark: 'auto',
+            search: false,
+          });
+        }, 200);
       </script>
   post:
     date:
