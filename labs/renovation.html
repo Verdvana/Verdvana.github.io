@@ -348,6 +348,35 @@ permalink: /labs/renovation.html
         ::-webkit-scrollbar-track { background: transparent; }
         ::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.1); border-radius: 10px; }
 
+        /* ── Floating Back Button ─────────────────────────────────────── */
+        #fabBack {
+            position: fixed;
+            bottom: 32px;
+            right: 32px;
+            z-index: 999;
+            width: 52px;
+            height: 52px;
+            border-radius: 50%;
+            background: var(--accent-color);
+            border: none;
+            color: #fff;
+            font-size: 18px;
+            cursor: pointer;
+            box-shadow: 0 8px 24px rgba(0,113,227,0.4);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        #fabBack:hover {
+            transform: translateY(-4px) scale(1.05);
+            box-shadow: 0 12px 30px rgba(0,113,227,0.5);
+            filter: brightness(1.1);
+        }
+        #fabBack:active {
+            transform: translateY(0) scale(0.95);
+        }
+
         @media (max-width: 1100px) {
             .grid { grid-template-columns: 1fr; }
             .app-container { flex-direction: column; }
@@ -478,6 +507,11 @@ permalink: /labs/renovation.html
         </main>
     </div>
 
+    <!-- Floating Back Button -->
+    <button id="fabBack" onclick="window.location.href='/labs'" title="返回实验室列表">
+        <i class="fas fa-arrow-left"></i>
+    </button>
+
     <!-- Export Modal -->
     <div id="saveModal">
         <div class="modal-content">
@@ -492,8 +526,8 @@ permalink: /labs/renovation.html
     </div>
 
     <!-- Data Center -->
-    <script id="projectData">
-        const renovationData = {
+    <script id="defaultProjectData">
+        window._defaultProjectData = {
             "LivingRoom-TVWall": {
                 "name": "客厅-电视墙",
                 "cad": ["./renovation/assets/LivingRoom-TVWall/cad_main.jpg"],
@@ -557,11 +591,19 @@ permalink: /labs/renovation.html
     </script>
 
     <script>
+        // Load data from localStorage if available, else use default projectData
+        const STORAGE_KEY = 'renovation_hub_data';
+        let renovationData = JSON.parse(localStorage.getItem(STORAGE_KEY)) || window._defaultProjectData;
         let currentRoom = Object.keys(renovationData)[0];
 
         function init() {
             renderNav();
             loadRoom(currentRoom);
+        }
+
+        // Save to localStorage whenever data changes
+        function persistData() {
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(renovationData));
         }
 
         function renderNav() {
@@ -651,6 +693,7 @@ permalink: /labs/renovation.html
             const date = new Date().toISOString().split('T')[0];
             const roundNum = renovationData[currentRoom].iterations.length + 1;
             renovationData[currentRoom].iterations.push({ title: `V${roundNum} 设计轮次`, date: date, images: [], note: "" });
+            persistData();
             loadRoom(currentRoom);
         }
 
@@ -658,21 +701,24 @@ permalink: /labs/renovation.html
             const path = prompt("请输入图片路径 (例如: ./renovation/assets/LivingRoom-TVWall/new.jpg):");
             if (path) {
                 renovationData[currentRoom].iterations[idx].images.push(path);
+                persistData();
                 loadRoom(currentRoom);
             }
         }
 
-        function updateIterTitle(idx, val) { renovationData[currentRoom].iterations[idx].title = val; }
-        function updateIterNote(idx, val) { renovationData[currentRoom].iterations[idx].note = val; }
+        function updateIterTitle(idx, val) { renovationData[currentRoom].iterations[idx].title = val; persistData(); }
+        function updateIterNote(idx, val) { renovationData[currentRoom].iterations[idx].note = val; persistData(); }
         function removeIteration(idx) { 
             if(confirm("确定删除此版本吗？")) {
                 renovationData[currentRoom].iterations.splice(idx, 1);
+                persistData();
                 loadRoom(currentRoom);
             }
         }
 
         function addTodo() {
             renovationData[currentRoom].requirements.push({ text: "新需求条目", completed: false });
+            persistData();
             loadRoom(currentRoom);
         }
 
@@ -683,16 +729,19 @@ permalink: /labs/renovation.html
                 const iters = renovationData[currentRoom].iterations;
                 if (iters && iters.length > 0) todo.roundIndex = iters.length - 1;
             }
+            persistData();
             loadRoom(currentRoom);
         }
 
-        function updateTodo(index, text) { renovationData[currentRoom].requirements[index].text = text; }
+        function updateTodo(index, text) { renovationData[currentRoom].requirements[index].text = text; persistData(); }
         function updateTodoRound(index, roundIdx) {
             renovationData[currentRoom].requirements[index].roundIndex = roundIdx == -1 ? undefined : parseInt(roundIdx);
+            persistData();
             loadRoom(currentRoom);
         }
         function removeTodo(index) {
             renovationData[currentRoom].requirements.splice(index, 1);
+            persistData();
             loadRoom(currentRoom);
         }
 
@@ -709,7 +758,7 @@ permalink: /labs/renovation.html
         }
 
         function showSaveModal() {
-            const output = `const renovationData = ${JSON.stringify(renovationData, null, 4)};`;
+            const output = `window._defaultProjectData = ${JSON.stringify(renovationData, null, 4)};`;
             document.getElementById('dataOutput').innerText = output;
             document.getElementById('saveModal').style.display = 'flex';
         }
