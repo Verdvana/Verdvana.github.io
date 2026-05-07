@@ -197,8 +197,8 @@ permalink: /labs/renovation.html
         /* Grid System */
         .grid {
             display: grid;
-            grid-template-columns: 1fr 380px;
-            gap: 32px;
+            grid-template-columns: 1fr 320px 320px;
+            gap: 24px;
             align-items: start;
         }
 
@@ -377,8 +377,14 @@ permalink: /labs/renovation.html
             transform: translateY(0) scale(0.95);
         }
 
+        @media (max-width: 1300px) {
+            .grid { grid-template-columns: 1fr 1fr; }
+            .media-area { grid-column: span 2; }
+        }
+
         @media (max-width: 1100px) {
             .grid { grid-template-columns: 1fr; }
+            .media-area { grid-column: span 1; }
             .app-container { flex-direction: column; }
             aside { 
                 width: 100%; 
@@ -503,6 +509,16 @@ permalink: /labs/renovation.html
                         </button>
                     </div>
                 </div>
+
+                <div class="item-area">
+                    <div class="card">
+                        <div class="card-title">需放置的家电/物品</div>
+                        <div class="todo-list" id="itemList"></div>
+                        <button class="btn btn-outline" onclick="addItem()" style="width: 100%; margin-top: 20px; border-style: dashed;">
+                            新增待购物品
+                        </button>
+                    </div>
+                </div>
             </div>
         </main>
     </div>
@@ -534,6 +550,10 @@ permalink: /labs/renovation.html
                 "requirements": [
                     { "id": 0, "text": "吊顶采用双眼皮设计", "completed": true, "roundIndex": 0 },
                     { "id": 1, "text": "电视墙预留隐藏线管", "completed": true, "roundIndex": 0 }
+                ],
+                "items": [
+                    { "text": "85寸液晶电视", "completed": false },
+                    { "text": "回音壁音响", "completed": false }
                 ],
                 "iterations": [
                     {
@@ -627,9 +647,11 @@ permalink: /labs/renovation.html
             currentRoom = id;
             const data = renovationData[id];
             if (!data.iterations) data.iterations = [];
+            if (!data.items) data.items = [];
             document.getElementById('roomTitle').innerText = data.name;
             renderIterations(data.iterations, data.requirements);
             renderTodos(data.requirements);
+            renderItems(data.items);
             renderImages('cadGallery', data.cad);
         }
 
@@ -689,6 +711,21 @@ permalink: /labs/renovation.html
             });
         }
 
+        function renderItems(items) {
+            const list = document.getElementById('itemList');
+            list.innerHTML = '';
+            items.forEach((item, index) => {
+                const div = document.createElement('div');
+                div.className = `todo-item ${item.completed ? 'completed' : ''}`;
+                div.innerHTML = `
+                    <input type="checkbox" class="todo-checkbox" ${item.completed ? 'checked' : ''} onchange="toggleItem(${index})">
+                    <div class="todo-text" contenteditable="true" oninput="updateItem(${index}, this.innerText)">${item.text}</div>
+                    <i class="fas fa-times" style="color:var(--secondary-text); cursor:pointer; opacity:0.3; font-size:12px;" onclick="removeItem(${index})"></i>
+                `;
+                list.appendChild(div);
+            });
+        }
+
         function addIteration() {
             const date = new Date().toISOString().split('T')[0];
             const roundNum = renovationData[currentRoom].iterations.length + 1;
@@ -741,6 +778,25 @@ permalink: /labs/renovation.html
         }
         function removeTodo(index) {
             renovationData[currentRoom].requirements.splice(index, 1);
+            persistData();
+            loadRoom(currentRoom);
+        }
+
+        function addItem() {
+            renovationData[currentRoom].items.push({ text: "新物品", completed: false });
+            persistData();
+            loadRoom(currentRoom);
+        }
+
+        function toggleItem(index) {
+            renovationData[currentRoom].items[index].completed = !renovationData[currentRoom].items[index].completed;
+            persistData();
+            loadRoom(currentRoom);
+        }
+
+        function updateItem(index, text) { renovationData[currentRoom].items[index].text = text; persistData(); }
+        function removeItem(index) {
+            renovationData[currentRoom].items.splice(index, 1);
             persistData();
             loadRoom(currentRoom);
         }
