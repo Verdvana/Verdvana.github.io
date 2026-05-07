@@ -1,0 +1,696 @@
+---
+layout: null
+---
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Renovation Hub | VERDVANA Labs</title>
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --bg-color: #000000;
+            --text-color: #ffffff;
+            --secondary-text: #8e8e93;
+            --accent-color: #0071e3;
+            --border-color: rgba(255, 255, 255, 0.1);
+            --card-bg: rgba(28, 28, 30, 0.7);
+            --glass: rgba(255, 255, 255, 0.05);
+            --sidebar-width: 260px;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            line-height: 1.6;
+            -webkit-font-smoothing: antialiased;
+            overflow-x: hidden;
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+        }
+
+        /* ── Navigation (Identical to Main Site) ─────────────────────── */
+        nav {
+            position: fixed;
+            top: 0;
+            width: 100%;
+            padding: 20px 40px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            z-index: 1000;
+            background: rgba(0, 0, 0, 0.7);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        nav .logo-area {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            text-decoration: none;
+            color: white;
+        }
+
+        nav .logo-area img {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            border: 1px solid var(--border-color);
+            object-fit: cover;
+        }
+
+        nav .logo {
+            font-size: 18px;
+            font-weight: 700;
+            letter-spacing: -0.5px;
+        }
+
+        nav .nav-links {
+            display: flex;
+            gap: 30px;
+        }
+
+        nav a {
+            text-decoration: none;
+            color: var(--text-color);
+            font-size: 14px;
+            font-weight: 500;
+            transition: color 0.2s;
+        }
+
+        nav a:hover {
+            color: var(--secondary-text);
+        }
+
+        /* ── Layout ─────────────────────── */
+        .app-container {
+            display: flex;
+            margin-top: 73px; /* Nav height */
+            flex-grow: 1;
+        }
+
+        /* Sidebar */
+        aside {
+            width: var(--sidebar-width);
+            background: rgba(0, 0, 0, 0.5);
+            border-right: 1px solid var(--border-color);
+            padding: 40px 20px;
+            position: fixed;
+            height: calc(100vh - 73px);
+            overflow-y: auto;
+        }
+
+        .nav-label {
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: var(--secondary-text);
+            margin-bottom: 16px;
+            padding-left: 10px;
+        }
+
+        .nav-list {
+            list-style: none;
+        }
+
+        .nav-item {
+            padding: 12px 16px;
+            border-radius: 10px;
+            cursor: pointer;
+            margin-bottom: 4px;
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+            color: var(--secondary-text);
+            font-size: 14px;
+            font-weight: 500;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .nav-item:hover {
+            background: rgba(255, 255, 255, 0.05);
+            color: var(--text-color);
+        }
+
+        .nav-item.active {
+            background: var(--accent-color);
+            color: white;
+        }
+
+        /* Main Content */
+        main {
+            flex-grow: 1;
+            margin-left: var(--sidebar-width);
+            padding: 40px 60px;
+            max-width: 1600px;
+        }
+
+        .room-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-end;
+            margin-bottom: 40px;
+        }
+
+        h1 {
+            font-size: 32px;
+            font-weight: 700;
+            letter-spacing: -1px;
+        }
+
+        .btn {
+            background: var(--accent-color);
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 20px;
+            cursor: pointer;
+            font-size: 13px;
+            font-weight: 600;
+            transition: all 0.2s;
+        }
+
+        .btn:hover {
+            filter: brightness(1.2);
+            transform: scale(1.02);
+        }
+
+        .btn-outline {
+            background: transparent;
+            border: 1px solid var(--accent-color);
+            color: var(--accent-color);
+        }
+
+        /* Grid System */
+        .grid {
+            display: grid;
+            grid-template-columns: 1fr 380px;
+            gap: 32px;
+            align-items: start;
+        }
+
+        .card {
+            background: var(--card-bg);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid var(--border-color);
+            border-radius: 16px;
+            padding: 24px;
+            margin-bottom: 32px;
+        }
+
+        .card-title {
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--secondary-text);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        /* Image Gallery */
+        .image-gallery {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 16px;
+        }
+
+        .image-container {
+            border-radius: 12px;
+            overflow: hidden;
+            aspect-ratio: 16/9;
+            background: #1c1c1e;
+            border: 1px solid var(--border-color);
+        }
+
+        .image-container img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            transition: transform 0.5s ease;
+        }
+
+        .image-container:hover img {
+            transform: scale(1.05);
+        }
+
+        .no-image {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: 100%;
+            color: var(--secondary-text);
+            font-size: 12px;
+        }
+
+        /* Design Iterations */
+        .iteration-card {
+            border-left: 3px solid var(--accent-color);
+            background: rgba(255, 255, 255, 0.02);
+        }
+
+        .iteration-meta {
+            font-size: 12px;
+            color: var(--secondary-text);
+            margin-bottom: 12px;
+        }
+
+        .badge-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-top: 16px;
+        }
+
+        .badge {
+            background: rgba(0, 113, 227, 0.1);
+            color: var(--accent-color);
+            padding: 4px 12px;
+            border-radius: 6px;
+            font-size: 12px;
+            font-weight: 500;
+            border: 1px solid rgba(0, 113, 227, 0.2);
+        }
+
+        /* Todo List */
+        .todo-list {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .todo-item {
+            display: flex;
+            align-items: flex-start;
+            gap: 12px;
+            background: rgba(255, 255, 255, 0.03);
+            padding: 12px;
+            border-radius: 10px;
+            border: 1px solid var(--border-color);
+            transition: border-color 0.2s;
+        }
+
+        .todo-checkbox {
+            appearance: none;
+            width: 20px;
+            height: 20px;
+            border: 2px solid var(--secondary-text);
+            border-radius: 50%;
+            cursor: pointer;
+            margin-top: 2px;
+            flex-shrink: 0;
+            transition: all 0.2s;
+        }
+
+        .todo-checkbox:checked {
+            background: var(--accent-color);
+            border-color: var(--accent-color);
+        }
+
+        .todo-text {
+            flex-grow: 1;
+            font-size: 14px;
+            outline: none;
+        }
+
+        .completed .todo-text {
+            color: var(--secondary-text);
+            text-decoration: line-through;
+        }
+
+        .round-selector {
+            background: transparent;
+            color: var(--accent-color);
+            border: none;
+            font-size: 11px;
+            font-weight: 600;
+            cursor: pointer;
+        }
+
+        /* Scrollbar */
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.1); border-radius: 10px; }
+
+        @media (max-width: 1100px) {
+            .grid { grid-template-columns: 1fr; }
+            aside { display: none; }
+            main { margin-left: 0; padding: 20px; }
+        }
+
+        /* Save Modal */
+        #saveModal {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.8);
+            backdrop-filter: blur(10px);
+            z-index: 2000;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal-content {
+            background: #1c1c1e;
+            padding: 40px;
+            border-radius: 20px;
+            width: 90%;
+            max-width: 600px;
+            border: 1px solid var(--border-color);
+        }
+
+        pre {
+            background: #000;
+            padding: 20px;
+            border-radius: 12px;
+            overflow-x: auto;
+            margin: 20px 0;
+            font-size: 12px;
+            font-family: monospace;
+            color: #39d98a;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Main Navigation -->
+    <nav>
+        <a class="logo-area" href="/">
+            <img alt="Verdvana" src="/static/img/avatar.jpg">
+            <span class="logo">VERDVANA</span>
+        </a>
+        <div class="nav-links">
+            <a href="/archive">Blog</a>
+            <a href="/labs">Labs</a>
+            <a href="/comments">Comments</a>
+            <a href="https://github.com/Verdvana">GitHub</a>
+        </div>
+    </nav>
+
+    <div class="app-container">
+        <!-- Sidebar Navigation -->
+        <aside>
+            <div class="nav-label">Space Selection</div>
+            <ul class="nav-list" id="roomNav">
+                <!-- Nav items injected by JS -->
+            </ul>
+        </aside>
+
+        <main>
+            <div class="room-header">
+                <div>
+                    <div style="font-size: 12px; color: var(--accent-color); font-weight: 600; margin-bottom: 4px; text-transform: uppercase;">Renovation Lab</div>
+                    <h1 id="roomTitle">请选择房间</h1>
+                </div>
+                <button class="btn" onclick="showSaveModal()">Export Config</button>
+            </div>
+
+            <div class="grid">
+                <div class="media-area">
+                    <!-- CAD Section -->
+                    <div class="card">
+                        <div class="card-title">Base Layout (CAD)</div>
+                        <div class="image-gallery" id="cadGallery"></div>
+                    </div>
+
+                    <!-- Iterations -->
+                    <div id="iterationsContainer"></div>
+                    
+                    <button class="btn btn-outline" onclick="addIteration()" style="width: 100%; padding: 20px;">
+                        <i class="fas fa-plus"></i> New Design Round
+                    </button>
+                </div>
+
+                <div class="editor-area">
+                    <div class="card">
+                        <div class="card-title">Requirements Checklist</div>
+                        <div class="todo-list" id="reqList"></div>
+                        <button class="btn btn-outline" onclick="addTodo()" style="width: 100%; margin-top: 20px; border-style: dashed;">
+                            Add New Requirement
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Export Modal -->
+    <div id="saveModal">
+        <div class="modal-content">
+            <h3 style="margin-bottom: 10px;">Sync Your Data</h3>
+            <p style="font-size: 14px; color: var(--secondary-text);">Copy this JSON and update the `projectData` block in `index.html` to persist changes.</p>
+            <pre id="dataOutput"></pre>
+            <div style="display: flex; gap: 10px; margin-top: 20px;">
+                <button class="btn" onclick="copyData()" style="flex: 1;">Copy to Clipboard</button>
+                <button class="btn btn-outline" onclick="hideSaveModal()">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Data Center -->
+    <script id="projectData">
+        const renovationData = {
+            "LivingRoom-TVWall": {
+                "name": "客厅-电视墙",
+                "cad": ["./renovation/assets/LivingRoom-TVWall/cad_main.jpg"],
+                "requirements": [
+                    { "id": 0, "text": "吊顶采用双眼皮设计", "completed": true, "roundIndex": 0 },
+                    { "id": 1, "text": "电视墙预留隐藏线管", "completed": true, "roundIndex": 0 }
+                ],
+                "iterations": [
+                    {
+                        "title": "V1 - Initial Draft",
+                        "date": "2026-05-01",
+                        "images": ["./renovation/assets/LivingRoom-TVWall/render1.jpg"],
+                        "note": "Main structure confirmed."
+                    }
+                ]
+            },
+            "LivingRoom-Sideboard": {
+                "name": "客厅-餐边柜",
+                "cad": [],
+                "requirements": [
+                    { "text": "增加扫地机器人上下水", "completed": false },
+                    { "text": "餐边柜预留轨道插座", "completed": false }
+                ],
+                "iterations": []
+            },
+            "Balcony": {
+                "name": "阳台",
+                "cad": [],
+                "requirements": [
+                    { "text": "放置洗烘套装", "completed": false },
+                    { "text": "预留给排水位置", "completed": false }
+                ],
+                "iterations": []
+            },
+            "MasterBedroom": {
+                "name": "主卧",
+                "cad": ["./renovation/assets/MasterBedroom/layout.jpg"],
+                "requirements": [
+                    { "text": "悬浮床头柜", "completed": false },
+                    { "text": "无主灯设计", "completed": false }
+                ],
+                "iterations": []
+            },
+            "SouthBedroom": {
+                "name": "南次卧",
+                "cad": [],
+                "requirements": [
+                    { "text": "榻榻米设计", "completed": false }
+                ],
+                "iterations": []
+            },
+            "NorthBedroom": {
+                "name": "北次卧",
+                "cad": [],
+                "requirements": [
+                    { "text": "电竞房布局", "completed": false }
+                ],
+                "iterations": []
+            }
+        };
+    </script>
+
+    <script>
+        let currentRoom = Object.keys(renovationData)[0];
+
+        function init() {
+            renderNav();
+            loadRoom(currentRoom);
+        }
+
+        function renderNav() {
+            const nav = document.getElementById('roomNav');
+            nav.innerHTML = '';
+            Object.keys(renovationData).forEach(key => {
+                const item = document.createElement('li');
+                item.className = `nav-item ${key === currentRoom ? 'active' : ''}`;
+                item.innerHTML = `<span>${renovationData[key].name}</span> <i class="fas fa-chevron-right" style="margin-left:auto; font-size:10px; opacity:0.3"></i>`;
+                item.onclick = () => {
+                    const active = document.querySelector('.nav-item.active');
+                    if(active) active.classList.remove('active');
+                    item.classList.add('active');
+                    loadRoom(key);
+                };
+                nav.appendChild(item);
+            });
+        }
+
+        function loadRoom(id) {
+            currentRoom = id;
+            const data = renovationData[id];
+            if (!data.iterations) data.iterations = [];
+            document.getElementById('roomTitle').innerText = data.name;
+            renderIterations(data.iterations, data.requirements);
+            renderTodos(data.requirements);
+            renderImages('cadGallery', data.cad);
+        }
+
+        function renderIterations(iterations, allRequirements) {
+            const container = document.getElementById('iterationsContainer');
+            container.innerHTML = '';
+            iterations.forEach((iter, idx) => {
+                const solved = allRequirements.filter(r => r.completed && r.roundIndex === idx);
+                const card = document.createElement('div');
+                card.className = 'card iteration-card';
+                card.innerHTML = `
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1rem;">
+                        <div style="font-size:16px; font-weight:700; color:white;" contenteditable="true" oninput="updateIterTitle(${idx}, this.innerText)">${iter.title}</div>
+                        <div class="iteration-meta">${iter.date || ''}</div>
+                    </div>
+                    <div class="image-gallery">
+                        ${iter.images.map(src => `
+                            <div class="image-container">
+                                <img src="${src}" onerror="this.parentElement.innerHTML='<div class=no-image>Image missing</div>'">
+                            </div>
+                        `).join('')}
+                        <button class="btn btn-outline" onclick="addImageToIter(${idx})" style="aspect-ratio:16/9; font-size:10px;">Add Image</button>
+                    </div>
+                    <div style="margin-top:20px;">
+                        <div class="badge-list">
+                            ${solved.length > 0 ? solved.map(s => `<span class="badge"><i class="fas fa-check"></i> ${s.text}</span>`).join('') : '<span style="color:var(--secondary-text); font-size:12px;">No requirements linked</span>'}
+                        </div>
+                        <div contenteditable="true" oninput="updateIterNote(${idx}, this.innerText)" style="margin-top:16px; font-size:13px; color:var(--secondary-text); outline:none;" placeholder="Notes for this round...">${iter.note || ''}</div>
+                    </div>
+                    <button style="margin-top:20px; background:transparent; border:none; color:#ff453a; cursor:pointer; font-size:11px; opacity:0.6" onclick="removeIteration(${idx})">Delete Version</button>
+                `;
+                container.appendChild(card);
+            });
+        }
+
+        function renderTodos(todos) {
+            const list = document.getElementById('reqList');
+            const iters = renovationData[currentRoom].iterations || [];
+            list.innerHTML = '';
+            todos.forEach((todo, index) => {
+                const item = document.createElement('div');
+                item.className = `todo-item ${todo.completed ? 'completed' : ''}`;
+                
+                let roundSelector = "";
+                if (todo.completed) {
+                    const options = iters.map((it, i) => `<option value="${i}" ${todo.roundIndex == i ? 'selected' : ''}>V${i+1}</option>`).join('');
+                    roundSelector = `<select class="round-selector" onchange="updateTodoRound(${index}, this.value)"><option value="-1">N/A</option>${options}</select>`;
+                }
+
+                item.innerHTML = `
+                    <input type="checkbox" class="todo-checkbox" ${todo.completed ? 'checked' : ''} onchange="toggleTodo(${index})">
+                    <div class="todo-text" contenteditable="true" oninput="updateTodo(${index}, this.innerText)">${todo.text}</div>
+                    ${roundSelector}
+                    <i class="fas fa-times" style="color:var(--secondary-text); cursor:pointer; opacity:0.3; font-size:12px;" onclick="removeTodo(${index})"></i>
+                `;
+                list.appendChild(item);
+            });
+        }
+
+        function addIteration() {
+            const date = new Date().toISOString().split('T')[0];
+            const roundNum = renovationData[currentRoom].iterations.length + 1;
+            renovationData[currentRoom].iterations.push({ title: `V${roundNum} Draft`, date: date, images: [], note: "" });
+            loadRoom(currentRoom);
+        }
+
+        function addImageToIter(idx) {
+            const path = prompt("Path (e.g. ./assets/LivingRoom-TVWall/new.jpg):");
+            if (path) {
+                renovationData[currentRoom].iterations[idx].images.push(path);
+                loadRoom(currentRoom);
+            }
+        }
+
+        function updateIterTitle(idx, val) { renovationData[currentRoom].iterations[idx].title = val; }
+        function updateIterNote(idx, val) { renovationData[currentRoom].iterations[idx].note = val; }
+        function removeIteration(idx) { 
+            if(confirm("Delete this version?")) {
+                renovationData[currentRoom].iterations.splice(idx, 1);
+                loadRoom(currentRoom);
+            }
+        }
+
+        function addTodo() {
+            renovationData[currentRoom].requirements.push({ text: "New Requirement", completed: false });
+            loadRoom(currentRoom);
+        }
+
+        function toggleTodo(index) {
+            const todo = renovationData[currentRoom].requirements[index];
+            todo.completed = !todo.completed;
+            if (todo.completed && (todo.roundIndex === undefined || todo.roundIndex === -1)) {
+                const iters = renovationData[currentRoom].iterations;
+                if (iters && iters.length > 0) todo.roundIndex = iters.length - 1;
+            }
+            loadRoom(currentRoom);
+        }
+
+        function updateTodo(index, text) { renovationData[currentRoom].requirements[index].text = text; }
+        function updateTodoRound(index, roundIdx) {
+            renovationData[currentRoom].requirements[index].roundIndex = roundIdx == -1 ? undefined : parseInt(roundIdx);
+            loadRoom(currentRoom);
+        }
+        function removeTodo(index) {
+            renovationData[currentRoom].requirements.splice(index, 1);
+            loadRoom(currentRoom);
+        }
+
+        function renderImages(containerId, images) {
+            const container = document.getElementById(containerId);
+            container.innerHTML = '';
+            if (!images || images.length === 0) { container.innerHTML = '<div class="no-image">No floor plans</div>'; return; }
+            images.forEach(src => {
+                const div = document.createElement('div');
+                div.className = 'image-container';
+                div.innerHTML = `<img src="${src}" onerror="this.parentElement.innerHTML='<div class=no-image>Missing</div>'">`;
+                container.appendChild(div);
+            });
+        }
+
+        function showSaveModal() {
+            const output = `const renovationData = ${JSON.stringify(renovationData, null, 4)};`;
+            document.getElementById('dataOutput').innerText = output;
+            document.getElementById('saveModal').style.display = 'flex';
+        }
+        function hideSaveModal() { document.getElementById('saveModal').style.display = 'none'; }
+        function copyData() {
+            const text = document.getElementById('dataOutput').innerText;
+            navigator.clipboard.writeText(text).then(() => alert('Copied!'));
+        }
+
+        window.onload = init;
+    </script>
+</body>
+</html>
