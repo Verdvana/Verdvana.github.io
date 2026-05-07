@@ -52,8 +52,8 @@
   desc: >
     面向家装设计的专业迭代管理工具，支持按房间分类追踪需求清单、CAD 图纸及多轮设计效果图，实现设计与需求的双向追溯。
   thumb: 
-  tags: [Home Design, Productivity]
-  order: 0
+  tags: [Others]
+  order: 6
 
 - slug: neural_network_visualization
   title: 神经网络动画演示
