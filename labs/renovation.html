@@ -4,6 +4,7 @@ permalink: /labs/renovation.html
 ---
 <!DOCTYPE html>
 <html lang="zh-CN">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -98,7 +99,8 @@ permalink: /labs/renovation.html
         /* ── Layout ─────────────────────── */
         .app-container {
             display: flex;
-            margin-top: 73px; /* Nav height */
+            margin-top: 73px;
+            /* Nav height */
             flex-grow: 1;
         }
 
@@ -347,9 +349,18 @@ permalink: /labs/renovation.html
         }
 
         /* Scrollbar */
-        ::-webkit-scrollbar { width: 8px; }
-        ::-webkit-scrollbar-track { background: transparent; }
-        ::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.1); border-radius: 10px; }
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+        }
 
         /* ── Floating Back Button ─────────────────────────────────────── */
         #fabBack {
@@ -365,59 +376,90 @@ permalink: /labs/renovation.html
             color: #fff;
             font-size: 18px;
             cursor: pointer;
-            box-shadow: 0 8px 24px rgba(0,113,227,0.4);
+            box-shadow: 0 8px 24px rgba(0, 113, 227, 0.4);
             display: flex;
             align-items: center;
             justify-content: center;
             transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
         }
+
         #fabBack:hover {
             transform: translateY(-4px) scale(1.05);
-            box-shadow: 0 12px 30px rgba(0,113,227,0.5);
+            box-shadow: 0 12px 30px rgba(0, 113, 227, 0.5);
             filter: brightness(1.1);
         }
+
         #fabBack:active {
             transform: translateY(0) scale(0.95);
         }
 
         @media (max-width: 1300px) {
-            .grid { grid-template-columns: 1fr 1fr; }
-            .media-area { grid-column: span 2; }
+            .grid {
+                grid-template-columns: 1fr 1fr;
+            }
+
+            .media-area {
+                grid-column: span 2;
+            }
         }
 
         @media (max-width: 1100px) {
-            .grid { grid-template-columns: 1fr; }
-            .media-area { grid-column: span 1; }
-            .app-container { flex-direction: column; }
-            aside { 
-                width: 100%; 
-                height: auto; 
-                position: sticky; 
-                top: 73px; 
-                border-right: none; 
+            .grid {
+                grid-template-columns: 1fr;
+            }
+
+            .media-area {
+                grid-column: span 1;
+            }
+
+            .app-container {
+                flex-direction: column;
+            }
+
+            aside {
+                width: 100%;
+                height: auto;
+                position: sticky;
+                top: 73px;
+                border-right: none;
                 border-bottom: 1px solid var(--border-color);
                 padding: 15px 20px;
                 z-index: 100;
                 backdrop-filter: blur(20px);
-                background: rgba(0,0,0,0.8);
+                background: rgba(0, 0, 0, 0.8);
             }
-            .nav-label { display: none; }
-            .nav-list { 
-                display: flex; 
-                flex-direction: row; 
-                gap: 10px; 
-                overflow-x: auto; 
+
+            .nav-label {
+                display: none;
+            }
+
+            .nav-list {
+                display: flex;
+                flex-direction: row;
+                gap: 10px;
+                overflow-x: auto;
                 padding-bottom: 5px;
                 -webkit-overflow-scrolling: touch;
             }
-            .nav-item { 
-                white-space: nowrap; 
-                margin-bottom: 0; 
+
+            .nav-item {
+                white-space: nowrap;
+                margin-bottom: 0;
                 padding: 8px 20px;
             }
-            .nav-item i { display: none; }
-            main { margin-left: 0; padding: 20px; }
-            .room-header { margin-top: 20px; }
+
+            .nav-item i {
+                display: none;
+            }
+
+            main {
+                margin-left: 0;
+                padding: 20px;
+            }
+
+            .room-header {
+                margin-top: 20px;
+            }
         }
 
         /* Save Modal */
@@ -425,7 +467,7 @@ permalink: /labs/renovation.html
             display: none;
             position: fixed;
             inset: 0;
-            background: rgba(0,0,0,0.8);
+            background: rgba(0, 0, 0, 0.8);
             backdrop-filter: blur(10px);
             z-index: 2000;
             align-items: center;
@@ -459,7 +501,7 @@ permalink: /labs/renovation.html
             max-width: 100%;
             max-height: 100%;
             border-radius: 8px;
-            box-shadow: 0 0 50px rgba(0,0,0,0.5);
+            box-shadow: 0 0 50px rgba(0, 0, 0, 0.5);
             object-fit: contain;
         }
 
@@ -473,7 +515,9 @@ permalink: /labs/renovation.html
             transition: opacity 0.2s;
         }
 
-        .viewer-close:hover { opacity: 1; }
+        .viewer-close:hover {
+            opacity: 1;
+        }
 
         pre {
             background: #000;
@@ -487,6 +531,7 @@ permalink: /labs/renovation.html
         }
     </style>
 </head>
+
 <body>
 
     <!-- Main Navigation -->
@@ -515,7 +560,9 @@ permalink: /labs/renovation.html
         <main>
             <div class="room-header">
                 <div>
-                    <div style="font-size: 12px; color: var(--accent-color); font-weight: 600; margin-bottom: 4px; text-transform: uppercase;">装修实验室</div>
+                    <div
+                        style="font-size: 12px; color: var(--accent-color); font-weight: 600; margin-bottom: 4px; text-transform: uppercase;">
+                        装修实验室</div>
                     <h1 id="roomTitle">请选择房间</h1>
                 </div>
                 <button class="btn" onclick="showSaveModal()">导出配置</button>
@@ -531,7 +578,7 @@ permalink: /labs/renovation.html
 
                     <!-- Iterations -->
                     <div id="iterationsContainer"></div>
-                    
+
                     <button class="btn btn-outline" onclick="addIteration()" style="width: 100%; padding: 20px;">
                         <i class="fas fa-plus"></i> 发布新一轮设计更新
                     </button>
@@ -541,7 +588,8 @@ permalink: /labs/renovation.html
                     <div class="card">
                         <div class="card-title">全屋定制需求清单</div>
                         <div class="todo-list" id="reqList"></div>
-                        <button class="btn btn-outline" onclick="addTodo()" style="width: 100%; margin-top: 20px; border-style: dashed;">
+                        <button class="btn btn-outline" onclick="addTodo()"
+                            style="width: 100%; margin-top: 20px; border-style: dashed;">
                             新增需求条目
                         </button>
                     </div>
@@ -551,7 +599,8 @@ permalink: /labs/renovation.html
                     <div class="card">
                         <div class="card-title">需放置的家电/物品</div>
                         <div class="todo-list" id="itemList"></div>
-                        <button class="btn btn-outline" onclick="addItem()" style="width: 100%; margin-top: 20px; border-style: dashed;">
+                        <button class="btn btn-outline" onclick="addItem()"
+                            style="width: 100%; margin-top: 20px; border-style: dashed;">
                             新增待购物品
                         </button>
                     </div>
@@ -569,7 +618,8 @@ permalink: /labs/renovation.html
     <div id="saveModal">
         <div class="modal-content">
             <h3 style="margin-bottom: 10px;">同步您的数据</h3>
-            <p style="font-size: 14px; color: var(--secondary-text);">请复制以下 JSON 代码，并替换 `renovation.html` 中 `id="projectData"` 脚本块的内容以持久化您的更改。</p>
+            <p style="font-size: 14px; color: var(--secondary-text);">请复制以下 JSON 代码，并替换 `renovation.html` 中
+                `id="projectData"` 脚本块的内容以持久化您的更改。</p>
             <pre id="dataOutput"></pre>
             <div style="display: flex; gap: 10px; margin-top: 20px;">
                 <button class="btn" onclick="copyData()" style="flex: 1;">复制到剪贴板</button>
@@ -589,7 +639,7 @@ permalink: /labs/renovation.html
         window._defaultProjectData = {
             "LivingRoom-TVWall": {
                 "name": "客厅-电视墙",
-                "cad": ["./renovation/assets/LivingRoom-TVWall/cad_main.jpg"],
+                "cad": ["/labs/renovation/assets/LivingRoom-TVWall/cad_main.jpg"],
                 "requirements": [
                     { "id": 0, "text": "吊顶采用双眼皮设计", "completed": true, "roundIndex": 0 },
                     { "id": 1, "text": "电视墙预留隐藏线管", "completed": true, "roundIndex": 0 }
@@ -603,11 +653,10 @@ permalink: /labs/renovation.html
                         "title": "V1 - 初始草案交付",
                         "date": "2026-05-01",
                         "images": [
-                            "./renovation/assets/LivingRoom-TVWall/79.JPG",
-                            "./renovation/assets/LivingRoom-TVWall/85.JPG",
-                            "./renovation/assets/LivingRoom-TVWall/87.JPG"
+                            "/labs/renovation/assets/LivingRoom-TVWall/79.JPG",
+                            "/labs/renovation/assets/LivingRoom-TVWall/85.JPG",
+                            "/labs/renovation/assets/LivingRoom-TVWall/87.JPG"
                         ],
-                        "note": "主体结构已确认。"
                     }
                 ]
             },
@@ -623,9 +672,9 @@ permalink: /labs/renovation.html
                         "title": "V1 - 初始草案交付",
                         "date": "2026-05-01",
                         "images": [
-                            "./renovation/assets/LivingRoom-Sideboard/85.JPG",
-                            "./renovation/assets/LivingRoom-Sideboard/86.JPG",
-                            "./renovation/assets/LivingRoom-Sideboard/90.JPG"
+                            "/labs/renovation/assets/LivingRoom-Sideboard/85.JPG",
+                            "/labs/renovation/assets/LivingRoom-Sideboard/86.JPG",
+                            "/labs/renovation/assets/LivingRoom-Sideboard/90.JPG"
                         ],
                         "note": ""
                     }
@@ -642,14 +691,14 @@ permalink: /labs/renovation.html
                     {
                         "title": "V1 - 初始草案交付",
                         "date": "2026-05-01",
-                        "images": ["./renovation/assets/Balcony/80.JPG"],
+                        "images": ["/labs/renovation/assets/Balcony/80.JPG"],
                         "note": ""
                     }
                 ]
             },
             "MasterBedroom": {
                 "name": "主卧",
-                "cad": ["./renovation/assets/MasterBedroom/layout.jpg"],
+                "cad": ["/labs/renovation/assets/MasterBedroom/layout.jpg"],
                 "requirements": [
                     { "text": "悬浮床头柜", "completed": false },
                     { "text": "无主灯设计", "completed": false }
@@ -659,9 +708,9 @@ permalink: /labs/renovation.html
                         "title": "V1 - 初始草案交付",
                         "date": "2026-05-01",
                         "images": [
-                            "./renovation/assets/MasterBedroom/83.JPG",
-                            "./renovation/assets/MasterBedroom/84.JPG",
-                            "./renovation/assets/MasterBedroom/88.JPG"
+                            "/labs/renovation/assets/MasterBedroom/83.JPG",
+                            "/labs/renovation/assets/MasterBedroom/84.JPG",
+                            "/labs/renovation/assets/MasterBedroom/88.JPG"
                         ],
                         "note": ""
                     }
@@ -678,8 +727,8 @@ permalink: /labs/renovation.html
                         "title": "V1 - 初始草案交付",
                         "date": "2026-05-01",
                         "images": [
-                            "./renovation/assets/SouthBedroom/81.JPG",
-                            "./renovation/assets/SouthBedroom/82.JPG"
+                            "/labs/renovation/assets/SouthBedroom/81.JPG",
+                            "/labs/renovation/assets/SouthBedroom/82.JPG"
                         ],
                         "note": ""
                     }
@@ -695,7 +744,7 @@ permalink: /labs/renovation.html
                     {
                         "title": "V1 - 初始草案交付",
                         "date": "2026-05-01",
-                        "images": ["./renovation/assets/NorthBedroom/89.JPG"],
+                        "images": ["/labs/renovation/assets/NorthBedroom/89.JPG"],
                         "note": ""
                     }
                 ]
@@ -728,7 +777,7 @@ permalink: /labs/renovation.html
                 item.innerHTML = `<span>${renovationData[key].name}</span> <i class="fas fa-chevron-right" style="margin-left:auto; font-size:10px; opacity:0.3"></i>`;
                 item.onclick = () => {
                     const active = document.querySelector('.nav-item.active');
-                    if(active) active.classList.remove('active');
+                    if (active) active.classList.remove('active');
                     item.classList.add('active');
                     loadRoom(key);
                 };
@@ -787,10 +836,10 @@ permalink: /labs/renovation.html
             todos.forEach((todo, index) => {
                 const item = document.createElement('div');
                 item.className = `todo-item ${todo.completed ? 'completed' : ''}`;
-                
+
                 let roundSelector = "";
                 if (todo.completed) {
-                    const options = iters.map((it, i) => `<option value="${i}" ${todo.roundIndex == i ? 'selected' : ''}>V${i+1}</option>`).join('');
+                    const options = iters.map((it, i) => `<option value="${i}" ${todo.roundIndex == i ? 'selected' : ''}>V${i + 1}</option>`).join('');
                     roundSelector = `<select class="round-selector" onchange="updateTodoRound(${index}, this.value)"><option value="-1">未关联</option>${options}</select>`;
                 }
 
@@ -828,7 +877,7 @@ permalink: /labs/renovation.html
         }
 
         function addImageToIter(idx) {
-            const path = prompt("请输入图片路径 (例如: ./renovation/assets/LivingRoom-TVWall/new.jpg):");
+            const path = prompt("请输入图片路径 (例如: /labs/renovation/assets/LivingRoom-TVWall/new.jpg):");
             if (path) {
                 renovationData[currentRoom].iterations[idx].images.push(path);
                 persistData();
@@ -838,8 +887,8 @@ permalink: /labs/renovation.html
 
         function updateIterTitle(idx, val) { renovationData[currentRoom].iterations[idx].title = val; persistData(); }
         function updateIterNote(idx, val) { renovationData[currentRoom].iterations[idx].note = val; persistData(); }
-        function removeIteration(idx) { 
-            if(confirm("确定删除此版本吗？")) {
+        function removeIteration(idx) {
+            if (confirm("确定删除此版本吗？")) {
                 renovationData[currentRoom].iterations.splice(idx, 1);
                 persistData();
                 loadRoom(currentRoom);
@@ -932,4 +981,5 @@ permalink: /labs/renovation.html
         window.onload = init;
     </script>
 </body>
+
 </html>
