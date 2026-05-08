@@ -565,7 +565,10 @@ permalink: /labs/renovation.html
                         装修实验室</div>
                     <h1 id="roomTitle">请选择房间</h1>
                 </div>
-                <button class="btn" onclick="showSaveModal()">导出配置</button>
+                <div style="display: flex; gap: 10px;">
+                    <button class="btn btn-outline" onclick="resetToSource()" style="border-color: rgba(255,255,255,0.2); color: var(--secondary-text);">重置到源码</button>
+                    <button class="btn" onclick="showSaveModal()">导出配置</button>
+                </div>
             </div>
 
             <div class="grid">
@@ -1009,6 +1012,13 @@ permalink: /labs/renovation.html
         function copyData() {
             const text = document.getElementById('dataOutput').innerText;
             navigator.clipboard.writeText(text).then(() => alert('数据已复制到剪贴板！'));
+        }
+
+        function resetToSource() {
+            if (confirm("确定要丢弃所有本地修改，并恢复到源码定义的版本吗？\n该操作不可撤销。")) {
+                localStorage.removeItem(STORAGE_KEY);
+                location.reload();
+            }
         }
 
         window.onload = init;
