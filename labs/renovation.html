@@ -340,12 +340,25 @@ permalink: /labs/renovation.html
         }
 
         .round-selector {
-            background: transparent;
+            background: rgba(0, 113, 227, 0.15);
             color: var(--accent-color);
-            border: none;
-            font-size: 11px;
-            font-weight: 600;
+            border: 1px solid rgba(0, 113, 227, 0.3);
+            border-radius: 6px;
+            font-size: 10px;
+            font-weight: 700;
+            padding: 2px 8px;
             cursor: pointer;
+            outline: none;
+            transition: all 0.2s;
+            appearance: none;
+            -webkit-appearance: none;
+            text-align: center;
+        }
+
+        .round-selector:hover {
+            background: var(--accent-color);
+            color: white;
+            border-color: var(--accent-color);
         }
 
         /* Scrollbar */
