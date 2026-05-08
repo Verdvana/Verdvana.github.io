@@ -566,7 +566,8 @@ permalink: /labs/renovation.html
                     <h1 id="roomTitle">请选择房间</h1>
                 </div>
                 <div style="display: flex; gap: 10px;">
-                    <button class="btn btn-outline" onclick="resetToSource()" style="border-color: rgba(255,255,255,0.2); color: var(--secondary-text);">重置到源码</button>
+                    <button class="btn btn-outline" onclick="resetToSource()"
+                        style="border-color: rgba(255,255,255,0.2); color: var(--secondary-text);">重置到源码</button>
                     <button class="btn" onclick="showSaveModal()">导出配置</button>
                 </div>
             </div>
@@ -642,17 +643,62 @@ permalink: /labs/renovation.html
         window._defaultProjectData = {
             "LivingRoom-TVWall": {
                 "name": "客厅-电视墙",
-                "cad": ["/labs/renovation/assets/LivingRoom-TVWall/cad_main.jpg"],
+                "cad": [
+                    "/labs/renovation/assets/LivingRoom-TVWall/cad_main.jpg"
+                ],
                 "requirements": [
-                    { "id": 0, "text": "敲除岩板电视墙，做护墙板，预留隐藏50管", "completed": true, "roundIndex": 0 },
-                    { "id": 1, "text": "电视柜", "completed": true, "roundIndex": 0 }
+                    {
+                        "id": 0,
+                        "text": "敲除岩板电视墙，做护墙板，预留隐藏50管",
+                        "completed": true,
+                        "roundIndex": 0
+                    },
+                    {
+                        "id": 1,
+                        "text": "电视柜",
+                        "completed": true,
+                        "roundIndex": 0
+                    },
+                    {
+                        "text": "电视柜台面开孔预留走线位置",
+                        "completed": true,
+                        "roundIndex": 1
+                    },
+                    {
+                        "text": "电视墙栅格收窄，不影响电视氛围灯",
+                        "completed": true,
+                        "roundIndex": 1
+                    },
+                    {
+                        "text": "电视柜高度至少400,深度至少400,单个柜子的宽度至少350；内部需要在不同隔间里随意走线",
+                        "completed": false
+                    }
                 ],
                 "items": [
-                    { "text": "65寸OLED电视", "completed": false },
-                    { "text": "回音壁主机", "completed": false },
-                    { "text": "回音壁低音炮", "completed": false },
-                    { "text": "Homepod 2", "completed": false },
-                    { "text": "QNAP NAS", "completed": false }
+                    {
+                        "text": "65寸OLED电视（壁挂）",
+                        "completed": false
+                    },
+                    {
+                        "text": "回音壁主机（电视柜台面）",
+                        "completed": false
+                    },
+                    {
+                        "text": "回音壁低音炮（电视柜台面）",
+                        "completed": false
+                    },
+                    {
+                        "text": "Homepod 2（电视柜台面）",
+                        "completed": false
+                    },
+                    {
+                        "text": "QNAP NAS（电视柜内部）",
+                        "completed": false
+                    },
+                    {
+                        "text": "ASUS AX86u PRO路由器（电视柜内部）",
+                        "completed": false
+                    }
                 ],
                 "iterations": [
                     {
@@ -678,13 +724,46 @@ permalink: /labs/renovation.html
                 "name": "客厅-餐边柜",
                 "cad": [],
                 "requirements": [
-                    { "text": "餐边柜预留插座", "completed": false }
+                    {
+                        "text": "餐边柜预留插座",
+                        "completed": true,
+                        "roundIndex": 0
+                    },
+                    {
+                        "text": "取消轨道插座，改到下方柜子里，台面开孔",
+                        "completed": true,
+                        "roundIndex": 1
+                    },
+                    {
+                        "text": "取消所有玻璃柜门，改用棕色柜门（没有展示需求，增加储物空间）",
+                        "completed": false
+                    },
+                    {
+                        "text": "左侧第三个柜子做小家电收纳柜，设计多层抽拉台面，柜子里留墙插",
+                        "completed": false
+                    }
                 ],
                 "items": [
-                    { "text": "露营设备", "completed": false },
-                    { "text": "凳子", "completed": false },
-                    { "text": "饮水机", "completed": false },
-                    { "text": "行李箱", "completed": false }
+                    {
+                        "text": "露营设备",
+                        "completed": false
+                    },
+                    {
+                        "text": "凳子",
+                        "completed": false
+                    },
+                    {
+                        "text": "饮水机",
+                        "completed": false
+                    },
+                    {
+                        "text": "行李箱",
+                        "completed": false
+                    },
+                    {
+                        "text": "多个5L水桶",
+                        "completed": false
+                    }
                 ],
                 "iterations": [
                     {
@@ -711,32 +790,71 @@ permalink: /labs/renovation.html
                 "name": "阳台",
                 "cad": [],
                 "requirements": [
-                    { "text": "叠放洗烘套装", "completed": false },
-                    { "text": "另一边家政柜", "completed": false }
+                    {
+                        "text": "叠放洗烘套装",
+                        "completed": true,
+                        "roundIndex": 0
+                    },
+                    {
+                        "text": "另一边家政柜",
+                        "completed": true,
+                        "roundIndex": 0
+                    }
                 ],
                 "items": [
-                    { "text": "LG洗烘塔", "completed": false },
-                    { "text": "扫地机器人", "completed": false },
-                    { "text": "洗地机", "completed": false },
-                    { "text": "传统笤帚", "completed": false },
-                    { "text": "洗衣液等", "completed": false }
+                    {
+                        "text": "LG洗烘塔",
+                        "completed": false
+                    },
+                    {
+                        "text": "扫地机器人",
+                        "completed": false
+                    },
+                    {
+                        "text": "洗地机",
+                        "completed": false
+                    },
+                    {
+                        "text": "传统笤帚",
+                        "completed": false
+                    },
+                    {
+                        "text": "洗衣液等",
+                        "completed": false
+                    }
                 ],
                 "iterations": [
                     {
                         "title": "V1 - 初始草案交付",
                         "date": "2026-03-14",
-                        "images": ["/labs/renovation/assets/Balcony/80.JPG"],
+                        "images": [
+                            "/labs/renovation/assets/Balcony/80.JPG"
+                        ],
                         "note": ""
                     }
                 ]
             },
             "MasterBedroom": {
                 "name": "主卧",
-                "cad": ["/labs/renovation/assets/MasterBedroom/layout.jpg"],
+                "cad": [
+                    "/labs/renovation/assets/MasterBedroom/layout.jpg"
+                ],
                 "requirements": [
-                    { "text": "床头调转，东侧做满墙衣柜", "completed": false },
-                    { "text": "床头做护墙板", "completed": false },
-                    { "text": "设计次净衣区、梳妆台", "completed": false }
+                    {
+                        "text": "床头调转，东侧做满墙衣柜",
+                        "completed": true,
+                        "roundIndex": 0
+                    },
+                    {
+                        "text": "床头做护墙板",
+                        "completed": true,
+                        "roundIndex": 0
+                    },
+                    {
+                        "text": "设计次净衣区、梳妆台",
+                        "completed": true,
+                        "roundIndex": 0
+                    }
                 ],
                 "iterations": [
                     {
@@ -749,13 +867,18 @@ permalink: /labs/renovation.html
                         ],
                         "note": ""
                     }
-                ]
+                ],
+                "items": []
             },
             "SouthBedroom": {
                 "name": "南次卧",
                 "cad": [],
                 "requirements": [
-                    { "text": "设计衣柜", "completed": false }
+                    {
+                        "text": "设计衣柜",
+                        "completed": true,
+                        "roundIndex": 0
+                    }
                 ],
                 "iterations": [
                     {
@@ -767,25 +890,38 @@ permalink: /labs/renovation.html
                         ],
                         "note": ""
                     }
-                ]
+                ],
+                "items": []
             },
             "NorthBedroom": {
                 "name": "北次卧",
                 "cad": [],
                 "requirements": [
-                    { "text": "设计衣柜和书柜", "completed": false },
-                    { "text": "书桌自购，书桌后加护墙板", "completed": false }
+                    {
+                        "text": "设计衣柜和书柜",
+                        "completed": true,
+                        "roundIndex": 0
+                    },
+                    {
+                        "text": "书桌自购，书桌后加护墙板",
+                        "completed": true,
+                        "roundIndex": 0
+                    }
                 ],
                 "iterations": [
                     {
                         "title": "V1 - 初始草案交付",
                         "date": "2026-03-14",
-                        "images": ["/labs/renovation/assets/NorthBedroom/89.JPG"],
+                        "images": [
+                            "/labs/renovation/assets/NorthBedroom/89.JPG"
+                        ],
                         "note": ""
                     }
-                ]
+                ],
+                "items": []
             }
         };
+
     </script>
 
     <script>
