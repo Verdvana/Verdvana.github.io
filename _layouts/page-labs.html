@@ -104,7 +104,7 @@ layout: default
                     {% if xslug == meta.slug %}{% assign found = x %}{% endif %}
                 {% endfor %}
                 {% if found %}
-                    {% assign href = found.path | default: found.url %}
+                    {% assign href = found.url | default: found.path %}
                     <a class="labs-card" href="{{ href | relative_url }}">
                         <div class="labs-thumb-wrapper">
                             {% if meta.thumb %}<img class="labs-thumb" src="{{ meta.thumb | relative_url }}" alt="{{ meta.title }}">{% else %}<div class="labs-thumb--empty">No preview</div>{% endif %}
