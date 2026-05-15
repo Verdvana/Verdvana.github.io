@@ -1,13 +1,12 @@
-<!DOCTYPE html>
+---
+layout: modern
+title: "VisionMatrix 视觉阵列转换器"
+back_button: true
+body_data_theme: dark
+---
 
-<html lang="zh-CN">
-<head>
-<meta charset="utf-8"/>
-<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
-<title>VisionMatrix 视觉阵列转换器</title>
-<link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" referrerpolicy="no-referrer" rel="stylesheet"/>
 <style>
-        :root {
+        .lab-page {
             --primary-color: #007aff;
             --bg-gradient: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
             --card-bg: rgba(255, 255, 255, 0.72);
@@ -17,7 +16,7 @@
             --switch-bg: #e9e9ea;
         }
 
-        [data-theme="dark"] {
+        [data-theme="dark"] .lab-page {
             --primary-color: #0a84ff;
             --bg-gradient: linear-gradient(135deg, #1a1a1a 0%, #2c3e50 100%);
             --card-bg: rgba(28, 28, 30, 0.75);
@@ -29,7 +28,7 @@
 
         * { box-sizing: border-box; transition: background 0.3s, color 0.3s; }
 
-        body {
+        .lab-page {
             scrollbar-gutter: stable;
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
             background: var(--bg-gradient); background-attachment: fixed;
@@ -81,93 +80,12 @@
     </style>
 
 <style>
-        /* ── Fixed Navigation (exact from index.html) ─────────────────────── */
-        nav {
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            padding: 20px 40px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            z-index: 1000;
-            background: rgba(0, 0, 0, 0.7);
-            backdrop-filter: blur(20px);
-            -webkit-backdrop-filter: blur(20px);
-            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-            line-height: 1.6;
-        }
 
-        nav .logo-area {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            text-decoration: none;
-            color: #ffffff;
-        }
+</style>
 
-        nav .logo-area img {
-            width: 32px;
-            height: 32px;
-            border-radius: 50%;
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            object-fit: cover;
-        }
+<div class="lab-page">
 
-        nav .logo {
-            font-size: 18px;
-            font-weight: 700;
-            letter-spacing: -0.5px;
-            color: #ffffff;
-        }
 
-        nav .nav-links {
-            display: flex;
-            gap: 30px;
-        }
-
-        nav a {
-            text-decoration: none;
-            color: #ffffff;
-            font-size: 14px;
-            font-weight: 500;
-            transition: color 0.2s;
-        }
-
-        nav a:hover {
-            color: #8e8e93;
-        }
-
-        @media (max-width: 900px) {
-            nav { padding: 15px 20px; }
-            nav .nav-links { gap: 15px; }
-            nav .nav-links a { font-size: 13px; }
-        }
-
-        /* ── Floating Back Button ───────────────────────────────────── */
-        #fabBack {
-            position: fixed; bottom: 32px; right: 32px; z-index: 999;
-            width: 52px; height: 52px; border-radius: 50%;
-            background: #0071e3; border: none; color: #fff;
-            font-size: 18px; cursor: pointer;
-            box-shadow: 0 8px 24px rgba(0,113,227,0.45);
-            display: flex; align-items: center; justify-content: center;
-            transition: background 0.2s, transform 0.15s, box-shadow 0.2s;
-        }
-        #fabBack:hover { background: #0077ed; transform: translateY(-2px); box-shadow: 0 12px 30px rgba(0,113,227,0.55); }
-        #fabBack:active { transform: translateY(0); }
-</style></head>
-<body data-theme="dark"><nav>
-    <a class="logo-area" href="/">
-        <img alt="Verdvana" src="/static/img/avatar.jpg"/>
-        <span class="logo">VERDVANA</span>
-    </a>
-    <div class="nav-links">
-        <a href="/archive">Blog</a><a href="/labs">Labs</a><a href="/comments">Comments</a><a href="https://github.com/Verdvana">GitHub</a>
-    </div>
-</nav>
 <div class="blob" style="top: -150px; left: -100px;"></div>
 <div class="blob" style="bottom: -150px; right: -100px; background: #ff3b30;"></div>
 <div class="container">
@@ -412,17 +330,6 @@
         alert("已复制到剪贴板");
     }
 </script>
-
-<button aria-label="返回上一层" id="fabBack" title="返回上一层"><i class="fa fa-arrow-left"></i></button><script>
-    document.getElementById('fabBack').addEventListener('click', function () {
-        try { if (history.length > 1) { history.back(); return; } } catch (e) {}
-        try {
-            var u = new URL(window.location.href);
-            var p = u.pathname.replace(/\/+$/, '');
-            var idx = p.lastIndexOf('/');
-            if (idx > 0) { u.pathname = p.slice(0, idx + 1); window.location.assign(u.toString()); return; }
-        } catch (e) {}
-        window.location.assign('https://verdvana.cn/labs/');
-    });
-</script></body>
-</html>
+<script>
+</script>
+</div>

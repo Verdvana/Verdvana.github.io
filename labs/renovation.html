@@ -1,18 +1,11 @@
 ---
-layout: null
-permalink: /labs/renovation.html
+layout: modern
+title: "装修进度管理中心 | VERDVANA Labs"
+back_button: true
 ---
-<!DOCTYPE html>
-<html lang="zh-CN">
 
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>装修进度管理中心 | VERDVANA Labs</title>
-    <!-- Font Awesome -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <style>
-        :root {
+<style>
+        .lab-page {
             --bg-color: #000000;
             --text-color: #ffffff;
             --secondary-text: #8e8e93;
@@ -29,7 +22,7 @@ permalink: /labs/renovation.html
             box-sizing: border-box;
         }
 
-        body {
+        .lab-page {
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
             background-color: var(--bg-color);
             color: var(--text-color);
@@ -41,116 +34,6 @@ permalink: /labs/renovation.html
             min-height: 100vh;
         }
 
-        /* ── Navigation (Identical to Main Site) ─────────────────────── */
-        nav {
-            position: fixed;
-            top: 0;
-            width: 100%;
-            padding: 20px 40px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            z-index: 1000;
-            background: rgba(0, 0, 0, 0.7);
-            backdrop-filter: blur(20px);
-            -webkit-backdrop-filter: blur(20px);
-            border-bottom: 1px solid var(--border-color);
-        }
-
-        nav .logo-area {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            text-decoration: none;
-            color: white;
-        }
-
-        nav .logo-area img {
-            width: 32px;
-            height: 32px;
-            border-radius: 50%;
-            border: 1px solid var(--border-color);
-            object-fit: cover;
-        }
-
-        nav .logo {
-            font-size: 18px;
-            font-weight: 700;
-            letter-spacing: -0.5px;
-        }
-
-        nav .nav-links {
-            display: flex;
-            gap: 30px;
-        }
-
-        nav a {
-            text-decoration: none;
-            color: var(--text-color);
-            font-size: 14px;
-            font-weight: 500;
-            transition: color 0.2s;
-        }
-
-        nav a:hover {
-            color: var(--secondary-text);
-        }
-
-        /* ── Layout ─────────────────────── */
-        .app-container {
-            display: flex;
-            margin-top: 73px;
-            /* Nav height */
-            flex-grow: 1;
-        }
-
-        /* Sidebar */
-        aside {
-            width: var(--sidebar-width);
-            background: rgba(0, 0, 0, 0.5);
-            border-right: 1px solid var(--border-color);
-            padding: 40px 20px;
-            position: fixed;
-            height: calc(100vh - 73px);
-            overflow-y: auto;
-        }
-
-        .nav-label {
-            font-size: 11px;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            color: var(--secondary-text);
-            margin-bottom: 16px;
-            padding-left: 10px;
-        }
-
-        .nav-list {
-            list-style: none;
-        }
-
-        .nav-item {
-            padding: 12px 16px;
-            border-radius: 10px;
-            cursor: pointer;
-            margin-bottom: 4px;
-            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-            color: var(--secondary-text);
-            font-size: 14px;
-            font-weight: 500;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-
-        .nav-item:hover {
-            background: rgba(255, 255, 255, 0.05);
-            color: var(--text-color);
-        }
-
-        .nav-item.active {
-            background: var(--accent-color);
-            color: white;
-        }
 
         /* Main Content */
         main {
@@ -375,105 +258,6 @@ permalink: /labs/renovation.html
             border-radius: 10px;
         }
 
-        /* ── Floating Back Button ─────────────────────────────────────── */
-        #fabBack {
-            position: fixed;
-            bottom: 32px;
-            right: 32px;
-            z-index: 999;
-            width: 52px;
-            height: 52px;
-            border-radius: 50%;
-            background: var(--accent-color);
-            border: none;
-            color: #fff;
-            font-size: 18px;
-            cursor: pointer;
-            box-shadow: 0 8px 24px rgba(0, 113, 227, 0.4);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-        }
-
-        #fabBack:hover {
-            transform: translateY(-4px) scale(1.05);
-            box-shadow: 0 12px 30px rgba(0, 113, 227, 0.5);
-            filter: brightness(1.1);
-        }
-
-        #fabBack:active {
-            transform: translateY(0) scale(0.95);
-        }
-
-        @media (max-width: 1300px) {
-            .grid {
-                grid-template-columns: 1fr 1fr;
-            }
-
-            .media-area {
-                grid-column: span 2;
-            }
-        }
-
-        @media (max-width: 1100px) {
-            .grid {
-                grid-template-columns: 1fr;
-            }
-
-            .media-area {
-                grid-column: span 1;
-            }
-
-            .app-container {
-                flex-direction: column;
-            }
-
-            aside {
-                width: 100%;
-                height: auto;
-                position: sticky;
-                top: 73px;
-                border-right: none;
-                border-bottom: 1px solid var(--border-color);
-                padding: 15px 20px;
-                z-index: 100;
-                backdrop-filter: blur(20px);
-                background: rgba(0, 0, 0, 0.8);
-            }
-
-            .nav-label {
-                display: none;
-            }
-
-            .nav-list {
-                display: flex;
-                flex-direction: row;
-                gap: 10px;
-                overflow-x: auto;
-                padding-bottom: 5px;
-                -webkit-overflow-scrolling: touch;
-            }
-
-            .nav-item {
-                white-space: nowrap;
-                margin-bottom: 0;
-                padding: 8px 20px;
-            }
-
-            .nav-item i {
-                display: none;
-            }
-
-            main {
-                margin-left: 0;
-                padding: 20px;
-            }
-
-            .room-header {
-                margin-top: 20px;
-            }
-        }
 
         /* Save Modal */
         #saveModal {
@@ -545,24 +329,11 @@ permalink: /labs/renovation.html
             border: 1px solid rgba(255, 255, 255, 0.1);
         }
     </style>
-</head>
 
-<body>
+<div class="lab-page">
 
-    <!-- Main Navigation -->
-    <nav>
-        <a class="logo-area" href="/">
-            <img alt="Verdvana" src="/static/img/avatar.jpg">
-            <span class="logo">VERDVANA</span>
-        </a>
-        <div class="nav-links">
-            <a href="/archive">Blog</a>
-            <a href="/labs">Labs</a>
-            <a href="/comments">Comments</a>
-            <a href="https://github.com/Verdvana">GitHub</a>
-        </div>
-    </nav>
 
+<!-- Main Navigation -->
     <div class="app-container">
         <!-- Sidebar Navigation -->
         <aside>
@@ -629,11 +400,7 @@ permalink: /labs/renovation.html
     </div>
 
     <!-- Floating Back Button -->
-    <button id="fabBack" onclick="window.location.href='/labs'" title="返回实验室列表">
-        <i class="fas fa-arrow-left"></i>
-    </button>
-
-    <!-- Export Modal -->
+<!-- Export Modal -->
     <div id="saveModal">
         <div class="modal-content">
             <h3 style="margin-bottom: 10px;">同步您的数据</h3>
@@ -1186,6 +953,4 @@ permalink: /labs/renovation.html
 
         window.onload = init;
     </script>
-</body>
-
-</html>
+</div>

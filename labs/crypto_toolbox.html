@@ -1,13 +1,12 @@
-<!DOCTYPE html>
-<html lang="zh-CN">
-<head>
-    <meta charset="utf-8"/>
-    <meta content="width=device-width,initial-scale=1" name="viewport"/>
-    <title>在线加密工具箱</title>
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" referrerpolicy="no-referrer" rel="stylesheet"/>
-    <style>
+---
+layout: modern
+title: "在线加密工具箱"
+back_button: true
+---
 
-:root{
+<style>
+
+.lab-page{
   --bg: #0b0f14;
   --panel: rgba(255,255,255,0.06);
   --panel2: rgba(255,255,255,0.08);
@@ -28,7 +27,7 @@
 
 
 *{box-sizing:border-box;margin:0;padding:0;}
-body{background:radial-gradient(1200px 700px at 80% -20%,rgba(122,162,255,.22),transparent 60%),
+.lab-page{background:radial-gradient(1200px 700px at 80% -20%,rgba(122,162,255,.22),transparent 60%),
   radial-gradient(900px 550px at 20% 0%,rgba(125,240,196,.18),transparent 55%),var(--bg);
   color:var(--text);font-family:var(--sans);line-height:1.5;min-height:100vh;}
 a{color:var(--accent);text-decoration:none;}a:hover{text-decoration:underline;}
@@ -108,7 +107,7 @@ footer.foot{text-align:center;padding:24px;color:var(--faint);font-size:12px;bor
       scrollbar-gutter: stable;
     }
     html.theme-transition,
-    html.theme-transition body{
+    html.theme-transition .lab-page{
       transition: background-color .25s ease, color .25s ease;
     }
     html.theme-transition *:not(input):not(textarea):not(select),
@@ -130,126 +129,13 @@ footer.foot{text-align:center;padding:24px;color:var(--faint);font-size:12px;bor
     }
 
     /* ====== iOS-like theme switch ====== */
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
 
-      
-
-        /* ── Fixed Navigation (exact from index.html) ─────────────────────── */
-        nav {
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            padding: 20px 40px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            z-index: 1000;
-            background: rgba(0, 0, 0, 0.7);
-            backdrop-filter: blur(20px);
-            -webkit-backdrop-filter: blur(20px);
-            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-            line-height: 1.6;
-        }
-
-        nav .logo-area {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            text-decoration: none;
-            color: #ffffff;
-        }
-
-        nav .logo-area img {
-            width: 32px;
-            height: 32px;
-            border-radius: 50%;
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            object-fit: cover;
-        }
-
-        nav .logo {
-            font-size: 18px;
-            font-weight: 700;
-            letter-spacing: -0.5px;
-            color: #ffffff;
-        }
-
-        nav .nav-links {
-            display: flex;
-            gap: 30px;
-        }
-
-        nav a {
-            text-decoration: none;
-            color: #ffffff;
-            font-size: 14px;
-            font-weight: 500;
-            transition: color 0.2s;
-        }
-
-        nav a:hover {
-            color: #8e8e93;
-        }
-
-        @media (max-width: 900px) {
-            nav { padding: 15px 20px; }
-            nav .nav-links { gap: 15px; }
-            nav .nav-links a { font-size: 13px; }
-        }
-
-
-        /* ── Floating Back Button ─────────────────────────────────────── */
-        #fabBack {
-            position: fixed;
-            bottom: 32px;
-            right: 32px;
-            z-index: 999;
-            width: 52px;
-            height: 52px;
-            border-radius: 50%;
-            background: #0071e3;
-            border: none;
-            color: #fff;
-            font-size: 18px;
-            cursor: pointer;
-            box-shadow: 0 8px 24px rgba(0,113,227,0.45);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            transition: background 0.2s, transform 0.15s, box-shadow 0.2s;
-        }
-        #fabBack:hover {
-            background: #0077ed;
-            transform: translateY(-2px);
-            box-shadow: 0 12px 30px rgba(0,113,227,0.55);
-        }
-        #fabBack:active {
-            transform: translateY(0);
-        }
 
     </style>
-</head>
-<body>
-<nav>
-    <a class="logo-area" href="/">
-        <img alt="Verdvana" src="/static/img/avatar.jpg"/>
-        <span class="logo">VERDVANA</span>
-    </a>
-    <div class="nav-links">
-        <a href="/archive">Blog</a><a href="/labs">Labs</a><a href="/comments">Comments</a><a href="https://github.com/Verdvana">GitHub</a>
-    </div>
-</nav>
+
+<div class="lab-page">
+
+
 <main class="main" id="mainContent">
 <div class="wrap">
 <!-- Topbar -->
@@ -505,10 +391,7 @@ footer.foot{text-align:center;padding:24px;color:var(--faint);font-size:12px;bor
 <footer class="foot"><i class="fa-solid fa-shield-halved"></i> 所有操作均在浏览器本地完成，数据不会上传至任何服务器。</footer>
 </div>
 </main>
-    <button id="fabBack" title="返回上一层" aria-label="返回上一层">
-        <i class="fa fa-arrow-left"></i>
-    </button>
-    <script>
+<script>
 // ── Tab switching ──
 function switchTab(id,btn){
   document.querySelectorAll('.tab-panel').forEach(p=>p.classList.remove('active'));
@@ -792,19 +675,5 @@ function genPassword(){
 
 
 // ── Sidebar (exact from reference) ──
-
-    // 悬浮返回按钮
-    document.getElementById('fabBack').addEventListener('click', function () {
-        try { if (history.length > 1) { history.back(); return; } } catch (e) {}
-        try {
-            var u = new URL(window.location.href);
-            var p = u.pathname.replace(/\/+$/, '');
-            var idx = p.lastIndexOf('/');
-            if (idx > 0) { u.pathname = p.slice(0, idx + 1); window.location.assign(u.toString()); return; }
-        } catch (e) {}
-        window.location.assign('https://verdvana.cn/labs/');
-    });
-
-    </script>
-</body>
-</html>
+</script>
+</div>

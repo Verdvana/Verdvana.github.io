@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="{{ page.lang | default: site.lang | default: 'zh-CN' }}">
+  <head>
+    {% include modern-head.html %}
+    {{ page.extra_head }}
+  </head>
+  <body class="{{ page.body_class }}"{% if page.body_data_theme %} data-theme="{{ page.body_data_theme }}"{% endif %}>
+    {% unless page.hide_ambient %}
+      <div id="ambient-bg"></div>
+    {% endunless %}
+
+    {% include modern-nav.html %}
+
+    {{ content }}
+
+    {% unless page.hide_footer %}
+      {% include modern-footer.html %}
+    {% endunless %}
+
+    {% if page.back_button %}
+      <button id="fabBack" title="返回上一层" aria-label="返回上一层">
+        <i class="fa-solid fa-arrow-left"></i>
+      </button>
+    {% endif %}
+
+    {% include modern-scripts.html %}
+  </body>
+</html>

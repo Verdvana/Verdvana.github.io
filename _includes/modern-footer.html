@@ -1,0 +1,65 @@
+<footer class="site-footer">
+  <div class="site-footer-content">
+    <div class="site-footer-left">
+      <h2>Connect</h2>
+      <div class="site-contact-sections">
+        <div class="site-contact-group">
+          <h5>Direct Contact</h5>
+          <div class="site-contact-pills">
+            <a class="site-pill" href="mailto:verdvana@outlook.com"><i class="fa-solid fa-envelope"></i>Email</a>
+            <a class="site-pill site-pill-outline" href="https://github.com/Verdvana" target="_blank"><i class="fa-brands fa-github"></i>GitHub</a>
+            <a class="site-pill site-pill-outline" href="javascript:void(0)" onclick="toggleWeChat()"><i class="fa-brands fa-weixin"></i>WeChat</a>
+          </div>
+        </div>
+        <div class="site-contact-group">
+          <h5>Friends</h5>
+          <div class="site-contact-pills">
+            <a class="site-pill site-pill-outline" href="https://blog.skycity11.xyz">Skycity</a>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="site-footer-right">
+      <div class="site-stats">
+        <div class="site-stat-item">
+          <i class="fa-solid fa-eye"></i><span id="busuanzi_value_site_pv"><i class="fa-solid fa-spinner fa-spin"></i></span>Views
+        </div>
+        <div class="site-stat-item">
+          <i class="fa-solid fa-user-group"></i><span id="busuanzi_value_site_uv"><i class="fa-solid fa-spinner fa-spin"></i></span>Visitors
+        </div>
+        {% assign total_words = 0 %}
+        {% for p in site.posts %}
+          {% assign p_words = p.content | strip_html | strip_newlines | remove: ' ' | size %}
+          {% assign total_words = total_words | plus: p_words %}
+        {% endfor %}
+        <div class="site-stat-item">
+          <i class="fa-solid fa-pen-nib"></i><span>{{ total_words }}</span><span class="unit">Characters</span>
+        </div>
+      </div>
+      <div class="site-stats" id="uptime-stats">
+        <div class="site-stat-item">
+          <i class="fa-solid fa-clock"></i><span id="run_time_day">-</span><span class="unit">d</span><span id="run_time_hour">-</span><span class="unit">h</span><span id="run_time_minute">-</span><span class="unit">m</span><span id="run_time_second">-</span><span class="unit">s</span>
+        </div>
+      </div>
+      <p class="site-copyright">© 2018-2026 Verdvana. All rights reserved.</p>
+      <p class="site-tagline">Engineered with precision in Shanghai.</p>
+      <div class="site-ai-credit">
+        <i class="fa-solid fa-robot"></i>
+        <span>
+          Digitally curated by <span class="site-ai-name">Vex</span> · Powered by
+          <a href="https://deepmind.google/technologies/gemini/" target="_blank">Gemini 3.1 Flash</a> via
+          <a href="https://openclaw.ai" target="_blank">OpenClaw</a>
+        </span>
+      </div>
+    </div>
+  </div>
+</footer>
+
+<div id="wechat-modal" onclick="toggleWeChat()">
+  <div class="site-modal-content" onclick="event.stopPropagation()">
+    <img alt="WeChat QR Code" decoding="async" loading="lazy" src="{{ '/static/img/wechat.jpg' | relative_url }}"/>
+    <p>Scan to connect</p>
+  </div>
+</div>
+
+<div id="aplayer"></div>

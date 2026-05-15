@@ -1,0 +1,87 @@
+<script async src="//busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+<script>
+  window.addEventListener('DOMContentLoaded', function() {
+    if (window.APlayer && document.getElementById('aplayer')) {
+      new APlayer({
+        container: document.getElementById('aplayer'),
+        fixed: true,
+        mini: true,
+        autoplay: false,
+        theme: '#0071e3',
+        loop: 'all',
+        order: 'list',
+        preload: 'metadata',
+        volume: 0.5,
+        mutex: true,
+        listFolded: true,
+        audio: [{
+          name: 'BGM',
+          artist: 'Verdvana',
+          url: '{{ "/static/music/bgm.mp3" | relative_url }}',
+          cover: '{{ "/static/music/bgm.jpg" | relative_url }}',
+          theme: '#0071e3'
+        }]
+      });
+    }
+
+    var backButton = document.getElementById('fabBack');
+    if (backButton) {
+      backButton.addEventListener('click', function () {
+        try {
+          if (history.length > 1) {
+            history.back();
+            return;
+          }
+        } catch (e) {}
+
+        try {
+          var u = new URL(window.location.href);
+          var p = u.pathname.replace(/\/+$/, '');
+          var idx = p.lastIndexOf('/');
+          if (idx > 0) {
+            u.pathname = p.slice(0, idx + 1);
+            window.location.assign(u.toString());
+            return;
+          }
+        } catch (e) {}
+
+        window.location.assign('{{ "/labs/" | relative_url }}');
+      });
+    }
+  });
+
+  function toggleWeChat() {
+    var modal = document.getElementById('wechat-modal');
+    if (modal) {
+      modal.classList.toggle('active');
+    }
+  }
+
+  setInterval(function() {
+    function setzero(i) {
+      return (i < 10) ? "0" + i : i;
+    }
+
+    var day = document.getElementById("run_time_day");
+    var hour = document.getElementById("run_time_hour");
+    var minute = document.getElementById("run_time_minute");
+    var second = document.getElementById("run_time_second");
+    if (!day || !hour || !minute || !second) {
+      return;
+    }
+
+    var birthDay = new Date("10/04/2018 11:03:56");
+    var today = new Date();
+    var timeOld = today.getTime() - birthDay.getTime();
+    var msPerDay = 24 * 60 * 60 * 1000;
+    var daysOld = Math.floor(timeOld / msPerDay);
+    var hrsOld = Math.floor((timeOld % msPerDay) / (60 * 60 * 1000));
+    var minsOld = Math.floor((timeOld % (60 * 60 * 1000)) / (60 * 1000));
+    var secondsOld = Math.floor((timeOld % (60 * 1000)) / 1000);
+
+    day.innerHTML = daysOld;
+    hour.innerHTML = setzero(hrsOld);
+    minute.innerHTML = setzero(minsOld);
+    second.innerHTML = setzero(secondsOld);
+  }, 1000);
+</script>

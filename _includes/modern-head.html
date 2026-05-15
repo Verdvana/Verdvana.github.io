@@ -1,0 +1,42 @@
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<meta content="{{ page.description | default: site.description | strip_html | strip_newlines | escape }}" name="description"/>
+{% if page.keywords %}
+<meta content="{{ page.keywords | escape }}" name="keywords"/>
+{% endif %}
+<meta content="{{ page.author | default: 'Verdvana' }}" name="author"/>
+<meta content="{{ page.og_title | default: page.title | default: site.title | escape }}" property="og:title"/>
+<meta content="{{ page.og_description | default: page.description | default: site.description | strip_html | strip_newlines | escape }}" property="og:description"/>
+<meta content="{{ page.og_type | default: 'website' }}" property="og:type"/>
+<meta content="{{ page.og_url | default: site.url | default: '/' }}" property="og:url"/>
+{% assign modern_og_image = page.og_image | default: '/static/img/wallpaper.jpg' %}
+<meta content="{% if modern_og_image contains '://' %}{{ modern_og_image }}{% else %}{{ modern_og_image | absolute_url }}{% endif %}" property="og:image"/>
+<title>{{ page.title | default: site.title }}</title>
+<link href="{{ '/static/img/avatar.jpg' | relative_url }}" rel="icon" type="image/jpeg"/>
+<link href="{{ '/static/img/avatar.jpg' | relative_url }}" rel="apple-touch-icon"/>
+<link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" referrerpolicy="no-referrer" rel="stylesheet"/>
+<link href="https://cdn.jsdelivr.net/npm/aplayer/dist/APlayer.min.css" rel="stylesheet"/>
+<link href="{{ '/assets/css/modern-theme.css' | relative_url }}" rel="stylesheet"/>
+<script defer src="https://cdn.jsdelivr.net/npm/aplayer/dist/APlayer.min.js"></script>
+{% if page.person_schema %}
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "Person",
+  "name": "Verdvana",
+  "jobTitle": "Senior ASICs Engineer",
+  "worksFor": {
+    "@type": "Organization",
+    "name": "Qualcomm"
+  },
+  "url": "https://verdvana.cn",
+  "sameAs": ["https://github.com/Verdvana"],
+  "address": {
+    "@type": "PostalAddress",
+    "addressLocality": "Shanghai",
+    "addressCountry": "CN"
+  },
+  "knowsAbout": ["ASIC Design", "RTL Design", "SoC Architecture", "Wi-Fi", "EDA", "PrimeTime", "SpyGlass", "Verilog", "SystemVerilog"]
+}
+</script>
+{% endif %}

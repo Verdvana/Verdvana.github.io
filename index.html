@@ -1,55 +1,17 @@
 ---
-layout: null
+layout: modern
+title: VERDVANA — ASICs & Hardware Design
+description: Verdvana — Senior ASICs Engineer at Qualcomm Shanghai. Specializing in Wi-Fi SoC RTL design, low-power architecture, CDC/STA signoff, and EDA automation for cutting-edge wireless chips.
+keywords: ASIC Engineer, RTL Design, SoC, Wi-Fi, Qualcomm, Shanghai, IC Design, Hardware Engineering, FPGA, EDA, PrimeTime, SpyGlass
+og_title: VERDVANA — ASICs & Hardware Design
+og_description: Senior ASICs Engineer at Qualcomm Shanghai. RTL design, low-power SoC architecture, and EDA automation for Wi-Fi 6/7/8 chips.
+og_url: https://verdvana.cn
+og_image: https://verdvana.cn/static/img/wallpaper.jpg
+person_schema: true
 ---
-<!DOCTYPE html>
-<html lang="zh-CN">
-    <head>
-        <meta charset="utf-8"/>
-        <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
-        <!-- SEO Meta Tags -->
-        <meta content="Verdvana — Senior ASICs Engineer at Qualcomm Shanghai. Specializing in Wi-Fi SoC RTL design, low-power architecture, CDC/STA signoff, and EDA automation for cutting-edge wireless chips." name="description"/>
-        <meta content="ASIC Engineer, RTL Design, SoC, Wi-Fi, Qualcomm, Shanghai, IC Design, Hardware Engineering, FPGA, EDA, PrimeTime, SpyGlass" name="keywords"/>
-        <meta content="Verdvana" name="author"/>
-        <!-- Open Graph -->
-        <meta content="VERDVANA — ASICs &amp; Hardware Design" property="og:title"/>
-        <meta content="Senior ASICs Engineer at Qualcomm Shanghai. RTL design, low-power SoC architecture, and EDA automation for Wi-Fi 6/7/8 chips." property="og:description"/>
-        <meta content="website" property="og:type"/>
-        <meta content="https://verdvana.cn" property="og:url"/>
-        <meta content="https://verdvana.cn/static/img/wallpaper.jpg" property="og:image"/>
-        <!-- JSON-LD Person Schema -->
-        <script type="application/ld+json">
-    {
-      "@context": "https://schema.org",
-      "@type": "Person",
-      "name": "Verdvana",
-      "jobTitle": "Senior ASICs Engineer",
-      "worksFor": {
-        "@type": "Organization",
-        "name": "Qualcomm"
-      },
-      "url": "https://verdvana.cn",
-      "sameAs": ["https://github.com/Verdvana"],
-      "address": {
-        "@type": "PostalAddress",
-        "addressLocality": "Shanghai",
-        "addressCountry": "CN"
-      },
-      "knowsAbout": ["ASIC Design", "RTL Design", "SoC Architecture", "Wi-Fi", "EDA", "PrimeTime", "SpyGlass", "Verilog", "SystemVerilog"]
-    }
-    </script>
-        <title>
-            VERDVANA — ASICs &amp; Hardware Design
-        </title>
-        <!-- Favicon -->
-        <link href="/static/img/avatar.jpg" rel="icon" type="image/jpeg"/>
-        <link href="/static/img/avatar.jpg" rel="apple-touch-icon"/>
-        <!-- Font Awesome for Icons -->
-        <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet"/>
-        <!-- APlayer -->
-        <link href="https://cdn.jsdelivr.net/npm/aplayer/dist/APlayer.min.css" rel="stylesheet"/>
-        <script defer="" src="https://cdn.jsdelivr.net/npm/aplayer/dist/APlayer.min.js"></script>
-        <style>
-        :root {
+
+<style>
+:root {
             --bg-color: #000000;
             --text-color: #ffffff;
             --secondary-text: #8e8e93;
@@ -72,60 +34,6 @@ layout: null
             line-height: 1.6;
             -webkit-font-smoothing: antialiased;
             overflow-x: hidden;
-        }
-
-        /* Fixed Navigation */
-        nav {
-            position: fixed;
-            top: 0;
-            width: 100%;
-            padding: 20px 40px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            z-index: 1000;
-            background: rgba(0, 0, 0, 0.7);
-            backdrop-filter: blur(20px);
-            border-bottom: 1px solid var(--border-color);
-        }
-
-        nav .logo-area {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            text-decoration: none;
-            color: white;
-        }
-
-        nav .logo-area img {
-            width: 32px;
-            height: 32px;
-            border-radius: 50%;
-            border: 1px solid var(--border-color);
-            object-fit: cover;
-        }
-
-        nav .logo {
-            font-size: 18px;
-            font-weight: 700;
-            letter-spacing: -0.5px;
-        }
-
-        nav .nav-links {
-            display: flex;
-            gap: 30px;
-        }
-
-        nav a {
-            text-decoration: none;
-            color: var(--text-color);
-            font-size: 14px;
-            font-weight: 500;
-            transition: color 0.2s;
-        }
-
-        nav a:hover {
-            color: var(--secondary-text);
         }
 
         /* Hero Section */
@@ -186,30 +94,6 @@ layout: null
         .wallpaper-credit:hover {
             color: #fff;
             text-shadow: 0 0 10px rgba(255,255,255,0.5);
-        }
-
-        /* Ambient Flowing Gradient Background */
-        #ambient-bg {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100vw;
-            height: 100vh;
-            z-index: -1;
-            pointer-events: none;
-            background: 
-                radial-gradient(circle at 15% 50%, rgba(0, 113, 227, 0.25), transparent 60%),
-                radial-gradient(circle at 85% 30%, rgba(100, 50, 255, 0.2), transparent 60%),
-                radial-gradient(circle at 50% 80%, rgba(0, 220, 150, 0.15), transparent 60%);
-            background-size: 150% 150%;
-            filter: blur(80px);
-            animation: ambientFlow 4s ease-in-out infinite alternate;
-        }
-
-        @keyframes ambientFlow {
-            0% { background-position: 0% 0%; }
-            50% { background-position: 100% 50%; }
-            100% { background-position: 50% 100%; }
         }
 
         /* Split Section: Blog & Labs */
@@ -604,20 +488,6 @@ layout: null
             flex-shrink: 0;
         }
 
-        /* Footer */
-        footer {
-            padding: 100px 10% 120px;
-            background: #000;
-        }
-
-        .footer-content {
-            display: flex;
-            justify-content: space-between;
-            align-items: flex-end;
-            border-top: 1px solid var(--border-color);
-            padding-top: 60px;
-        }
-
         .footer-left h2 {
             font-size: 48px;
             letter-spacing: -2px;
@@ -657,10 +527,6 @@ layout: null
         }
 
         @media (max-width: 900px) {
-            nav { padding: 15px 20px; }
-            nav .nav-links { gap: 15px; }
-            nav .nav-links a { font-size: 13px; }
-            
             header.hero { height: 60vh; padding: 0 6%; }
             header.hero h1 { font-size: 36px; letter-spacing: -1px; }
             header.hero p { font-size: 16px; }
@@ -1135,20 +1001,9 @@ layout: null
     height: 18px;
     display: block;
 }
-
 </style>
-    </head>
-    <body>
-        <div id="ambient-bg"></div>
-        <nav>
-            <a class="logo-area" href="/">
-            <img alt="Verdvana" src="/static/img/avatar.jpg"/>
-            <span class="logo">VERDVANA</span></a>
-            <div class="nav-links">
-                <a href="/archive">Blog</a><a href="/labs">Labs</a><a href="/comments">Comments</a><a href="https://github.com/Verdvana">GitHub</a>
-            </div>
-        </nav>
-        <header class="hero">
+
+<header class="hero">
             <h1>
                 Engineering the
                 <br/>
@@ -1672,146 +1527,3 @@ layout: null
                 </div>
             </div>
         </div>
-        <!-- Footer -->
-        <footer>
-            <div class="footer-content">
-                <div class="footer-left">
-                    <h2>
-                        Connect
-                    </h2>
-                    <div class="contact-sections">
-                        <!-- Primary Contacts -->
-                        <div class="contact-group">
-                            <h5>
-                                Direct Contact
-                            </h5>
-                            <div class="contact-pills">
-                                <a class="pill" href="mailto:verdvana@outlook.com"><i class="fa-solid fa-envelope"></i>Email</a><a class="pill outline" href="https://github.com/Verdvana" target="_blank"><i class="fa-brands fa-github"></i>GitHub</a><a class="pill outline" href="javascript:void(0)" onclick="toggleWeChat()"><i class="fa-brands fa-weixin"></i>WeChat</a>
-                            </div>
-                        </div>
-                        <!-- Network (Secondary) -->
-                        <div class="contact-group">
-                            <h5>
-                                Friends
-                            </h5>
-                            <div class="contact-pills">
-                                <a class="pill outline" href="https://blog.skycity11.xyz">Skycity</a>
-                                <!-- <a href="#" class="pill outline">Colleague 2</a> -->
-                                <!-- <a href="#" class="pill outline">Partner 3</a> -->
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                <div class="footer-right">
-                    <div class="site-stats">
-                        <div class="stat-item">
-                            <i class="fa-solid fa-eye"></i><span id="busuanzi_value_site_pv"><i class="fa-solid fa-spinner fa-spin"></i></span>Views
-                        </div>
-                        <div class="stat-item">
-                            <i class="fa-solid fa-user-group"></i><span id="busuanzi_value_site_uv"><i class="fa-solid fa-spinner fa-spin"></i></span>Visitors
-                        </div>
-                        {% assign total_words = 0 %}
-                    {% for p in site.posts %}
-                        {% assign p_words = p.content | strip_html | strip_newlines | remove: ' ' | size %}
-                        {% assign total_words = total_words | plus: p_words %}
-                    {% endfor %}
-                        <div class="stat-item">
-                            <i class="fa-solid fa-pen-nib"></i><span>{{ total_words }}</span><span class="unit">Characters</span>
-                        </div>
-                    </div>
-                    <div class="site-stats" id="uptime-stats" style="margin-top: 16px;">
-                        <div class="stat-item">
-                            <i class="fa-solid fa-clock"></i><span id="run_time_day">-</span><span class="unit">d</span><span id="run_time_hour">-</span><span class="unit">h</span><span id="run_time_minute">-</span><span class="unit">m</span><span id="run_time_second">-</span><span class="unit">s</span>
-                        </div>
-                    </div>
-                    <p style="color: var(--secondary-text); margin-bottom: 8px; margin-top: 24px;">
-                        © 2018-2026 Verdvana. All rights reserved.
-                    </p>
-                    <p style="color: var(--secondary-text); font-size: 12px;">
-                        Engineered with precision in Shanghai.
-                    </p>
-                    <div style="margin-top: 24px; padding: 12px 16px; background: rgba(0, 113, 227, 0.05); border-radius: 8px; border: 1px solid rgba(0, 113, 227, 0.2); display: inline-flex; align-items: center; gap: 10px;">
-                        <i class="fa-solid fa-robot" style="color: var(--accent-color); font-size: 14px;"></i>
-                        <span style="color: var(--secondary-text); font-size: 11px; letter-spacing: 0.5px;">
-                            Digitally curated by <span style="color: #fff; font-weight: 600;">Vex</span> · Powered by 
-                            <a href="https://deepmind.google/technologies/gemini/" target="_blank" style="color: var(--accent-color); text-decoration: none;">Gemini 3.1 Flash</a> via 
-                            <a href="https://openclaw.ai" target="_blank" style="color: var(--accent-color); text-decoration: none;">OpenClaw</a>
-                        </span>
-                    </div>
-                </div>
-            </div>
-        </footer>
-        <!-- WeChat Modal -->
-        <div id="wechat-modal" onclick="toggleWeChat()">
-            <div class="modal-content" onclick="event.stopPropagation()">
-                <img alt="WeChat QR Code" decoding="async" loading="lazy" src="/static/img/wechat.jpg"/>
-                <p>
-                    Scan to connect
-                </p>
-            </div>
-        </div>
-        <!-- APlayer Container -->
-        <div id="aplayer">
-        </div>
-        <!-- Busuanzi Script -->
-        <script async="" src="//busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
-        <script>
-        // Initialize APlayer after deferred assets are ready so it does not block first paint.
-        window.addEventListener('DOMContentLoaded', function() {
-            if (!window.APlayer) {
-                return;
-            }
-
-            new APlayer({
-                container: document.getElementById('aplayer'),
-                fixed: true,
-                mini: true, // 开启迷你模式以实现默认折叠
-                autoplay: false,
-                theme: '#0071e3',
-                loop: 'all',
-                order: 'list',
-                preload: 'metadata',
-                volume: 0.5,
-                mutex: true,
-                listFolded: true,
-                audio: [
-                    {
-                        name: 'BGM',
-                        artist: 'Verdvana',
-                        url: '/static/music/bgm.mp3',
-                        cover: '/static/music/bgm.jpg',
-                        theme: '#0071e3'
-                    }
-                ]
-            });
-        });
-
-        function toggleWeChat() {
-            const modal = document.getElementById('wechat-modal');
-            modal.classList.toggle('active');
-        }
-
-        // Running Time Script
-        setInterval(function() {
-            function setzero(i) {
-                return (i < 10) ? "0" + i : i;
-            }
-            let birthDay = new Date("10/04/2018 11:03:56");
-            let today = new Date();
-            let timeOld = (today.getTime() - birthDay.getTime());
-            let msPerDay = 24 * 60 * 60 * 1000;
-            let daysOld = Math.floor(timeOld / msPerDay);
-            let hrsOld = Math.floor((timeOld % msPerDay) / (60 * 60 * 1000));
-            let minsOld = Math.floor((timeOld % (60 * 60 * 1000)) / (60 * 1000));
-            let secondsOld = Math.floor((timeOld % (60 * 1000)) / 1000);
-
-            document.getElementById("run_time_day").innerHTML = daysOld;
-            document.getElementById("run_time_hour").innerHTML = setzero(hrsOld);
-            document.getElementById("run_time_minute").innerHTML = setzero(minsOld);
-            document.getElementById("run_time_second").innerHTML = setzero(secondsOld);
-        }, 1000);
-
-
-    </script>
-    </body>
-</html>
