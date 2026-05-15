@@ -1,4 +1,4 @@
 ---
-layout: blog-archive
+layout: archive
 title: Blog
 ---

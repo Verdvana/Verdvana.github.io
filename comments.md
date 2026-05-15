@@ -1,4 +1,4 @@
 ---
-layout: page-comments
+layout: comments
 title: Comments
 ---

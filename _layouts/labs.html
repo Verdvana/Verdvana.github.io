@@ -1,162 +1,122 @@
 ---
-layout: default
+layout: modern
 ---
-
 <style>
-  /* === Labs index styles (self-contained, minimal conflict) === */
-  .labs-intro{opacity:.85;margin:8px 0 14px;line-height:1.7}
-  .labs-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:16px;margin:18px 0}
-  .labs-card{
-    display:block;
-    color:inherit;
-    text-decoration:none;
-    border:1px solid rgba(0,0,0,.10);
-    border-radius:12px;
-    overflow:hidden;
-    background:rgba(255,255,255,.86);
-    transition:transform .12s ease, box-shadow .12s ease, border-color .12s ease;
-  }
-  .labs-card:hover{
-    transform:translateY(-1px);
-    box-shadow:0 10px 28px rgba(0,0,0,.12);
-    border-color:rgba(0,0,0,.18);
-  }
-  .labs-thumb{
-    width:100%;
-    aspect-ratio:16/9;
-    object-fit:cover;
-    background:#f3f4f6;
-    display:block;
-  }
-  .labs-thumb--empty{
-    display:flex;
-    align-items:center;
-    justify-content:center;
-    color:rgba(0,0,0,.45);
-    font-size:12px;
-  }
-  .labs-body{padding:12px 14px}
-  .labs-title{font-size:16px;margin:0 0 6px 0;line-height:1.35}
-  .labs-desc{font-size:13px;opacity:.85;margin:0 0 8px 0;line-height:1.6}
-  .labs-tags{display:flex;flex-wrap:wrap;gap:6px}
-  .labs-tag{font-size:12px;padding:2px 8px;border-radius:999px;background:rgba(0,0,0,.06)}
-  .labs-meta{font-size:12px;opacity:.6;margin-top:8px;word-break:break-all}
-  .labs-warn{padding:10px 12px;border:1px dashed rgba(0,0,0,.25);border-radius:10px;background:rgba(255,255,255,.65)}
+    /* Hero Section */
+    header.hero {
+        position: relative;
+        height: 40vh;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        padding: 0 10%;
+        background-image: linear-gradient(to bottom, rgba(0,0,0,0.5), rgba(0,0,0,1)), url('/static/img/wallpaper.jpg');
+        background-size: cover;
+        background-position: center;
+        overflow: hidden;
+    }
+
+    header.hero h1 {
+        font-size: clamp(40px, 8vw, 64px);
+        font-weight: 700;
+        line-height: 1.4;
+        margin-bottom: 24px;
+        letter-spacing: -2px;
+        background: linear-gradient(to right, #fff, #a1a1a6);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+    }
+
+    header.hero p {
+        font-size: clamp(16px, 2vw, 20px);
+        color: #d1d1d6;
+        max-width: 700px;
+        font-weight: 400;
+        line-height: 1.4;
+    }
+
+    /* Labs Section */
+    section.labs {
+        padding: 40px 10% 80px;
+        min-height: 60vh;
+    }
+
+    .archive-container {
+        max-width: 1200px;
+        margin: 0 auto;
+    }
+
+    .labs-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+        gap: 24px;
+    }
+
+    .labs-card {
+        background: var(--glass);
+        border-radius: 16px;
+        border: 1px solid var(--border-color);
+        overflow: hidden;
+        text-decoration: none;
+        transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+        display: flex; flex-direction: column; height: 100%;
+    }
+
+    .labs-card:hover { transform: translateY(-8px); background: rgba(255, 255, 255, 0.08); border-color: rgba(255, 255, 255, 0.2); }
+
+    .labs-thumb-wrapper { width: 100%; aspect-ratio: 16/9; overflow: hidden; background: #1c1c1e; position: relative; }
+    .labs-thumb { width: 100%; height: 100%; object-fit: cover; transition: transform 0.6s ease; }
+    .labs-card:hover .labs-thumb { transform: scale(1.05); }
+    .labs-thumb--empty { width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; color: var(--secondary-text); font-size: 14px; background: linear-gradient(45deg, #1c1c1e, #2c2c2e); }
+
+    .labs-body { padding: 24px; display: flex; flex-direction: column; flex-grow: 1; }
+    .labs-title { font-size: 20px; font-weight: 700; color: #fff; margin-bottom: 12px; line-height: 1.3; }
+    .labs-desc { font-size: 14px; color: #d1d1d6; margin-bottom: 20px; line-height: 1.6; flex-grow: 1; }
+    .labs-tags { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 16px; }
+    .labs-tag { font-size: 11px; padding: 4px 10px; border-radius: 6px; background: rgba(0, 113, 227, 0.1); color: var(--accent-color); border: 1px solid rgba(0, 113, 227, 0.2); text-transform: uppercase; letter-spacing: 0.5px; font-weight: 600; }
+    .labs-meta { font-size: 12px; color: var(--secondary-text); font-family: monospace; opacity: 0.6; word-break: break-all; }
+
+    @media (max-width: 900px) {
+        header.hero { height: 40vh; padding: 0 6%; }
+        header.hero h1 { font-size: 32px; }
+        section.labs { padding: 40px 6%; }
+        .labs-grid { grid-template-columns: 1fr; }
+    }
 </style>
 
-<h1>{{ page.title }}</h1>
+<header class="hero">
+    <h1>{{ page.title | default: "The Labs" }}</h1>
+    <p>Experiments in hardware, software, and the intersections between. A sandbox for technical curiosity.</p>
+</header>
 
-{% if content and content != "" %}
-  <div class="labs-intro">{{ content }}</div>
-{% endif %}
+<section class="labs">
+    <div class="archive-container">
+        {% assign lab_static = site.static_files | where_exp: "f", "f.path contains '/labs/'" | where_exp: "f", "f.extname == '.html'" %}
+        {% assign lab_pages = site.pages | where_exp: "p", "p.url contains '/labs/'" | where_exp: "p", "p.url contains '.html'" %}
+        {% assign lab_files = lab_static | concat: lab_pages %}
 
-{%- comment -%}
-  说明：
-  1) 方案A：实验页放在 /labs/*.html，且不要写 front matter（---），这样它们属于静态文件，出现在 site.static_files 中。[1](https://www.jekyll.com.cn/docs/includes/)
-  2) 生成链接/图片地址时用 relative_url，自动拼接 baseurl，避免部署子路径时资源/链接失效。[2](https://jekyllrb.com/docs/permalinks/)
-
-  兼容处理：
-  - 同时也扫描 site.pages 里 /labs/*.html（万一你给实验页加了 front matter，变成了 page）
-{%- endcomment -%}
-
-
-{% assign lab_static = site.static_files
-  | where_exp: "f", "f.path contains '/labs/'"
-  | where_exp: "f", "f.extname == '.html'"
-%}
-
-{% assign lab_pages = site.pages
-  | where_exp: "p", "p.url contains '/labs/'"
-  | where_exp: "p", "p.url contains '.html'"
-%}
-
-
-{% assign lab_files = lab_static | concat: lab_pages %}
-
-{% if lab_files.size == 0 %}
-  <div class="labs-warn">
-    还没有发现 <code>/labs/</code> 目录下的 HTML 文件。请把实验页面放到仓库的 <code>labs/</code> 目录中。
-    <br/>
-    <small>提示：实验页如果写了 <code>---</code> front matter，会从静态文件变成 page；本布局已兼容，但更推荐不写 <code>---</code>。</small>
-  </div>
-{% else %}
-
-  {% assign metas = site.data.labs | sort: "order" %}
-
-  {%- comment -%}
-    可选：让卡片点击在新标签页打开
-    在 labs.md 里加： new_tab: true
-  {%- endcomment -%}
-
-  <div class="labs-grid">
-    {%- comment -%}
-      先按 _data/labs.yml 输出（可控标题/描述/缩略图/排序）
-    {%- endcomment -%}
-    {%- for meta in metas -%}
-
-      {%- assign found = nil -%}
-
-      {%- for x in lab_files -%}
-        {%- assign xslug = x.basename | default: x.name | remove: '.html' -%}
-        {%- if xslug == meta.slug -%}
-          {%- assign found = x -%}
-        {%- endif -%}
-      {%- endfor -%}
-
-      {%- if found -%}
-        {%- assign href = found.path | default: found.url -%}
-
-        <a class="labs-card"
-           href="{{ href | relative_url }}"
-           {% if page.new_tab %}target="_blank" rel="noopener"{% endif %}>
-          {% if meta.thumb %}
-            <img class="labs-thumb"
-                 src="{{ meta.thumb | relative_url }}"
-                 alt="{{ meta.title | default: meta.slug | escape }}">
-          {% else %}
-            <div class="labs-thumb labs-thumb--empty">No preview</div>
-          {% endif %}
-
-
-          <div class="labs-body">
-            <h3 class="labs-title">{{ meta.title | default: meta.slug }}</h3>
-
-            {% if meta.desc %}
-              <p class="labs-desc">{{ meta.desc }}</p>
-            {% endif %}
-
-            {% if meta.tags %}
-              <div class="labs-tags">
-                {% for t in meta.tags %}
-                  <span class="labs-tag">{{ t }}</span>
+        <div class="labs-grid">
+            {% assign metas = site.data.labs | sort: "order" %}
+            {% for meta in metas %}
+                {% assign found = nil %}
+                {% for x in lab_files %}
+                    {% assign xslug = x.basename | default: x.name | remove: '.html' %}
+                    {% if xslug == meta.slug %}{% assign found = x %}{% endif %}
                 {% endfor %}
-              </div>
-            {% endif %}
-          </div>
-        </a>
-      {%- endif -%}
-    {%- endfor -%}
-
-    {%- comment -%}
-      再把“没写进 _data/labs.yml 的实验页”也兜底显示出来，避免新增页面后漏配置就消失。
-    {%- endcomment -%}
-    {% for f in lab_files %}
-      {% assign slug = f.basename | default: f.name | remove: '.html' %}
-      {% assign m = site.data.labs | where: "slug", slug | first %}
-      {% if m == nil %}
-        {% assign href = f.path | default: f.url %}
-
-        <a class="labs-card"
-           href="{{ href | relative_url }}"
-           {% if page.new_tab %}target="_blank" rel="noopener"{% endif %}>
-          <div class="labs-thumb labs-thumb--empty">No preview</div>
-          <div class="labs-body">
-            <h3 class="labs-title">{{ slug }}</h3>
-            <p class="labs-desc">（未在 <code>_data/labs.yml</code> 中配置预览信息）</p>
-          </div>
-        </a>
-      {% endif %}
-    {% endfor %}
-
-  </div>
-{% endif %}
+                {% if found %}
+                    {% assign href = found.url | default: found.path %}
+                    <a class="labs-card" href="{{ href | relative_url }}">
+                        <div class="labs-thumb-wrapper">
+                            {% if meta.thumb %}<img class="labs-thumb" src="{{ meta.thumb | relative_url }}" alt="{{ meta.title }}">{% else %}<div class="labs-thumb--empty">No preview</div>{% endif %}
+                        </div>
+                        <div class="labs-body">
+                            <h3 class="labs-title">{{ meta.title | default: meta.slug }}</h3>
+                            {% if meta.desc %}<p class="labs-desc">{{ meta.desc }}</p>{% endif %}
+                            {% if meta.tags %}<div class="labs-tags">{% for t in meta.tags %}<span class="labs-tag">{{ t }}</span>{% endfor %}</div>{% endif %}
+                        </div>
+                    </a>
+                {% endif %}
+            {% endfor %}
+        </div>
+    </div>
+</section>
