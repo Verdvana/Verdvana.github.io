@@ -276,13 +276,21 @@ body {
   border-radius: 8px;
   border: 1px solid rgba(0, 113, 227, 0.2);
   display: inline-flex;
-  align-items: center;
+  align-items: flex-start;
   gap: 10px;
+  max-width: 360px;
 }
 
 .site-ai-credit i {
   color: var(--accent-color);
   font-size: 14px;
+}
+
+.site-ai-copy {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  line-height: 1.45;
 }
 
 .site-ai-credit span {
