@@ -4,9 +4,9 @@
     <span class="site-logo">VERDVANA</span>
   </a>
   <div class="site-nav-links">
-    <a href="{{ '/' | relative_url }}">Home</a>
-    <a href="{{ '/archive' | relative_url }}">Blog</a>
-    <a href="{{ '/labs' | relative_url }}">Labs</a>
-    <a href="{{ '/comments' | relative_url }}">Comments</a>
+    <a class="{% if page.url == '/' %}active{% endif %}" href="{{ '/' | relative_url }}">Home</a>
+    <a class="{% if page.url contains '/archive' or page.layout == 'post' %}active{% endif %}" href="{{ '/archive' | relative_url }}">Blog</a>
+    <a class="{% if page.url contains '/labs' %}active{% endif %}" href="{{ '/labs' | relative_url }}">Labs</a>
+    <a class="{% if page.url contains '/comments' %}active{% endif %}" href="{{ '/comments' | relative_url }}">Comments</a>
   </div>
 </nav>

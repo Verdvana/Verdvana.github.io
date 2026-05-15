@@ -17,7 +17,36 @@
 <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" referrerpolicy="no-referrer" rel="stylesheet"/>
 <link href="https://cdn.jsdelivr.net/npm/aplayer/dist/APlayer.min.css" rel="stylesheet"/>
 <link href="{{ '/assets/css/modern-theme.css' | relative_url }}" rel="stylesheet"/>
+{% if page.extra_css %}
+  {% for css in page.extra_css %}
+<link href="{{ css | relative_url }}" rel="stylesheet"/>
+  {% endfor %}
+{% endif %}
+{% if page.layout == 'archive' %}
+<link href="{{ '/assets/css/page-hero.css' | relative_url }}" rel="stylesheet"/>
+<link href="{{ '/assets/css/archive.css' | relative_url }}" rel="stylesheet"/>
+{% elsif page.layout == 'comments' %}
+<link href="{{ '/assets/css/page-hero.css' | relative_url }}" rel="stylesheet"/>
+<link href="{{ '/assets/css/comments.css' | relative_url }}" rel="stylesheet"/>
+{% elsif page.layout == 'labs' %}
+<link href="{{ '/assets/css/page-hero.css' | relative_url }}" rel="stylesheet"/>
+<link href="{{ '/assets/css/labs.css' | relative_url }}" rel="stylesheet"/>
+{% elsif page.layout == 'post' %}
+<link href="{{ '/assets/css/post.css' | relative_url }}" rel="stylesheet"/>
+{% endif %}
 <script defer src="https://cdn.jsdelivr.net/npm/aplayer/dist/APlayer.min.js"></script>
+{% if page.post_assets or page.layout == 'post' %}
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex/dist/katex.min.css"/>
+<script src="https://cdn.jsdelivr.net/npm/katex/dist/katex.min.js" defer></script>
+<script src="https://cdn.jsdelivr.net/npm/katex/dist/contrib/auto-render.min.js" defer></script>
+<script src="https://cdn.jsdelivr.net/npm/katex/dist/contrib/mathtex-script-type.min.js" defer></script>
+<script src="https://cdn.jsdelivr.net/npm/mermaid/dist/mermaid.min.js" defer onload='mermaid.initialize({startOnLoad:true, theme:"dark"});'></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/wavedrom/3.1.0/wavedrom.min.js" defer></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/wavedrom/3.1.0/skins/default.js" defer></script>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/prismjs/themes/prism-tomorrow.min.css"/>
+<script src="https://cdn.jsdelivr.net/npm/prismjs/components/prism-core.min.js" defer></script>
+<script src="https://cdn.jsdelivr.net/npm/prismjs/plugins/autoloader/prism-autoloader.min.js" defer onload='Prism.plugins.autoloader.languages_path = "https://cdn.jsdelivr.net/npm/prismjs/components/"'></script>
+{% endif %}
 {% if page.person_schema %}
 <script type="application/ld+json">
 {

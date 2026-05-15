@@ -154,6 +154,20 @@ body {
   color: var(--secondary-text);
 }
 
+.site-nav a.active {
+  color: #fff;
+}
+
+.site-nav a.active::after {
+  content: "";
+  display: block;
+  height: 2px;
+  margin-top: 4px;
+  border-radius: 999px;
+  background: linear-gradient(90deg, #42f5ff, var(--accent-color), #7c3cff);
+  box-shadow: 0 0 12px rgba(0, 113, 227, 0.65);
+}
+
 .site-footer {
   padding: 100px 10% 120px;
   background: #000;

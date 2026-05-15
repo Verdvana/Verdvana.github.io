@@ -1,0 +1,42 @@
+.site-page-hero {
+  position: relative;
+  height: 40vh;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: 0 10%;
+  background-image: linear-gradient(to bottom, rgba(0,0,0,0.5), rgba(0,0,0,1)), url('/static/img/wallpaper.jpg');
+  background-size: cover;
+  background-position: center;
+  overflow: hidden;
+}
+
+.site-page-hero h1 {
+  font-size: clamp(40px, 8vw, 64px);
+  font-weight: 700;
+  line-height: 1.4;
+  margin-bottom: 24px;
+  letter-spacing: 0;
+  background: linear-gradient(to right, #fff, #a1a1a6);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.site-page-hero p {
+  font-size: clamp(16px, 2vw, 20px);
+  color: #d1d1d6;
+  max-width: 700px;
+  font-weight: 400;
+  line-height: 1.4;
+}
+
+@media (max-width: 900px) {
+  .site-page-hero {
+    height: 40vh;
+    padding: 0 6%;
+  }
+
+  .site-page-hero h1 {
+    font-size: 32px;
+  }
+}

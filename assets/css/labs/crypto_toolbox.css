@@ -1,0 +1,123 @@
+.lab-page{
+  --bg: #0b0f14;
+  --panel: rgba(255,255,255,0.06);
+  --panel2: rgba(255,255,255,0.08);
+  --text: rgba(255,255,255,0.92);
+  --muted: rgba(255,255,255,0.66);
+  --faint: rgba(255,255,255,0.45);
+  --border: rgba(255,255,255,0.12);
+  --shadow: 0 18px 60px rgba(0,0,0,0.45);
+  --accent: #7aa2ff;
+  --accent2:#7df0c4;
+  --danger:#ff6b6b;
+  --ok:#39d98a;
+  --warn:#ffd166;
+  --mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+  --sans: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji","Segoe UI Emoji";
+  --radius: 16px;
+}
+
+
+*{box-sizing:border-box;margin:0;padding:0;}
+.lab-page{background:radial-gradient(1200px 700px at 80% -20%,rgba(122,162,255,.22),transparent 60%),
+  radial-gradient(900px 550px at 20% 0%,rgba(125,240,196,.18),transparent 55%),var(--bg);
+  color:var(--text);font-family:var(--sans);line-height:1.5;min-height:100vh;}
+a{color:var(--accent);text-decoration:none;}a:hover{text-decoration:underline;}
+.wrap{max-width:960px;margin:0 auto;padding:24px 18px 80px;
+    padding-top: 90px;
+}
+.topbar{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;margin-bottom:22px;}
+.brand{display:flex;gap:12px;align-items:center;}
+.brand-icon{width:40px;height:40px;border-radius:12px;
+  background:linear-gradient(135deg,rgba(122,162,255,.95),rgba(125,240,196,.85));
+  box-shadow:0 10px 30px rgba(0,0,0,.22);display:flex;align-items:center;justify-content:center;color:#fff;font-size:18px;}
+h1{font-size:18px;margin:0;letter-spacing:.2px;}
+.subtitle{margin:2px 0 0;color:var(--muted);font-size:13px;}
+.tabs{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:22px;}
+.tab-btn{background:var(--panel);border:1px solid var(--border);color:var(--muted);
+  padding:8px 16px;border-radius:999px;cursor:pointer;font-size:13px;font-family:var(--sans);
+  transition:all .18s;white-space:nowrap;}
+.tab-btn:hover{color:var(--text);}
+.tab-btn.active{background:var(--accent);border-color:var(--accent);color:#fff;}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;}
+@media(max-width:700px){.grid{grid-template-columns:1fr;}}
+.card{border:1px solid var(--border);background:linear-gradient(180deg,rgba(255,255,255,.05),rgba(255,255,255,.03));
+  border-radius:var(--radius);box-shadow:var(--shadow);overflow:hidden;}
+.card .hd{padding:14px 18px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px;}
+.card .hd h3{font-size:14px;font-weight:600;margin:0;flex:1;}
+.dot{width:8px;height:8px;border-radius:50%;background:var(--accent);flex-shrink:0;}
+.card .bd{padding:16px 18px;display:flex;flex-direction:column;gap:12px;}
+label{font-size:13px;color:var(--muted);display:block;margin-bottom:4px;}
+textarea,input[type=text],input[type=number],input[type=password],select{
+  width:100%;background:var(--panel2);border:1px solid var(--border);border-radius:10px;
+  color:var(--text);font-family:var(--mono);font-size:13px;padding:10px 12px;resize:vertical;
+  outline:none;transition:border-color .2s;}
+textarea:focus,input:focus,select:focus{border-color:var(--accent);}
+textarea{min-height:100px;}
+select{resize:none;cursor:pointer;}
+.toolbar{display:flex;gap:8px;flex-wrap:wrap;}
+button.primary{background:var(--accent);border:none;color:#fff;padding:8px 18px;border-radius:8px;
+  cursor:pointer;font-size:13px;font-family:var(--sans);font-weight:600;transition:opacity .18s;}
+button.primary:hover{opacity:.85;}
+button.secondary{background:var(--panel2);border:1px solid var(--border);color:var(--text);
+  padding:8px 14px;border-radius:8px;cursor:pointer;font-size:13px;font-family:var(--sans);transition:all .18s;}
+button.secondary:hover{border-color:var(--accent);color:var(--accent);}
+button.danger{background:var(--danger);border:none;color:#fff;padding:8px 14px;border-radius:8px;
+  cursor:pointer;font-size:13px;font-family:var(--sans);transition:opacity .18s;}
+button.danger:hover{opacity:.85;}
+.result-row{display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid var(--border);}
+.result-row:last-child{border-bottom:none;}
+.result-label{font-size:12px;color:var(--muted);min-width:80px;flex-shrink:0;}
+.result-val{font-family:var(--mono);font-size:12px;color:var(--accent2);word-break:break-all;flex:1;}
+.copy-btn{background:none;border:1px solid var(--border);color:var(--muted);padding:4px 10px;
+  border-radius:6px;cursor:pointer;font-size:11px;font-family:var(--sans);flex-shrink:0;transition:all .18s;}
+.copy-btn:hover{border-color:var(--accent);color:var(--accent);}
+.badge{display:inline-flex;align-items:center;gap:5px;padding:3px 10px;border-radius:999px;font-size:12px;}
+.badge.ok{background:rgba(57,217,138,.15);color:var(--ok);}
+.badge.warn{background:rgba(255,209,102,.15);color:var(--warn);}
+.badge.err{background:rgba(255,107,107,.15);color:var(--danger);}
+.code-block{background:var(--panel2);border:1px solid var(--border);border-radius:10px;
+  padding:12px;font-family:var(--mono);font-size:12px;white-space:pre-wrap;word-break:break-all;
+  max-height:220px;overflow-y:auto;}
+.tab-panel{display:none;animation:fadeIn .2s ease;}
+.tab-panel.active{display:block;}
+@keyframes fadeIn{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}
+.full-card{border:1px solid var(--border);background:linear-gradient(180deg,rgba(255,255,255,.05),rgba(255,255,255,.03));
+  border-radius:var(--radius);box-shadow:var(--shadow);overflow:hidden;margin-bottom:16px;}
+.row3{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-bottom:16px;}
+@media(max-width:700px){.row3{grid-template-columns:1fr;}}
+.checkbox-group{display:flex;gap:12px;flex-wrap:wrap;}
+.checkbox-group label{display:flex;align-items:center;gap:5px;color:var(--text);font-size:13px;cursor:pointer;}
+.checkbox-group input[type=checkbox]{width:15px;height:15px;accent-color:var(--accent);}
+footer.foot{text-align:center;padding:24px;color:var(--faint);font-size:12px;border-top:1px solid var(--border);margin-top:40px;}
+/* ====== Theme override: manual light/dark ====== */
+    
+    
+
+    /* ====== Smooth theme transition (avoid affecting input experience) ====== */
+    html {
+      scrollbar-gutter: stable;
+    }
+    html.theme-transition,
+    html.theme-transition .lab-page{
+      transition: background-color .25s ease, color .25s ease;
+    }
+    html.theme-transition *:not(input):not(textarea):not(select),
+    html.theme-transition *:not(input):not(textarea):not(select)::before,
+    html.theme-transition *:not(input):not(textarea):not(select)::after{
+      transition:
+        background-color .25s ease,
+        color .25s ease,
+        border-color .25s ease,
+        box-shadow .25s ease,
+        fill .25s ease,
+        stroke .25s ease,
+        opacity .25s ease;
+    }
+    html.theme-transition input,
+    html.theme-transition textarea,
+    html.theme-transition select{
+      transition: none !important;
+    }
+
+    /* ====== iOS-like theme switch ====== */

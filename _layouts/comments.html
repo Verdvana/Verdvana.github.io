@@ -1,86 +1,8 @@
 ---
 layout: modern
 ---
-<style>
-    /* Hero Section */
-    header.hero {
-        position: relative;
-        height: 40vh;
-        display: flex;
-        flex-direction: column;
-        justify-content: center;
-        padding: 0 10%;
-        background-image: linear-gradient(to bottom, rgba(0,0,0,0.5), rgba(0,0,0,1)), url('/static/img/wallpaper.jpg');
-        background-size: cover;
-        background-position: center;
-        overflow: hidden;
-    }
 
-    header.hero h1 {
-        font-size: clamp(40px, 8vw, 64px);
-        font-weight: 700;
-        line-height: 1.4;
-        margin-bottom: 24px;
-        letter-spacing: -2px;
-        background: linear-gradient(to right, #fff, #a1a1a6);
-        -webkit-background-clip: text;
-        -webkit-text-fill-color: transparent;
-    }
-
-    header.hero p {
-        font-size: clamp(16px, 2vw, 20px);
-        color: #d1d1d6;
-        max-width: 700px;
-        font-weight: 400;
-        line-height: 1.4;
-    }
-
-    /* Comments Section */
-    section.comments {
-        padding: 40px 10% 80px;
-        min-height: 60vh;
-    }
-
-    .archive-container {
-        max-width: 1200px;
-        margin: 0 auto;
-    }
-
-    .comment-card {
-        background: var(--glass);
-        padding: 40px;
-        border-radius: 20px;
-        border: 1px solid var(--border-color);
-        backdrop-filter: blur(10px);
-    }
-
-    /* Valine Custom Styling */
-    .v * { color: var(--text-color) !important; }
-    .v .vlist .vcard .vhead .vname { color: var(--accent-color) !important; font-weight: 600; }
-    .v .vlist .vcard .vh { border-bottom: 1px solid var(--border-color) !important; }
-    .v .vbtn {
-        background: var(--accent-color) !important;
-        border: none !important;
-        color: white !important;
-        border-radius: 40px !important;
-        padding: 8px 24px !important;
-        font-weight: 600 !important;
-    }
-    .v .vlist .vcard .vcontent { color: #d1d1d6 !important; }
-    .v .vpanel { background: rgba(255, 255, 255, 0.03) !important; border: 1px solid var(--border-color) !important; }
-    .v .vheader .vinput { border-bottom: 1px solid var(--border-color) !important; }
-    .v .vsys { background: rgba(255, 255, 255, 0.05) !important; color: var(--secondary-text) !important; }
-    .v .vinfo { border-bottom: 1px solid var(--border-color) !important; }
-
-    @media (max-width: 900px) {
-        header.hero { height: 40vh; padding: 0 6%; }
-        header.hero h1 { font-size: 32px; }
-        section.comments { padding: 40px 6%; }
-        .comment-card { padding: 20px; }
-    }
-</style>
-
-<header class="hero">
+<header class="site-page-hero">
     <h1>{{ page.title | default: "Leave a Message" }}</h1>
     <p>A space for collaboration, feedback, and open dialogue.</p>
 </header>
@@ -109,4 +31,3 @@ layout: modern
         });
     }, 200);
 </script>
-

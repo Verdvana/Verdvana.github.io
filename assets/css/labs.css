@@ -1,0 +1,45 @@
+/* Labs Section */
+    section.labs {
+        padding: 40px 10% 80px;
+        min-height: 60vh;
+    }
+
+    .archive-container {
+        max-width: 1200px;
+        margin: 0 auto;
+    }
+
+    .labs-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+        gap: 24px;
+    }
+
+    .labs-card {
+        background: var(--glass);
+        border-radius: 16px;
+        border: 1px solid var(--border-color);
+        overflow: hidden;
+        text-decoration: none;
+        transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+        display: flex; flex-direction: column; height: 100%;
+    }
+
+    .labs-card:hover { transform: translateY(-8px); background: rgba(255, 255, 255, 0.08); border-color: rgba(255, 255, 255, 0.2); }
+
+    .labs-thumb-wrapper { width: 100%; aspect-ratio: 16/9; overflow: hidden; background: #1c1c1e; position: relative; }
+    .labs-thumb { width: 100%; height: 100%; object-fit: cover; transition: transform 0.6s ease; }
+    .labs-card:hover .labs-thumb { transform: scale(1.05); }
+    .labs-thumb--empty { width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; color: var(--secondary-text); font-size: 14px; background: linear-gradient(45deg, #1c1c1e, #2c2c2e); }
+
+    .labs-body { padding: 24px; display: flex; flex-direction: column; flex-grow: 1; }
+    .labs-title { font-size: 20px; font-weight: 700; color: #fff; margin-bottom: 12px; line-height: 1.3; }
+    .labs-desc { font-size: 14px; color: #d1d1d6; margin-bottom: 20px; line-height: 1.6; flex-grow: 1; }
+    .labs-tags { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 16px; }
+    .labs-tag { font-size: 11px; padding: 4px 10px; border-radius: 6px; background: rgba(0, 113, 227, 0.1); color: var(--accent-color); border: 1px solid rgba(0, 113, 227, 0.2); text-transform: uppercase; letter-spacing: 0.5px; font-weight: 600; }
+    .labs-meta { font-size: 12px; color: var(--secondary-text); font-family: monospace; opacity: 0.6; word-break: break-all; }
+
+    @media (max-width: 900px) {
+section.labs { padding: 40px 6%; }
+        .labs-grid { grid-template-columns: 1fr; }
+    }
