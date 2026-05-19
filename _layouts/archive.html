@@ -40,7 +40,7 @@ layout: modern
                     {% assign nextdate = currentdate %}
                 {% endif %}
                 <div class="archive-item{% if post.ai %} ai-post{% endif %}" data-title="{{ post.title | escape }}" data-categories="{{ post.categories | concat: post.tags | join: ',' | escape }}">
-                    <div class="archive-info"><span class="archive-date">{{ post.date | date: "%m.%d" }}</span><a href="{{ post.url | relative_url }}" class="archive-title"><span class="archive-title-text">{{ post.title }}</span>{% if post.ai %} <span class="ai-badge">AI 生成</span>{% endif %}</a></div>
+                    <div class="archive-info"><span class="archive-date">{{ post.date | date: "%m.%d" }}</span><a href="{{ post.url | relative_url }}" class="archive-title"><span class="archive-title-text">{{ post.title }}</span>{% if post.ai %} <span class="ai-badge">AI Generated</span>{% endif %}</a></div>
                     <div class="archive-meta">{% assign cats = post.categories | concat: post.tags | uniq %}{% for cat in cats limit:3 %}<span class="archive-category">{{ cat }}</span>{% endfor %}</div>
                 </div>
                 {% if forloop.last %}</div></div>{% endif %}
@@ -54,7 +54,7 @@ layout: modern
                     <div class="archive-list">
                         {% for post in site.posts %}{% assign post_cats = post.categories | concat: post.tags %}{% if post_cats contains cat %}
                             <div class="archive-item{% if post.ai %} ai-post{% endif %}" data-title="{{ post.title | escape }}" data-categories="{{ post_cats | join: ',' | escape }}">
-                                <div class="archive-info"><a href="{{ post.url | relative_url }}" class="archive-title"><span class="archive-title-text">{{ post.title }}</span>{% if post.ai %} <span class="ai-badge">AI 生成</span>{% endif %}</a><span class="archive-date" style="margin-left: auto; font-size: 14px;">{{ post.date | date: "%Y.%m.%d" }}</span></div>
+                                <div class="archive-info"><a href="{{ post.url | relative_url }}" class="archive-title"><span class="archive-title-text">{{ post.title }}</span>{% if post.ai %} <span class="ai-badge">AI Generated</span>{% endif %}</a><span class="archive-date" style="margin-left: auto; font-size: 14px;">{{ post.date | date: "%Y.%m.%d" }}</span></div>
                             </div>
                         {% endif %}{% endfor %}
                     </div>
