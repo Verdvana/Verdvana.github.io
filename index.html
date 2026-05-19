@@ -513,7 +513,7 @@ extra_css:
                     </h3>
                     <!-- <p style="font-size: 13px; color: var(--secondary-text); margin-bottom: 20px; margin-top: -30px;">Articles are primarily written in <span style="color: #fff;">Chinese</span> · 技术博客</p> -->
                     <div class="recent-list">
-                        {% for post in site.posts limit:10 %}<a class="list-link{% if post.ai %} ai-post{% endif %}" href="{{ post.url | relative_url }}"><span class="item-title"><span class="title-text">{{ post.title }}</span>{% if post.ai %}<span class="ai-badge">AI</span>{% endif %}</span><span class="item-meta">{{ post.date | date: "%Y.%m.%d" }}</span></a>{% endfor %}
+                        {% for post in site.posts limit:10 %}<a class="list-link{% if post.ai %} ai-post{% endif %}" href="{{ post.url | relative_url }}"><span class="item-title"><span class="title-text">{{ post.title }}</span>{% if post.ai %} <span class="ai-badge">AI 生成</span>{% endif %}</span><span class="item-meta">{{ post.date | date: "%Y.%m.%d" }}</span></a>{% endfor %}
                     </div>
                     <a class="pill" href="/archive" style="display: inline-block; background: transparent; color: #fff; border: 1px solid #fff; text-decoration: none;">View All Posts</a>
                 </div>

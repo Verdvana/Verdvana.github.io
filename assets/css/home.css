@@ -205,7 +205,7 @@
             justify-content: center;
             flex: 0 0 auto;
             height: 18px;
-            padding: 0 6px;
+            padding: 0 7px;
             border-radius: 999px;
             background: linear-gradient(135deg, rgba(255, 203, 71, 0.22), rgba(0, 198, 255, 0.16));
             border: 1px solid rgba(255, 203, 71, 0.42);
@@ -213,7 +213,7 @@
             font-size: 9px;
             font-weight: 700;
             line-height: 1;
-            letter-spacing: 0.08em;
+            letter-spacing: 0;
             box-shadow: 0 0 18px rgba(255, 203, 71, 0.16);
         }
 
