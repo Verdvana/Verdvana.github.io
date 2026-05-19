@@ -1,0 +1,65 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 520" role="img" aria-labelledby="title desc">
+  <title id="title">Quantum mechanics and quantum chips</title>
+  <desc id="desc">A stylized quantum chip with wave functions, qubit nodes, and glowing traces.</desc>
+  <defs>
+    <radialGradient id="bg" cx="50%" cy="45%" r="70%">
+      <stop offset="0%" stop-color="#143c34"/>
+      <stop offset="52%" stop-color="#08131b"/>
+      <stop offset="100%" stop-color="#05070c"/>
+    </radialGradient>
+    <linearGradient id="chip" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#10242d"/>
+      <stop offset="100%" stop-color="#071018"/>
+    </linearGradient>
+    <filter id="glow" x="-40%" y="-40%" width="180%" height="180%">
+      <feGaussianBlur stdDeviation="5" result="blur"/>
+      <feMerge>
+        <feMergeNode in="blur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+  </defs>
+  <rect width="1200" height="520" fill="url(#bg)"/>
+  <g opacity="0.22">
+    <path d="M0 400 C160 320 260 470 420 390 S720 260 900 350 1080 450 1200 360" fill="none" stroke="#7dffad" stroke-width="3"/>
+    <path d="M0 180 C150 70 300 270 460 170 S760 80 930 180 1090 280 1200 170" fill="none" stroke="#64d7ff" stroke-width="2"/>
+  </g>
+  <g transform="translate(430 95)">
+    <rect x="0" y="0" width="350" height="330" rx="28" fill="url(#chip)" stroke="#2de07f" stroke-width="2" filter="url(#glow)"/>
+    <rect x="42" y="42" width="266" height="246" rx="18" fill="#0b1720" stroke="#243e4d"/>
+    <g stroke="#2de07f" stroke-width="3" filter="url(#glow)">
+      <path d="M74 92 H142 V150 H214 V92 H276"/>
+      <path d="M74 222 H132 V170 H222 V222 H276"/>
+      <path d="M176 58 V272"/>
+      <path d="M42 165 H308"/>
+    </g>
+    <g fill="#071018" stroke="#7dffad" stroke-width="3" filter="url(#glow)">
+      <circle cx="74" cy="92" r="14"/>
+      <circle cx="276" cy="92" r="14"/>
+      <circle cx="176" cy="165" r="18"/>
+      <circle cx="74" cy="222" r="14"/>
+      <circle cx="276" cy="222" r="14"/>
+    </g>
+    <g stroke="#64d7ff" stroke-width="6">
+      <path d="M-70 60 H0"/>
+      <path d="M-70 270 H0"/>
+      <path d="M350 60 H420"/>
+      <path d="M350 270 H420"/>
+      <path d="M95 -70 V0"/>
+      <path d="M255 -70 V0"/>
+      <path d="M95 330 V400"/>
+      <path d="M255 330 V400"/>
+    </g>
+  </g>
+  <g font-family="Inter, Arial, sans-serif" fill="#f4fff8">
+    <text x="78" y="162" font-size="48" font-weight="700">Quantum Mechanics</text>
+    <text x="78" y="218" font-size="48" font-weight="700">and Quantum Chips</text>
+    <text x="80" y="275" font-size="20" fill="#b7c9d4">states, amplitudes, energy levels, tunneling, and QPU architecture</text>
+  </g>
+  <g transform="translate(905 120)" fill="none" stroke="#7dffad" stroke-width="2" filter="url(#glow)">
+    <circle cx="80" cy="80" r="54"/>
+    <ellipse cx="80" cy="80" rx="84" ry="28" transform="rotate(28 80 80)"/>
+    <ellipse cx="80" cy="80" rx="84" ry="28" transform="rotate(-28 80 80)"/>
+    <circle cx="80" cy="80" r="7" fill="#7dffad"/>
+  </g>
+</svg>

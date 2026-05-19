@@ -1,0 +1,38 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 420" role="img" aria-labelledby="title desc">
+  <title id="title">Double slit experiment</title>
+  <desc id="desc">Probability amplitudes pass through two slits and form an interference pattern.</desc>
+  <defs>
+    <filter id="glow"><feGaussianBlur stdDeviation="4" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+  </defs>
+  <rect width="900" height="420" rx="18" fill="#071018"/>
+  <g font-family="Inter, Arial, sans-serif">
+    <text x="70" y="58" fill="#f4fff8" font-size="26" font-weight="700">Double Slit: probability amplitudes interfere</text>
+    <circle cx="95" cy="210" r="12" fill="#7dffad" filter="url(#glow)"/>
+    <text x="58" y="248" fill="#b7c9d4" font-size="16">single particles</text>
+    <rect x="340" y="95" width="22" height="230" fill="#233846"/>
+    <rect x="340" y="155" width="22" height="34" fill="#071018"/>
+    <rect x="340" y="235" width="22" height="34" fill="#071018"/>
+    <text x="312" y="352" fill="#b7c9d4" font-size="16">two slits</text>
+    <line x1="740" y1="80" x2="740" y2="340" stroke="#324a57" stroke-width="5"/>
+    <text x="702" y="370" fill="#b7c9d4" font-size="16">screen</text>
+    <g fill="#7dffad" filter="url(#glow)">
+      <circle cx="740" cy="105" r="5"/>
+      <circle cx="740" cy="128" r="8"/>
+      <circle cx="740" cy="162" r="13"/>
+      <circle cx="740" cy="210" r="18"/>
+      <circle cx="740" cy="258" r="13"/>
+      <circle cx="740" cy="292" r="8"/>
+      <circle cx="740" cy="315" r="5"/>
+    </g>
+    <g fill="none" stroke-width="2" opacity="0.75">
+      <path d="M110 210 C190 150 260 150 340 172" stroke="#64d7ff"/>
+      <path d="M110 210 C190 270 260 270 340 252" stroke="#64d7ff"/>
+      <path d="M362 172 C470 95 610 80 740 105" stroke="#7dffad"/>
+      <path d="M362 172 C480 160 610 160 740 162" stroke="#7dffad"/>
+      <path d="M362 172 C480 215 610 220 740 210" stroke="#7dffad"/>
+      <path d="M362 252 C480 205 610 200 740 210" stroke="#7dffad"/>
+      <path d="M362 252 C480 270 610 280 740 292" stroke="#7dffad"/>
+      <path d="M362 252 C470 325 610 340 740 315" stroke="#7dffad"/>
+    </g>
+  </g>
+</svg>

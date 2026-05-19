@@ -9,6 +9,8 @@ tags:
 
 -------
 
+![cover](https://raw.githubusercontent.com/Verdvana/Verdvana.github.io/master/_posts/%E9%87%8F%E5%AD%90%E5%8A%9B%E5%AD%A6%E4%B8%8E%E9%87%8F%E5%AD%90%E8%8A%AF%E7%89%87%E5%85%A5%E9%97%A8/cover.svg)
+
 ## 1 前言
 
 &#160; &#160; &#160; &#160; 量子力学经常被讲得很神秘：叠加态、坍缩、不确定性、纠缠，听起来像一套远离日常经验的抽象语言。但换一个角度看，它其实是一套非常有效的微观系统描述方法。半导体器件、激光器、LED、光电探测器、磁共振、扫描隧道显微镜，乃至近几年很热的量子计算和量子通信，都离不开量子力学。
@@ -43,6 +45,8 @@ $$E = h\nu$$
 
 &#160; &#160; &#160; &#160; 在原子中，电子的能量也不是任意连续的，而是处在一系列离散能级上。当电子从高能级跃迁到低能级时，会释放一个光子；当电子吸收合适频率的光子时，可以跃迁到更高能级。因此，离散能级直接对应了离散的光谱线。
 
+![energy_levels](https://raw.githubusercontent.com/Verdvana/Verdvana.github.io/master/_posts/%E9%87%8F%E5%AD%90%E5%8A%9B%E5%AD%A6%E4%B8%8E%E9%87%8F%E5%AD%90%E8%8A%AF%E7%89%87%E5%85%A5%E9%97%A8/energy_levels.svg)
+
 &#160; &#160; &#160; &#160; 可以先把“量子化”理解成一种边界条件导致的本征值问题：就像传输线、波导、机械振动系统中会出现特定的谐振模式，微观束缚系统也只允许某些特定状态稳定存在。
 
 ----
@@ -72,6 +76,8 @@ $$\psi = a\psi_1 + b\psi_2$$
 &#160; &#160; &#160; &#160; 其中 $a$ 和 $b$ 是复数系数，决定不同状态的概率幅。叠加态不是普通意义上的“我们不知道它在哪个状态”，而是系统本身的状态就由多个可能性的概率幅共同构成。
 
 &#160; &#160; &#160; &#160; 双缝实验提供了最直观的图像。电子逐个通过双缝时，如果不探测它到底经过哪条缝，屏幕上会逐渐形成干涉条纹。这说明电子的概率幅同时通过两条路径并发生干涉。如果我们在缝附近测量电子路径，干涉条纹会消失，结果变得更像经典粒子。
+
+![double_slit](https://raw.githubusercontent.com/Verdvana/Verdvana.github.io/master/_posts/%E9%87%8F%E5%AD%90%E5%8A%9B%E5%AD%A6%E4%B8%8E%E9%87%8F%E5%AD%90%E8%8A%AF%E7%89%87%E5%85%A5%E9%97%A8/double_slit.svg)
 
 &#160; &#160; &#160; &#160; 这里的关键不是“电子变成了波还是粒子”，而是经典语言不够用了。电子在传播时表现出波的干涉特征，在测量时又表现出离散的粒子式结果。量子力学用波函数统一描述这两类现象。
 
@@ -135,6 +141,8 @@ $$\psi_n(x)=\sqrt{\frac{2}{L}}\sin\left(\frac{n\pi x}{L}\right), \quad n=1,2,3..
 
 $$E_n=\frac{n^2\pi^2\hbar^2}{2mL^2}$$
 
+![infinite_well](https://raw.githubusercontent.com/Verdvana/Verdvana.github.io/master/_posts/%E9%87%8F%E5%AD%90%E5%8A%9B%E5%AD%A6%E4%B8%8E%E9%87%8F%E5%AD%90%E8%8A%AF%E7%89%87%E5%85%A5%E9%97%A8/infinite_well.svg)
+
 &#160; &#160; &#160; &#160; 这个模型展示了几个重要结论：
 
 *   束缚系统中能量可以是离散的。
@@ -148,6 +156,8 @@ $$E_n=\frac{n^2\pi^2\hbar^2}{2mL^2}$$
 ## 10 隧穿效应：经典上过不去，量子上有概率过去
 
 &#160; &#160; &#160; &#160; 在经典力学中，如果一个粒子的能量低于势垒高度，它就不可能越过势垒。但在量子力学中，波函数可以渗入势垒区域，并在势垒另一侧保留非零幅度。这意味着粒子有一定概率穿过势垒，这就是**量子隧穿**。
+
+![tunneling](https://raw.githubusercontent.com/Verdvana/Verdvana.github.io/master/_posts/%E9%87%8F%E5%AD%90%E5%8A%9B%E5%AD%A6%E4%B8%8E%E9%87%8F%E5%AD%90%E8%8A%AF%E7%89%87%E5%85%A5%E9%97%A8/tunneling.svg)
 
 &#160; &#160; &#160; &#160; 隧穿不是科幻概念，而是很多器件中的真实机制。例如：
 
@@ -209,6 +219,8 @@ $$|\psi\rangle = \alpha|0\rangle + \beta|1\rangle$$
 ### 13.2 量子芯片的结构
 
 &#160; &#160; &#160; &#160; 不同技术路线的结构差别很大，但抽象来看，一套量子芯片系统通常包括：
+
+![quantum_chip](https://raw.githubusercontent.com/Verdvana/Verdvana.github.io/master/_posts/%E9%87%8F%E5%AD%90%E5%8A%9B%E5%AD%A6%E4%B8%8E%E9%87%8F%E5%AD%90%E8%8A%AF%E7%89%87%E5%85%A5%E9%97%A8/quantum_chip.svg)
 
 *   **量子比特阵列**：保存量子信息的核心单元。
 *   **耦合结构**：让两个或多个量子比特发生相互作用，以实现纠缠门。

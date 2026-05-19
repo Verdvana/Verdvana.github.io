@@ -1,0 +1,35 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 420" role="img" aria-labelledby="title desc">
+  <title id="title">Discrete energy levels and photon emission</title>
+  <desc id="desc">An electron transitions from a high energy level to a lower one and emits a photon.</desc>
+  <defs>
+    <filter id="glow"><feGaussianBlur stdDeviation="3" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+  </defs>
+  <rect width="900" height="420" rx="18" fill="#071018"/>
+  <g transform="translate(110 70)" font-family="Inter, Arial, sans-serif">
+    <text x="0" y="-22" fill="#f4fff8" font-size="26" font-weight="700">Discrete Energy Levels</text>
+    <g stroke="#324a57" stroke-width="2">
+      <line x1="0" y1="250" x2="520" y2="250"/>
+      <line x1="0" y1="175" x2="520" y2="175"/>
+      <line x1="0" y1="92" x2="520" y2="92"/>
+      <line x1="0" y1="28" x2="520" y2="28"/>
+    </g>
+    <g fill="#8fa4b2" font-size="18">
+      <text x="540" y="256">E1</text>
+      <text x="540" y="181">E2</text>
+      <text x="540" y="98">E3</text>
+      <text x="540" y="34">E4</text>
+    </g>
+    <g filter="url(#glow)">
+      <circle cx="260" cy="92" r="11" fill="#7dffad"/>
+      <path d="M260 92 C245 120 245 145 260 175" fill="none" stroke="#7dffad" stroke-width="4" marker-end="url(#arrow)"/>
+    </g>
+    <path d="M300 135 C330 115 360 155 390 135 S450 115 480 135" fill="none" stroke="#64d7ff" stroke-width="4" filter="url(#glow)"/>
+    <text x="330" y="118" fill="#64d7ff" font-size="18">photon</text>
+    <text x="32" y="305" fill="#b7c9d4" font-size="18">Energy changes by absorbing or emitting fixed packets.</text>
+  </g>
+  <defs>
+    <marker id="arrow" markerWidth="10" markerHeight="10" refX="6" refY="3" orient="auto">
+      <path d="M0,0 L0,6 L7,3 z" fill="#7dffad"/>
+    </marker>
+  </defs>
+</svg>

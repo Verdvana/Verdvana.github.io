@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 420" role="img" aria-labelledby="title desc">
+  <title id="title">Infinite potential well</title>
+  <desc id="desc">A particle in a one-dimensional box has standing wave modes and discrete energies.</desc>
+  <rect width="900" height="420" rx="18" fill="#071018"/>
+  <g transform="translate(90 72)" font-family="Inter, Arial, sans-serif">
+    <text x="0" y="-22" fill="#f4fff8" font-size="26" font-weight="700">Particle in a Box: standing-wave modes</text>
+    <line x1="95" y1="250" x2="650" y2="250" stroke="#324a57" stroke-width="2"/>
+    <line x1="130" y1="20" x2="130" y2="250" stroke="#7dffad" stroke-width="6"/>
+    <line x1="610" y1="20" x2="610" y2="250" stroke="#7dffad" stroke-width="6"/>
+    <text x="126" y="278" fill="#b7c9d4" font-size="16">0</text>
+    <text x="604" y="278" fill="#b7c9d4" font-size="16">L</text>
+    <g fill="none" stroke-width="3">
+      <path d="M130 210 C250 135 490 135 610 210" stroke="#64d7ff"/>
+      <path d="M130 150 C190 90 250 90 310 150 S430 210 490 150 550 90 610 150" stroke="#7dffad"/>
+      <path d="M130 90 C170 45 210 45 250 90 S330 135 370 90 450 45 490 90 570 135 610 90" stroke="#ff8fb3"/>
+    </g>
+    <g fill="#b7c9d4" font-size="16">
+      <text x="635" y="216">n = 1</text>
+      <text x="635" y="156">n = 2</text>
+      <text x="635" y="96">n = 3</text>
+    </g>
+    <text x="125" y="323" fill="#b7c9d4" font-size="18">Only modes that fit the boundary conditions can exist.</text>
+  </g>
+</svg>

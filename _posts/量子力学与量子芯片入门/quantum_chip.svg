@@ -1,0 +1,48 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 460" role="img" aria-labelledby="title desc">
+  <title id="title">Quantum chip structure</title>
+  <desc id="desc">A simplified quantum chip stack containing qubits, couplers, control lines, readout, cryogenic environment, and classical electronics.</desc>
+  <defs>
+    <filter id="glow"><feGaussianBlur stdDeviation="4" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+  </defs>
+  <rect width="900" height="460" rx="18" fill="#071018"/>
+  <g font-family="Inter, Arial, sans-serif">
+    <text x="60" y="54" fill="#f4fff8" font-size="26" font-weight="700">Quantum Chip System</text>
+    <rect x="70" y="95" width="520" height="300" rx="24" fill="#0c1822" stroke="#2de07f" stroke-width="2"/>
+    <rect x="120" y="145" width="420" height="195" rx="18" fill="#0a1119" stroke="#263f4d"/>
+    <g stroke="#2de07f" stroke-width="3" filter="url(#glow)">
+      <path d="M185 205 H285 H385 H485"/>
+      <path d="M185 285 H285 H385 H485"/>
+      <path d="M185 205 V285"/>
+      <path d="M285 205 V285"/>
+      <path d="M385 205 V285"/>
+      <path d="M485 205 V285"/>
+    </g>
+    <g fill="#071018" stroke="#7dffad" stroke-width="3" filter="url(#glow)">
+      <circle cx="185" cy="205" r="15"/>
+      <circle cx="285" cy="205" r="15"/>
+      <circle cx="385" cy="205" r="15"/>
+      <circle cx="485" cy="205" r="15"/>
+      <circle cx="185" cy="285" r="15"/>
+      <circle cx="285" cy="285" r="15"/>
+      <circle cx="385" cy="285" r="15"/>
+      <circle cx="485" cy="285" r="15"/>
+    </g>
+    <text x="250" y="372" fill="#b7c9d4" font-size="18">qubit array + couplers</text>
+    <g stroke="#64d7ff" stroke-width="5" opacity="0.9">
+      <path d="M115 170 H55"/>
+      <path d="M115 245 H55"/>
+      <path d="M115 320 H55"/>
+      <path d="M545 170 H625"/>
+      <path d="M545 245 H625"/>
+      <path d="M545 320 H625"/>
+    </g>
+    <text x="35" y="86" fill="#64d7ff" font-size="15">control lines</text>
+    <text x="625" y="86" fill="#64d7ff" font-size="15">readout lines</text>
+    <rect x="655" y="116" width="170" height="92" rx="14" fill="#10242d" stroke="#64d7ff"/>
+    <text x="690" y="152" fill="#f4fff8" font-size="18">Classical</text>
+    <text x="690" y="178" fill="#b7c9d4" font-size="15">control</text>
+    <rect x="655" y="248" width="170" height="92" rx="14" fill="#10242d" stroke="#7dffad"/>
+    <text x="690" y="284" fill="#f4fff8" font-size="18">Cryogenic</text>
+    <text x="690" y="310" fill="#b7c9d4" font-size="15">environment</text>
+  </g>
+</svg>

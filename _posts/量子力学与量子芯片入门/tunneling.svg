@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 420" role="img" aria-labelledby="title desc">
+  <title id="title">Quantum tunneling</title>
+  <desc id="desc">A wavefunction decays inside a potential barrier but remains nonzero on the other side.</desc>
+  <defs>
+    <filter id="glow"><feGaussianBlur stdDeviation="4" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+  </defs>
+  <rect width="900" height="420" rx="18" fill="#071018"/>
+  <g transform="translate(80 72)" font-family="Inter, Arial, sans-serif">
+    <text x="0" y="-22" fill="#f4fff8" font-size="26" font-weight="700">Quantum Tunneling</text>
+    <line x1="40" y1="245" x2="760" y2="245" stroke="#324a57" stroke-width="2"/>
+    <rect x="360" y="58" width="155" height="187" fill="#173342" opacity="0.85" stroke="#64d7ff" stroke-width="2"/>
+    <text x="390" y="48" fill="#64d7ff" font-size="16">barrier</text>
+    <line x1="55" y1="142" x2="750" y2="142" stroke="#8fa4b2" stroke-width="2" stroke-dasharray="8 8"/>
+    <text x="60" y="130" fill="#8fa4b2" font-size="16">particle energy</text>
+    <path d="M65 197 C100 150 135 150 170 197 S240 244 275 197 345 150 360 197 C390 215 430 230 515 235 C590 205 650 205 725 225" fill="none" stroke="#7dffad" stroke-width="4" filter="url(#glow)"/>
+    <path d="M360 197 C390 215 430 230 515 235" fill="none" stroke="#7dffad" stroke-width="4" opacity="0.45"/>
+    <circle cx="720" cy="225" r="8" fill="#7dffad" filter="url(#glow)"/>
+    <text x="95" y="310" fill="#b7c9d4" font-size="18">The wavefunction is smaller after the barrier, but not zero.</text>
+  </g>
+</svg>
