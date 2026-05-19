@@ -8,7 +8,7 @@ tags:
   - FPGA
 
 ---
-![封面](从逻辑门到深层神经网络：用FPGA实现手写数字识别/封面.jpg)
+![封面](https://raw.githubusercontent.com/Verdvana/Verdvana.github.io/master/_posts/%E4%BB%8E%E9%80%BB%E8%BE%91%E9%97%A8%E5%88%B0%E6%B7%B1%E5%B1%82%E7%A5%9E%E7%BB%8F%E7%BD%91%E7%BB%9C%EF%BC%9A%E7%94%A8FPGA%E5%AE%9E%E7%8E%B0%E6%89%8B%E5%86%99%E6%95%B0%E5%AD%97%E8%AF%86%E5%88%AB/%E5%B0%81%E9%9D%A2.jpg)
 -------
 
 ## 1 前言
@@ -77,7 +77,7 @@ $$y = f(\sum_{i=1}^{n} w_i x_i + b)$$
 
 &#160; &#160; &#160; &#160; 在硬件工程师眼里，神经元是一个**级联的逻辑流水线**。它由输入端$x_i$、权重存储$w_i$、乘加运算阵列、偏置接入点$b$和非线性转换器$ReLU$组成。
 
-![neuron_mac_unit](从逻辑门到深层神经网络：用FPGA实现手写数字识别/neuron_mac_unit.png)
+![neuron_mac_unit](https://raw.githubusercontent.com/Verdvana/Verdvana.github.io/master/_posts/%E4%BB%8E%E9%80%BB%E8%BE%91%E9%97%A8%E5%88%B0%E6%B7%B1%E5%B1%82%E7%A5%9E%E7%BB%8F%E7%BD%91%E7%BB%9C%EF%BC%9A%E7%94%A8FPGA%E5%AE%9E%E7%8E%B0%E6%89%8B%E5%86%99%E6%95%B0%E5%AD%97%E8%AF%86%E5%88%AB/neuron_mac_unit.png)
 
 ### 3.1 权重 (Weights)
 *   数值来源：权重不是我们手动计算的，而是“训练”阶段产生的。它们是电脑通过海量数据迭代学到的**最优系数文件**。
@@ -117,7 +117,7 @@ $$y = f(\sum_{i=1}^{n} w_i x_i + b)$$
 *   使用场景：通常用于网络的**最后几层**，负责将提取出的抽象特征汇总，输出最终的分类决策。
 *   **硬件瓶颈（带宽）**：对于 IC 工程师来说，FC 层最大的挑战在于**计算与带宽的匹配**。例如，计算一个具有 784 个输入的神经元需要读取 784 个权重。如果硬件每周期只能从 BRAM 读出一个权重，那么计算一个神经元就需要 784 个时钟周期。这种“存储受限”的特性决定了 FC 层的吞吐量上限。
 
-![cnn_vs_fc](从逻辑门到深层神经网络：用FPGA实现手写数字识别/cnn_vs_fc.png)
+![cnn_vs_fc](https://raw.githubusercontent.com/Verdvana/Verdvana.github.io/master/_posts/%E4%BB%8E%E9%80%BB%E8%BE%91%E9%97%A8%E5%88%B0%E6%B7%B1%E5%B1%82%E7%A5%9E%E7%BB%8F%E7%BD%91%E7%BB%9C%EF%BC%9A%E7%94%A8FPGA%E5%AE%9E%E7%8E%B0%E6%89%8B%E5%86%99%E6%95%B0%E5%AD%97%E8%AF%86%E5%88%AB/cnn_vs_fc.png)
 
 
 &#160; &#160; &#160; &#160; 这里做了一个[全连接神经网络动画演示](https://verdvana.cn/labs/neural_network_visualization.html)的页面，能够在一个3x3的网格上画线，画上的区域为1，其余为0，然后把这9个格子作为神经网络第一层，第二层做计算，第三层为输出层。通过动画一步一步演示三层全连接的神经网络是如何识别横竖斜线。
@@ -154,7 +154,7 @@ $$y = f(\sum_{i=1}^{n} w_i x_i + b)$$
 &#160; &#160; &#160; &#160; 经过多层卷积和全连接后，网络最后会输出10个数值，分别代表识别结果为数字0-9的“得分”。
 *   Argmax 单元：在训练阶段，我们需要用Softmax函数将得分转为概率以计算损失。但在推理阶段，只关心谁的得分最高。因此，在硬件实现中，我们直接**舍弃高成本的 Softmax 指数运算**，代之以一个简单的 **比较器树 (Comparator Tree)**，找出这 10 个数值中最大的一项，其对应的索引号（Index）即为识别出的数字。
 
-![argmax_tree](从逻辑门到深层神经网络：用FPGA实现手写数字识别/argmax_tree.png)
+![argmax_tree](https://raw.githubusercontent.com/Verdvana/Verdvana.github.io/master/_posts/%E4%BB%8E%E9%80%BB%E8%BE%91%E9%97%A8%E5%88%B0%E6%B7%B1%E5%B1%82%E7%A5%9E%E7%BB%8F%E7%BD%91%E7%BB%9C%EF%BC%9A%E7%94%A8FPGA%E5%AE%9E%E7%8E%B0%E6%89%8B%E5%86%99%E6%95%B0%E5%AD%97%E8%AF%86%E5%88%AB/argmax_tree.png)
 
 ### 4.4 架构对比总结
 
@@ -270,7 +270,7 @@ python3 export_weights.py
 
 &#160; &#160; &#160; &#160; 在进入下一阶段量化之前，我们需要对提取出的参数进行“体检”。
 
-![weight_distribution_histogram](从逻辑门到深层神经网络：用FPGA实现手写数字识别/weight_distribution.png)
+![weight_distribution_histogram](https://raw.githubusercontent.com/Verdvana/Verdvana.github.io/master/_posts/%E4%BB%8E%E9%80%BB%E8%BE%91%E9%97%A8%E5%88%B0%E6%B7%B1%E5%B1%82%E7%A5%9E%E7%BB%8F%E7%BD%91%E7%BB%9C%EF%BC%9A%E7%94%A8FPGA%E5%AE%9E%E7%8E%B0%E6%89%8B%E5%86%99%E6%95%B0%E5%AD%97%E8%AF%86%E5%88%AB/weight_distribution.png)
 
 *   **为什么要看分布？** 权重分布的动态范围直接决定了我们在量化时对 **Q 格式整数位（Integer bits）** 的预留。
 *   **工程案例**：如上图所示，如果 99.9% 的权重都落在 [-2.0, 2.0] 之间，那么我们在 Q4.12 格式中预留的 4 位整数（含 1 位符号位，表示范围 -8 到 7.99）就绰绰有余。如果分布极广（如存在大于 10 的权重），强行使用 Q4.12 会导致严重的溢出截断，使识别准确率雪崩。
@@ -304,7 +304,7 @@ python3 export_weights.py
 **转换原理相对直观**：
 将浮点数乘以 $2^{12} (4096)$，然后四舍五入取整。
 
-![q4_12_format](从逻辑门到深层神经网络：用FPGA实现手写数字识别/q4_12_format.png)
+![q4_12_format](https://raw.githubusercontent.com/Verdvana/Verdvana.github.io/master/_posts/%E4%BB%8E%E9%80%BB%E8%BE%91%E9%97%A8%E5%88%B0%E6%B7%B1%E5%B1%82%E7%A5%9E%E7%BB%8F%E7%BD%91%E7%BB%9C%EF%BC%9A%E7%94%A8FPGA%E5%AE%9E%E7%8E%B0%E6%89%8B%E5%86%99%E6%95%B0%E5%AD%97%E8%AF%86%E5%88%AB/q4_12_format.png)
 
 * `0.165 (float)` $\rightarrow 0.165 \times 4096 = 675.84 \rightarrow 676 \rightarrow$ `0x02A4`
 * `-0.5 (float)` $\rightarrow -0.5 \times 4096 = -2048 \rightarrow$ `0xF800` (二进制补码)
@@ -493,7 +493,7 @@ Quantization complete. Hex files are in 'params_hex/'.
 
 &#160; &#160; &#160; &#160; 以下是整个硬件加速器的工业级 RTL 架构图，清晰展示了顶层模块 `mnist_top` 内部的组件例化关系、数据流（Data Path）与控制流（Control Path）的每一个信号连线：
 
-![fpga_mnist_arch](从逻辑门到深层神经网络：用FPGA实现手写数字识别/fpga_mnist_arch.png)
+![fpga_mnist_arch](https://raw.githubusercontent.com/Verdvana/Verdvana.github.io/master/_posts/%E4%BB%8E%E9%80%BB%E8%BE%91%E9%97%A8%E5%88%B0%E6%B7%B1%E5%B1%82%E7%A5%9E%E7%BB%8F%E7%BD%91%E7%BB%9C%EF%BC%9A%E7%94%A8FPGA%E5%AE%9E%E7%8E%B0%E6%89%8B%E5%86%99%E6%95%B0%E5%AD%97%E8%AF%86%E5%88%AB/fpga_mnist_arch.png)
 
 #### 7.2.1 顶层接口 (Top-level Interface)
 系统仅包含一组同步时钟域，接口定义如下：
