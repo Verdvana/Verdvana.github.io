@@ -115,6 +115,20 @@ post_assets: true
     }
 
     document.addEventListener('DOMContentLoaded', function() {
+        // Render TeX formulas in posts. KaTeX is loaded from modern-head.html for post pages.
+        if (window.renderMathInElement) {
+            renderMathInElement(document.querySelector('.post-content'), {
+                delimiters: [
+                    { left: '$$', right: '$$', display: true },
+                    { left: '\\[', right: '\\]', display: true },
+                    { left: '$', right: '$', display: false },
+                    { left: '\\(', right: '\\)', display: false }
+                ],
+                ignoredTags: ['script', 'noscript', 'style', 'textarea', 'pre', 'code'],
+                throwOnError: false
+            });
+        }
+
         // Init TOC
         tocbot.init({
             tocSelector: '.js-toc',
