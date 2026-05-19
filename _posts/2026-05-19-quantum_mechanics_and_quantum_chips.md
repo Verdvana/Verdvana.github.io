@@ -1,11 +1,10 @@
 ---
 layout: post
 title:  "量子力学与量子芯片入门"
-date:   2026-05-19 20:30:00 +0700
+date:   2026-05-18 20:30:00 +0700
+ai: true
 tags:
-  - Quantum Mechanics
-  - Physics
-  - Engineering
+  - Others
 ---
 
 -------

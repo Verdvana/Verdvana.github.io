@@ -21,7 +21,10 @@
     .archive-item:hover { padding-left: 10px; border-bottom-color: var(--accent-color); }
     .archive-info { display: flex; align-items: center; gap: 24px; flex: 1; min-width: 0; }
     .archive-date { font-family: monospace; font-size: 16px; color: var(--secondary-text); white-space: nowrap; }
-    .archive-title { font-size: 18px; font-weight: 500; color: #fff; text-decoration: none; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; transition: color 0.2s; }
+    .archive-title { display: inline-flex; align-items: center; gap: 10px; min-width: 0; font-size: 18px; font-weight: 500; color: #fff; text-decoration: none; white-space: nowrap; overflow: hidden; transition: color 0.2s; }
+    .archive-title-text { overflow: hidden; text-overflow: ellipsis; }
+    .ai-post .archive-title { color: #fff7d1; text-shadow: 0 0 14px rgba(255, 203, 71, 0.28); }
+    .ai-badge { display: inline-flex; align-items: center; justify-content: center; flex: 0 0 auto; height: 20px; padding: 0 7px; border-radius: 999px; background: linear-gradient(135deg, rgba(255, 203, 71, 0.22), rgba(0, 198, 255, 0.16)); border: 1px solid rgba(255, 203, 71, 0.42); color: #ffd76a; font-size: 10px; font-weight: 700; line-height: 1; letter-spacing: 0.08em; box-shadow: 0 0 18px rgba(255, 203, 71, 0.16); }
     .archive-item:hover .archive-title { color: var(--accent-color); }
     .archive-meta { display: flex; gap: 12px; margin-left: 20px; }
     .archive-category { font-size: 11px; text-transform: uppercase; letter-spacing: 1px; color: var(--accent-color); background: rgba(0, 113, 227, 0.1); padding: 4px 12px; border-radius: 20px; border: 1px solid rgba(0, 113, 227, 0.2); white-space: nowrap; }
