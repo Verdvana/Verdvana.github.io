@@ -12,8 +12,8 @@
 {% assign modern_og_image = page.og_image | default: '/static/img/wallpaper.jpg' %}
 <meta content="{% if modern_og_image contains '://' %}{{ modern_og_image }}{% else %}{{ modern_og_image | absolute_url }}{% endif %}" property="og:image"/>
 <title>{{ page.title | default: site.title }}</title>
-<link href="{{ '/static/img/avatar.jpg' | relative_url }}" rel="icon" type="image/jpeg"/>
-<link href="{{ '/static/img/avatar.jpg' | relative_url }}" rel="apple-touch-icon"/>
+<link href="{{ '/static/img/avatar.gif' | relative_url }}" rel="icon" type="image/gif"/>
+<link href="{{ '/static/img/avatar.gif' | relative_url }}" rel="apple-touch-icon"/>
 <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" referrerpolicy="no-referrer" rel="stylesheet"/>
 <link href="https://cdn.jsdelivr.net/npm/aplayer/dist/APlayer.min.css" rel="stylesheet"/>
 <link href="{{ '/assets/css/modern-theme.css' | relative_url }}" rel="stylesheet"/>
