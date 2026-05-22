@@ -69,7 +69,7 @@ jekyll-theme-WuK: # 用了wu-kan的主题，自定义样式都在这个命名空
           var alipay = "https://qr.alipay.com/fkx12869jxrthplaqunbf48";
           var paypal = "https://paypal.me/verdvana?country.x=C2&locale.x=zh_XC";
           var myname = "Verdvana";
-          var profile = "/static/img/avatar.gif";
+          var profile = "/static/img/avatar-logo.gif";
           var multilingual = true;
           var myname_hans = "Verdvana";
           var myname_hant = "Verdvana";
@@ -174,7 +174,7 @@ jekyll-theme-WuK: # 用了wu-kan的主题，自定义样式都在这个命名空
       disable: false
       avatar: # 侧边栏显示的头像
         enable: true
-        img: /static/img/avatar.gif # 头像的地址
+        img: /static/img/avatar-logo.gif # 头像的地址
       nav:
         - title: '<i class="fas fa-home fa-fw"></i> 首页'
           href: /
@@ -322,11 +322,11 @@ jekyll-theme-WuK: # 用了wu-kan的主题，自定义样式都在这个命名空
         />
         <link
           rel="apple-touch-icon-precomposed"
-          href="/static/img/avatar.gif"
+          href="/static/img/avatar-icon.png"
         />
         <link
           rel="shortcut icon"
-          href="/static/img/avatar.gif"
+          href="/static/img/avatar-icon.png"
         />
         <link
           rel="stylesheet"

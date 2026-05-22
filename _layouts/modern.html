@@ -5,6 +5,12 @@
     {{ page.extra_head }}
   </head>
   <body class="{{ page.body_class }}"{% if page.body_data_theme %} data-theme="{{ page.body_data_theme }}"{% endif %}>
+    <div class="page-loader" aria-hidden="true">
+      <img alt="" class="page-loader-logo" height="56" src="{{ '/static/img/avatar-logo.gif' | relative_url }}" width="56"/>
+      <div class="page-loader-line"></div>
+    </div>
+    <noscript><style>.page-loader{display:none}body{overflow-y:auto}</style></noscript>
+
     {% unless page.hide_ambient %}
       <div id="ambient-bg"></div>
     {% endunless %}

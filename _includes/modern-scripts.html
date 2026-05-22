@@ -1,5 +1,57 @@
 <script async src="//busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
 <script>
+  (function () {
+    var pageLoaded = false;
+
+    function markLoaded() {
+      if (pageLoaded) {
+        return;
+      }
+
+      pageLoaded = true;
+      document.body.classList.add('is-loaded');
+    }
+
+    window.addEventListener('load', function () {
+      window.setTimeout(markLoaded, 120);
+    });
+
+    window.setTimeout(markLoaded, 1800);
+
+    window.addEventListener('pageshow', function () {
+      document.body.classList.remove('is-leaving');
+      markLoaded();
+    });
+
+    document.addEventListener('click', function (event) {
+      var link = event.target.closest && event.target.closest('a[href]');
+      if (!link || event.defaultPrevented || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) {
+        return;
+      }
+
+      if (link.target && link.target !== '_self') {
+        return;
+      }
+
+      var url;
+      try {
+        url = new URL(link.href, window.location.href);
+      } catch (e) {
+        return;
+      }
+
+      if (url.origin !== window.location.origin || url.href === window.location.href || url.hash && url.pathname === window.location.pathname) {
+        return;
+      }
+
+      event.preventDefault();
+      document.body.classList.add('is-leaving');
+      window.setTimeout(function () {
+        window.location.href = url.href;
+      }, 160);
+    });
+  }());
+
   window.addEventListener('DOMContentLoaded', function() {
     if (window.APlayer && document.getElementById('aplayer')) {
       new APlayer({
