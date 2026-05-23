@@ -1,0 +1,74 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="760" viewBox="0 0 1200 760" role="img" aria-labelledby="title desc">
+  <title id="title">大陆投资者投资美股渠道风险分层图</title>
+  <desc id="desc">按合规清晰度和产品自由度展示QDII、港股通、跨境理财通、境外开户、代币化证券和链上合成资产的风险分层。</desc>
+  <defs>
+    <style>
+      text { font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", sans-serif; }
+      .bg { fill: #f8faf7; }
+      .axis { stroke: #596477; stroke-width: 3; marker-end: url(#arrow); }
+      .grid { stroke: #dfe4dc; stroke-width: 1.5; }
+      .h1 { font-size: 34px; font-weight: 700; fill: #243044; }
+      .body { font-size: 18px; fill: #5d6878; }
+      .label { font-size: 17px; fill: #243044; font-weight: 700; }
+      .tiny { font-size: 15px; fill: #5d6878; }
+      .safe { fill: #2f7d62; }
+      .watch { fill: #cf8b2f; }
+      .risk { fill: #b75240; }
+      .bubble { stroke: #ffffff; stroke-width: 4; }
+    </style>
+    <marker id="arrow" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="8" markerHeight="8" orient="auto">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#596477"/>
+    </marker>
+  </defs>
+  <rect class="bg" width="1200" height="760"/>
+  <text x="70" y="70" class="h1">未来投资美股渠道：合规清晰度 vs 产品自由度</text>
+  <text x="70" y="105" class="body">越往右越接近自由交易美股单股，越往上合规边界越清晰。</text>
+
+  <line x1="130" y1="630" x2="1065" y2="630" class="axis"/>
+  <line x1="130" y1="630" x2="130" y2="150" class="axis"/>
+  <text x="800" y="680" class="label">产品自由度更高</text>
+  <text x="43" y="180" class="label" transform="rotate(-90 43 180)">合规清晰度更高</text>
+
+  <line x1="130" y1="510" x2="1040" y2="510" class="grid"/>
+  <line x1="130" y1="390" x2="1040" y2="390" class="grid"/>
+  <line x1="130" y1="270" x2="1040" y2="270" class="grid"/>
+  <line x1="360" y1="150" x2="360" y2="630" class="grid"/>
+  <line x1="590" y1="150" x2="590" y2="630" class="grid"/>
+  <line x1="820" y1="150" x2="820" y2="630" class="grid"/>
+
+  <circle cx="300" cy="250" r="72" class="bubble safe"/>
+  <text x="300" y="242" text-anchor="middle" class="label" fill="#fff">QDII基金</text>
+  <text x="300" y="270" text-anchor="middle" class="tiny" fill="#fff">美股指数配置</text>
+
+  <circle cx="430" cy="300" r="62" class="bubble safe"/>
+  <text x="430" y="293" text-anchor="middle" class="label" fill="#fff">境内ETF</text>
+  <text x="430" y="319" text-anchor="middle" class="tiny" fill="#fff">间接持有</text>
+
+  <circle cx="345" cy="410" r="62" class="bubble safe"/>
+  <text x="345" y="403" text-anchor="middle" class="label" fill="#fff">港股通</text>
+  <text x="345" y="429" text-anchor="middle" class="tiny" fill="#fff">港股替代</text>
+
+  <circle cx="515" cy="435" r="68" class="bubble safe"/>
+  <text x="515" y="427" text-anchor="middle" class="label" fill="#fff">跨境理财通</text>
+  <text x="515" y="455" text-anchor="middle" class="tiny" fill="#fff">合资格产品</text>
+
+  <circle cx="705" cy="315" r="76" class="bubble watch"/>
+  <text x="705" y="306" text-anchor="middle" class="label" fill="#fff">真实境外居住</text>
+  <text x="705" y="334" text-anchor="middle" class="tiny" fill="#fff">当地合规开户</text>
+
+  <circle cx="795" cy="420" r="74" class="bubble watch"/>
+  <text x="795" y="412" text-anchor="middle" class="label" fill="#fff">代币化证券</text>
+  <text x="795" y="440" text-anchor="middle" class="tiny" fill="#fff">只作观察</text>
+
+  <circle cx="890" cy="545" r="78" class="bubble risk"/>
+  <text x="890" y="536" text-anchor="middle" class="label" fill="#fff">远程境外券商</text>
+  <text x="890" y="564" text-anchor="middle" class="tiny" fill="#fff">本次整治核心</text>
+
+  <circle cx="995" cy="570" r="68" class="bubble risk"/>
+  <text x="995" y="562" text-anchor="middle" class="label" fill="#fff">链上合成美股</text>
+  <text x="995" y="589" text-anchor="middle" class="tiny" fill="#fff">高风险敞口</text>
+
+  <rect x="120" y="700" width="22" height="22" class="safe"/><text x="152" y="718" class="tiny">合规边界较清晰</text>
+  <rect x="340" y="700" width="22" height="22" class="watch"/><text x="372" y="718" class="tiny">取决于身份、产品和销售规则</text>
+  <rect x="690" y="700" width="22" height="22" class="risk"/><text x="722" y="718" class="tiny">高风险或不适合作为合规替代</text>
+</svg>

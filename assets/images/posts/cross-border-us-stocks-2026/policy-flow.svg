@@ -1,0 +1,73 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="680" viewBox="0 0 1200 680" role="img" aria-labelledby="title desc">
+  <title id="title">2026年跨境券商整治政策影响流程图</title>
+  <desc id="desc">展示境外券商跨境展业被整治后，存量大陆投资者进入只出不进状态，并转向合规渠道。</desc>
+  <defs>
+    <marker id="arrow" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#3f4b5f"/>
+    </marker>
+    <style>
+      .bg { fill: #f7f5ef; }
+      .panel { fill: #ffffff; stroke: #d7d0c3; stroke-width: 2; rx: 18; }
+      .panel2 { fill: #eef6f2; stroke: #9fc7b3; stroke-width: 2; rx: 18; }
+      .risk { fill: #fff0ea; stroke: #d99075; stroke-width: 2; rx: 18; }
+      .dark { fill: #253044; }
+      .muted { fill: #5e6878; }
+      .green { fill: #1f6f55; }
+      .red { fill: #a64a35; }
+      .line { stroke: #3f4b5f; stroke-width: 3; fill: none; marker-end: url(#arrow); }
+      .dash { stroke: #a64a35; stroke-width: 3; fill: none; stroke-dasharray: 10 8; marker-end: url(#arrow); }
+      text { font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", sans-serif; }
+      .h1 { font-size: 34px; font-weight: 700; }
+      .h2 { font-size: 23px; font-weight: 700; }
+      .body { font-size: 19px; }
+      .small { font-size: 16px; }
+    </style>
+  </defs>
+  <rect class="bg" width="1200" height="680"/>
+  <text x="70" y="70" class="h1 dark">跨境互联网券商整治后的资金与交易路径</text>
+  <text x="70" y="105" class="body muted">核心变化：境外机构不能在境内继续提供开户、买入、入金、指令传递等非法跨境服务。</text>
+
+  <rect x="70" y="155" width="250" height="145" class="panel"/>
+  <text x="95" y="200" class="h2 dark">过去常见路径</text>
+  <text x="95" y="238" class="body muted">大陆身份</text>
+  <text x="95" y="268" class="body muted">香港银行卡</text>
+  <text x="95" y="298" class="body muted">境外券商APP交易</text>
+
+  <rect x="455" y="155" width="290" height="145" class="risk"/>
+  <text x="480" y="200" class="h2 red">2026整治口径</text>
+  <text x="480" y="238" class="body muted">禁止境内招揽和开户</text>
+  <text x="480" y="268" class="body muted">禁止买入和转入资金</text>
+  <text x="480" y="298" class="body muted">清理非法存量业务</text>
+
+  <rect x="875" y="155" width="255" height="145" class="panel2"/>
+  <text x="900" y="200" class="h2 green">存量账户状态</text>
+  <text x="900" y="238" class="body muted">只允许单向卖出</text>
+  <text x="900" y="268" class="body muted">资金可按流程转出</text>
+  <text x="900" y="298" class="body muted">不鼓励继续扩大交易</text>
+
+  <path d="M320 228 L445 228" class="line"/>
+  <path d="M745 228 L865 228" class="line"/>
+
+  <rect x="155" y="420" width="250" height="145" class="panel2"/>
+  <text x="180" y="463" class="h2 green">合规替代</text>
+  <text x="180" y="500" class="body muted">QDII基金 / ETF</text>
+  <text x="180" y="530" class="body muted">港股通</text>
+  <text x="180" y="560" class="body muted">跨境理财通</text>
+
+  <rect x="475" y="420" width="250" height="145" class="panel"/>
+  <text x="500" y="463" class="h2 dark">长期观察</text>
+  <text x="500" y="500" class="body muted">合规代币化证券</text>
+  <text x="500" y="530" class="body muted">互联互通扩容</text>
+  <text x="500" y="560" class="body muted">个人境外投资试点</text>
+
+  <rect x="795" y="420" width="250" height="145" class="risk"/>
+  <text x="820" y="463" class="h2 red">高风险绕路</text>
+  <text x="820" y="500" class="body muted">包装材料开户</text>
+  <text x="820" y="530" class="body muted">代持账户</text>
+  <text x="820" y="560" class="body muted">链上合成美股</text>
+
+  <path d="M1000 315 C970 370 895 395 820 430" class="dash"/>
+  <path d="M600 315 L600 410" class="line"/>
+  <path d="M455 492 L415 492" class="line"/>
+  <text x="70" y="635" class="small muted">注：示意图仅用于解释监管逻辑，不构成法律、税务或投资建议。</text>
+</svg>

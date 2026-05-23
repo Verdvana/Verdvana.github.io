@@ -1,0 +1,57 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="640" viewBox="0 0 1200 640" role="img" aria-labelledby="title desc">
+  <title id="title">CRS涉税信息交换示意图</title>
+  <desc id="desc">展示境外金融机构识别税收居民身份后，将账户信息报送当地税务机关，再与税收居民地税务机关交换。</desc>
+  <defs>
+    <marker id="arrow" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="8" markerHeight="8" orient="auto">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#47546a"/>
+    </marker>
+    <style>
+      text { font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", sans-serif; }
+      .bg { fill: #f7f4ee; }
+      .box { fill: #ffffff; stroke: #d6ccbd; stroke-width: 2; rx: 18; }
+      .tax { fill: #eef6f2; stroke: #9bc4b0; stroke-width: 2; rx: 18; }
+      .warn { fill: #fff0ea; stroke: #d99075; stroke-width: 2; rx: 18; }
+      .line { stroke: #47546a; stroke-width: 3; fill: none; marker-end: url(#arrow); }
+      .h1 { font-size: 34px; font-weight: 700; fill: #253044; }
+      .h2 { font-size: 22px; font-weight: 700; fill: #253044; }
+      .body { font-size: 18px; fill: #5e6878; }
+      .small { font-size: 15px; fill: #5e6878; }
+      .red { fill: #a64a35; }
+    </style>
+  </defs>
+  <rect class="bg" width="1200" height="640"/>
+  <text x="70" y="70" class="h1">CRS不是“能不能买美股”的通道，而是税务透明机制</text>
+  <text x="70" y="105" class="body">重点不是寻找不可见账户，而是如实声明税收居民身份、保存记录并履行申报义务。</text>
+
+  <rect x="70" y="170" width="245" height="145" class="box"/>
+  <text x="95" y="213" class="h2">投资者</text>
+  <text x="95" y="250" class="body">填写税收居民声明</text>
+  <text x="95" y="280" class="body">提供地址和TIN</text>
+
+  <rect x="400" y="170" width="250" height="145" class="box"/>
+  <text x="425" y="213" class="h2">境外金融机构</text>
+  <text x="425" y="250" class="body">KYC和尽职调查</text>
+  <text x="425" y="280" class="body">识别可报告账户</text>
+
+  <rect x="735" y="170" width="250" height="145" class="tax"/>
+  <text x="760" y="213" class="h2">账户所在地税务机关</text>
+  <text x="760" y="250" class="body">接收账户信息</text>
+  <text x="760" y="280" class="body">按规则交换</text>
+
+  <rect x="455" y="420" width="290" height="145" class="tax"/>
+  <text x="480" y="463" class="h2">税收居民地税务机关</text>
+  <text x="480" y="500" class="body">接收交换信息</text>
+  <text x="480" y="530" class="body">与申报情况交叉核验</text>
+
+  <rect x="835" y="420" width="280" height="145" class="warn"/>
+  <text x="860" y="463" class="h2 red">高风险做法</text>
+  <text x="860" y="500" class="body">虚假税务居民身份</text>
+  <text x="860" y="530" class="body">代持、拆分、空壳结构</text>
+
+  <path d="M315 242 L390 242" class="line"/>
+  <path d="M650 242 L725 242" class="line"/>
+  <path d="M860 318 C830 375 740 408 690 420" class="line"/>
+  <path d="M745 492 L825 492" class="line"/>
+
+  <text x="70" y="610" class="small">常见交换信息包括姓名、地址、税收居民身份、纳税人识别号、账户号码、账户余额或价值，以及部分账户收入信息。</text>
+</svg>
