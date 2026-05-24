@@ -15,7 +15,6 @@
 <link href="{{ '/static/img/avatar-icon.png' | relative_url }}" rel="icon" type="image/png"/>
 <link href="{{ '/static/img/avatar-icon.png' | relative_url }}" rel="apple-touch-icon"/>
 <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" referrerpolicy="no-referrer" rel="stylesheet"/>
-<link href="https://cdn.jsdelivr.net/npm/aplayer/dist/APlayer.min.css" rel="stylesheet"/>
 <link href="{{ '/assets/css/modern-theme.css' | relative_url }}" rel="stylesheet"/>
 {% if page.extra_css %}
   {% for css in page.extra_css %}
@@ -34,7 +33,6 @@
 {% elsif page.layout == 'post' %}
 <link href="{{ '/assets/css/post.css' | relative_url }}" rel="stylesheet"/>
 {% endif %}
-<script defer src="https://cdn.jsdelivr.net/npm/aplayer/dist/APlayer.min.js"></script>
 {% if page.post_assets or page.layout == 'post' %}
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex/dist/katex.min.css"/>
 <script src="https://cdn.jsdelivr.net/npm/katex/dist/katex.min.js" defer></script>

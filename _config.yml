@@ -235,43 +235,72 @@ jekyll-theme-WuK: # 用了wu-kan的主题，自定义样式都在这个命名空
           </div>
         - | # 运行时间
           <div>
-            <i class="fas fa-cog fa-spin fa-fw"></i>
+            <i class="fas fa-clock fa-fw"></i>
             <span id="run_time_day">
-              <i class="fas fa-spinner fa-pulse"></i>
+              -
             </span>天
             <span id="run_time_hour">
-              <i class="fas fa-spinner fa-pulse"></i>
+              -
             </span>时
             <span id="run_time_minute">
-              <i class="fas fa-spinner fa-pulse"></i>
+              -
             </span>分
             <span id="run_time_second">
-              <i class="fas fa-spinner fa-pulse"></i>
+              -
             </span>秒
             <script>
-              setInterval(function (BirthDay) {
+              (function (BirthDay) {
                 function setzero(i) {
                   if (i < 10) return "0" + i;
                   return i;
                 }
+                var day = document.getElementById("run_time_day");
+                var hour = document.getElementById("run_time_hour");
+                var minute = document.getElementById("run_time_minute");
+                var second = document.getElementById("run_time_second");
+                if (!day || !hour || !minute || !second) return;
+
                 BirthDay = new Date(BirthDay);
-                today = new Date();
-                timeold = (today.getTime() - BirthDay.getTime());
-                sectimeold = timeold / 1000;
-                secondsold = Math.floor(sectimeold);
-                msPerDay = 24 * 60 * 60 * 1000;
-                e_daysold = timeold / msPerDay;
-                daysold = Math.floor(e_daysold);
-                e_hrsold = (e_daysold - daysold) * 24;
-                hrsold = Math.floor(e_hrsold);
-                e_minsold = (e_hrsold - hrsold) * 60;
-                minsold = Math.floor((e_hrsold - hrsold) * 60);
-                seconds = Math.floor((e_minsold - minsold) * 60);
-                document.getElementById("run_time_day").innerHTML = daysold;
-                document.getElementById("run_time_hour").innerHTML = setzero(hrsold);
-                document.getElementById("run_time_minute").innerHTML = setzero(minsold);
-                document.getElementById("run_time_second").innerHTML = setzero(seconds);
-              }, 1000, "10/04/2018 11:03:56") // 这是我第一篇CSDN博客的时间
+                function renderRunTime() {
+                  var today = new Date();
+                  var timeold = today.getTime() - BirthDay.getTime();
+                  var msPerDay = 24 * 60 * 60 * 1000;
+                  var e_daysold = timeold / msPerDay;
+                  var daysold = Math.floor(e_daysold);
+                  var e_hrsold = (e_daysold - daysold) * 24;
+                  var hrsold = Math.floor(e_hrsold);
+                  var e_minsold = (e_hrsold - hrsold) * 60;
+                  var minsold = Math.floor(e_minsold);
+                  var seconds = Math.floor((e_minsold - minsold) * 60);
+                  day.innerHTML = daysold;
+                  hour.innerHTML = setzero(hrsold);
+                  minute.innerHTML = setzero(minsold);
+                  second.innerHTML = setzero(seconds);
+                }
+
+                var timerId = null;
+                function startRunTime() {
+                  if (timerId) return;
+                  renderRunTime();
+                  timerId = setInterval(renderRunTime, 1000);
+                }
+                function stopRunTime() {
+                  if (!timerId) return;
+                  clearInterval(timerId);
+                  timerId = null;
+                }
+
+                var host = day.parentElement;
+                if ("IntersectionObserver" in window && host) {
+                  var observer = new IntersectionObserver(function (entries) {
+                    if (entries[0] && entries[0].isIntersecting) startRunTime();
+                    else stopRunTime();
+                  });
+                  observer.observe(host);
+                } else {
+                  startRunTime();
+                }
+              }("10/04/2018 11:03:56")) // 这是我第一篇CSDN博客的时间
             </script>
           </div>
         - | # 不蒜子页面统计
@@ -279,19 +308,19 @@ jekyll-theme-WuK: # 用了wu-kan的主题，自定义样式都在这个命名空
             <div>
               <i class="fas fa-eye fa-fw"></i>
               <span id="busuanzi_value_page_pv">
-                <i class="fas fa-spinner fa-pulse"></i>
+                -
               </span>次
             </div>
             <div>
               <i class="fas fa-paw fa-fw"></i>
               <span id="busuanzi_value_site_pv">
-                <i class="fas fa-spinner fa-pulse"></i>
+                -
               </span>枚
             </div>
             <div>
               <i class="fas fa-user-friends fa-fw"></i>
               <span id="busuanzi_value_site_uv">
-                <i class="fas fa-spinner fa-pulse"></i>
+                -
               </span>人
             </div>
             <script

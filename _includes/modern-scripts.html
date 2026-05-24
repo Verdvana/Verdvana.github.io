@@ -10,6 +10,10 @@
 
       pageLoaded = true;
       document.body.classList.add('is-loaded');
+
+      window.setTimeout(function () {
+        document.body.classList.add('loader-removed');
+      }, 650);
     }
 
     window.addEventListener('load', function () {
@@ -53,29 +57,6 @@
   }());
 
   window.addEventListener('DOMContentLoaded', function() {
-    if (window.APlayer && document.getElementById('aplayer')) {
-      new APlayer({
-        container: document.getElementById('aplayer'),
-        fixed: true,
-        mini: true,
-        autoplay: false,
-        theme: '#0071e3',
-        loop: 'all',
-        order: 'list',
-        preload: 'metadata',
-        volume: 0.5,
-        mutex: true,
-        listFolded: true,
-        audio: [{
-          name: 'BGM',
-          artist: 'Verdvana',
-          url: '{{ "/static/music/bgm.mp3" | relative_url }}',
-          cover: '{{ "/static/music/bgm.jpg" | relative_url }}',
-          theme: '#0071e3'
-        }]
-      });
-    }
-
     var backButton = document.getElementById('fabBack');
     if (backButton) {
       backButton.addEventListener('click', function () {
@@ -109,7 +90,7 @@
     }
   }
 
-  setInterval(function() {
+  (function() {
     function setzero(i) {
       return (i < 10) ? "0" + i : i;
     }
@@ -122,18 +103,51 @@
       return;
     }
 
-    var birthDay = new Date("10/04/2018 11:03:56");
-    var today = new Date();
-    var timeOld = today.getTime() - birthDay.getTime();
-    var msPerDay = 24 * 60 * 60 * 1000;
-    var daysOld = Math.floor(timeOld / msPerDay);
-    var hrsOld = Math.floor((timeOld % msPerDay) / (60 * 60 * 1000));
-    var minsOld = Math.floor((timeOld % (60 * 60 * 1000)) / (60 * 1000));
-    var secondsOld = Math.floor((timeOld % (60 * 1000)) / 1000);
+    function renderRunTime() {
+      var birthDay = new Date("10/04/2018 11:03:56");
+      var today = new Date();
+      var timeOld = today.getTime() - birthDay.getTime();
+      var msPerDay = 24 * 60 * 60 * 1000;
+      var daysOld = Math.floor(timeOld / msPerDay);
+      var hrsOld = Math.floor((timeOld % msPerDay) / (60 * 60 * 1000));
+      var minsOld = Math.floor((timeOld % (60 * 60 * 1000)) / (60 * 1000));
+      var secondsOld = Math.floor((timeOld % (60 * 1000)) / 1000);
 
-    day.innerHTML = daysOld;
-    hour.innerHTML = setzero(hrsOld);
-    minute.innerHTML = setzero(minsOld);
-    second.innerHTML = setzero(secondsOld);
-  }, 1000);
+      day.innerHTML = daysOld;
+      hour.innerHTML = setzero(hrsOld);
+      minute.innerHTML = setzero(minsOld);
+      second.innerHTML = setzero(secondsOld);
+    }
+
+    var timerId = null;
+    function startRunTime() {
+      if (timerId) {
+        return;
+      }
+      renderRunTime();
+      timerId = setInterval(renderRunTime, 1000);
+    }
+
+    function stopRunTime() {
+      if (!timerId) {
+        return;
+      }
+      clearInterval(timerId);
+      timerId = null;
+    }
+
+    var uptimeStats = document.getElementById('uptime-stats');
+    if ('IntersectionObserver' in window && uptimeStats) {
+      var observer = new IntersectionObserver(function (entries) {
+        if (entries[0] && entries[0].isIntersecting) {
+          startRunTime();
+        } else {
+          stopRunTime();
+        }
+      });
+      observer.observe(uptimeStats);
+    } else {
+      startRunTime();
+    }
+  }());
 </script>

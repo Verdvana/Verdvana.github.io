@@ -47,8 +47,6 @@
                 linear-gradient(180deg, rgba(10, 14, 22, 0.92), rgba(0, 0, 0, 0.78)),
                 rgba(255, 255, 255, 0.03);
             border-right: 1px solid var(--border-color);
-            backdrop-filter: blur(22px);
-            -webkit-backdrop-filter: blur(22px);
             z-index: 10;
         }
 
@@ -181,9 +179,7 @@
         }
 
         .card {
-            background: var(--card-bg);
-            backdrop-filter: blur(20px);
-            -webkit-backdrop-filter: blur(20px);
+            background: rgba(28, 28, 30, 0.86);
             border: 1px solid var(--border-color);
             border-radius: 16px;
             padding: 24px;
@@ -364,7 +360,6 @@
             position: fixed;
             inset: 0;
             background: rgba(0, 0, 0, 0.8);
-            backdrop-filter: blur(10px);
             z-index: 2000;
             align-items: center;
             justify-content: center;
@@ -385,7 +380,6 @@
             position: fixed;
             inset: 0;
             background: rgba(0, 0, 0, 0.95);
-            backdrop-filter: blur(15px);
             z-index: 3000;
             cursor: zoom-out;
             align-items: center;

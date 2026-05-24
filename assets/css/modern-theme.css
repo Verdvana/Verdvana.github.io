@@ -59,7 +59,6 @@ body.is-leaving {
   border-radius: 50%;
   border: 1px solid var(--border-color);
   object-fit: cover;
-  animation: loaderFloat 1.6s ease-in-out infinite;
 }
 
 .page-loader-line {
@@ -75,7 +74,6 @@ body.is-leaving {
   height: 100%;
   content: "";
   background: rgba(255, 255, 255, 0.82);
-  animation: loaderLine 1.2s ease-in-out infinite;
 }
 
 body.is-loaded .page-loader {
@@ -84,26 +82,8 @@ body.is-loaded .page-loader {
   pointer-events: none;
 }
 
-@keyframes loaderFloat {
-  0%, 100% {
-    transform: translateY(0) scale(1);
-    opacity: 0.82;
-  }
-
-  50% {
-    transform: translateY(-4px) scale(1.04);
-    opacity: 1;
-  }
-}
-
-@keyframes loaderLine {
-  0% {
-    transform: translateX(-100%);
-  }
-
-  100% {
-    transform: translateX(240%);
-  }
+body.loader-removed .page-loader {
+  display: none;
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -183,9 +163,7 @@ body.is-loaded .page-loader {
   justify-content: space-between;
   align-items: center;
   z-index: 1000;
-  background: rgba(0, 0, 0, 0.7);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
+  background: rgba(0, 0, 0, 0.88);
   border-bottom: 1px solid var(--border-color);
 }
 
@@ -408,8 +386,6 @@ body.is-loaded .page-loader {
   height: 100%;
   background: rgba(0, 0, 0, 0.9);
   z-index: 2000;
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
   justify-content: center;
   align-items: center;
   cursor: pointer;
