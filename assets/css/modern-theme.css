@@ -167,18 +167,9 @@ body.is-loaded .page-loader {
   z-index: -1;
   pointer-events: none;
   background:
-    radial-gradient(circle at 15% 50%, rgba(0, 113, 227, 0.25), transparent 60%),
-    radial-gradient(circle at 85% 30%, rgba(100, 50, 255, 0.2), transparent 60%),
-    radial-gradient(circle at 50% 80%, rgba(0, 220, 150, 0.15), transparent 60%);
-  background-size: 150% 150%;
-  filter: blur(80px);
-  animation: ambientFlow 4s ease-in-out infinite alternate;
-}
-
-@keyframes ambientFlow {
-  0% { background-position: 0% 0%; }
-  50% { background-position: 100% 50%; }
-  100% { background-position: 50% 100%; }
+    radial-gradient(circle at 12% 22%, rgba(0, 113, 227, 0.16), transparent 34rem),
+    radial-gradient(circle at 86% 18%, rgba(100, 50, 255, 0.12), transparent 32rem),
+    radial-gradient(circle at 55% 84%, rgba(0, 220, 150, 0.1), transparent 30rem);
 }
 
 .site-nav {
