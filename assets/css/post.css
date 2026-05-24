@@ -88,7 +88,7 @@
     }
 
     .post-content {
-        grid-column: 1;
+        grid-column: 2;
         width: 100%;
         max-width: 1210px;
         justify-self: center;
@@ -100,13 +100,13 @@
 
     /* TOC Styling */
     .post-toc-aside {
-        grid-column: 2;
+        grid-column: 1;
         width: 250px;
         position: sticky;
         top: 120px;
         align-self: flex-start;
         display: block;
-        justify-self: end;
+        justify-self: start;
     }
 
     .toc-title {
