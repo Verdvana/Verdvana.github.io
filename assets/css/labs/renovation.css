@@ -38,6 +38,77 @@
             min-height: 100vh;
         }
 
+        .app-container[hidden],
+        .password-gate[hidden] {
+            display: none;
+        }
+
+        .password-gate {
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 32px 20px;
+        }
+
+        .password-card {
+            width: min(100%, 420px);
+            padding: 34px;
+            background: rgba(28, 28, 30, 0.86);
+            border: 1px solid var(--border-color);
+            border-radius: 16px;
+            box-shadow: 0 24px 80px rgba(0, 0, 0, 0.42);
+        }
+
+        .password-kicker {
+            margin-bottom: 8px;
+            color: var(--accent-color);
+            font-size: 12px;
+            font-weight: 700;
+            letter-spacing: 1.6px;
+            text-transform: uppercase;
+        }
+
+        .password-card h1 {
+            margin-bottom: 10px;
+        }
+
+        .password-card p {
+            margin-bottom: 24px;
+            color: var(--secondary-text);
+            font-size: 14px;
+        }
+
+        .password-row {
+            display: flex;
+            gap: 10px;
+        }
+
+        .password-row input {
+            min-width: 0;
+            flex: 1;
+            height: 42px;
+            padding: 0 14px;
+            color: var(--text-color);
+            background: rgba(255, 255, 255, 0.06);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            outline: none;
+            font-size: 14px;
+        }
+
+        .password-row input:focus {
+            border-color: rgba(66, 245, 255, 0.58);
+            box-shadow: 0 0 0 3px rgba(0, 113, 227, 0.16);
+        }
+
+        .password-error {
+            min-height: 20px;
+            margin-top: 12px;
+            color: #ff453a;
+            font-size: 13px;
+        }
+
         .lab-page aside {
             position: sticky;
             top: 72px;
@@ -457,5 +528,13 @@
 
             .grid {
                 grid-template-columns: 1fr;
+            }
+
+            .password-card {
+                padding: 28px 22px;
+            }
+
+            .password-row {
+                flex-direction: column;
             }
         }
