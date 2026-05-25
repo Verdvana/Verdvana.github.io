@@ -6,28 +6,13 @@
         flex-direction: column;
         justify-content: center;
         padding: 80px 5% 40px;
-        background-image:
-            linear-gradient(180deg, rgba(0,0,0,0.52), rgba(0,0,0,0.88)),
-            radial-gradient(ellipse at 18% 30%, rgba(0, 113, 227, 0.2), transparent 34rem),
-            radial-gradient(ellipse at 84% 20%, rgba(124, 60, 255, 0.13), transparent 30rem),
-            url('/static/img/wallpaper.jpg');
+        background-image: linear-gradient(to bottom, rgba(0,0,0,0.5), rgba(0,0,0,1)), url('/static/img/wallpaper.jpg');
         background-size: cover;
         background-position: center;
         overflow: hidden;
     }
 
-    header.post-hero::after {
-        content: "";
-        position: absolute;
-        inset: auto 0 0;
-        height: 44%;
-        background: linear-gradient(180deg, transparent, rgba(0, 0, 0, 0.62));
-        pointer-events: none;
-    }
-
     .hero-inner {
-        position: relative;
-        z-index: 1;
         max-width: 1800px;
         margin: 0 auto;
         width: 100%;
@@ -95,7 +80,6 @@
         width: 100%;
         padding: 60px 5% 120px;
         gap: 60px;
-        background: var(--site-section-sheen);
     }
 
     .post-layout-left {

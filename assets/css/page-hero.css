@@ -5,28 +5,10 @@
   flex-direction: column;
   justify-content: center;
   padding: 0 10%;
-  background-image:
-    linear-gradient(180deg, rgba(0,0,0,0.48), rgba(0,0,0,0.86)),
-    radial-gradient(ellipse at 20% 30%, rgba(0, 113, 227, 0.2), transparent 34rem),
-    radial-gradient(ellipse at 86% 20%, rgba(124, 60, 255, 0.14), transparent 30rem),
-    url('/static/img/wallpaper.jpg');
+  background-image: linear-gradient(to bottom, rgba(0,0,0,0.5), rgba(0,0,0,1)), url('/static/img/wallpaper.jpg');
   background-size: cover;
   background-position: center;
   overflow: hidden;
-}
-
-.site-page-hero::after {
-  content: "";
-  position: absolute;
-  inset: auto 0 0;
-  height: 42%;
-  background: linear-gradient(180deg, transparent, rgba(0, 0, 0, 0.58));
-  pointer-events: none;
-}
-
-.site-page-hero > * {
-  position: relative;
-  z-index: 1;
 }
 
 .site-page-hero h1 {

@@ -16,8 +16,7 @@
 
         body {
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-            background: var(--site-bg-layers);
-            background-attachment: fixed;
+            background-color: var(--bg-color);
             color: var(--text-color);
             line-height: 1.6;
             -webkit-font-smoothing: antialiased;
@@ -89,7 +88,6 @@
             display: flex;
             border-bottom: 1px solid var(--border-color);
             min-height: 600px;
-            background: var(--site-section-sheen);
         }
 
         .entry-block {
@@ -230,7 +228,6 @@
         section {
             padding: 120px 10%;
             border-bottom: 1px solid var(--border-color);
-            background: linear-gradient(180deg, rgba(255, 255, 255, 0.018), rgba(255, 255, 255, 0));
         }
 
         section h2 {
