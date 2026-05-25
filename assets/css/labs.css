@@ -2,6 +2,7 @@
     section.labs {
         padding: 40px 10% 80px;
         min-height: 60vh;
+        background: var(--site-section-sheen);
     }
 
     .archive-container {

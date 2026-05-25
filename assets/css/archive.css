@@ -1,5 +1,5 @@
 /* Archive Section */
-    section.archive { padding: 40px 10% 80px; min-height: 60vh; }
+    section.archive { padding: 40px 10% 80px; min-height: 60vh; background: var(--site-section-sheen); }
     .archive-container { max-width: 1200px; margin: 0 auto; }
     .archive-year-group { margin-bottom: 60px; }
     .archive-controls { margin-bottom: 40px; display: flex; flex-direction: column; gap: 20px; }

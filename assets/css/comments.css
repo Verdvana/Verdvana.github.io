@@ -2,6 +2,7 @@
     section.comments {
         padding: 40px 10% 80px;
         min-height: 60vh;
+        background: var(--site-section-sheen);
     }
 
     .archive-container {
@@ -10,10 +11,14 @@
     }
 
     .comment-card {
-        background: rgba(255, 255, 255, 0.055);
+        background:
+            linear-gradient(135deg, rgba(255, 255, 255, 0.072), rgba(255, 255, 255, 0.032)),
+            radial-gradient(ellipse at 14% 0%, rgba(0, 113, 227, 0.1), transparent 26rem),
+            rgba(255, 255, 255, 0.04);
         padding: 40px;
         border-radius: 20px;
         border: 1px solid var(--border-color);
+        box-shadow: 0 24px 80px rgba(0, 0, 0, 0.28);
     }
 
     /* Valine Custom Styling */
