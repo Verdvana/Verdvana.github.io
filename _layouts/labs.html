@@ -26,6 +26,11 @@ layout: modern
                     <a class="labs-card" href="{{ href | relative_url }}">
                         <div class="labs-thumb-wrapper">
                             {% if meta.thumb %}<img class="labs-thumb" src="{{ meta.thumb | relative_url }}" alt="{{ meta.title }}">{% else %}<div class="labs-thumb--empty">No preview</div>{% endif %}
+                            {% if meta.locked %}
+                                <span class="labs-lock-badge" aria-label="Password protected" title="Password protected">
+                                    <i class="fas fa-lock" aria-hidden="true"></i>
+                                </span>
+                            {% endif %}
                         </div>
                         <div class="labs-body">
                             <h3 class="labs-title">{{ meta.title | default: meta.slug }}</h3>
