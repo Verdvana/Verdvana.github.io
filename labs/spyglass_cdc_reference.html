@@ -1,0 +1,2681 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SpyGlass CDC Rules Reference | Interactive Dashboard</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{
+  --bg-primary:linear-gradient(135deg,#060614 0%,#0d0d2b 50%,#0a1628 100%);
+  --card-bg:rgba(255,255,255,0.035);
+  --card-bg-hover:rgba(255,255,255,0.06);
+  --card-border:rgba(255,255,255,0.07);
+  --card-border-hover:rgba(0,212,255,0.25);
+  --accent:#00d4ff;--accent2:#a78bfa;
+  --error:#ff4757;--success:#2ed573;--warn:#ffa502;--info:#70a1ff;
+  --text-primary:#eaeaea;--text-secondary:#8a8aaa;
+  --sidebar-w:290px;--nav-h:58px;
+  --font:'Segoe UI',-apple-system,BlinkMacSystemFont,system-ui,sans-serif;
+  --mono:'Fira Code','Cascadia Code','Consolas',monospace;
+  --radius:14px;--radius-sm:8px;
+  --shadow:0 8px 32px rgba(0,0,0,0.4);
+  --shadow-card:0 4px 24px rgba(0,0,0,0.3);
+}
+html{scroll-behavior:smooth}
+body{font-family:var(--font);background:var(--bg-primary);background-attachment:fixed;color:var(--text-primary);min-height:100vh;overflow-x:hidden}
+
+/* ── Scrollbar ── */
+::-webkit-scrollbar{width:5px;height:5px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:rgba(0,212,255,0.2);border-radius:3px}
+::-webkit-scrollbar-thumb:hover{background:rgba(0,212,255,0.4)}
+
+/* ── Navbar ── */
+.navbar{
+  position:fixed;top:0;left:0;right:0;height:var(--nav-h);
+  background:rgba(6,6,20,0.88);
+  backdrop-filter:blur(24px) saturate(180%);
+  -webkit-backdrop-filter:blur(24px) saturate(180%);
+  border-bottom:1px solid rgba(0,212,255,0.1);
+  display:flex;align-items:center;justify-content:space-between;
+  padding:0 28px;z-index:1000;
+  box-shadow:0 2px 20px rgba(0,0,0,0.5);
+}
+.navbar .logo{
+  font-size:17px;font-weight:700;letter-spacing:.5px;
+  background:linear-gradient(90deg,var(--accent),var(--accent2));
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;
+}
+.navbar .logo span{
+  background:none;-webkit-text-fill-color:var(--text-primary);
+  font-weight:400;opacity:.85;
+}
+.navbar nav a{
+  color:var(--text-secondary);text-decoration:none;
+  margin-left:24px;font-size:13px;font-weight:500;
+  transition:color .2s;padding:4px 0;
+  border-bottom:2px solid transparent;
+}
+.navbar nav a:hover{color:var(--accent);border-bottom-color:var(--accent)}
+.menu-btn{display:none;background:none;border:none;color:var(--text-primary);font-size:22px;cursor:pointer;padding:4px}
+
+/* ── Sidebar ── */
+.sidebar{
+  position:fixed;top:var(--nav-h);left:0;
+  width:var(--sidebar-w);height:calc(100vh - var(--nav-h));
+  background:rgba(6,6,20,0.96);
+  backdrop-filter:blur(20px);
+  border-right:1px solid rgba(0,212,255,0.08);
+  overflow-y:auto;z-index:900;transition:transform .3s cubic-bezier(.4,0,.2,1);
+}
+.sidebar::-webkit-scrollbar{width:3px}
+.sidebar::-webkit-scrollbar-thumb{background:rgba(0,212,255,0.15);border-radius:2px}
+.sidebar .search-box{
+  padding:14px 16px;position:sticky;top:0;
+  background:rgba(6,6,20,0.99);z-index:1;
+  border-bottom:1px solid var(--card-border);
+}
+.sidebar .search-box input{
+  width:100%;padding:9px 14px 9px 36px;
+  border:1px solid rgba(0,212,255,0.15);border-radius:20px;
+  background:rgba(0,212,255,0.04);color:var(--text-primary);
+  font-size:13px;outline:none;transition:all .2s;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%2300d4ff' stroke-width='2'%3E%3Ccircle cx='11' cy='11' r='8'/%3E%3Cpath d='m21 21-4.35-4.35'/%3E%3C/svg%3E");
+  background-repeat:no-repeat;background-position:12px center;
+}
+.sidebar .search-box input:focus{border-color:var(--accent);background-color:rgba(0,212,255,0.07);box-shadow:0 0 0 3px rgba(0,212,255,0.08)}
+.sidebar .search-box input::placeholder{color:var(--text-secondary)}
+.cat-group{padding:2px 0}
+.cat-title{
+  padding:10px 18px;font-size:11px;font-weight:700;
+  color:var(--accent);text-transform:uppercase;letter-spacing:1.2px;
+  cursor:pointer;display:flex;align-items:center;justify-content:space-between;
+  user-select:none;transition:background .15s;
+}
+.cat-title:hover{background:rgba(0,212,255,0.05)}
+.cat-title .arrow{transition:transform .25s;font-size:9px;opacity:.7}
+.cat-title.collapsed .arrow{transform:rotate(-90deg)}
+.cat-items{overflow:hidden;transition:max-height .3s ease}
+.cat-items.hidden{max-height:0 !important}
+.cat-items a{
+  display:flex;align-items:center;
+  padding:6px 18px 6px 30px;font-size:12.5px;
+  color:var(--text-secondary);text-decoration:none;
+  border-left:2px solid transparent;transition:all .15s;
+  gap:6px;
+}
+.cat-items a:hover{color:var(--text-primary);background:rgba(255,255,255,0.03);border-left-color:rgba(0,212,255,0.4)}
+.cat-items a.active{color:var(--accent);border-left-color:var(--accent);background:rgba(0,212,255,0.06)}
+
+/* ── Main content ── */
+.main{
+  margin-left:var(--sidebar-w);margin-top:var(--nav-h);
+  padding:36px 40px 100px;min-height:calc(100vh - var(--nav-h));
+}
+.page-title{
+  font-size:34px;font-weight:800;margin-bottom:6px;
+  background:linear-gradient(90deg,var(--accent) 0%,var(--accent2) 60%,#f093fb 100%);
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;
+  letter-spacing:-.5px;
+}
+.page-subtitle{color:var(--text-secondary);font-size:14px;margin-bottom:32px;line-height:1.6}
+
+/* ── Stats bar ── */
+.stats-bar{display:flex;gap:14px;margin-bottom:36px;flex-wrap:wrap}
+.stat-card{
+  background:var(--card-bg);
+  border:1px solid var(--card-border);
+  border-radius:var(--radius);
+  padding:18px 24px;flex:1;min-width:130px;text-align:center;
+  position:relative;overflow:hidden;
+  transition:transform .2s,border-color .2s;
+}
+.stat-card::before{
+  content:'';position:absolute;top:0;left:0;right:0;height:2px;
+  background:linear-gradient(90deg,transparent,var(--accent),transparent);
+  opacity:.5;
+}
+.stat-card:hover{transform:translateY(-2px);border-color:rgba(0,212,255,0.2)}
+.stat-card .stat-num{font-size:30px;font-weight:800;line-height:1}
+.stat-card .stat-label{font-size:11px;color:var(--text-secondary);margin-top:6px;letter-spacing:.5px;text-transform:uppercase}
+
+/* ── Category section ── */
+.category-section{margin-bottom:52px}
+.category-header{
+  display:flex;align-items:center;gap:14px;
+  margin-bottom:24px;padding-bottom:14px;
+  border-bottom:1px solid var(--card-border);
+  position:relative;
+}
+.category-header::after{
+  content:'';position:absolute;bottom:-1px;left:0;width:60px;height:2px;
+  background:linear-gradient(90deg,var(--accent),transparent);
+  border-radius:1px;
+}
+.category-header .cat-icon{
+  width:42px;height:42px;border-radius:12px;
+  display:flex;align-items:center;justify-content:center;font-size:20px;
+  flex-shrink:0;
+}
+.category-header h2{font-size:21px;font-weight:700;letter-spacing:-.3px}
+.category-header .cat-count{
+  font-size:11px;color:var(--text-secondary);
+  background:rgba(0,212,255,0.08);
+  padding:3px 12px;border-radius:20px;
+  border:1px solid rgba(0,212,255,0.15);
+  margin-left:auto;white-space:nowrap;
+}
+
+/* ── Rule card ── */
+.rule-card{
+  background:var(--card-bg);
+  border:1px solid var(--card-border);
+  border-radius:var(--radius);
+  margin-bottom:20px;overflow:hidden;
+  transition:border-color .2s,box-shadow .2s,transform .15s;
+  box-shadow:var(--shadow-card);
+}
+.rule-card:hover{
+  border-color:var(--card-border-hover);
+  box-shadow:0 8px 40px rgba(0,212,255,0.08);
+}
+.rule-header{
+  padding:18px 22px;
+  display:flex;align-items:center;justify-content:space-between;
+  flex-wrap:wrap;gap:10px;
+  border-bottom:1px solid var(--card-border);
+  cursor:pointer;user-select:none;
+  transition:background .15s;
+}
+.rule-header:hover{background:rgba(255,255,255,0.02)}
+.rule-header h3{font-size:16px;font-weight:600;display:flex;align-items:center;gap:8px}
+.rule-header h3 code{
+  color:var(--accent);font-family:var(--mono);
+  font-size:14.5px;font-weight:600;
+  background:rgba(0,212,255,0.08);
+  padding:2px 8px;border-radius:6px;
+  border:1px solid rgba(0,212,255,0.15);
+}
+.rule-header .expand-icon{
+  font-size:12px;color:var(--text-secondary);
+  transition:transform .25s;margin-left:4px;
+}
+.rule-body.open .expand-icon{transform:rotate(180deg)}
+
+/* ── Badges ── */
+.badges{display:flex;gap:6px;flex-wrap:wrap}
+.badge{
+  padding:3px 10px;border-radius:20px;
+  font-size:10.5px;font-weight:700;letter-spacing:.6px;
+  text-transform:uppercase;
+}
+.badge.error{background:rgba(255,71,87,0.12);color:var(--error);border:1px solid rgba(255,71,87,0.25)}
+.badge.warning{background:rgba(255,165,2,0.12);color:var(--warn);border:1px solid rgba(255,165,2,0.25)}
+.badge.info{background:rgba(112,161,255,0.12);color:var(--info);border:1px solid rgba(112,161,255,0.25)}
+.badge.goal{
+  background:rgba(0,212,255,0.08);color:var(--accent);
+  border:1px solid rgba(0,212,255,0.2);font-family:var(--mono);
+  font-size:10px;letter-spacing:.3px;
+}
+
+/* ── Rule body / tabs ── */
+.rule-body{display:none;padding:0}
+.rule-body.open{display:block}
+.tab-bar{
+  display:flex;
+  border-bottom:1px solid var(--card-border);
+  background:rgba(0,0,0,0.25);
+  overflow-x:auto;gap:0;
+}
+.tab-bar::-webkit-scrollbar{height:2px}
+.tab-bar button{
+  padding:11px 18px;border:none;background:none;
+  color:var(--text-secondary);font-size:12.5px;font-weight:500;
+  cursor:pointer;white-space:nowrap;
+  border-bottom:2px solid transparent;
+  transition:all .15s;font-family:var(--font);
+  position:relative;
+}
+.tab-bar button:hover{color:var(--text-primary);background:rgba(255,255,255,0.03)}
+.tab-bar button.active{color:var(--accent);border-bottom-color:var(--accent);background:rgba(0,212,255,0.04)}
+.tab-content{display:none;padding:22px}
+.tab-content.active{display:block}
+
+/* ── SVG container ── */
+.svg-container{
+  background:rgba(0,0,0,0.35);
+  border:1px solid rgba(255,255,255,0.05);
+  border-radius:var(--radius-sm);
+  padding:16px;margin:10px 0;
+  overflow-x:auto;text-align:center;
+}
+.svg-container svg{max-width:100%}
+
+/* ── Code block ── */
+.code-block{
+  background:rgba(0,0,0,0.5);
+  border:1px solid rgba(255,255,255,0.07);
+  border-left:3px solid var(--accent);
+  border-radius:var(--radius-sm);
+  padding:16px 20px;margin:10px 0;
+  font-family:var(--mono);font-size:12.5px;
+  line-height:1.75;color:#c8d6e5;
+  overflow-x:auto;white-space:pre-wrap;
+  position:relative;
+}
+.code-block .lang-tag{
+  position:absolute;top:8px;right:12px;
+  font-size:9.5px;color:rgba(0,212,255,0.5);
+  text-transform:uppercase;letter-spacing:1.5px;
+  font-family:var(--mono);
+}
+.code-block .kw{color:#c678dd;font-weight:600}
+.code-block .str{color:#98c379}
+.code-block .cmt{color:#5c6370;font-style:italic}
+.code-block .fn{color:#61afef}
+.code-block .num{color:#d19a66}
+
+/* ── Desc section ── */
+.desc-section{margin:10px 0}
+.desc-section h4{
+  font-size:14px;font-weight:700;margin-bottom:10px;
+  color:var(--accent);display:flex;align-items:center;gap:8px;
+}
+.desc-section h4::before{
+  content:'';width:3px;height:15px;
+  background:linear-gradient(180deg,var(--accent),var(--accent2));
+  border-radius:2px;flex-shrink:0;
+}
+.desc-section p,.desc-section li{
+  font-size:13.5px;line-height:1.85;
+  color:var(--text-secondary);margin-bottom:5px;
+}
+.desc-section ul{padding-left:18px}
+.desc-section li::marker{color:var(--accent);font-size:10px}
+.desc-section .highlight{color:var(--error);font-weight:600}
+.desc-section .success{color:var(--success);font-weight:600}
+.desc-section .tag{
+  display:inline-block;padding:2px 10px;border-radius:20px;
+  font-size:11.5px;font-family:var(--mono);
+}
+.desc-section .tag.err{background:rgba(255,71,87,0.12);color:var(--error);border:1px solid rgba(255,71,87,0.2)}
+
+/* ── Waiver table ── */
+.waiver-table{width:100%;border-collapse:collapse;margin:10px 0;font-size:12.5px}
+.waiver-table th{
+  background:rgba(0,212,255,0.08);color:var(--accent);
+  text-align:left;padding:10px 14px;
+  border:1px solid rgba(0,212,255,0.1);font-weight:600;
+  font-size:12px;letter-spacing:.3px;
+}
+.waiver-table td{
+  padding:9px 14px;border:1px solid var(--card-border);
+  color:var(--text-secondary);vertical-align:top;
+  transition:background .15s;
+}
+.waiver-table tr:hover td{background:rgba(255,255,255,0.025)}
+.waiver-table td code{
+  background:rgba(0,212,255,0.08);color:var(--accent);
+  padding:1px 6px;border-radius:4px;font-family:var(--mono);font-size:11.5px;
+}
+
+/* ── Sync card ── */
+.sync-card{
+  background:var(--card-bg);
+  border:1px solid var(--card-border);
+  border-radius:var(--radius);
+  padding:26px;margin-bottom:20px;
+  transition:border-color .2s;
+}
+.sync-card:hover{border-color:rgba(0,212,255,0.15)}
+.sync-card h3{
+  font-size:17px;margin-bottom:14px;
+  color:var(--accent);font-weight:700;
+  display:flex;align-items:center;gap:8px;
+}
+.sync-grid{display:grid;grid-template-columns:1fr 1fr;gap:18px;margin:14px 0}
+.sync-grid .panel{
+  background:rgba(0,0,0,0.2);border-radius:var(--radius-sm);
+  padding:16px;border:1px solid var(--card-border);
+}
+.sync-grid .panel h4{font-size:13px;color:var(--text-primary);margin-bottom:10px;font-weight:600}
+
+/* ── FAB ── */
+.fab{
+  position:fixed;bottom:28px;right:28px;
+  width:46px;height:46px;border-radius:50%;
+  background:linear-gradient(135deg,var(--accent),var(--accent2));
+  color:#060614;border:none;font-size:18px;font-weight:700;
+  cursor:pointer;
+  box-shadow:0 4px 20px rgba(0,212,255,0.35),0 0 0 0 rgba(0,212,255,0.3);
+  display:flex;align-items:center;justify-content:center;
+  z-index:999;transition:transform .2s,box-shadow .2s;
+}
+.fab:hover{transform:scale(1.1) translateY(-2px);box-shadow:0 8px 30px rgba(0,212,255,0.5)}
+
+/* ── SVG class styles ── */
+.domain-a{fill:rgba(0,132,255,0.1);stroke:#0084ff;stroke-width:1.5}
+.domain-b{fill:rgba(46,213,115,0.1);stroke:#2ed573;stroke-width:1.5}
+.ff-rect{fill:rgba(255,255,255,0.07);stroke:rgba(160,160,184,0.6);stroke-width:1.5;rx:4}
+.ff-text{font-size:11px;fill:var(--text-primary);font-family:var(--font);text-anchor:middle}
+.clk-text{font-size:10px;fill:var(--accent);font-family:monospace}
+.sig-line{stroke:rgba(160,160,184,0.7);stroke-width:1.5;fill:none}
+.err-line{stroke:var(--error);stroke-width:2;fill:none;stroke-dasharray:6,3}
+.ok-line{stroke:var(--success);stroke-width:1.5;fill:none}
+.metastable{fill:rgba(255,71,87,0.18);stroke:var(--error);stroke-width:1;stroke-dasharray:4,2}
+.wave-label{font-size:11px;fill:var(--text-secondary);font-family:monospace}
+.wave-clk{stroke:var(--accent);stroke-width:1.5;fill:none}
+.wave-data{stroke:#ffa502;stroke-width:2;fill:none}
+.wave-ok{stroke:var(--success);stroke-width:2;fill:none}
+.wave-err{stroke:var(--error);stroke-width:2;fill:none}
+
+/* ── Responsive ── */
+@media(max-width:960px){
+  .sidebar{transform:translateX(-100%)}
+  .sidebar.open{transform:translateX(0)}
+  .main{margin-left:0;padding:20px 16px 80px}
+  .menu-btn{display:block}
+  .sync-grid{grid-template-columns:1fr}
+  .stats-bar{gap:10px}
+  .stat-card{min-width:120px;padding:14px 16px}
+}
+@media(max-width:600px){
+  .page-title{font-size:26px}
+  .rule-header{padding:14px 16px}
+  .tab-content{padding:16px}
+}
+</style>
+</head>
+<body>
+
+<div class="navbar">
+  <div style="display:flex;align-items:center;gap:16px">
+    <button class="menu-btn" onclick="toggleSidebar()">☰</button>
+    <div class="logo">SpyGlass <span>CDC Reference</span></div>
+  </div>
+  <nav>
+    <a href="#top">Home</a>
+    <a href="#sync-schemes">同步方案</a>
+    <a href="#methodology">方法学</a>
+    <a href="javascript:void(0)" onclick="expandAll()">展开全部</a>
+  </nav>
+</div>
+<div class="sidebar" id="sidebar"><div class="search-box"><input type="text" id="searchInput" placeholder="🔍 搜索规则..." oninput="filterRules(this.value)"></div><div class="cat-group"><div class="cat-title" onclick="toggleCat(this)">🔓 未同步跨越 <span class="arrow">▼</span></div><div class="cat-items"><a href="#ac_unsync01" onclick="closeSidebarMobile()">Ac_unsync01 单bit未同步</a><a href="#ac_unsync02" onclick="closeSidebarMobile()">Ac_unsync02 多bit未同步</a><a href="#ac_unsync03" onclick="closeSidebarMobile()">Ac_unsync03 多bit共用同步器</a></div></div><div class="cat-group"><div class="cat-title" onclick="toggleCat(this)">⚡ 数据丢失 <span class="arrow">▼</span></div><div class="cat-items"><a href="#ac_cdc01" onclick="closeSidebarMobile()">Ac_cdc01 信号宽度不足</a><a href="#ac_cdc01a" onclick="closeSidebarMobile()">Ac_cdc01a 快到慢丢失</a><a href="#ac_cdc02" onclick="closeSidebarMobile()">Ac_cdc02 慢到快宽度检查</a><a href="#ac_cdc03" onclick="closeSidebarMobile()">Ac_cdc03 多位不完整同步</a><a href="#ac_cdc04" onclick="closeSidebarMobile()">Ac_cdc04 信号多目的域使用</a></div></div><div class="cat-group"><div class="cat-title" onclick="toggleCat(this)">📌 数据保持 <span class="arrow">▼</span></div><div class="cat-items"><a href="#ac_datahold01a" onclick="closeSidebarMobile()">Ac_datahold01a 数据保持</a><a href="#ac_datahold01" onclick="closeSidebarMobile()">Ac_datahold01 数据保持基础</a></div></div><div class="cat-group"><div class="cat-title" onclick="toggleCat(this)">🔀 收敛性问题 <span class="arrow">▼</span></div><div class="cat-items"><a href="#ac_conv01" onclick="closeSidebarMobile()">Ac_conv01 寄存器后收敛</a><a href="#ac_conv02" onclick="closeSidebarMobile()">Ac_conv02 寄存器前收敛</a><a href="#ac_conv03" onclick="closeSidebarMobile()">Ac_conv03 同域同步器收敛</a><a href="#ac_conv04" onclick="closeSidebarMobile()">Ac_conv04 收敛后再次跨域</a></div></div><div class="cat-group"><div class="cat-title" onclick="toggleCat(this)">💥 毛刺问题 <span class="arrow">▼</span></div><div class="cat-items"><a href="#ac_glitch01" onclick="closeSidebarMobile()">Ac_glitch01 CDC组合逻辑</a><a href="#ac_glitch03" onclick="closeSidebarMobile()">Ac_glitch03 再聚合逻辑</a><a href="#ac_glitch02" onclick="closeSidebarMobile()">Ac_glitch02 同步器后组合逻辑</a></div></div><div class="cat-group"><div class="cat-title" onclick="toggleCat(this)">🔄 复位同步 <span class="arrow">▼</span></div><div class="cat-items"><a href="#ar_unsync01" onclick="closeSidebarMobile()">Ar_unsync01 复位未同步</a><a href="#ar_asyncdeassert01" onclick="closeSidebarMobile()">Ar_asyncdeassert01 异步释放</a><a href="#reset_sync01" onclick="closeSidebarMobile()">Reset_sync01 复位组合逻辑</a><a href="#ar_sync01" onclick="closeSidebarMobile()">Ar_sync01 复位同步器结构</a></div></div><div class="cat-group"><div class="cat-title" onclick="toggleCat(this)">🕐 时钟问题 <span class="arrow">▼</span></div><div class="cat-items"><a href="#clock_glitch02" onclick="closeSidebarMobile()">Clock_glitch01 时钟使能毛刺</a><a href="#clock_glitch02" onclick="closeSidebarMobile()">Clock_glitch02 时钟毛刺</a><a href="#clock_converge01" onclick="closeSidebarMobile()">Clock_converge01 时钟收敛</a></div></div><div class="cat-group"><div class="cat-title" onclick="toggleCat(this)">✅ 同步方案参考 <span class="arrow">▼</span></div><div class="cat-items"><a href="#sync_2ff" onclick="closeSidebarMobile()">二级同步器 (2-FF)</a><a href="#sync_pulse" onclick="closeSidebarMobile()">脉冲同步器</a><a href="#sync_mux" onclick="closeSidebarMobile()">MUX同步方案</a><a href="#sync_handshake" onclick="closeSidebarMobile()">握手同步</a><a href="#sync_fifo" onclick="closeSidebarMobile()">异步FIFO</a><a href="#sync_reset" onclick="closeSidebarMobile()">复位同步器</a></div></div></div>
+<div class="main" id="top">
+<h1 class="page-title">SpyGlass CDC 规则参考手册</h1>
+<div style="width:80px;height:3px;background:linear-gradient(90deg,var(--accent),var(--accent2));border-radius:2px;margin-bottom:12px"></div>
+<p class="page-subtitle">全面覆盖 Synopsys VC SpyGlass CDC 验证规则 — 电路拓扑 · 波形动画 · 修复方法 · Waiver 指南</p>
+<div class="stats-bar">
+  <div class="stat-card"><div class="stat-num" style="color:var(--error)">26</div><div class="stat-label">CDC 规则</div></div>
+  <div class="stat-card"><div class="stat-num" style="color:var(--accent)">6</div><div class="stat-label">同步方案</div></div>
+  <div class="stat-card"><div class="stat-num" style="color:var(--success)">8</div><div class="stat-label">规则分类</div></div>
+  <div class="stat-card"><div class="stat-num" style="color:var(--warn)">45+</div><div class="stat-label">Waiver 标签</div></div>
+</div>
+
+    <div class="category-section" id="cat1">
+      <div class="category-header">
+        <div class="cat-icon" style="background:linear-gradient(135deg,rgba(255,71,87,0.2),rgba(255,71,87,0.05));color:#ff4757;border:1px solid rgba(255,71,87,0.2)">🔓</div>
+        <h2>未同步跨越 (Unsynchronized Crossings)</h2>
+        <span class="cat-count">3 条规则</span>
+      </div>
+    <div class="rule-card" id="ac_unsync01" data-name="ac_unsync01 单bit信号未同步跨时钟域">
+      <div class="rule-header" onclick="toggleCard(this)">
+        <h3><code>Ac_unsync01</code> — 单bit信号未同步跨时钟域</h3>
+        <div class="badges">
+          <span class="badge error">ERROR</span>
+          <span class="badge goal">cdc_verify_struct</span>
+        </div>
+      </div>
+      <div class="rule-body" id="body_ac_unsync01">
+        <div class="tab-bar">
+          <button class="active" onclick="switchTab(this,'ac_unsync01','circuit')">🔌 电路拓扑</button>
+          <button onclick="switchTab(this,'ac_unsync01','waveform')">📊 波形动画</button>
+          <button onclick="switchTab(this,'ac_unsync01','desc')">📖 详细说明</button>
+          <button onclick="switchTab(this,'ac_unsync01','fix')">🔧 修复方法</button>
+          <button onclick="switchTab(this,'ac_unsync01','waiver')">🏷️ Waiver建议</button>
+        </div>
+        <div class="tab-content active" id="ac_unsync01_circuit"><div class="svg-container"><svg viewBox="0 0 600 160" xmlns="http://www.w3.org/2000/svg">
+                  <rect x="10" y="10" width="240" height="140" rx="8" class="domain-a"/>
+                  <text x="130" y="30" style="font-size:12px;fill:#0084ff;text-anchor:middle">Clock Domain A (clk_a)</text>
+                  <rect x="350" y="10" width="240" height="140" rx="8" class="domain-b"/>
+                  <text x="470" y="30" style="font-size:12px;fill:#2ed573;text-anchor:middle">Clock Domain B (clk_b)</text>
+                  <rect x="60" y="55" width="70" height="50" class="ff-rect"/>
+                  <text x="95" y="83" class="ff-text">F1</text>
+                  <text x="66" y="69" style="font-size:9px;fill:#a0a0b8">D</text>
+                  <text x="118" y="69" style="font-size:9px;fill:#a0a0b8">Q</text>
+                  <polygon points="60,93 68,87 60,81" style="fill:none;stroke:var(--accent);stroke-width:1"/>
+                  <text x="70" y="102" class="clk-text">clk_a</text>
+                  <rect x="420" y="55" width="70" height="50" class="ff-rect"/>
+                  <text x="455" y="83" class="ff-text">F2</text>
+                  <text x="426" y="69" style="font-size:9px;fill:#a0a0b8">D</text>
+                  <text x="478" y="69" style="font-size:9px;fill:#a0a0b8">Q</text>
+                  <polygon points="420,93 428,87 420,81" style="fill:none;stroke:var(--accent);stroke-width:1"/>
+                  <text x="430" y="102" class="clk-text">clk_b</text>
+                  <line x1="130" y1="75" x2="420" y2="75" class="err-line"/>
+                  <text x="275" y="68" style="font-size:12px;fill:var(--error);text-anchor:middle;font-weight:700">✗ 无同步器</text>
+                  <text x="275" y="130" style="font-size:11px;fill:var(--error);text-anchor:middle">⚠ 亚稳态风险 (Metastability)</text>
+                  <line x1="20" y1="75" x2="60" y2="75" class="sig-line" marker-end="url(#arrow)"/>
+                  <line x1="490" y1="75" x2="580" y2="75" class="sig-line"/>
+                  <defs><marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="var(--text-secondary)"/></marker></defs>
+                </svg></div></div>
+        <div class="tab-content" id="ac_unsync01_waveform"><div class="svg-container"><svg viewBox="0 0 700 220" xmlns="http://www.w3.org/2000/svg">
+                  <text x="10" y="20" class="wave-label">clk_a</text>
+                  <polyline points="60,40 60,15 100,15 100,40 140,40 140,15 180,15 180,40 220,40 220,15 260,15 260,40 300,40 300,15 340,15 340,40 380,40 380,15 420,15 420,40 460,40 460,15 500,15 500,40 540,40 540,15 580,15 580,40 620,40" class="wave-clk"/>
+                  <text x="10" y="72" class="wave-label">clk_b</text>
+                  <polyline points="60,90 60,65 120,65 120,90 180,90 180,65 240,65 240,90 300,90 300,65 360,65 360,90 420,90 420,65 480,65 480,90 540,90 540,65 600,65 600,90" class="wave-clk" style="stroke:#2ed573"/>
+                  <text x="10" y="120" class="wave-label">data_a</text>
+                  <polyline points="60,140 60,115 140,115 140,140 380,140 380,115 460,115 460,140 620,140" class="wave-data"/>
+                  <text x="10" y="165" class="wave-label">data_b</text>
+                  <polyline points="60,190 120,190 120,185" class="wave-ok"/>
+                  <rect x="118" y="166" width="64" height="26" class="metastable" rx="4">
+                    <animate attributeName="opacity" values="0.3;0.8;0.3" dur="1.5s" repeatCount="indefinite"/>
+                  </rect>
+                  <text x="150" y="183" style="font-size:10px;fill:var(--error);text-anchor:middle;font-weight:700">META</text>
+                  <polyline points="182,190 182,165 360,165 360,190 480,190 480,165 600,165 600,190" class="wave-ok" style="stroke:var(--text-secondary)"/>
+                  <text x="150" y="210" style="font-size:10px;fill:var(--error);text-anchor:middle">← 亚稳态：值不确定</text>
+                </svg></div></div>
+        <div class="tab-content" id="ac_unsync01_desc"><div class="desc-section">
+                  <h4>问题描述</h4>
+                  <p>信号 <code>data_a</code> 直接从时钟域 A (<code>clk_a</code>) 传递到时钟域 B (<code>clk_b</code>)，中间没有任何同步逻辑。当两个时钟是异步关系时，目的寄存器 F2 可能在数据跳变瞬间采样，导致 <span class="highlight">setup/hold time 违例</span>，进而产生亚稳态 (Metastability)。</p>
+                  <h4>潜在影响</h4>
+                  <ul>
+                    <li>目的寄存器输出值不确定（可能为 0、1 或中间电平振荡）</li>
+                    <li>亚稳态可能沿下游逻辑传播，导致功能错误</li>
+                    <li>问题具有随机性，仿真难以复现</li>
+                  </ul>
+                  <h4>检查阶段</h4>
+                  <p><span class="tag err">Severity: Error</span> &nbsp; <span class="tag" style="background:rgba(0,212,255,0.1);color:var(--accent)">Goal: cdc_verify_struct</span></p>
+                </div></div>
+        <div class="tab-content" id="ac_unsync01_fix"><div class="desc-section">
+                  <h4>修复方法：添加二级同步器 (2-FF Synchronizer)</h4>
+                  <p>在目的时钟域中插入至少两级寄存器作为同步器，使亚稳态在到达下游逻辑前稳定下来。</p>
+                </div>
+                <div class="svg-container">
+                  <svg viewBox="0 0 650 140" xmlns="http://www.w3.org/2000/svg">
+                    <rect x="10" y="5" width="200" height="130" rx="8" class="domain-a"/>
+                    <text x="110" y="22" style="font-size:11px;fill:#0084ff;text-anchor:middle">Domain A</text>
+                    <rect x="250" y="5" width="390" height="130" rx="8" class="domain-b"/>
+                    <text x="445" y="22" style="font-size:11px;fill:#2ed573;text-anchor:middle">Domain B</text>
+                    <rect x="60" y="45" width="65" height="45" class="ff-rect"/><text x="92" y="72" class="ff-text">F1</text><text x="70" y="62" class="clk-text">clk_a</text>
+                    <rect x="300" y="45" width="65" height="45" class="ff-rect" style="stroke:#2ed573"/><text x="332" y="72" class="ff-text">S1</text><text x="310" y="86" class="clk-text">clk_b</text>
+                    <rect x="420" y="45" width="65" height="45" class="ff-rect" style="stroke:#2ed573"/><text x="452" y="72" class="ff-text">S2</text><text x="430" y="86" class="clk-text">clk_b</text>
+                    <rect x="540" y="45" width="65" height="45" class="ff-rect" style="stroke:#2ed573"/><text x="572" y="72" class="ff-text">F2</text><text x="550" y="86" class="clk-text">clk_b</text>
+                    <line x1="125" y1="65" x2="300" y2="65" class="sig-line"/>
+                    <line x1="365" y1="65" x2="420" y2="65" class="sig-line"/>
+                    <line x1="485" y1="65" x2="540" y2="65" class="sig-line"/>
+                    <text x="345" y="38" style="font-size:10px;fill:var(--success);text-anchor:middle">✓ 2-FF Synchronizer</text>
+                    <rect x="290" y="35" width="210" height="65" rx="6" style="fill:none;stroke:var(--success);stroke-width:1.5;stroke-dasharray:4,3"/>
+                  </svg>
+                </div>
+                <div class="code-block"><span class="lang-tag">Verilog</span><span class="cmt">// 二级同步器</span>
+<span class="kw">always</span> @(<span class="kw">posedge</span> clk_b <span class="kw">or negedge</span> rst_b_n) <span class="kw">begin</span>
+  <span class="kw">if</span> (!rst_b_n) <span class="kw">begin</span>
+    sync_r1 <= <span class="num">1'b0</span>;
+    sync_r2 <= <span class="num">1'b0</span>;
+  <span class="kw">end else begin</span>
+    sync_r1 <= data_a;    <span class="cmt">// 第一级同步</span>
+    sync_r2 <= sync_r1;   <span class="cmt">// 第二级同步, 输出稳定信号</span>
+  <span class="kw">end</span>
+<span class="kw">end</span>
+<span class="kw">assign</span> data_b = sync_r2;</div></div>
+        <div class="tab-content" id="ac_unsync01_waiver"><div class="desc-section">
+                  <h4>Waiver 条件</h4>
+                  <p>仅在以下情况下可以考虑 Waive：</p>
+                  <ul>
+                    <li><strong>Stable Signal (准静态信号):</strong> 信号在正常工作模式下几乎不变（如配置寄存器），可使用 <code>quasi_static</code> 约束</li>
+                    <li><strong>Clock Off:</strong> 信号跨越时，目的时钟域处于关闭状态</li>
+                    <li><strong>Receiver Ignore:</strong> 目的端不使用该信号的值</li>
+                  </ul>
+                </div>
+                <table class="waiver-table">
+                  <tr><th>Waiver 标签</th><th>适用场景</th><th>SVA 支持</th></tr>
+                  <tr><td><code>Stable Signal;&lt;Enable Condition&gt;</code></td><td>信号为准静态，由使能条件控制</td><td>✅ Yes</td></tr>
+                  <tr><td><code>Stable Signal Clock Off;&lt;Enable&gt;</code></td><td>目的时钟域关闭时信号跨越</td><td>✅ Yes</td></tr>
+                  <tr><td><code>Stable Signal Receiver Ignore</code></td><td>目的端不使用该信号</td><td>✅ Yes</td></tr>
+                </table>
+                <div class="code-block"><span class="lang-tag">SGDC</span><span class="cmt"># SGDC 约束示例 - 准静态信号</span>
+quasi_static -name "top.u_cfg.config_reg[7:0]"
+
+<span class="cmt"># TCL Waiver 示例</span>
+set_cdc_waiver -scheme unsynchronized \
+  -from {top.u_src.cfg_data} \
+  -to {top.u_dst.cfg_reg} \
+  -comment "Stable Signal;CSR config bit, stable during functional mode"</div></div>
+      </div>
+    </div>
+    <div class="rule-card" id="ac_unsync02" data-name="ac_unsync02 多bit信号未同步跨时钟域">
+      <div class="rule-header" onclick="toggleCard(this)">
+        <h3><code>Ac_unsync02</code> — 多bit信号未同步跨时钟域</h3>
+        <div class="badges">
+          <span class="badge error">ERROR</span>
+          <span class="badge goal">cdc_verify_struct</span>
+        </div>
+      </div>
+      <div class="rule-body" id="body_ac_unsync02">
+        <div class="tab-bar">
+          <button class="active" onclick="switchTab(this,'ac_unsync02','circuit')">🔌 电路拓扑</button>
+          <button onclick="switchTab(this,'ac_unsync02','waveform')">📊 波形动画</button>
+          <button onclick="switchTab(this,'ac_unsync02','desc')">📖 详细说明</button>
+          <button onclick="switchTab(this,'ac_unsync02','fix')">🔧 修复方法</button>
+          <button onclick="switchTab(this,'ac_unsync02','waiver')">🏷️ Waiver建议</button>
+        </div>
+        <div class="tab-content active" id="ac_unsync02_circuit"><div class="svg-container"><svg viewBox="0 0 600 200" xmlns="http://www.w3.org/2000/svg">
+                  <rect x="10" y="10" width="230" height="180" rx="8" class="domain-a"/>
+                  <text x="125" y="28" style="font-size:11px;fill:#0084ff;text-anchor:middle">Domain A (clk_a)</text>
+                  <rect x="360" y="10" width="230" height="180" rx="8" class="domain-b"/>
+                  <text x="475" y="28" style="font-size:11px;fill:#2ed573;text-anchor:middle">Domain B (clk_b)</text>
+                  <rect x="50" y="45" width="65" height="35" class="ff-rect"/><text x="82" y="66" class="ff-text">F1[0]</text>
+                  <rect x="50" y="90" width="65" height="35" class="ff-rect"/><text x="82" y="111" class="ff-text">F1[1]</text>
+                  <rect x="50" y="135" width="65" height="35" class="ff-rect"/><text x="82" y="156" class="ff-text">F1[n]</text>
+                  <rect x="420" y="45" width="65" height="35" class="ff-rect"/><text x="452" y="66" class="ff-text">F2[0]</text>
+                  <rect x="420" y="90" width="65" height="35" class="ff-rect"/><text x="452" y="111" class="ff-text">F2[1]</text>
+                  <rect x="420" y="135" width="65" height="35" class="ff-rect"/><text x="452" y="156" class="ff-text">F2[n]</text>
+                  <line x1="115" y1="60" x2="420" y2="60" class="err-line"/>
+                  <line x1="115" y1="107" x2="420" y2="107" class="err-line"/>
+                  <line x1="115" y1="152" x2="420" y2="152" class="err-line"/>
+                  <text x="270" y="100" style="font-size:12px;fill:var(--error);text-anchor:middle;font-weight:700">✗ bus[n:0]</text>
+                  <text x="270" y="115" style="font-size:10px;fill:var(--error);text-anchor:middle">各bit独立采样 → 数据不一致</text>
+                </svg></div></div>
+        <div class="tab-content" id="ac_unsync02_waveform"><div class="svg-container"><svg viewBox="0 0 700 200" xmlns="http://www.w3.org/2000/svg">
+                  <text x="10" y="18" class="wave-label">clk_b ↑</text>
+                  <line x1="120" y1="5" x2="120" y2="195" style="stroke:rgba(46,213,115,0.3);stroke-width:1;stroke-dasharray:3,3"/>
+                  <line x1="240" y1="5" x2="240" y2="195" style="stroke:rgba(46,213,115,0.3);stroke-width:1;stroke-dasharray:3,3"/>
+                  <line x1="360" y1="5" x2="360" y2="195" style="stroke:rgba(46,213,115,0.3);stroke-width:1;stroke-dasharray:3,3"/>
+                  <text x="10" y="55" class="wave-label">data[1:0]</text>
+                  <text x="70" y="55" style="font-size:10px;fill:#ffa502">= 2'b00</text>
+                  <text x="160" y="55" style="font-size:10px;fill:#ffa502">→ 2'b11</text>
+                  <rect x="60" y="60" width="90" height="24" style="fill:rgba(255,165,2,0.15);stroke:#ffa502;stroke-width:1" rx="3"/>
+                  <text x="105" y="76" style="font-size:11px;fill:#ffa502;text-anchor:middle">00</text>
+                  <rect x="150" y="60" width="200" height="24" style="fill:rgba(255,165,2,0.15);stroke:#ffa502;stroke-width:1" rx="3"/>
+                  <text x="250" y="76" style="font-size:11px;fill:#ffa502;text-anchor:middle">11</text>
+                  <text x="10" y="115" class="wave-label">sampled</text>
+                  <rect x="120" y="100" width="120" height="24" class="metastable" rx="3">
+                    <animate attributeName="opacity" values="0.3;0.8;0.3" dur="1s" repeatCount="indefinite"/>
+                  </rect>
+                  <text x="180" y="116" style="font-size:10px;fill:var(--error);text-anchor:middle;font-weight:600">01 或 10 ?!</text>
+                  <rect x="240" y="100" width="120" height="24" style="fill:rgba(46,213,115,0.15);stroke:#2ed573;stroke-width:1" rx="3"/>
+                  <text x="300" y="116" style="font-size:11px;fill:#2ed573;text-anchor:middle">11</text>
+                  <text x="180" y="155" style="font-size:11px;fill:var(--error);text-anchor:middle">各bit到达时间不同</text>
+                  <text x="180" y="170" style="font-size:11px;fill:var(--error);text-anchor:middle">→ 采到中间值 !</text>
+                </svg></div></div>
+        <div class="tab-content" id="ac_unsync02_desc"><div class="desc-section">
+                  <h4>问题描述</h4>
+                  <p>多bit总线 <code>data[n:0]</code> 从时钟域 A 直接传递到时钟域 B，没有使用同步逻辑。由于各bit路径延时不同，目的时钟域可能<span class="highlight">采到中间状态值</span>（如 00→11 过程中采到 01 或 10），导致数据不一致。</p>
+                  <h4>潜在影响</h4>
+                  <ul>
+                    <li>多bit信号各bit不同时到达，采样到错误的组合值</li>
+                    <li>如果是计数器/地址信号，可能采到非法值导致严重功能错误</li>
+                    <li>使用二进制编码的多bit信号风险最高（多bit同时跳变）</li>
+                  </ul>
+                </div></div>
+        <div class="tab-content" id="ac_unsync02_fix"><div class="desc-section">
+                  <h4>修复方法</h4>
+                  <p>根据使用场景选择合适的同步方案：</p>
+                  <ul>
+                    <li><strong>异步 FIFO:</strong> 适用于数据流传输，使用格雷码指针同步</li>
+                    <li><strong>握手协议 + MUX:</strong> 适用于低速数据传输，先稳定数据再传使能</li>
+                    <li><strong>格雷码编码:</strong> 适用于计数器等连续变化信号（相邻值只有1bit变化）</li>
+                    <li><strong>DMUX同步:</strong> 使能信号做2-FF同步，数据走MUX选通</li>
+                  </ul>
+                </div>
+                <div class="svg-container">
+                  <svg viewBox="0 0 650 160" xmlns="http://www.w3.org/2000/svg">
+                    <rect x="10" y="5" width="200" height="150" rx="8" class="domain-a"/>
+                    <rect x="250" y="5" width="390" height="150" rx="8" class="domain-b"/>
+                    <text x="110" y="22" style="font-size:11px;fill:#0084ff;text-anchor:middle">Domain A</text>
+                    <text x="445" y="22" style="font-size:11px;fill:#2ed573;text-anchor:middle">Domain B</text>
+                    <rect x="50" y="65" width="65" height="35" class="ff-rect"/><text x="82" y="87" class="ff-text">DATA</text>
+                    <rect x="50" y="35" width="65" height="25" class="ff-rect"/><text x="82" y="51" class="ff-text">EN</text>
+                    <rect x="310" y="35" width="55" height="25" class="ff-rect" style="stroke:#2ed573"/><text x="337" y="51" class="ff-text">S1</text>
+                    <rect x="380" y="35" width="55" height="25" class="ff-rect" style="stroke:#2ed573"/><text x="407" y="51" class="ff-text">S2</text>
+                    <rect x="500" y="65" width="65" height="35" class="ff-rect" style="stroke:#2ed573"/><text x="532" y="87" class="ff-text">D_OUT</text>
+                    <line x1="115" y1="47" x2="310" y2="47" class="sig-line"/>
+                    <line x1="365" y1="47" x2="380" y2="47" class="sig-line"/>
+                    <line x1="435" y1="47" x2="460" y2="47" class="sig-line"/>
+                    <line x1="115" y1="82" x2="460" y2="82" class="sig-line"/>
+                    <rect x="455" y="55" width="35" height="50" style="fill:rgba(255,255,255,0.05);stroke:var(--text-secondary);stroke-width:1.5" rx="3"/>
+                    <text x="472" y="83" style="font-size:10px;fill:var(--text-primary);text-anchor:middle">MUX</text>
+                    <line x1="460" y1="57" x2="472" y2="57" class="sig-line"/>
+                    <line x1="490" y1="80" x2="500" y2="80" class="sig-line"/>
+                    <text x="345" y="28" style="font-size:10px;fill:var(--success);text-anchor:middle">✓ EN经2-FF同步 → 控制MUX选通数据</text>
+                  </svg>
+                </div>
+                <div class="code-block"><span class="lang-tag">Verilog</span><span class="cmt">// DMUX 同步方案：使能信号同步 + 数据 MUX 选通</span>
+<span class="cmt">// 1. 在源端稳定数据，拉高使能</span>
+<span class="cmt">// 2. 使能信号通过 2-FF 同步到目的时钟域</span>
+<span class="cmt">// 3. 同步后的使能控制 MUX 选通稳定的数据</span>
+<span class="kw">wire</span> en_sync;  <span class="cmt">// 同步后的使能</span>
+cdc_demet u_sync (.clk(clk_b), .d(en_a), .q(en_sync));
+
+<span class="kw">always</span> @(<span class="kw">posedge</span> clk_b)
+  <span class="kw">if</span> (en_sync) data_b <= data_a;  <span class="cmt">// 使能有效时锁存数据</span></div></div>
+        <div class="tab-content" id="ac_unsync02_waiver"><div class="desc-section">
+                  <h4>Waiver 条件</h4>
+                  <ul>
+                    <li><strong>DMUX Synchronization:</strong> 如果设计中已有使能同步逻辑但工具未自动识别</li>
+                    <li><strong>quasi_static:</strong> 总线为准静态配置数据</li>
+                    <li><strong>Stable Signal:</strong> 功能上保证数据在采样窗口前已稳定</li>
+                  </ul>
+                </div>
+                <table class="waiver-table">
+                  <tr><th>Waiver 标签</th><th>适用场景</th><th>SVA 支持</th></tr>
+                  <tr><td><code>DMUX Synchronization;&lt;Enable Signal&gt;</code></td><td>有使能同步逻辑但未被工具识别</td><td>❌ No</td></tr>
+                  <tr><td><code>Stable Signal;&lt;Enable Condition&gt;</code></td><td>总线数据在采样时已稳定</td><td>✅ Yes</td></tr>
+                </table>
+                <div class="code-block"><span class="lang-tag">SGDC</span><span class="cmt"># 准静态信号约束</span>
+quasi_static -name "top.u_cfg.bus_data[31:0]"
+
+<span class="cmt"># TCL Waiver</span>
+set_cdc_waiver -scheme unsynchronized \
+  -from {top.u_src.data_bus[*]} \
+  -to {top.u_dst.data_reg[*]} \
+  -comment "DMUX Synchronization;en_sync controls data capture"</div></div>
+      </div>
+    <div class="rule-card" id="ac_unsync03" data-name="ac_unsync03 多位信号通过单个同步器跨时钟域">
+      <div class="rule-header" onclick="toggleCard(this)">
+        <h3><code>Ac_unsync03</code> &mdash; 多位信号通过单个同步器跨时钟域</h3>
+        <div class="badges"><span class="badge error">ERROR</span><span class="badge goal">cdc_verify_struct</span></div>
+      </div>
+      <div class="rule-body" id="body_ac_unsync03">
+        <div class="tab-bar">
+          <button class="active" onclick="switchTab(this,'ac_unsync03','circuit')">🔌 电路拓扑</button>
+          <button onclick="switchTab(this,'ac_unsync03','waveform')">📊 波形动画</button>
+          <button onclick="switchTab(this,'ac_unsync03','desc')">📖 详细说明</button>
+          <button onclick="switchTab(this,'ac_unsync03','fix')">🔧 修复方法</button>
+          <button onclick="switchTab(this,'ac_unsync03','waiver')">🏷️ Waiver建议</button>
+        </div>
+        <div class="tab-content active" id="ac_unsync03_circuit"><div class="svg-container"><svg viewBox="0 0 620 180" xmlns="http://www.w3.org/2000/svg">
+          <rect x="10" y="10" width="220" height="160" rx="8" class="domain-a"/>
+          <text x="120" y="28" style="font-size:11px;fill:#0084ff;text-anchor:middle">Domain A (clk_a)</text>
+          <rect x="280" y="10" width="330" height="160" rx="8" class="domain-b"/>
+          <text x="445" y="28" style="font-size:11px;fill:#2ed573;text-anchor:middle">Domain B (clk_b)</text>
+          <rect x="40" y="45" width="65" height="30" class="ff-rect"/><text x="72" y="64" class="ff-text" style="font-size:8px">D[0]</text>
+          <rect x="40" y="85" width="65" height="30" class="ff-rect"/><text x="72" y="104" class="ff-text" style="font-size:8px">D[1]</text>
+          <rect x="40" y="125" width="65" height="30" class="ff-rect"/><text x="72" y="144" class="ff-text" style="font-size:8px">D[n]</text>
+          <rect x="310" y="65" width="65" height="30" class="ff-rect" style="stroke:var(--warn)"/><text x="342" y="84" class="ff-text" style="font-size:7px">S1(D[0])</text>
+          <rect x="390" y="65" width="65" height="30" class="ff-rect" style="stroke:var(--warn)"/><text x="422" y="84" class="ff-text" style="font-size:7px">S2(D[0])</text>
+          <rect x="490" y="45" width="65" height="110" style="fill:rgba(255,165,2,0.08);stroke:var(--warn);stroke-width:1.5" rx="4"/>
+          <text x="522" y="105" style="font-size:8px;fill:var(--warn);text-anchor:middle">D[n:0]</text>
+          <line x1="105" y1="60" x2="310" y2="80" class="err-line"/>
+          <line x1="105" y1="100" x2="310" y2="80" class="err-line"/>
+          <line x1="105" y1="140" x2="310" y2="80" class="err-line"/>
+          <line x1="375" y1="80" x2="390" y2="80" class="sig-line"/>
+          <line x1="455" y1="80" x2="490" y2="100" class="sig-line"/>
+          <text x="240" y="100" style="font-size:10px;fill:var(--error);text-anchor:middle;font-weight:700">&#10007; 多位bit共用同步器</text>
+          <text x="240" y="155" style="font-size:10px;fill:var(--error);text-anchor:middle">各bit延时不同 &#8594; 采样到中间值</text>
+        </svg></div></div>
+        <div class="tab-content" id="ac_unsync03_waveform"><div class="svg-container"><svg viewBox="0 0 700 180" xmlns="http://www.w3.org/2000/svg">
+          <text x="10" y="18" class="wave-label">clk_b &#8593;</text>
+          <line x1="140" y1="5" x2="140" y2="170" style="stroke:rgba(46,213,115,0.3);stroke-width:1;stroke-dasharray:3,3"/>
+          <line x1="280" y1="5" x2="280" y2="170" style="stroke:rgba(46,213,115,0.3);stroke-width:1;stroke-dasharray:3,3"/>
+          <text x="10" y="55" class="wave-label">D[0]</text>
+          <polyline points="60,70 100,70 100,50 300,50 300,70 500,70" class="wave-data"/>
+          <text x="10" y="95" class="wave-label">D[1]</text>
+          <polyline points="60,110 120,110 120,90 320,90 320,110 500,110" class="wave-data" style="stroke:#a78bfa"/>
+          <text x="10" y="135" class="wave-label">sampled</text>
+          <rect x="140" y="125" width="140" height="22" class="metastable" rx="3"><animate attributeName="opacity" values="0.3;0.8;0.3" dur="1.2s" repeatCount="indefinite"/></rect>
+          <text x="210" y="140" style="font-size:10px;fill:var(--error);text-anchor:middle">D[0]=1, D[1]=0 ?!</text>
+          <text x="210" y="165" style="font-size:10px;fill:var(--error);text-anchor:middle">各bit到达时间不同 &#8594; 采到中间值</text>
+        </svg></div></div>
+        <div class="tab-content" id="ac_unsync03_desc"><div class="desc-section">
+          <h4>问题描述</h4>
+          <p>多位总线 <code>data[n:0]</code> 的所有bit共用一个同步器（只有一个 2-FF 同步器对某一bit同步，其余bit直接连接）。由于各bit的路径延时不同，目的时钟域可能<span class="highlight">采到不一致的中间状态</span>，导致数据错误。</p>
+          <h4>与 Ac_unsync02 的区别</h4>
+          <ul>
+            <li>Ac_unsync02: 多位信号完全没有同步器</li>
+            <li>Ac_unsync03: 多位信号有同步器，但只对部分bit同步，其余bit直接连接</li>
+            <li>两者都会导致多位数据不一致问题</li>
+          </ul>
+          <h4>检查阶段</h4>
+          <p><span class="tag err">Severity: Error</span> &nbsp; <span class="tag" style="background:rgba(0,212,255,0.1);color:var(--accent)">Goal: cdc_verify_struct</span></p>
+        </div></div>
+        <div class="tab-content" id="ac_unsync03_fix"><div class="desc-section">
+          <h4>修复方法</h4>
+          <ul>
+            <li><strong>异步 FIFO:</strong> 最推荐方案，使用格雷码指针同步，适合数据流</li>
+            <li><strong>握手协议:</strong> 使用 req/ack 确保数据稳定后再采样</li>
+            <li><strong>格雷码编码:</strong> 如果是计数器，转为格雷码后每次只有1bit变化</li>
+            <li><strong>DMUX同步:</strong> 使能信号同步 + MUX 选通稳定数据</li>
+          </ul>
+        </div>
+        <div class="code-block"><span class="lang-tag">Verilog</span><span class="cmt">// 正确方式: 格雷码编码后对每个bit分别同步</span>
+<span class="kw">assign</span> gray_data = data_a ^ (data_a &gt;&gt; <span class="num">1</span>);
+<span class="kw">genvar</span> i;
+<span class="kw">generate</span>
+  <span class="kw">for</span> (i=<span class="num">0</span>; i&lt;N; i=i+<span class="num">1</span>) <span class="kw">begin</span> : sync_bits
+    cdc_demet u_sync (.clk(clk_b), .rst_n(rst_b_n), .d(gray_data[i]), .q(gray_sync[i]));
+  <span class="kw">end</span>
+<span class="kw">endgenerate</span></div></div>
+        <div class="tab-content" id="ac_unsync03_waiver"><div class="desc-section">
+          <h4>Waiver 条件</h4>
+          <ul>
+            <li><strong>quasi_static:</strong> 多位总线为准静态配置数据，在功能模式下不变化</li>
+            <li><strong>Gray Code:</strong> 已使用格雷码编码，相邻值只有1bit变化</li>
+          </ul>
+        </div>
+        <table class="waiver-table">
+          <tr><th>Waiver 标签</th><th>适用场景</th><th>SVA 支持</th></tr>
+          <tr><td><code>Stable Signal;&lt;Enable Condition&gt;</code></td><td>多位总线为准静态信号</td><td>&#9989; Yes</td></tr>
+          <tr><td><code>Gray Code Synchronization</code></td><td>已使用格雷码编码</td><td>&#10060; No</td></tr>
+        </table>
+        <div class="code-block"><span class="lang-tag">SGDC</span><span class="cmt"># 声明格雷码信号</span>
+gray_signals -name "top.u_src.gray_ptr[3:0]"
+<span class="cmt"># 准静态多位信号</span>
+quasi_static -name "top.u_cfg.mode_reg[7:0]"</div></div>
+      </div>
+    </div>
+    </div></div>
+    <div class="category-section" id="cat2">
+      <div class="category-header">
+        <div class="cat-icon" style="background:linear-gradient(135deg,rgba(255,165,2,0.2),rgba(255,165,2,0.05));color:#ffa502;border:1px solid rgba(255,165,2,0.2)">⚡</div>
+        <h2>数据丢失 / 信号宽度 (Data Loss)</h2>
+        <span class="cat-count">5 条规则</span>
+      </div>
+    <div class="rule-card" id="ac_cdc01" data-name="ac_cdc01 快时钟域到慢时钟域信号宽度不足">
+      <div class="rule-header" onclick="toggleCard(this)">
+        <h3><code>Ac_cdc01</code> — 快时钟域到慢时钟域信号宽度不足</h3>
+        <div class="badges">
+          <span class="badge error">ERROR</span>
+          <span class="badge goal">cdc_verify</span>
+        </div>
+      </div>
+      <div class="rule-body" id="body_ac_cdc01">
+        <div class="tab-bar">
+          <button class="active" onclick="switchTab(this,'ac_cdc01','circuit')">🔌 电路拓扑</button>
+          <button onclick="switchTab(this,'ac_cdc01','waveform')">📊 波形动画</button>
+          <button onclick="switchTab(this,'ac_cdc01','desc')">📖 详细说明</button>
+          <button onclick="switchTab(this,'ac_cdc01','fix')">🔧 修复方法</button>
+          <button onclick="switchTab(this,'ac_cdc01','waiver')">🏷️ Waiver建议</button>
+        </div>
+        <div class="tab-content active" id="ac_cdc01_circuit"><div class="svg-container"><svg viewBox="0 0 650 150" xmlns="http://www.w3.org/2000/svg">
+                  <rect x="10" y="5" width="250" height="140" rx="8" class="domain-a"/>
+                  <text x="135" y="22" style="font-size:11px;fill:#0084ff;text-anchor:middle">Fast Clock Domain (clk_fast)</text>
+                  <rect x="310" y="5" width="330" height="140" rx="8" class="domain-b"/>
+                  <text x="475" y="22" style="font-size:11px;fill:#2ed573;text-anchor:middle">Slow Clock Domain (clk_slow)</text>
+                  <rect x="60" y="50" width="65" height="45" class="ff-rect"/><text x="92" y="77" class="ff-text">F1</text><text x="70" y="90" class="clk-text">fast</text>
+                  <rect x="360" y="50" width="55" height="45" class="ff-rect" style="stroke:#2ed573"/><text x="387" y="77" class="ff-text">S1</text>
+                  <rect x="430" y="50" width="55" height="45" class="ff-rect" style="stroke:#2ed573"/><text x="457" y="77" class="ff-text">S2</text>
+                  <rect x="530" y="50" width="65" height="45" class="ff-rect" style="stroke:#2ed573"/><text x="562" y="77" class="ff-text">F2</text>
+                  <line x1="125" y1="70" x2="360" y2="70" class="err-line"/>
+                  <line x1="415" y1="70" x2="430" y2="70" class="sig-line"/>
+                  <line x1="485" y1="70" x2="530" y2="70" class="sig-line"/>
+                  <text x="240" y="65" style="font-size:10px;fill:var(--error);text-anchor:middle">脉冲太窄!</text>
+                  <text x="240" y="130" style="font-size:11px;fill:var(--warn);text-anchor:middle">⚠ 脉冲宽度 < clk_slow 周期 → 可能被漏采</text>
+                </svg></div></div>
+        <div class="tab-content" id="ac_cdc01_waveform"><div class="svg-container"><svg viewBox="0 0 700 230" xmlns="http://www.w3.org/2000/svg">
+                  <text x="10" y="18" class="wave-label">clk_fast</text>
+                  <polyline points="60,35 60,10 80,10 80,35 100,35 100,10 120,10 120,35 140,35 140,10 160,10 160,35 180,35 180,10 200,10 200,35 220,35 220,10 240,10 240,35 260,35 260,10 280,10 280,35 300,35 300,10 320,10 320,35 340,35 340,10 360,10 360,35 380,35 380,10 400,10 400,35 420,35 420,10 440,10 440,35 460,35 460,10 480,10 480,35 500,35 500,10 520,10 520,35 540,35 540,10 560,10 560,35" class="wave-clk"/>
+                  <text x="10" y="58" class="wave-label">clk_slow</text>
+                  <polyline points="60,80 60,55 120,55 120,80 180,80 180,55 240,55 240,80 300,80 300,55 360,55 360,80 420,80 420,55 480,55 480,80 540,80 540,55" class="wave-clk" style="stroke:#2ed573"/>
+                  <text x="10" y="105" class="wave-label">pulse_a</text>
+                  <polyline points="60,125 100,125 100,100 120,100 120,125 400,125" class="wave-data"/>
+                  <text x="110" y="96" style="font-size:9px;fill:#ffa502;text-anchor:middle">1 fast clk</text>
+                  <text x="10" y="150" class="wave-label">synced_b</text>
+                  <polyline points="60,170 540,170" class="wave-ok" style="stroke:var(--text-secondary)"/>
+                  <text x="200" y="165" style="font-size:11px;fill:var(--error);text-anchor:middle;font-weight:600">✗ 脉冲被漏采! 始终为低</text>
+                  <text x="110" y="200" style="font-size:10px;fill:var(--error);text-anchor:middle">← pulse 在 clk_slow 两个采样沿之间</text>
+                  <line x1="100" y1="100" x2="100" y2="180" style="stroke:var(--error);stroke-width:1;stroke-dasharray:2,2"/>
+                  <line x1="120" y1="100" x2="120" y2="180" style="stroke:var(--error);stroke-width:1;stroke-dasharray:2,2"/>
+                </svg></div></div>
+        <div class="tab-content" id="ac_cdc01_desc"><div class="desc-section">
+                  <h4>问题描述</h4>
+                  <p>从快时钟域到慢时钟域传递 <span class="highlight">脉冲信号</span> 时，如果脉冲宽度小于慢时钟的采样周期，慢时钟域的同步器可能完全<span class="highlight">采不到这个脉冲</span>。脉冲需要在目的时钟域的至少连续3个偏有效沿期间保持稳定（Three-Edge 要求）。</p>
+                  <h4>潜在影响</h4>
+                  <ul>
+                    <li>事件信号(event pulse)被漏采，导致功能逻辑未触发</li>
+                    <li>问题在特定频率比下才出现，增加调试难度</li>
+                  </ul>
+                </div></div>
+        <div class="tab-content" id="ac_cdc01_fix"><div class="desc-section">
+                  <h4>修复方法</h4>
+                  <ul>
+                    <li><strong>Toggle 脉冲同步器:</strong> 将源脉冲转为电平翻转，目的端再转回脉冲（推荐方案）</li>
+                    <li><strong>脉冲展宽:</strong> 在源端将脉冲展宽到满足 three-edge 要求</li>
+                    <li><strong>握手协议:</strong> 使用 req/ack 确保信号被采到</li>
+                  </ul>
+                </div>
+                <div class="code-block"><span class="lang-tag">Verilog</span><span class="cmt">// Toggle-based Pulse Synchronizer (DW_pulse_sync 方案)</span>
+<span class="cmt">// 源端：脉冲 → 电平翻转 (toggle)</span>
+<span class="kw">reg</span> toggle_src;
+<span class="kw">always</span> @(<span class="kw">posedge</span> clk_fast <span class="kw">or negedge</span> rst_n)
+  <span class="kw">if</span> (!rst_n) toggle_src <= <span class="num">1'b0</span>;
+  <span class="kw">else</span>        toggle_src <= toggle_src ^ pulse_in;
+
+<span class="cmt">// 目的端：电平同步 → 再转脉冲</span>
+<span class="kw">wire</span> toggle_sync;
+cdc_demet u_sync (.clk(clk_slow), .d(toggle_src), .q(toggle_sync));
+
+<span class="kw">reg</span> toggle_d;
+<span class="kw">always</span> @(<span class="kw">posedge</span> clk_slow) toggle_d <= toggle_sync;
+<span class="kw">assign</span> pulse_out = toggle_sync ^ toggle_d; <span class="cmt">// XOR 检测边沿</span></div></div>
+        <div class="tab-content" id="ac_cdc01_waiver"><div class="desc-section">
+                  <h4>Waiver 条件</h4>
+                  <p>此规则通常 <span class="highlight">不建议 waive</span>，除非能从功能上证明：</p>
+                  <ul>
+                    <li>设计中已做了脉冲展宽但工具未识别（常见情况）</li>
+                    <li>频率比固定且已验证展宽后满足 three-edge</li>
+                    <li>使用 Hybrid CDC (Formal) 验证信号不会丢失</li>
+                  </ul>
+                </div>
+                <div class="code-block"><span class="lang-tag">Config</span><span class="cmt"># 启用 Hybrid CDC 进行形式化验证</span>
+CDC_HYBRID_EN = true
+
+<span class="cmt"># 在 SGDC 中设置时钟周期便于工具分析</span>
+set_cdc_clock clk_fast -period 3.9
+set_cdc_clock clk_slow -period 10.0</div></div>
+      </div>
+    </div>
+    <div class="rule-card" id="ac_cdc01a" data-name="ac_cdc01a 信号宽度不足 (数据可能丢失)">
+      <div class="rule-header" onclick="toggleCard(this)">
+        <h3><code>Ac_cdc01a</code> — 信号宽度不足 (数据可能丢失)</h3>
+        <div class="badges">
+          <span class="badge error">ERROR</span>
+          <span class="badge goal">cdc_verify</span>
+        </div>
+      </div>
+      <div class="rule-body" id="body_ac_cdc01a">
+        <div class="tab-bar">
+          <button class="active" onclick="switchTab(this,'ac_cdc01a','circuit')">🔌 电路拓扑</button>
+          <button onclick="switchTab(this,'ac_cdc01a','waveform')">📊 波形动画</button>
+          <button onclick="switchTab(this,'ac_cdc01a','desc')">📖 详细说明</button>
+          <button onclick="switchTab(this,'ac_cdc01a','fix')">🔧 修复方法</button>
+          <button onclick="switchTab(this,'ac_cdc01a','waiver')">🏷️ Waiver建议</button>
+        </div>
+        <div class="tab-content active" id="ac_cdc01a_circuit"><div class="svg-container"><svg viewBox="0 0 600 120" xmlns="http://www.w3.org/2000/svg">
+                  <rect x="10" y="5" width="580" height="110" rx="8" style="fill:none;stroke:var(--warn);stroke-width:1;stroke-dasharray:4,3"/>
+                  <text x="300" y="22" style="font-size:11px;fill:var(--warn);text-anchor:middle">Ac_cdc01a — Ac_cdc01 的子规则，增加了周期级检查</text>
+                  <rect x="40" y="40" width="150" height="50" rx="6" style="fill:rgba(255,165,2,0.1);stroke:var(--warn);stroke-width:1"/>
+                  <text x="115" y="60" style="font-size:11px;fill:var(--text-primary);text-anchor:middle">源信号脉冲</text>
+                  <text x="115" y="78" style="font-size:10px;fill:var(--text-secondary);text-anchor:middle">width &lt; T_slow</text>
+                  <text x="270" y="68" style="font-size:20px;fill:var(--error);text-anchor:middle">→</text>
+                  <rect x="340" y="40" width="200" height="50" rx="6" style="fill:rgba(255,71,87,0.1);stroke:var(--error);stroke-width:1"/>
+                  <text x="440" y="60" style="font-size:11px;fill:var(--text-primary);text-anchor:middle">目的时钟域</text>
+                  <text x="440" y="78" style="font-size:10px;fill:var(--error);text-anchor:middle">可能漏采 → 数据丢失</text>
+                </svg></div></div>
+        <div class="tab-content" id="ac_cdc01a_waveform"><div class="svg-container"><svg viewBox="0 0 600 100" xmlns="http://www.w3.org/2000/svg">
+                  <text x="300" y="50" style="font-size:14px;fill:var(--text-secondary);text-anchor:middle">（波形与 Ac_cdc01 相同，请参考上文）</text>
+                  <text x="300" y="70" style="font-size:12px;fill:var(--accent);text-anchor:middle">Ac_cdc01a 是 Ac_cdc01 增加了形式化周期检查的子规则</text>
+                </svg></div></div>
+        <div class="tab-content" id="ac_cdc01a_desc"><div class="desc-section">
+                  <h4>问题描述</h4>
+                  <p><code>Ac_cdc01a</code> 是 <code>Ac_cdc01</code> 的子规则，在 Hybrid CDC 模式下通过形式化引擎对信号宽度进行更精确的周期级检查。当启用 <code>CDC_HYBRID_EN=true</code> 和时钟周期约束后，工具会计算源脉冲宽度是否满足目的时钟的采样要求。</p>
+                  <h4>与 Ac_cdc01 的区别</h4>
+                  <ul>
+                    <li>Ac_cdc01 为结构级检查（基于时钟比率判断）</li>
+                    <li>Ac_cdc01a 利用 Formal 引擎验证，精度更高</li>
+                    <li>需要在约束中指定时钟周期 (<code>-period</code>)</li>
+                  </ul>
+                </div></div>
+        <div class="tab-content" id="ac_cdc01a_fix"><div class="desc-section"><h4>修复方法</h4><p>同 Ac_cdc01，使用脉冲同步器或展宽逻辑。</p></div></div>
+        <div class="tab-content" id="ac_cdc01a_waiver"><div class="desc-section"><h4>Waiver 条件</h4><p>同 Ac_cdc01。如果已做展宽处理但工具仍报错，建议 waive 并确保有对应的 SVA assertion 在 DV 中验证。</p></div></div>
+      </div>
+    <div class="rule-card" id="ac_cdc02" data-name="ac_cdc02 慢时钟域到快时钟域信号宽度检查">
+      <div class="rule-header" onclick="toggleCard(this)">
+        <h3><code>Ac_cdc02</code> &mdash; 慢时钟域到快时钟域信号宽度检查</h3>
+        <div class="badges"><span class="badge warning">WARNING</span><span class="badge goal">cdc_verify</span></div>
+      </div>
+      <div class="rule-body" id="body_ac_cdc02">
+        <div class="tab-bar">
+          <button class="active" onclick="switchTab(this,'ac_cdc02','circuit')">🔌 电路拓扑</button>
+          <button onclick="switchTab(this,'ac_cdc02','waveform')">📊 波形动画</button>
+          <button onclick="switchTab(this,'ac_cdc02','desc')">📖 详细说明</button>
+          <button onclick="switchTab(this,'ac_cdc02','fix')">🔧 修复方法</button>
+          <button onclick="switchTab(this,'ac_cdc02','waiver')">🏷️ Waiver建议</button>
+        </div>
+        <div class="tab-content active" id="ac_cdc02_circuit"><div class="svg-container"><svg viewBox="0 0 650 140" xmlns="http://www.w3.org/2000/svg">
+          <rect x="10" y="5" width="280" height="130" rx="8" class="domain-b"/>
+          <text x="150" y="22" style="font-size:11px;fill:#2ed573;text-anchor:middle">Slow Clock Domain (clk_slow)</text>
+          <rect x="340" y="5" width="300" height="130" rx="8" class="domain-a"/>
+          <text x="490" y="22" style="font-size:11px;fill:#0084ff;text-anchor:middle">Fast Clock Domain (clk_fast)</text>
+          <rect x="50" y="50" width="65" height="45" class="ff-rect"/><text x="82" y="77" class="ff-text">F1</text><text x="60" y="90" class="clk-text">slow</text>
+          <rect x="380" y="50" width="55" height="45" class="ff-rect" style="stroke:#0084ff"/><text x="407" y="77" class="ff-text">S1</text>
+          <rect x="450" y="50" width="55" height="45" class="ff-rect" style="stroke:#0084ff"/><text x="477" y="77" class="ff-text">S2</text>
+          <rect x="540" y="50" width="65" height="45" class="ff-rect" style="stroke:#0084ff"/><text x="572" y="77" class="ff-text">F2</text>
+          <line x1="115" y1="70" x2="380" y2="70" class="sig-line" style="stroke:var(--warn);stroke-dasharray:4,2"/>
+          <line x1="435" y1="70" x2="450" y2="70" class="sig-line"/>
+          <line x1="505" y1="70" x2="540" y2="70" class="sig-line"/>
+          <text x="248" y="65" style="font-size:10px;fill:var(--warn);text-anchor:middle">&#9888; 慢&#8594;快</text>
+          <text x="248" y="120" style="font-size:10px;fill:var(--warn);text-anchor:middle">信号宽度 &gt; T_fast，通常可被采到</text>
+        </svg></div></div>
+        <div class="tab-content" id="ac_cdc02_waveform"><div class="svg-container"><svg viewBox="0 0 700 200" xmlns="http://www.w3.org/2000/svg">
+          <text x="10" y="18" class="wave-label">clk_slow</text>
+          <polyline points="60,35 60,10 160,10 160,35 260,35 260,10 360,10 360,35 460,35 460,10 560,10 560,35" class="wave-clk" style="stroke:#2ed573"/>
+          <text x="10" y="58" class="wave-label">clk_fast</text>
+          <polyline points="60,75 60,55 80,55 80,75 100,75 100,55 120,55 120,75 140,75 140,55 160,55 160,75 180,75 180,55 200,55 200,75 220,75 220,55 240,55 240,75 260,75 260,55 280,55 280,75 300,75 300,55 320,55 320,75 340,75 340,55 360,55 360,75 380,75 380,55 400,55 400,75 420,75 420,55 440,55 440,75 460,75 460,55 480,55 480,75 500,75 500,55 520,55 520,75 540,75 540,55 560,55 560,75" class="wave-clk" style="stroke:#0084ff"/>
+          <text x="10" y="105" class="wave-label">sig_slow</text>
+          <polyline points="60,125 160,125 160,100 360,100 360,125 560,125" class="wave-data" style="stroke:#2ed573"/>
+          <text x="10" y="150" class="wave-label">synced_fast</text>
+          <polyline points="60,170 180,170 180,150 380,150 380,170 560,170" class="wave-ok" style="stroke:var(--success)"/>
+          <text x="270" y="190" style="font-size:10px;fill:var(--success);text-anchor:middle">&#10003; 慢&#8594;快：信号宽度足够，可被多次采样</text>
+        </svg></div></div>
+        <div class="tab-content" id="ac_cdc02_desc"><div class="desc-section">
+          <h4>问题描述</h4>
+          <p>从慢时钟域到快时钟域传递信号时，由于快时钟频率更高，信号宽度通常<span class="highlight">足够被采样</span>。但 SpyGlass 仍会检查此路径，确认同步器结构正确，并在某些边界情况下发出警告。</p>
+          <h4>潜在风险</h4>
+          <ul>
+            <li>如果慢时钟信号宽度恰好为1个慢时钟周期，在快时钟域可能只被采到一次</li>
+            <li>同步器延迟（2个快时钟周期）可能导致信号被延迟采样</li>
+            <li>如果慢时钟信号是脉冲（非电平），仍需使用脉冲同步器</li>
+          </ul>
+          <h4>检查阶段</h4>
+          <p><span class="tag" style="background:rgba(255,165,2,0.15);color:var(--warn)">Severity: Warning</span> &nbsp; <span class="tag" style="background:rgba(0,212,255,0.1);color:var(--accent)">Goal: cdc_verify</span></p>
+        </div></div>
+        <div class="tab-content" id="ac_cdc02_fix"><div class="desc-section">
+          <h4>修复方法</h4>
+          <ul>
+            <li><strong>电平信号:</strong> 使用标准 2-FF 同步器，慢&#8594;快通常安全</li>
+            <li><strong>脉冲信号:</strong> 即使慢&#8594;快，也建议使用 Toggle 脉冲同步器确保可靠性</li>
+            <li><strong>验证信号宽度:</strong> 确认源信号宽度 &#8805; 3 &#215; T_fast（满足 three-edge 要求）</li>
+          </ul>
+        </div>
+        <div class="code-block"><span class="lang-tag">Config</span><span class="cmt"># 设置时钟周期以便工具精确分析</span>
+set_cdc_clock clk_slow -period 20.0
+set_cdc_clock clk_fast -period 5.0
+<span class="cmt"># 如果是脉冲信号，使用 Toggle 同步器</span></div></div>
+        <div class="tab-content" id="ac_cdc02_waiver"><div class="desc-section">
+          <h4>Waiver 条件</h4>
+          <ul>
+            <li>已确认信号为电平信号（非脉冲），且宽度满足要求</li>
+            <li>已使用 Toggle 脉冲同步器处理脉冲信号</li>
+          </ul>
+        </div>
+        <table class="waiver-table">
+          <tr><th>Waiver 标签</th><th>适用场景</th><th>SVA 支持</th></tr>
+          <tr><td><code>Stable Signal;&lt;Enable Condition&gt;</code></td><td>信号为电平信号，宽度足够</td><td>&#9989; Yes</td></tr>
+          <tr><td><code>Toggle Synchronization</code></td><td>已使用 Toggle 脉冲同步器</td><td>&#10060; No</td></tr>
+        </table></div>
+      </div>
+    </div>
+    <div class="rule-card" id="ac_cdc03" data-name="ac_cdc03 多bit信号跨时钟域同步不完整">
+      <div class="rule-header" onclick="toggleCard(this)">
+        <h3><code>Ac_cdc03</code> &mdash; 多bit信号跨时钟域同步不完整</h3>
+        <div class="badges"><span class="badge error">ERROR</span><span class="badge goal">cdc_verify_struct</span></div>
+      </div>
+      <div class="rule-body" id="body_ac_cdc03">
+        <div class="tab-bar">
+          <button class="active" onclick="switchTab(this,'ac_cdc03','circuit')">🔌 电路拓扑</button>
+          <button onclick="switchTab(this,'ac_cdc03','waveform')">📊 波形动画</button>
+          <button onclick="switchTab(this,'ac_cdc03','desc')">📖 详细说明</button>
+          <button onclick="switchTab(this,'ac_cdc03','fix')">🔧 修复方法</button>
+          <button onclick="switchTab(this,'ac_cdc03','waiver')">🏷️ Waiver建议</button>
+        </div>
+        <div class="tab-content active" id="ac_cdc03_circuit"><div class="svg-container"><svg viewBox="0 0 620 180" xmlns="http://www.w3.org/2000/svg">
+          <rect x="10" y="10" width="220" height="160" rx="8" class="domain-a"/>
+          <text x="120" y="28" style="font-size:11px;fill:#0084ff;text-anchor:middle">Domain A (clk_a)</text>
+          <rect x="280" y="10" width="330" height="160" rx="8" class="domain-b"/>
+          <text x="445" y="28" style="font-size:11px;fill:#2ed573;text-anchor:middle">Domain B (clk_b)</text>
+          <rect x="40" y="45" width="65" height="30" class="ff-rect"/><text x="72" y="64" class="ff-text" style="font-size:8px">D[0]</text>
+          <rect x="40" y="85" width="65" height="30" class="ff-rect"/><text x="72" y="104" class="ff-text" style="font-size:8px">D[1]</text>
+          <rect x="40" y="125" width="65" height="30" class="ff-rect"/><text x="72" y="144" class="ff-text" style="font-size:8px">D[n]</text>
+          <!-- D[0] has 2FF sync, D[1..n] have only 1FF -->
+          <rect x="310" y="45" width="55" height="30" class="ff-rect" style="stroke:#2ed573"/><text x="337" y="64" class="ff-text" style="font-size:7px">S1</text>
+          <rect x="380" y="45" width="55" height="30" class="ff-rect" style="stroke:#2ed573"/><text x="407" y="64" class="ff-text" style="font-size:7px">S2</text>
+          <rect x="310" y="85" width="55" height="30" class="ff-rect" style="stroke:var(--warn)"/><text x="337" y="104" class="ff-text" style="font-size:7px">S1only</text>
+          <line x1="105" y1="60" x2="310" y2="60" class="sig-line"/>
+          <line x1="365" y1="60" x2="380" y2="60" class="sig-line"/>
+          <line x1="435" y1="60" x2="580" y2="60" class="sig-line"/>
+          <line x1="105" y1="100" x2="310" y2="100" class="err-line"/>
+          <line x1="365" y1="100" x2="580" y2="100" class="err-line"/>
+          <line x1="105" y1="140" x2="580" y2="140" class="err-line"/>
+          <text x="445" y="155" style="font-size:10px;fill:var(--error);text-anchor:middle">✗ D[1..n] 同步级数不足</text>
+        </svg></div></div>
+        <div class="tab-content" id="ac_cdc03_waveform"><div class="svg-container"><svg viewBox="0 0 500 60" xmlns="http://www.w3.org/2000/svg">
+          <text x="250" y="35" style="font-size:11px;fill:var(--text-secondary);text-anchor:middle">各bit同步级数不同 → 到达目的域的时序不一致 → 采到中间值</text>
+        </svg></div></div>
+        <div class="tab-content" id="ac_cdc03_desc"><div class="desc-section">
+          <h4>问题描述</h4>
+          <p>多bit总线中，不同bit经过了<span class="highlight">不同级数的同步器</span>（如 D[0] 经过2级同步，D[1..n] 只经过1级同步）。这导致各bit到达目的时钟域的时序不一致，目的端可能采到不一致的中间状态。</p>
+          <h4>与 Ac_unsync03 的区别</h4>
+          <ul>
+            <li>Ac_unsync03: 多bit中只有部分bit有同步器，其余bit完全没有同步</li>
+            <li>Ac_cdc03: 多bit都有同步器，但同步级数不同（如1级 vs 2级）</li>
+            <li>两者都会导致多bit数据不一致，但 Ac_cdc03 的风险相对较低</li>
+          </ul>
+          <h4>检查阶段</h4>
+          <p><span class="tag err">Severity: Error</span> &nbsp; <span class="tag" style="background:rgba(0,212,255,0.1);color:var(--accent)">Goal: cdc_verify_struct</span></p>
+        </div></div>
+        <div class="tab-content" id="ac_cdc03_fix"><div class="desc-section">
+          <h4>修复方法</h4>
+          <ul>
+            <li><strong>统一同步级数:</strong> 确保所有bit都经过相同级数（至少2级）的同步器</li>
+            <li><strong>使用异步 FIFO:</strong> 对于数据总线，使用异步 FIFO 是最安全的方案</li>
+            <li><strong>格雷码编码:</strong> 对计数器类信号使用格雷码，确保相邻值只有1bit变化</li>
+          </ul>
+        </div>
+        <div class="code-block"><span class="lang-tag">Verilog</span><span class="cmt">// 确保所有bit使用相同的2级同步器</span>
+<span class="kw">genvar</span> i;
+<span class="kw">generate</span>
+  <span class="kw">for</span> (i=<span class="num">0</span>; i&lt;WIDTH; i=i+<span class="num">1</span>) <span class="kw">begin</span> : gen_sync
+    <span class="cmt">// 每个bit都使用标准2-FF同步器</span>
+    cdc_demet u_sync (
+      .clk(clk_b), .rst_n(rst_b_n),
+      .d(data_a[i]), .q(data_b_sync[i])
+    );
+  <span class="kw">end</span>
+<span class="kw">endgenerate</span></div></div>
+        <div class="tab-content" id="ac_cdc03_waiver"><div class="desc-section">
+          <h4>Waiver 条件</h4>
+          <ul>
+            <li>已使用格雷码编码，相邻值只有1bit变化，1级同步器也可接受</li>
+            <li>信号为准静态，不需要严格的多bit一致性</li>
+          </ul>
+        </div>
+        <table class="waiver-table">
+          <tr><th>Waiver 标签</th><th>适用场景</th><th>SVA 支持</th></tr>
+          <tr><td><code>Gray Code Synchronization</code></td><td>已使用格雷码编码</td><td>❌ No</td></tr>
+          <tr><td><code>Stable Signal;&lt;Enable Condition&gt;</code></td><td>准静态信号</td><td>✅ Yes</td></tr>
+        </table></div>
+      </div>
+    </div>
+    <div class="rule-card" id="ac_cdc04" data-name="ac_cdc04 信号被多个目的时钟域使用但只同步到其中一个">
+      <div class="rule-header" onclick="toggleCard(this)">
+        <h3><code>Ac_cdc04</code> &mdash; 信号被多个目的时钟域使用但只同步到其中一个</h3>
+        <div class="badges"><span class="badge error">ERROR</span><span class="badge goal">cdc_verify_struct</span></div>
+      </div>
+      <div class="rule-body" id="body_ac_cdc04">
+        <div class="tab-bar">
+          <button class="active" onclick="switchTab(this,'ac_cdc04','circuit')">🔌 电路拓扑</button>
+          <button onclick="switchTab(this,'ac_cdc04','waveform')">📊 波形动画</button>
+          <button onclick="switchTab(this,'ac_cdc04','desc')">📖 详细说明</button>
+          <button onclick="switchTab(this,'ac_cdc04','fix')">🔧 修复方法</button>
+          <button onclick="switchTab(this,'ac_cdc04','waiver')">🏷️ Waiver建议</button>
+        </div>
+        <div class="tab-content active" id="ac_cdc04_circuit"><div class="svg-container"><svg viewBox="0 0 650 180" xmlns="http://www.w3.org/2000/svg">
+          <rect x="10" y="5" width="150" height="170" rx="8" class="domain-a"/>
+          <text x="85" y="20" style="font-size:10px;fill:#0084ff;text-anchor:middle">Domain A</text>
+          <rect x="200" y="5" width="180" height="80" rx="8" class="domain-b"/>
+          <text x="290" y="20" style="font-size:9px;fill:#2ed573;text-anchor:middle">Domain B (clk_b)</text>
+          <rect x="200" y="95" width="180" height="80" rx="8" style="fill:rgba(167,139,250,0.08);stroke:#a78bfa;stroke-width:1.5"/>
+          <text x="290" y="110" style="font-size:9px;fill:#a78bfa;text-anchor:middle">Domain C (clk_c)</text>
+          <rect x="430" y="5" width="210" height="170" rx="8" style="fill:rgba(255,165,2,0.05);stroke:#ffa502;stroke-width:1"/>
+          <text x="535" y="20" style="font-size:9px;fill:#ffa502;text-anchor:middle">Domain D (clk_d)</text>
+          <rect x="40" y="70" width="60" height="30" class="ff-rect"/><text x="70" y="89" class="ff-text" style="font-size:8px">SRC</text>
+          <!-- Domain B: has sync -->
+          <rect x="230" y="30" width="50" height="28" class="ff-rect" style="stroke:#2ed573"/><text x="255" y="48" class="ff-text" style="font-size:7px">2FF</text>
+          <rect x="295" y="30" width="50" height="28" class="ff-rect" style="stroke:#2ed573"/><text x="320" y="48" class="ff-text" style="font-size:7px">DST_B</text>
+          <!-- Domain C: has sync -->
+          <rect x="230" y="120" width="50" height="28" class="ff-rect" style="stroke:#a78bfa"/><text x="255" y="138" class="ff-text" style="font-size:7px">2FF</text>
+          <rect x="295" y="120" width="50" height="28" class="ff-rect" style="stroke:#a78bfa"/><text x="320" y="138" class="ff-text" style="font-size:7px">DST_C</text>
+          <!-- Domain D: NO sync -->
+          <rect x="490" y="70" width="60" height="30" class="ff-rect" style="stroke:var(--error)"/><text x="520" y="89" class="ff-text" style="font-size:8px">DST_D</text>
+          <line x1="100" y1="85" x2="230" y2="44" class="sig-line"/>
+          <line x1="100" y1="85" x2="230" y2="134" class="sig-line"/>
+          <line x1="100" y1="85" x2="490" y2="85" class="err-line"/>
+          <line x1="280" y1="44" x2="295" y2="44" class="sig-line"/>
+          <line x1="280" y1="134" x2="295" y2="134" class="sig-line"/>
+          <text x="295" y="80" style="font-size:9px;fill:var(--error);text-anchor:middle">✗ 无同步器</text>
+          <text x="535" y="155" style="font-size:9px;fill:var(--error);text-anchor:middle">Domain D 未同步!</text>
+        </svg></div></div>
+        <div class="tab-content" id="ac_cdc04_waveform"><div class="svg-container"><svg viewBox="0 0 500 60" xmlns="http://www.w3.org/2000/svg">
+          <text x="250" y="35" style="font-size:11px;fill:var(--text-secondary);text-anchor:middle">信号扇出到多个时钟域，部分域有同步器，部分域没有 → 未同步域存在亚稳态风险</text>
+        </svg></div></div>
+        <div class="tab-content" id="ac_cdc04_desc"><div class="desc-section">
+          <h4>问题描述</h4>
+          <p>源时钟域 A 的信号扇出到多个目的时钟域（B、C、D），其中 Domain B 和 C 有正确的同步器，但 Domain D<span class="highlight">没有同步器</span>。SpyGlass 会对每个未同步的目的域分别报告此规则。</p>
+          <h4>常见场景</h4>
+          <ul>
+            <li>设计中新增了一个时钟域，但忘记为该域添加同步器</li>
+            <li>信号通过 assign 语句直接连接到多个模块，部分模块在不同时钟域</li>
+            <li>顶层连线时误将信号直接连接到不同时钟域的端口</li>
+          </ul>
+          <h4>检查阶段</h4>
+          <p><span class="tag err">Severity: Error</span> &nbsp; <span class="tag" style="background:rgba(0,212,255,0.1);color:var(--accent)">Goal: cdc_verify_struct</span></p>
+        </div></div>
+        <div class="tab-content" id="ac_cdc04_fix"><div class="desc-section">
+          <h4>修复方法</h4>
+          <ul>
+            <li><strong>为每个目的时钟域添加独立的同步器:</strong> 每个时钟域需要自己的 2-FF 同步器</li>
+            <li><strong>不要共用同步器输出:</strong> 不同时钟域的同步器不能共享，每个域需要独立实例</li>
+          </ul>
+        </div>
+        <div class="code-block"><span class="lang-tag">Verilog</span><span class="cmt">// 为每个目的时钟域添加独立同步器</span>
+<span class="cmt">// Domain B 的同步器</span>
+cdc_demet u_sync_b (.clk(clk_b), .rst_n(rst_b_n), .d(sig_a), .q(sig_b));
+
+<span class="cmt">// Domain C 的同步器（独立实例）</span>
+cdc_demet u_sync_c (.clk(clk_c), .rst_n(rst_c_n), .d(sig_a), .q(sig_c));
+
+<span class="cmt">// Domain D 的同步器（不能省略！）</span>
+cdc_demet u_sync_d (.clk(clk_d), .rst_n(rst_d_n), .d(sig_a), .q(sig_d));</div></div>
+        <div class="tab-content" id="ac_cdc04_waiver"><div class="desc-section">
+          <h4>Waiver 条件</h4>
+          <ul>
+            <li>某个目的域在信号跨越时处于关闭状态（Clock Off）</li>
+            <li>某个目的域不使用该信号的值（Receiver Ignore）</li>
+            <li>信号为准静态信号（quasi_static）</li>
+          </ul>
+        </div>
+        <table class="waiver-table">
+          <tr><th>Waiver 标签</th><th>适用场景</th><th>SVA 支持</th></tr>
+          <tr><td><code>Stable Signal Clock Off;&lt;Enable&gt;</code></td><td>目的时钟域关闭时信号跨越</td><td>✅ Yes</td></tr>
+          <tr><td><code>Stable Signal Receiver Ignore</code></td><td>目的端不使用该信号</td><td>✅ Yes</td></tr>
+        </table>
+        <div class="code-block"><span class="lang-tag">SGDC</span><span class="cmt"># 声明某个目的域不使用该信号</span>
+set_cdc_waiver -scheme unsynchronized   -from {top.u_src.sig_a}   -to {top.u_dst_d.reg_d}   -comment "Stable Signal Receiver Ignore;Domain D does not use this signal"</div></div>
+      </div>
+    </div>
+    </div></div>
+    <div class="category-section" id="cat3">
+      <div class="category-header">
+        <div class="cat-icon" style="background:linear-gradient(135deg,rgba(255,165,2,0.2),rgba(255,165,2,0.05));color:#ffa502;border:1px solid rgba(255,165,2,0.2)">📌</div>
+        <h2>数据保持 (Data Hold Issues)</h2>
+        <span class="cat-count">2 条规则</span>
+      </div>
+    <div class="rule-card" id="ac_datahold01a" data-name="ac_datahold01a 数据在使能有效期间发生变化">
+      <div class="rule-header" onclick="toggleCard(this)">
+        <h3><code>Ac_datahold01a</code> — 数据在使能有效期间发生变化</h3>
+        <div class="badges">
+          <span class="badge warning">WARNING</span>
+          <span class="badge goal">cdc_verify</span>
+        </div>
+      </div>
+      <div class="rule-body" id="body_ac_datahold01a">
+        <div class="tab-bar">
+          <button class="active" onclick="switchTab(this,'ac_datahold01a','circuit')">🔌 电路拓扑</button>
+          <button onclick="switchTab(this,'ac_datahold01a','waveform')">📊 波形动画</button>
+          <button onclick="switchTab(this,'ac_datahold01a','desc')">📖 详细说明</button>
+          <button onclick="switchTab(this,'ac_datahold01a','fix')">🔧 修复方法</button>
+          <button onclick="switchTab(this,'ac_datahold01a','waiver')">🏷️ Waiver建议</button>
+        </div>
+        <div class="tab-content active" id="ac_datahold01a_circuit"><div class="svg-container"><svg viewBox="0 0 650 170" xmlns="http://www.w3.org/2000/svg">
+                  <rect x="10" y="5" width="240" height="160" rx="8" class="domain-a"/>
+                  <text x="130" y="22" style="font-size:11px;fill:#0084ff;text-anchor:middle">Domain A (clk_a)</text>
+                  <rect x="300" y="5" width="340" height="160" rx="8" class="domain-b"/>
+                  <text x="470" y="22" style="font-size:11px;fill:#2ed573;text-anchor:middle">Domain B (clk_b)</text>
+                  <!-- Source data FF -->
+                  <rect x="40" y="40" width="65" height="35" class="ff-rect"/><text x="72" y="61" class="ff-text">DATA</text>
+                  <!-- Source enable FF -->
+                  <rect x="40" y="100" width="65" height="35" class="ff-rect"/><text x="72" y="121" class="ff-text">EN</text>
+                  <!-- Sync FFs for enable -->
+                  <rect x="340" y="100" width="50" height="35" class="ff-rect" style="stroke:#2ed573"/><text x="365" y="121" class="ff-text">S1</text>
+                  <rect x="410" y="100" width="50" height="35" class="ff-rect" style="stroke:#2ed573"/><text x="435" y="121" class="ff-text">S2</text>
+                  <!-- MUX -->
+                  <rect x="500" y="45" width="35" height="65" style="fill:rgba(255,255,255,0.05);stroke:var(--text-secondary);stroke-width:1.5" rx="3"/>
+                  <text x="517" y="80" style="font-size:9px;fill:var(--text-primary);text-anchor:middle">MUX</text>
+                  <!-- Dest FF -->
+                  <rect x="560" y="55" width="60" height="35" class="ff-rect" style="stroke:#2ed573"/><text x="590" y="76" class="ff-text">D_OUT</text>
+                  <!-- Connections -->
+                  <line x1="105" y1="57" x2="500" y2="57" class="err-line" style="stroke:var(--warn)"/>
+                  <line x1="105" y1="117" x2="340" y2="117" class="sig-line"/>
+                  <line x1="390" y1="117" x2="410" y2="117" class="sig-line"/>
+                  <line x1="460" y1="117" x2="517" y2="110" class="sig-line"/>
+                  <line x1="535" y1="72" x2="560" y2="72" class="sig-line"/>
+                  <text x="300" y="52" style="font-size:10px;fill:var(--warn);text-anchor:middle">⚠ 数据在EN有效时变化!</text>
+                </svg></div></div>
+        <div class="tab-content" id="ac_datahold01a_waveform"><div class="svg-container"><svg viewBox="0 0 700 220" xmlns="http://www.w3.org/2000/svg">
+                  <text x="10" y="18" class="wave-label">clk_b ↑</text>
+                  <line x1="140" y1="5" x2="140" y2="210" style="stroke:rgba(46,213,115,0.3);stroke-width:1;stroke-dasharray:3,3"/>
+                  <line x1="280" y1="5" x2="280" y2="210" style="stroke:rgba(46,213,115,0.3);stroke-width:1;stroke-dasharray:3,3"/>
+                  <line x1="420" y1="5" x2="420" y2="210" style="stroke:rgba(46,213,115,0.3);stroke-width:1;stroke-dasharray:3,3"/>
+                  <text x="10" y="55" class="wave-label">en_sync</text>
+                  <polyline points="60,70 140,70 140,45 420,45 420,70 600,70" class="wave-ok" style="stroke:#2ed573"/>
+                  <text x="10" y="100" class="wave-label">data_a</text>
+                  <rect x="60" y="95" width="200" height="22" style="fill:rgba(255,165,2,0.1);stroke:#ffa502;stroke-width:1" rx="3"/>
+                  <text x="160" y="110" style="font-size:10px;fill:#ffa502;text-anchor:middle">DATA_A</text>
+                  <rect x="260" y="95" width="200" height="22" style="fill:rgba(255,71,87,0.15);stroke:var(--error);stroke-width:1.5" rx="3">
+                    <animate attributeName="opacity" values="0.5;1;0.5" dur="1.5s" repeatCount="indefinite"/>
+                  </rect>
+                  <text x="360" y="110" style="font-size:10px;fill:var(--error);text-anchor:middle;font-weight:600">DATA_B (变化!)</text>
+                  <text x="10" y="150" class="wave-label">sampled</text>
+                  <rect x="280" y="140" width="140" height="22" class="metastable" rx="3">
+                    <animate attributeName="opacity" values="0.4;0.9;0.4" dur="1.2s" repeatCount="indefinite"/>
+                  </rect>
+                  <text x="350" y="155" style="font-size:10px;fill:var(--error);text-anchor:middle">DATA_A or DATA_B ?</text>
+                  <text x="350" y="200" style="font-size:11px;fill:var(--error);text-anchor:middle">⚠ EN有效期间data变化 → 采样值不确定</text>
+                </svg></div></div>
+        <div class="tab-content" id="ac_datahold01a_desc"><div class="desc-section">
+                  <h4>问题描述</h4>
+                  <p>在数据同步 (Data Synchronization) 结构中，当同步后的使能信号 <code>en_sync</code> 有效时，源端数据 <code>data_a</code> 发生了变化。此时目的端寄存器可能<span class="highlight">采到数据跳变的中间状态</span>，导致数据不正确。</p>
+                  <h4>正确行为应为</h4>
+                  <ul>
+                    <li>先稳定数据 → 再拉高使能</li>
+                    <li>使能有效期间，数据必须保持不变</li>
+                    <li>数据被采样后 → 才能改变数据或拉低使能</li>
+                  </ul>
+                </div></div>
+        <div class="tab-content" id="ac_datahold01a_fix"><div class="desc-section">
+                  <h4>修复方法</h4>
+                  <ul>
+                    <li><strong>源端逻辑保证:</strong> 确保数据在使能拉高前已稳定，使能期间不改变数据</li>
+                    <li><strong>握手协议:</strong> 使用 req/ack 握手确保数据稳定后再通知目的端采样</li>
+                    <li><strong>异步 FIFO:</strong> 如果数据变化频繁，使用异步 FIFO 解耦</li>
+                  </ul>
+                </div>
+                <div class="code-block"><span class="lang-tag">Verilog</span><span class="cmt">// 正确的时序: 先稳定数据，再拉高使能</span>
+<span class="kw">always</span> @(<span class="kw">posedge</span> clk_a) <span class="kw">begin</span>
+  <span class="kw">case</span> (state)
+    IDLE: <span class="kw">begin</span>
+      data_out <= new_data;  <span class="cmt">// 先锁存数据</span>
+      state   <= WAIT;
+    <span class="kw">end</span>
+    WAIT: <span class="kw">begin</span>
+      en_out <= <span class="num">1'b1</span>;       <span class="cmt">// 数据稳定后拉高使能</span>
+      state  <= HOLD;
+    <span class="kw">end</span>
+    HOLD: <span class="kw">if</span> (ack_sync)
+      en_out <= <span class="num">1'b0</span>;       <span class="cmt">// 收到确认后释放使能</span>
+  <span class="kw">endcase</span>
+<span class="kw">end</span></div></div>
+        <div class="tab-content" id="ac_datahold01a_waiver"><div class="desc-section">
+                  <h4>Waiver 条件</h4>
+                  <ul>
+                    <li>功能上保证在使能有效时数据不会变化</li>
+                    <li>数据路径有其他保护机制（如 FIFO empty 信号保护）</li>
+                    <li>缺少复位信号导致的误报（检查 setup 约束）</li>
+                  </ul>
+                </div>
+                <table class="waiver-table">
+                  <tr><th>可能原因</th><th>解决方法</th></tr>
+                  <tr><td>缺少 reset 约束</td><td>补充 <code>reset</code> 定义到 SGDC</td></tr>
+                  <tr><td>setup 流程不完整</td><td>检查 <code>cdc_setup</code> 结果</td></tr>
+                  <tr><td>功能上数据确实稳定</td><td>添加 SVA assertion 验证</td></tr>
+                </table></div>
+      </div>
+<div class="rule-card" id="ac_datahold01" data-name="ac_datahold01 数据保持基础规则（使能无效时数据变化）">
+      <div class="rule-header" onclick="toggleCard(this)">
+        <h3><code>Ac_datahold01</code> &mdash; 数据保持基础规则（使能无效时数据变化）</h3>
+        <div class="badges"><span class="badge warning">WARNING</span><span class="badge goal">cdc_verify_struct</span></div>
+      </div>
+      <div class="rule-body" id="body_ac_datahold01">
+        <div class="tab-bar">
+          <button class="active" onclick="switchTab(this,'ac_datahold01','circuit')">🔌 电路拓扑</button>
+          <button onclick="switchTab(this,'ac_datahold01','waveform')">📊 波形动画</button>
+          <button onclick="switchTab(this,'ac_datahold01','desc')">📖 详细说明</button>
+          <button onclick="switchTab(this,'ac_datahold01','fix')">🔧 修复方法</button>
+          <button onclick="switchTab(this,'ac_datahold01','waiver')">🏷️ Waiver建议</button>
+        </div>
+        <div class="tab-content active" id="ac_datahold01_circuit"><div class="svg-container"><svg viewBox="0 0 650 160" xmlns="http://www.w3.org/2000/svg">
+          <rect x="10" y="5" width="240" height="150" rx="8" class="domain-a"/>
+          <text x="130" y="22" style="font-size:11px;fill:#0084ff;text-anchor:middle">Domain A (clk_a)</text>
+          <rect x="300" y="5" width="340" height="150" rx="8" class="domain-b"/>
+          <text x="470" y="22" style="font-size:11px;fill:#2ed573;text-anchor:middle">Domain B (clk_b)</text>
+          <rect x="40" y="40" width="65" height="30" class="ff-rect"/><text x="72" y="59" class="ff-text">DATA</text>
+          <rect x="40" y="90" width="65" height="30" class="ff-rect"/><text x="72" y="109" class="ff-text">EN</text>
+          <rect x="340" y="90" width="50" height="30" class="ff-rect" style="stroke:#2ed573"/><text x="365" y="109" class="ff-text">S1</text>
+          <rect x="410" y="90" width="50" height="30" class="ff-rect" style="stroke:#2ed573"/><text x="435" y="109" class="ff-text">S2</text>
+          <rect x="500" y="45" width="35" height="60" style="fill:rgba(255,255,255,0.05);stroke:var(--text-secondary);stroke-width:1.5" rx="3"/>
+          <text x="517" y="78" style="font-size:9px;fill:var(--text-primary);text-anchor:middle">MUX</text>
+          <rect x="555" y="50" width="60" height="30" class="ff-rect" style="stroke:#2ed573"/><text x="585" y="69" class="ff-text">D_OUT</text>
+          <line x1="105" y1="55" x2="500" y2="55" class="sig-line" style="stroke:var(--warn);stroke-dasharray:5,3"/>
+          <line x1="105" y1="105" x2="340" y2="105" class="sig-line"/>
+          <line x1="390" y1="105" x2="410" y2="105" class="sig-line"/>
+          <line x1="460" y1="105" x2="517" y2="95" class="sig-line"/>
+          <line x1="535" y1="65" x2="555" y2="65" class="sig-line"/>
+          <text x="300" y="45" style="font-size:10px;fill:var(--warn);text-anchor:middle">⚠ EN无效时DATA仍在变化</text>
+          <text x="300" y="140" style="font-size:10px;fill:var(--text-secondary);text-anchor:middle">结构上存在数据保持风险（功能上可能正确）</text>
+        </svg></div></div>
+        <div class="tab-content" id="ac_datahold01_waveform"><div class="svg-container"><svg viewBox="0 0 700 200" xmlns="http://www.w3.org/2000/svg">
+          <text x="10" y="18" class="wave-label">clk_b ↑</text>
+          <line x1="140" y1="5" x2="140" y2="190" style="stroke:rgba(46,213,115,0.3);stroke-width:1;stroke-dasharray:3,3"/>
+          <line x1="280" y1="5" x2="280" y2="190" style="stroke:rgba(46,213,115,0.3);stroke-width:1;stroke-dasharray:3,3"/>
+          <text x="10" y="55" class="wave-label">en_sync</text>
+          <polyline points="60,70 280,70 280,50 420,50 420,70 600,70" class="wave-ok" style="stroke:#2ed573"/>
+          <text x="10" y="100" class="wave-label">data_a</text>
+          <rect x="60" y="95" width="80" height="22" style="fill:rgba(255,165,2,0.1);stroke:#ffa502;stroke-width:1" rx="3"/>
+          <text x="100" y="110" style="font-size:10px;fill:#ffa502;text-anchor:middle">V1</text>
+          <rect x="140" y="95" width="80" height="22" style="fill:rgba(255,71,87,0.1);stroke:var(--error);stroke-width:1" rx="3"/>
+          <text x="180" y="110" style="font-size:10px;fill:var(--error);text-anchor:middle">V2(变!)</text>
+          <rect x="220" y="95" width="80" height="22" style="fill:rgba(255,165,2,0.1);stroke:#ffa502;stroke-width:1" rx="3"/>
+          <text x="260" y="110" style="font-size:10px;fill:#ffa502;text-anchor:middle">V3</text>
+          <rect x="300" y="95" width="120" height="22" style="fill:rgba(46,213,115,0.1);stroke:#2ed573;stroke-width:1" rx="3"/>
+          <text x="360" y="110" style="font-size:10px;fill:#2ed573;text-anchor:middle">V4 (EN有效期间稳定)</text>
+          <text x="10" y="150" class="wave-label">sampled</text>
+          <rect x="280" y="140" width="140" height="22" style="fill:rgba(46,213,115,0.15);stroke:#2ed573;stroke-width:1" rx="3"/>
+          <text x="350" y="155" style="font-size:10px;fill:#2ed573;text-anchor:middle">V4 ✓</text>
+          <text x="200" y="185" style="font-size:10px;fill:var(--warn);text-anchor:middle">EN无效时DATA变化 → 结构级警告（功能上可能正确）</text>
+        </svg></div></div>
+        <div class="tab-content" id="ac_datahold01_desc"><div class="desc-section">
+          <h4>问题描述</h4>
+          <p><code>Ac_datahold01</code> 是 <code>Ac_datahold01a</code> 的基础规则，在结构级检查中发现数据信号在使能信号<span class="highlight">无效期间</span>发生了变化。与 Ac_datahold01a 不同，此规则检测的是使能无效时的数据变化，功能上可能是正确的。</p>
+          <h4>与 Ac_datahold01a 的区别</h4>
+          <ul>
+            <li>Ac_datahold01a: 使能<strong>有效</strong>期间数据变化（更严重，ERROR 级别）</li>
+            <li>Ac_datahold01: 使能<strong>无效</strong>期间数据变化（结构级警告，WARNING 级别）</li>
+            <li>Ac_datahold01 通常是 WARNING 级别，功能上可能正确</li>
+          </ul>
+          <h4>检查阶段</h4>
+          <p><span class="tag" style="background:rgba(255,165,2,0.15);color:var(--warn)">Severity: Warning</span> &nbsp; <span class="tag" style="background:rgba(0,212,255,0.1);color:var(--accent)">Goal: cdc_verify_struct</span></p>
+        </div></div>
+        <div class="tab-content" id="ac_datahold01_fix"><div class="desc-section">
+          <h4>修复方法</h4>
+          <ul>
+            <li><strong>确认功能正确性:</strong> 验证在使能有效时数据确实稳定</li>
+            <li><strong>添加 SVA 断言:</strong> 在 DV 中验证数据保持时序</li>
+            <li><strong>握手协议:</strong> 使用 req/ack 确保数据稳定后再传使能</li>
+          </ul>
+        </div>
+        <div class="code-block"><span class="lang-tag">SVA</span><span class="cmt">// SVA 断言: 验证 EN 有效时 DATA 稳定</span>
+<span class="kw">property</span> data_stable_when_en;
+  @(<span class="kw">posedge</span> clk_b)
+  en_sync |-> $stable(data_a);
+<span class="kw">endproperty</span>
+assert_data_hold: <span class="kw">assert property</span>(data_stable_when_en)
+  <span class="kw">else</span> $error(<span class="str">"Data changed while enable is active!"</span>);</div></div>
+        <div class="tab-content" id="ac_datahold01_waiver"><div class="desc-section">
+          <h4>Waiver 条件</h4>
+          <ul>
+            <li>功能上已验证使能有效时数据稳定（EN无效时变化不影响采样）</li>
+            <li>已添加 SVA 断言在 DV 中验证</li>
+          </ul>
+        </div>
+        <table class="waiver-table">
+          <tr><th>Waiver 标签</th><th>适用场景</th><th>SVA 支持</th></tr>
+          <tr><td><code>Stable Signal;&lt;Enable Condition&gt;</code></td><td>功能上保证EN有效时数据稳定</td><td>✅ Yes</td></tr>
+        </table>
+        <div class="code-block"><span class="lang-tag">SGDC</span><span class="cmt"># TCL Waiver</span>
+set_cdc_waiver -scheme data_hold \
+  -from {top.u_src.data_out[*]} \
+  -to {top.u_dst.data_reg[*]} \
+  -comment "Stable Signal;data stable when en_sync is high, verified by SVA"</div></div>
+      </div>
+    </div>
+    </div></div>
+    <div class="category-section" id="cat4">
+      <div class="category-header">
+        <div class="cat-icon" style="background:linear-gradient(135deg,rgba(112,161,255,0.2),rgba(112,161,255,0.05));color:#70a1ff;border:1px solid rgba(112,161,255,0.2)">🔀</div>
+        <h2>收敛性问题 (Convergence Issues)</h2>
+        <span class="cat-count">4 条规则</span>
+      </div>
+    <div class="rule-card" id="ac_conv01" data-name="ac_conv01 同步信号经不同级数寄存器后收敛">
+      <div class="rule-header" onclick="toggleCard(this)">
+        <h3><code>Ac_conv01</code> — 同步信号经不同级数寄存器后收敛</h3>
+        <div class="badges">
+          <span class="badge warning">WARNING</span>
+          <span class="badge goal">cdc_verify_struct</span>
+        </div>
+      </div>
+      <div class="rule-body" id="body_ac_conv01">
+        <div class="tab-bar">
+          <button class="active" onclick="switchTab(this,'ac_conv01','circuit')">🔌 电路拓扑</button>
+          <button onclick="switchTab(this,'ac_conv01','waveform')">📊 波形动画</button>
+          <button onclick="switchTab(this,'ac_conv01','desc')">📖 详细说明</button>
+          <button onclick="switchTab(this,'ac_conv01','fix')">🔧 修复方法</button>
+          <button onclick="switchTab(this,'ac_conv01','waiver')">🏷️ Waiver建议</button>
+        </div>
+        <div class="tab-content active" id="ac_conv01_circuit"><div class="svg-container"><svg viewBox="0 0 650 180" xmlns="http://www.w3.org/2000/svg">
+                  <rect x="10" y="5" width="140" height="170" rx="8" class="domain-a"/>
+                  <text x="80" y="20" style="font-size:10px;fill:#0084ff;text-anchor:middle">Domain A</text>
+                  <rect x="180" y="5" width="460" height="170" rx="8" class="domain-b"/>
+                  <text x="410" y="20" style="font-size:10px;fill:#2ed573;text-anchor:middle">Domain B</text>
+                  <!-- Signal X path: sync + 1 reg -->
+                  <rect x="30" y="40" width="50" height="30" class="ff-rect"/><text x="55" y="59" class="ff-text" style="font-size:9px">X</text>
+                  <rect x="210" y="40" width="50" height="30" class="ff-rect" style="stroke:#2ed573"/><text x="235" y="59" class="ff-text" style="font-size:8px">sync</text>
+                  <rect x="280" y="40" width="50" height="30" class="ff-rect" style="stroke:#2ed573"/><text x="305" y="59" class="ff-text" style="font-size:8px">sync</text>
+                  <rect x="360" y="40" width="50" height="30" class="ff-rect" style="stroke:#2ed573"/><text x="385" y="59" class="ff-text" style="font-size:8px">R1</text>
+                  <!-- Signal Y path: sync + 2 reg -->
+                  <rect x="30" y="110" width="50" height="30" class="ff-rect"/><text x="55" y="129" class="ff-text" style="font-size:9px">Y</text>
+                  <rect x="210" y="110" width="50" height="30" class="ff-rect" style="stroke:#2ed573"/><text x="235" y="129" class="ff-text" style="font-size:8px">sync</text>
+                  <rect x="280" y="110" width="50" height="30" class="ff-rect" style="stroke:#2ed573"/><text x="305" y="129" class="ff-text" style="font-size:8px">sync</text>
+                  <rect x="360" y="110" width="50" height="30" class="ff-rect" style="stroke:#2ed573"/><text x="385" y="129" class="ff-text" style="font-size:8px">R1</text>
+                  <rect x="440" y="110" width="50" height="30" class="ff-rect" style="stroke:#2ed573"/><text x="465" y="129" class="ff-text" style="font-size:8px">R2</text>
+                  <!-- Convergence gate -->
+                  <circle cx="555" cy="90" r="20" style="fill:rgba(255,71,87,0.15);stroke:var(--error);stroke-width:1.5"/>
+                  <text x="555" y="94" style="font-size:10px;fill:var(--error);text-anchor:middle;font-weight:700">AND</text>
+                  <!-- Lines -->
+                  <line x1="80" y1="55" x2="210" y2="55" class="sig-line"/>
+                  <line x1="260" y1="55" x2="280" y2="55" class="sig-line"/>
+                  <line x1="330" y1="55" x2="360" y2="55" class="sig-line"/>
+                  <line x1="410" y1="55" x2="540" y2="78" class="sig-line"/>
+                  <line x1="80" y1="125" x2="210" y2="125" class="sig-line"/>
+                  <line x1="260" y1="125" x2="280" y2="125" class="sig-line"/>
+                  <line x1="330" y1="125" x2="360" y2="125" class="sig-line"/>
+                  <line x1="410" y1="125" x2="440" y2="125" class="sig-line"/>
+                  <line x1="490" y1="125" x2="540" y2="102" class="sig-line"/>
+                  <line x1="575" y1="90" x2="630" y2="90" class="sig-line"/>
+                  <text x="430" y="35" style="font-size:9px;fill:var(--text-secondary);text-anchor:middle">X: sync+1级</text>
+                  <text x="480" y="155" style="font-size:9px;fill:var(--text-secondary);text-anchor:middle">Y: sync+2级</text>
+                  <text x="555" y="170" style="font-size:10px;fill:var(--error);text-anchor:middle">⚠ 延迟不一致!</text>
+                </svg></div></div>
+        <div class="tab-content" id="ac_conv01_waveform"><div class="svg-container"><svg viewBox="0 0 600 150" xmlns="http://www.w3.org/2000/svg">
+                  <text x="10" y="18" class="wave-label">X_synced</text>
+                  <polyline points="60,35 160,35 160,15 360,15 360,35 500,35" class="wave-ok" style="stroke:#0084ff"/>
+                  <text x="10" y="58" class="wave-label">Y_synced</text>
+                  <polyline points="60,75 210,75 210,55 410,55 410,75 500,75" class="wave-ok" style="stroke:#ffa502"/>
+                  <text x="10" y="98" class="wave-label">AND out</text>
+                  <polyline points="60,115 210,115 210,95 360,95 360,115 500,115" class="wave-err"/>
+                  <rect x="160" y="86" width="50" height="36" style="fill:rgba(255,71,87,0.15);stroke:var(--error);stroke-width:1;stroke-dasharray:3,2" rx="3"/>
+                  <text x="185" y="108" style="font-size:9px;fill:var(--error);text-anchor:middle">skew!</text>
+                  <text x="300" y="140" style="font-size:10px;fill:var(--error);text-anchor:middle">X 和 Y 之间存在1周期偏移 → 输出可能出现毛刺</text>
+                </svg></div></div>
+        <div class="tab-content" id="ac_conv01_desc"><div class="desc-section">
+                  <h4>问题描述</h4>
+                  <p>两个来自同一源时钟域 A 的信号 X 和 Y，分别通过各自的同步器进入时钟域 B 后，经过<span class="highlight">不同级数的寄存器</span>（X 经过1级，Y 经过2级），最后在一个逻辑门处收敛。由于额外寄存器引入的延迟，两个信号可能出现<span class="highlight">时序偏移 (skew)</span>，导致输出短暂出现错误值。</p>
+                  <h4>示例</h4>
+                  <p>假设源端 X=0,Y=0 同时变为 X=1,Y=1。由于 Y 多经过一级寄存器，在某个周期可能出现 X=1,Y=0 的状态，AND 门输出短暂为 0（应该为 1）。</p>
+                </div></div>
+        <div class="tab-content" id="ac_conv01_fix"><div class="desc-section">
+                  <h4>修复方法</h4>
+                  <ul>
+                    <li>确保收敛信号经过相同级数的寄存器</li>
+                    <li>使用格雷码 (Gray Code) 编码，确保相邻值只有1bit变化</li>
+                    <li>使用单一同步机制（如异步 FIFO）传递相关多bit信号</li>
+                    <li>如果信号不相关，使用 <code>cdc_filter_coherency</code> 约束</li>
+                  </ul>
+                </div></div>
+        <div class="tab-content" id="ac_conv01_waiver"><div class="desc-section">
+                  <h4>Waiver 条件</h4>
+                  <ul>
+                    <li>两个信号功能上不相关（如独立的中断信号）</li>
+                    <li>两个信号不会同时跳变（如互斥信号）</li>
+                  </ul>
+                </div>
+                <div class="code-block"><span class="lang-tag">SGDC</span><span class="cmt"># 声明信号不相关</span>
+cdc_filter_coherency -unrelated sig_x sig_y
+
+<span class="cmt"># 声明格雷码信号</span>
+gray_signals -name gray_ptr[3:0]</div></div>
+      </div>
+    </div>
+    <div class="rule-card" id="ac_conv02" data-name="ac_conv02 同步信号在寄存器前收敛">
+      <div class="rule-header" onclick="toggleCard(this)">
+        <h3><code>Ac_conv02</code> — 同步信号在寄存器前收敛</h3>
+        <div class="badges">
+          <span class="badge warning">WARNING</span>
+          <span class="badge goal">cdc_verify_struct</span>
+        </div>
+      </div>
+      <div class="rule-body" id="body_ac_conv02">
+        <div class="tab-bar">
+          <button class="active" onclick="switchTab(this,'ac_conv02','circuit')">🔌 电路拓扑</button>
+          <button onclick="switchTab(this,'ac_conv02','waveform')">📊 波形动画</button>
+          <button onclick="switchTab(this,'ac_conv02','desc')">📖 详细说明</button>
+          <button onclick="switchTab(this,'ac_conv02','fix')">🔧 修复方法</button>
+          <button onclick="switchTab(this,'ac_conv02','waiver')">🏷️ Waiver建议</button>
+        </div>
+        <div class="tab-content active" id="ac_conv02_circuit"><div class="svg-container"><svg viewBox="0 0 550 150" xmlns="http://www.w3.org/2000/svg">
+                  <rect x="10" y="5" width="100" height="140" rx="8" class="domain-a"/>
+                  <rect x="140" y="5" width="400" height="140" rx="8" class="domain-b"/>
+                  <text x="60" y="20" style="font-size:10px;fill:#0084ff;text-anchor:middle">Dom A</text>
+                  <text x="340" y="20" style="font-size:10px;fill:#2ed573;text-anchor:middle">Domain B</text>
+                  <!-- Multi-bit signal each through own sync -->
+                  <rect x="30" y="40" width="45" height="25" class="ff-rect"/><text x="52" y="56" class="ff-text" style="font-size:8px">D[0]</text>
+                  <rect x="30" y="85" width="45" height="25" class="ff-rect"/><text x="52" y="101" class="ff-text" style="font-size:8px">D[1]</text>
+                  <rect x="170" y="40" width="45" height="25" class="ff-rect" style="stroke:#2ed573"/><text x="192" y="56" class="ff-text" style="font-size:7px">2FF</text>
+                  <rect x="170" y="85" width="45" height="25" class="ff-rect" style="stroke:#2ed573"/><text x="192" y="101" class="ff-text" style="font-size:7px">2FF</text>
+                  <!-- Convergence -->
+                  <circle cx="305" cy="72" r="18" style="fill:rgba(255,71,87,0.15);stroke:var(--error);stroke-width:1.5"/>
+                  <text x="305" y="76" style="font-size:9px;fill:var(--error);text-anchor:middle;font-weight:700">LOGIC</text>
+                  <!-- Dest reg -->
+                  <rect x="370" y="58" width="50" height="30" class="ff-rect" style="stroke:#2ed573"/><text x="395" y="77" class="ff-text" style="font-size:8px">REG</text>
+                  <line x1="75" y1="52" x2="170" y2="52" class="sig-line"/>
+                  <line x1="75" y1="97" x2="170" y2="97" class="sig-line"/>
+                  <line x1="215" y1="52" x2="290" y2="62" class="sig-line"/>
+                  <line x1="215" y1="97" x2="290" y2="82" class="sig-line"/>
+                  <line x1="323" y1="72" x2="370" y2="72" class="sig-line"/>
+                  <line x1="420" y1="72" x2="500" y2="72" class="sig-line"/>
+                  <text x="305" y="130" style="font-size:10px;fill:var(--error);text-anchor:middle">⚠ 同步后直接收敛，无对齐寄存器</text>
+                </svg></div></div>
+        <div class="tab-content" id="ac_conv02_waveform"><div class="svg-container"><svg viewBox="0 0 500 80" xmlns="http://www.w3.org/2000/svg">
+                  <text x="250" y="45" style="font-size:12px;fill:var(--text-secondary);text-anchor:middle">波形类似 Ac_conv01，各bit同步后存在1周期偏移</text>
+                </svg></div></div>
+        <div class="tab-content" id="ac_conv02_desc"><div class="desc-section">
+                  <h4>问题描述</h4>
+                  <p>多bit信号各自通过独立的同步器到达目的时钟域后，<span class="highlight">在寄存器之前的组合逻辑处直接收敛</span>。由于各bit通过同步器的延迟可能不同，收敛处可能出现短暂的错误组合值。</p>
+                  <p>典型场景：二进制计数器值 011→100 跨时钟域，各bit独立同步后可能出现 111、110 等中间值。</p>
+                  <h4>解决思路</h4>
+                  <p>使用<span class="success">格雷码编码</span>，确保相邻值只有1bit变化，即使有偏移也不会产生错误值。</p>
+                </div></div>
+        <div class="tab-content" id="ac_conv02_fix"><div class="desc-section"><h4>修复方法</h4>
+                  <ul><li>将二进制编码转为格雷码后再同步</li><li>使用异步 FIFO 传递多bit数据</li></ul>
+                </div>
+                <div class="code-block"><span class="lang-tag">Verilog</span><span class="cmt">// 二进制转格雷码</span>
+<span class="kw">assign</span> gray_ptr = bin_ptr ^ (bin_ptr >> <span class="num">1</span>);
+
+<span class="cmt">// 同步格雷码指针</span>
+<span class="kw">always</span> @(<span class="kw">posedge</span> clk_b) <span class="kw">begin</span>
+  gray_sync1 <= gray_ptr;
+  gray_sync2 <= gray_sync1;
+<span class="kw">end</span></div></div>
+        <div class="tab-content" id="ac_conv02_waiver"><div class="desc-section"><h4>Waiver 条件</h4>
+                  <p>同 Ac_conv01。使用 <code>cdc_filter_coherency</code> 或 <code>gray_signals</code> 约束。</p>
+                </div></div>
+      </div>
+    </div>
+    <div class="rule-card" id="ac_conv03" data-name="ac_conv03 不同域信号经同步器后收敛">
+      <div class="rule-header" onclick="toggleCard(this)">
+        <h3><code>Ac_conv03</code> — 不同域信号经同步器后收敛</h3>
+        <div class="badges">
+          <span class="badge warning">WARNING</span>
+          <span class="badge goal">cdc_verify_struct</span>
+        </div>
+      </div>
+      <div class="rule-body" id="body_ac_conv03">
+        <div class="tab-bar">
+          <button class="active" onclick="switchTab(this,'ac_conv03','circuit')">🔌 电路拓扑</button>
+          <button onclick="switchTab(this,'ac_conv03','waveform')">📊 波形动画</button>
+          <button onclick="switchTab(this,'ac_conv03','desc')">📖 详细说明</button>
+          <button onclick="switchTab(this,'ac_conv03','fix')">🔧 修复方法</button>
+          <button onclick="switchTab(this,'ac_conv03','waiver')">🏷️ Waiver建议</button>
+        </div>
+        <div class="tab-content active" id="ac_conv03_circuit"><div class="svg-container"><svg viewBox="0 0 550 150" xmlns="http://www.w3.org/2000/svg">
+                  <rect x="10" y="5" width="90" height="60" rx="8" class="domain-a"/>
+                  <text x="55" y="20" style="font-size:9px;fill:#0084ff;text-anchor:middle">Dom A</text>
+                  <rect x="10" y="80" width="90" height="60" rx="8" style="fill:rgba(255,165,2,0.08);stroke:#ffa502;stroke-width:1.5"/>
+                  <text x="55" y="95" style="font-size:9px;fill:#ffa502;text-anchor:middle">Dom C</text>
+                  <rect x="130" y="5" width="400" height="140" rx="8" class="domain-b"/>
+                  <text x="330" y="20" style="font-size:10px;fill:#2ed573;text-anchor:middle">Domain B</text>
+                  <rect x="30" y="30" width="40" height="25" class="ff-rect"/><text x="50" y="46" class="ff-text" style="font-size:8px">X</text>
+                  <rect x="30" y="105" width="40" height="25" class="ff-rect" style="stroke:#ffa502"/><text x="50" y="121" class="ff-text" style="font-size:8px">Y</text>
+                  <rect x="160" y="30" width="80" height="25" class="ff-rect" style="stroke:#2ed573"/><text x="200" y="46" class="ff-text" style="font-size:7px">2FF sync</text>
+                  <rect x="160" y="105" width="80" height="25" class="ff-rect" style="stroke:#2ed573"/><text x="200" y="121" class="ff-text" style="font-size:7px">2FF sync</text>
+                  <circle cx="350" cy="72" r="18" style="fill:rgba(255,71,87,0.15);stroke:var(--error);stroke-width:1.5"/>
+                  <text x="350" y="76" style="font-size:9px;fill:var(--error);text-anchor:middle">GATE</text>
+                  <line x1="70" y1="42" x2="160" y2="42" class="sig-line"/>
+                  <line x1="70" y1="117" x2="160" y2="117" class="sig-line"/>
+                  <line x1="240" y1="42" x2="335" y2="62" class="sig-line"/>
+                  <line x1="240" y1="117" x2="335" y2="82" class="sig-line"/>
+                  <line x1="368" y1="72" x2="500" y2="72" class="sig-line"/>
+                  <text x="350" y="140" style="font-size:10px;fill:var(--error);text-anchor:middle">⚠ 不同源域信号收敛，相位关系不确定</text>
+                </svg></div></div>
+        <div class="tab-content" id="ac_conv03_waveform"><div class="svg-container"><svg viewBox="0 0 500 60" xmlns="http://www.w3.org/2000/svg">
+                  <text x="250" y="35" style="font-size:12px;fill:var(--text-secondary);text-anchor:middle">不同源域信号同步后时序关系不保证</text>
+                </svg></div></div>
+        <div class="tab-content" id="ac_conv03_desc"><div class="desc-section">
+                  <h4>问题描述</h4>
+                  <p>来自<span class="highlight">不同源时钟域</span>（Domain A 和 Domain C）的信号，分别通过各自的同步器同步到 Domain B 后，在下游逻辑处收敛。由于两个源域与目的域的相位关系完全独立，同步后信号之间的时序关系<span class="highlight">不可预测</span>。</p>
+                </div></div>
+        <div class="tab-content" id="ac_conv03_fix"><div class="desc-section"><h4>修复方法</h4>
+                  <ul><li>避免不同域信号在收敛处产生数据依赖</li><li>使用独立的控制逻辑分别处理</li></ul></div></div>
+        <div class="tab-content" id="ac_conv03_waiver"><div class="desc-section"><h4>Waiver 条件</h4><p>如果两个信号确实功能独立（如来自不同外设的中断），可使用 <code>cdc_filter_coherency -unrelated</code> 约束。</p></div></div>
+      </div>
+<div class="rule-card" id="ac_conv04" data-name="ac_conv04 同步信号在目的域收敛后再次跨域">
+      <div class="rule-header" onclick="toggleCard(this)">
+        <h3><code>Ac_conv04</code> &mdash; 同步信号在目的域收敛后再次跨域</h3>
+        <div class="badges"><span class="badge warning">WARNING</span><span class="badge goal">cdc_verify_struct</span></div>
+      </div>
+      <div class="rule-body" id="body_ac_conv04">
+        <div class="tab-bar">
+          <button class="active" onclick="switchTab(this,'ac_conv04','circuit')">🔌 电路拓扑</button>
+          <button onclick="switchTab(this,'ac_conv04','waveform')">📊 波形动画</button>
+          <button onclick="switchTab(this,'ac_conv04','desc')">📖 详细说明</button>
+          <button onclick="switchTab(this,'ac_conv04','fix')">🔧 修复方法</button>
+          <button onclick="switchTab(this,'ac_conv04','waiver')">🏷️ Waiver建议</button>
+        </div>
+        <div class="tab-content active" id="ac_conv04_circuit"><div class="svg-container"><svg viewBox="0 0 750 160" xmlns="http://www.w3.org/2000/svg">
+          <rect x="10" y="5" width="120" height="150" rx="8" class="domain-a"/>
+          <text x="70" y="20" style="font-size:9px;fill:#0084ff;text-anchor:middle">Domain A</text>
+          <rect x="150" y="5" width="280" height="150" rx="8" class="domain-b"/>
+          <text x="290" y="20" style="font-size:9px;fill:#2ed573;text-anchor:middle">Domain B</text>
+          <rect x="450" y="5" width="290" height="150" rx="8" style="fill:rgba(167,139,250,0.08);stroke:#a78bfa;stroke-width:1.5"/>
+          <text x="595" y="20" style="font-size:9px;fill:#a78bfa;text-anchor:middle">Domain C</text>
+          <rect x="25" y="40" width="50" height="28" class="ff-rect"/><text x="50" y="58" class="ff-text" style="font-size:8px">X</text>
+          <rect x="25" y="90" width="50" height="28" class="ff-rect"/><text x="50" y="108" class="ff-text" style="font-size:8px">Y</text>
+          <rect x="175" y="40" width="55" height="28" class="ff-rect" style="stroke:#2ed573"/><text x="202" y="58" class="ff-text" style="font-size:7px">2FF</text>
+          <rect x="175" y="90" width="55" height="28" class="ff-rect" style="stroke:#2ed573"/><text x="202" y="108" class="ff-text" style="font-size:7px">2FF</text>
+          <circle cx="310" cy="75" r="18" style="fill:rgba(255,71,87,0.15);stroke:var(--error);stroke-width:1.5"/>
+          <text x="310" y="79" style="font-size:8px;fill:var(--error);text-anchor:middle">LOGIC</text>
+          <rect x="360" y="60" width="50" height="28" class="ff-rect" style="stroke:#2ed573"/><text x="385" y="78" class="ff-text" style="font-size:7px">REG_B</text>
+          <rect x="490" y="60" width="55" height="28" class="ff-rect" style="stroke:#a78bfa"/><text x="517" y="78" class="ff-text" style="font-size:7px">2FF</text>
+          <rect x="570" y="60" width="55" height="28" class="ff-rect" style="stroke:#a78bfa"/><text x="597" y="78" class="ff-text" style="font-size:7px">2FF</text>
+          <rect x="650" y="60" width="55" height="28" class="ff-rect" style="stroke:#a78bfa"/><text x="677" y="78" class="ff-text" style="font-size:7px">REG_C</text>
+          <line x1="75" y1="54" x2="175" y2="54" class="sig-line"/>
+          <line x1="75" y1="104" x2="175" y2="104" class="sig-line"/>
+          <line x1="230" y1="54" x2="295" y2="65" class="sig-line"/>
+          <line x1="230" y1="104" x2="295" y2="85" class="sig-line"/>
+          <line x1="328" y1="75" x2="360" y2="75" class="sig-line"/>
+          <line x1="410" y1="75" x2="490" y2="75" class="err-line"/>
+          <line x1="545" y1="75" x2="570" y2="75" class="sig-line"/>
+          <line x1="625" y1="75" x2="650" y2="75" class="sig-line"/>
+          <text x="450" y="65" style="font-size:9px;fill:var(--error);text-anchor:middle">再次跨域!</text>
+          <text x="595" y="140" style="font-size:9px;fill:var(--warn);text-anchor:middle">⚠ 需要重新同步到 Domain C</text>
+        </svg></div></div>
+        <div class="tab-content" id="ac_conv04_waveform"><div class="svg-container"><svg viewBox="0 0 500 60" xmlns="http://www.w3.org/2000/svg">
+          <text x="250" y="35" style="font-size:11px;fill:var(--text-secondary);text-anchor:middle">Domain B 中收敛的信号再次跨域到 Domain C，需要重新同步</text>
+        </svg></div></div>
+        <div class="tab-content" id="ac_conv04_desc"><div class="desc-section">
+          <h4>问题描述</h4>
+          <p>来自 Domain A 的信号 X 和 Y，分别同步到 Domain B 后在 Domain B 中收敛，然后<span class="highlight">再次跨越到 Domain C</span>。此时 Domain B 中的收敛结果对于 Domain C 来说是一个新的 CDC 路径，需要重新同步。</p>
+          <h4>潜在影响</h4>
+          <ul>
+            <li>Domain B 中的收敛信号可能存在时序偏移（来自 Ac_conv01/02 问题）</li>
+            <li>如果 Domain B 中的收敛问题未解决，再次跨域会将问题传播到 Domain C</li>
+            <li>多级跨域增加了调试难度</li>
+          </ul>
+          <h4>检查阶段</h4>
+          <p><span class="tag" style="background:rgba(255,165,2,0.15);color:var(--warn)">Severity: Warning</span> &nbsp; <span class="tag" style="background:rgba(0,212,255,0.1);color:var(--accent)">Goal: cdc_verify_struct</span></p>
+        </div></div>
+        <div class="tab-content" id="ac_conv04_fix"><div class="desc-section">
+          <h4>修复方法</h4>
+          <ul>
+            <li><strong>先解决 Domain B 中的收敛问题:</strong> 确保 Ac_conv01/02 已修复</li>
+            <li><strong>在 Domain B 中寄存收敛结果:</strong> 确保跨域到 Domain C 的信号来自寄存器</li>
+            <li><strong>在 Domain C 中添加同步器:</strong> 对从 Domain B 到 Domain C 的信号添加 2-FF 同步器</li>
+          </ul>
+        </div>
+        <div class="code-block"><span class="lang-tag">Verilog</span><span class="cmt">// 在 Domain B 中寄存收敛结果</span>
+<span class="kw">reg</span> conv_result_b;
+<span class="kw">always</span> @(<span class="kw">posedge</span> clk_b)
+  conv_result_b &lt;= x_synced &amp; y_synced;  <span class="cmt">// 寄存收敛结果</span>
+
+<span class="cmt">// 然后对 conv_result_b 做 2-FF 同步到 Domain C</span>
+cdc_demet u_sync_c (
+  .clk(clk_c), .rst_n(rst_c_n),
+  .d(conv_result_b), .q(conv_result_c)
+);</div></div>
+        <div class="tab-content" id="ac_conv04_waiver"><div class="desc-section">
+          <h4>Waiver 条件</h4>
+          <ul>
+            <li>Domain B 中的收敛问题已通过 <code>cdc_filter_coherency</code> 约束处理</li>
+            <li>信号在 Domain B 中已经过寄存，跨域到 Domain C 的是干净的寄存器输出</li>
+          </ul>
+        </div>
+        <div class="code-block"><span class="lang-tag">SGDC</span><span class="cmt"># 声明 Domain B 中的收敛信号已处理</span>
+cdc_filter_coherency -unrelated sig_x sig_y</div></div>
+      </div>
+    </div>
+    </div></div>
+    <div class="category-section" id="cat5">
+      <div class="category-header">
+        <div class="cat-icon" style="background:linear-gradient(135deg,rgba(255,99,72,0.2),rgba(255,99,72,0.05));color:#ff6348;border:1px solid rgba(255,99,72,0.2)">💥</div>
+        <h2>毛刺问题 (Glitch Issues)</h2>
+        <span class="cat-count">3 条规则</span>
+      </div>
+    <div class="rule-card" id="ac_glitch01" data-name="ac_glitch01 cdc路径上存在组合逻辑（可能产生毛刺）">
+      <div class="rule-header" onclick="toggleCard(this)">
+        <h3><code>Ac_glitch01</code> — CDC路径上存在组合逻辑（可能产生毛刺）</h3>
+        <div class="badges">
+          <span class="badge error">ERROR</span>
+          <span class="badge goal">cdc_verify_struct</span>
+        </div>
+      </div>
+      <div class="rule-body" id="body_ac_glitch01">
+        <div class="tab-bar">
+          <button class="active" onclick="switchTab(this,'ac_glitch01','circuit')">🔌 电路拓扑</button>
+          <button onclick="switchTab(this,'ac_glitch01','waveform')">📊 波形动画</button>
+          <button onclick="switchTab(this,'ac_glitch01','desc')">📖 详细说明</button>
+          <button onclick="switchTab(this,'ac_glitch01','fix')">🔧 修复方法</button>
+          <button onclick="switchTab(this,'ac_glitch01','waiver')">🏷️ Waiver建议</button>
+        </div>
+        <div class="tab-content active" id="ac_glitch01_circuit"><div class="svg-container"><svg viewBox="0 0 600 130" xmlns="http://www.w3.org/2000/svg">
+                  <rect x="10" y="5" width="280" height="120" rx="8" class="domain-a"/>
+                  <text x="150" y="20" style="font-size:10px;fill:#0084ff;text-anchor:middle">Domain A</text>
+                  <rect x="340" y="5" width="250" height="120" rx="8" class="domain-b"/>
+                  <text x="465" y="20" style="font-size:10px;fill:#2ed573;text-anchor:middle">Domain B</text>
+                  <rect x="40" y="40" width="50" height="30" class="ff-rect"/><text x="65" y="59" class="ff-text" style="font-size:8px">F1</text>
+                  <rect x="40" y="80" width="50" height="30" class="ff-rect"/><text x="65" y="99" class="ff-text" style="font-size:8px">F2</text>
+                  <!-- Combo logic cloud -->
+                  <ellipse cx="200" cy="65" rx="50" ry="30" style="fill:rgba(255,71,87,0.1);stroke:var(--error);stroke-width:1.5"/>
+                  <text x="200" y="62" style="font-size:9px;fill:var(--error);text-anchor:middle">组合</text>
+                  <text x="200" y="75" style="font-size:9px;fill:var(--error);text-anchor:middle">逻辑</text>
+                  <!-- Sync FFs -->
+                  <rect x="380" y="45" width="50" height="30" class="ff-rect" style="stroke:#2ed573"/><text x="405" y="64" class="ff-text" style="font-size:7px">sync</text>
+                  <rect x="450" y="45" width="50" height="30" class="ff-rect" style="stroke:#2ed573"/><text x="475" y="64" class="ff-text" style="font-size:7px">sync</text>
+                  <line x1="90" y1="55" x2="150" y2="55" class="sig-line"/>
+                  <line x1="90" y1="95" x2="150" y2="75" class="sig-line"/>
+                  <line x1="250" y1="65" x2="380" y2="60" class="err-line"/>
+                  <line x1="430" y1="60" x2="450" y2="60" class="sig-line"/>
+                  <line x1="500" y1="60" x2="560" y2="60" class="sig-line"/>
+                  <text x="310" y="100" style="font-size:10px;fill:var(--error);text-anchor:middle">⚠ 组合逻辑输出有毛刺风险</text>
+                </svg></div></div>
+        <div class="tab-content" id="ac_glitch01_waveform"><div class="svg-container"><svg viewBox="0 0 600 130" xmlns="http://www.w3.org/2000/svg">
+                  <text x="10" y="18" class="wave-label">combo_out</text>
+                  <polyline points="60,40 100,40 100,20 115,20 115,40 120,40 120,20 125,20 125,40 300,40" class="wave-err"/>
+                  <text x="118" y="15" style="font-size:9px;fill:var(--error);text-anchor:middle">glitch!</text>
+                  <text x="10" y="60" class="wave-label">clk_b ↑</text>
+                  <line x1="120" y1="50" x2="120" y2="90" style="stroke:rgba(46,213,115,0.5);stroke-width:1;stroke-dasharray:2,2"/>
+                  <text x="10" y="95" class="wave-label">synced_b</text>
+                  <polyline points="60,110 120,110 120,90 300,90" class="wave-err"/>
+                  <text x="200" y="120" style="font-size:10px;fill:var(--error);text-anchor:middle">clk_b 采样沿恰好采到毛刺 → 错误传播</text>
+                </svg></div></div>
+        <div class="tab-content" id="ac_glitch01_desc"><div class="desc-section">
+                  <h4>问题描述</h4>
+                  <p>CDC 路径的源端在寄存器输出之后、同步器输入之前存在<span class="highlight">组合逻辑</span>。组合逻辑由于路径延时差异可能产生<span class="highlight">毛刺 (Glitch)</span>，毛刺可能被目的时钟域的同步器采样到，导致错误的数据传播。</p>
+                </div></div>
+        <div class="tab-content" id="ac_glitch01_fix"><div class="desc-section">
+                  <h4>修复方法</h4>
+                  <p><strong>在跨时钟域之前用寄存器打一拍</strong>，消除组合逻辑输出的毛刺。确保送入同步器的信号直接来自寄存器的 Q 端。</p>
+                </div>
+                <div class="code-block"><span class="lang-tag">Verilog</span><span class="cmt">// 修复: 组合逻辑输出先寄存再跨时钟域</span>
+<span class="kw">reg</span> combo_reg;
+<span class="kw">always</span> @(<span class="kw">posedge</span> clk_a)
+  combo_reg <= (f1_q & f2_q);  <span class="cmt">// 寄存器消除毛刺</span>
+
+<span class="cmt">// 然后用寄存器输出作为同步器输入</span>
+cdc_demet u_sync (.clk(clk_b), .d(combo_reg), .q(synced_b));</div></div>
+        <div class="tab-content" id="ac_glitch01_waiver"><div class="desc-section">
+                  <h4>Waiver 条件</h4>
+                  <table class="waiver-table">
+                    <tr><th>Waiver 标签</th><th>适用场景</th><th>SVA</th></tr>
+                    <tr><td><code>Stable Combo Active Path</code></td><td>所有输入在采样窗口内不同时变化</td><td>✅</td></tr>
+                    <tr><td><code>Stable Combo Muxed Path</code></td><td>MUX选择线稳定，只有一个活跃路径</td><td>✅</td></tr>
+                    <tr><td><code>Combo Logic Interrupts</code></td><td>组合逻辑在不活跃路径上</td><td>❌</td></tr>
+                  </table>
+                </div></div>
+      </div>
+    </div>
+<div class="rule-card" id="ac_glitch02" data-name="ac_glitch02 同步器输出驱动组合逻辑后再跨时钟域">
+      <div class="rule-header" onclick="toggleCard(this)">
+        <h3><code>Ac_glitch02</code> &mdash; 同步器输出驱动组合逻辑后再跨时钟域</h3>
+        <div class="badges"><span class="badge error">ERROR</span><span class="badge goal">cdc_verify_struct</span></div>
+      </div>
+      <div class="rule-body" id="body_ac_glitch02">
+        <div class="tab-bar">
+          <button class="active" onclick="switchTab(this,'ac_glitch02','circuit')">🔌 电路拓扑</button>
+          <button onclick="switchTab(this,'ac_glitch02','waveform')">📊 波形动画</button>
+          <button onclick="switchTab(this,'ac_glitch02','desc')">📖 详细说明</button>
+          <button onclick="switchTab(this,'ac_glitch02','fix')">🔧 修复方法</button>
+          <button onclick="switchTab(this,'ac_glitch02','waiver')">🏷️ Waiver建议</button>
+        </div>
+        <div class="tab-content active" id="ac_glitch02_circuit"><div class="svg-container"><svg viewBox="0 0 700 140" xmlns="http://www.w3.org/2000/svg">
+          <rect x="10" y="5" width="150" height="130" rx="8" class="domain-a"/>
+          <text x="85" y="20" style="font-size:9px;fill:#0084ff;text-anchor:middle">Domain A</text>
+          <rect x="180" y="5" width="280" height="130" rx="8" class="domain-b"/>
+          <text x="320" y="20" style="font-size:9px;fill:#2ed573;text-anchor:middle">Domain B (已同步)</text>
+          <rect x="480" y="5" width="210" height="130" rx="8" style="fill:rgba(167,139,250,0.08);stroke:#a78bfa;stroke-width:1.5"/>
+          <text x="585" y="20" style="font-size:9px;fill:#a78bfa;text-anchor:middle">Domain C</text>
+          <rect x="30" y="40" width="50" height="28" class="ff-rect"/><text x="55" y="58" class="ff-text" style="font-size:8px">SRC</text>
+          <rect x="210" y="40" width="50" height="28" class="ff-rect" style="stroke:#2ed573"/><text x="235" y="58" class="ff-text" style="font-size:7px">S1</text>
+          <rect x="275" y="40" width="50" height="28" class="ff-rect" style="stroke:#2ed573"/><text x="300" y="58" class="ff-text" style="font-size:7px">S2</text>
+          <ellipse cx="390" cy="54" rx="40" ry="20" style="fill:rgba(255,71,87,0.1);stroke:var(--error);stroke-width:1.5"/>
+          <text x="390" y="51" style="font-size:8px;fill:var(--error);text-anchor:middle">组合</text>
+          <text x="390" y="63" style="font-size:8px;fill:var(--error);text-anchor:middle">逻辑</text>
+          <rect x="510" y="40" width="50" height="28" class="ff-rect" style="stroke:#a78bfa"/><text x="535" y="58" class="ff-text" style="font-size:7px">S1_C</text>
+          <rect x="580" y="40" width="50" height="28" class="ff-rect" style="stroke:#a78bfa"/><text x="605" y="58" class="ff-text" style="font-size:7px">S2_C</text>
+          <line x1="80" y1="54" x2="210" y2="54" class="sig-line"/>
+          <line x1="260" y1="54" x2="275" y2="54" class="sig-line"/>
+          <line x1="325" y1="54" x2="350" y2="54" class="sig-line"/>
+          <line x1="430" y1="54" x2="510" y2="54" class="err-line"/>
+          <line x1="560" y1="54" x2="580" y2="54" class="sig-line"/>
+          <line x1="630" y1="54" x2="680" y2="54" class="sig-line"/>
+          <text x="470" y="48" style="font-size:9px;fill:var(--error);text-anchor:middle">毛刺!</text>
+          <text x="390" y="110" style="font-size:10px;fill:var(--error);text-anchor:middle">⚠ 同步器输出经组合逻辑后再跨域 → 毛刺传播</text>
+        </svg></div></div>
+        <div class="tab-content" id="ac_glitch02_waveform"><div class="svg-container"><svg viewBox="0 0 600 130" xmlns="http://www.w3.org/2000/svg">
+          <text x="10" y="18" class="wave-label">S2_out</text>
+          <polyline points="60,35 120,35 120,15 300,15 300,35 500,35" class="wave-ok" style="stroke:#2ed573"/>
+          <text x="10" y="58" class="wave-label">combo_out</text>
+          <polyline points="60,75 120,75 120,55 130,55 130,75 135,75 135,55 140,55 140,75 300,75 300,55 500,55" class="wave-err"/>
+          <text x="133" y="50" style="font-size:9px;fill:var(--error);text-anchor:middle">glitch!</text>
+          <text x="10" y="95" class="wave-label">clk_c ↑</text>
+          <line x1="133" y1="85" x2="133" y2="115" style="stroke:rgba(167,139,250,0.5);stroke-width:1;stroke-dasharray:2,2"/>
+          <text x="10" y="115" class="wave-label">synced_c</text>
+          <polyline points="60,125 133,125 133,105 300,105" class="wave-err"/>
+          <text x="200" y="125" style="font-size:10px;fill:var(--error);text-anchor:middle">clk_c 采到毛刺 → 错误传播到 Domain C</text>
+        </svg></div></div>
+        <div class="tab-content" id="ac_glitch02_desc"><div class="desc-section">
+          <h4>问题描述</h4>
+          <p>信号从 Domain A 同步到 Domain B 后，Domain B 中的同步器输出经过<span class="highlight">组合逻辑</span>处理，然后该组合逻辑的输出<span class="highlight">再次跨越到 Domain C</span>。组合逻辑可能产生毛刺，这些毛刺会被 Domain C 的同步器采样到，导致错误传播。</p>
+          <h4>与 Ac_glitch01 的区别</h4>
+          <ul>
+            <li>Ac_glitch01: 组合逻辑在 CDC 路径的源端（Domain A 内）</li>
+            <li>Ac_glitch02: 组合逻辑在已同步的信号之后，且该组合逻辑输出再次跨域</li>
+            <li>Ac_glitch02 涉及多个时钟域，问题更复杂</li>
+          </ul>
+          <h4>检查阶段</h4>
+          <p><span class="tag err">Severity: Error</span> &nbsp; <span class="tag" style="background:rgba(0,212,255,0.1);color:var(--accent)">Goal: cdc_verify_struct</span></p>
+        </div></div>
+        <div class="tab-content" id="ac_glitch02_fix"><div class="desc-section">
+          <h4>修复方法</h4>
+          <ul>
+            <li><strong>在 Domain B 中寄存组合逻辑输出:</strong> 在跨域到 Domain C 之前，用 Domain B 的时钟打一拍</li>
+            <li><strong>消除不必要的组合逻辑:</strong> 如果可能，将组合逻辑移到 Domain C 内部</li>
+            <li><strong>使用 Domain B 的寄存器输出作为 CDC 源:</strong> 确保跨域信号来自寄存器 Q 端</li>
+          </ul>
+        </div>
+        <div class="code-block"><span class="lang-tag">Verilog</span><span class="cmt">// 修复: 在 Domain B 中寄存组合逻辑输出</span>
+<span class="kw">reg</span> combo_reg_b;
+<span class="kw">always</span> @(<span class="kw">posedge</span> clk_b)
+  combo_reg_b &lt;= s2_out &amp; local_sig_b;  <span class="cmt">// 寄存器消除毛刺</span>
+
+<span class="cmt">// 然后用寄存器输出跨域到 Domain C</span>
+cdc_demet u_sync_c (
+  .clk(clk_c), .rst_n(rst_c_n),
+  .d(combo_reg_b), .q(synced_c)
+);</div></div>
+        <div class="tab-content" id="ac_glitch02_waiver"><div class="desc-section">
+          <h4>Waiver 条件</h4>
+          <table class="waiver-table">
+            <tr><th>Waiver 标签</th><th>适用场景</th><th>SVA</th></tr>
+            <tr><td><code>Stable Combo Active Path</code></td><td>所有输入在采样窗口内不同时变化</td><td>✅</td></tr>
+            <tr><td><code>Stable Combo Muxed Path</code></td><td>MUX选择线稳定，只有一个活跃路径</td><td>✅</td></tr>
+          </table>
+        </div></div>
+      </div>
+    </div>
+    <div class="rule-card" id="ac_glitch03" data-name="ac_glitch03 再聚合组合逻辑产生毛刺">
+      <div class="rule-header" onclick="toggleCard(this)">
+        <h3><code>Ac_glitch03</code> — 再聚合组合逻辑产生毛刺</h3>
+        <div class="badges">
+          <span class="badge error">ERROR</span>
+          <span class="badge goal">cdc_verify_struct</span>
+        </div>
+      </div>
+      <div class="rule-body" id="body_ac_glitch03">
+        <div class="tab-bar">
+          <button class="active" onclick="switchTab(this,'ac_glitch03','circuit')">🔌 电路拓扑</button>
+          <button onclick="switchTab(this,'ac_glitch03','waveform')">📊 波形动画</button>
+          <button onclick="switchTab(this,'ac_glitch03','desc')">📖 详细说明</button>
+          <button onclick="switchTab(this,'ac_glitch03','fix')">🔧 修复方法</button>
+          <button onclick="switchTab(this,'ac_glitch03','waiver')">🏷️ Waiver建议</button>
+        </div>
+        <div class="tab-content active" id="ac_glitch03_circuit"><div class="svg-container"><svg viewBox="0 0 550 120" xmlns="http://www.w3.org/2000/svg">
+                  <rect x="10" y="5" width="530" height="110" rx="8" class="domain-b"/>
+                  <text x="275" y="20" style="font-size:10px;fill:#2ed573;text-anchor:middle">Domain B (跨时钟域信号进入后)</text>
+                  <rect x="40" y="40" width="50" height="30" class="ff-rect"/><text x="65" y="59" class="ff-text" style="font-size:8px">CDC</text>
+                  <!-- Fan-out then reconverge -->
+                  <line x1="90" y1="50" x2="140" y2="40" class="sig-line"/>
+                  <line x1="90" y1="60" x2="140" y2="75" class="sig-line"/>
+                  <ellipse cx="200" cy="40" rx="40" ry="15" style="fill:rgba(255,165,2,0.1);stroke:#ffa502;stroke-width:1"/>
+                  <text x="200" y="44" style="font-size:8px;fill:#ffa502;text-anchor:middle">Combo A</text>
+                  <ellipse cx="200" cy="80" rx="40" ry="15" style="fill:rgba(255,165,2,0.1);stroke:#ffa502;stroke-width:1"/>
+                  <text x="200" y="84" style="font-size:8px;fill:#ffa502;text-anchor:middle">Combo B</text>
+                  <!-- Reconvergence -->
+                  <circle cx="320" cy="60" r="18" style="fill:rgba(255,71,87,0.15);stroke:var(--error);stroke-width:1.5"/>
+                  <text x="320" y="64" style="font-size:8px;fill:var(--error);text-anchor:middle">GATE</text>
+                  <line x1="240" y1="40" x2="305" y2="52" class="sig-line"/>
+                  <line x1="240" y1="80" x2="305" y2="68" class="sig-line"/>
+                  <line x1="338" y1="60" x2="500" y2="60" class="sig-line"/>
+                  <text x="320" y="100" style="font-size:10px;fill:var(--error);text-anchor:middle">⚠ 信号分叉后再聚合 → 竞争冒险</text>
+                </svg></div></div>
+        <div class="tab-content" id="ac_glitch03_waveform"><div class="svg-container"><svg viewBox="0 0 500 60" xmlns="http://www.w3.org/2000/svg">
+                  <text x="250" y="35" style="font-size:11px;fill:var(--text-secondary);text-anchor:middle">信号经不同延迟路径再聚合 → 产生毛刺 (Hazard)</text>
+                </svg></div></div>
+        <div class="tab-content" id="ac_glitch03_desc"><div class="desc-section">
+                  <h4>问题描述</h4>
+                  <p>跨时钟域信号进入目的时钟域后，信号分叉经过不同的组合逻辑路径，然后<span class="highlight">再次聚合</span>到同一个逻辑门。由于不同路径的延时差异，会产生<span class="highlight">竞争冒险 (Race Hazard)</span>，输出出现毛刺。</p>
+                </div></div>
+        <div class="tab-content" id="ac_glitch03_fix"><div class="desc-section"><h4>修复方法</h4>
+                  <ul><li>在源端将组合逻辑输出用寄存器打拍后再跨时钟域</li><li>消除再聚合路径上的组合逻辑</li></ul></div></div>
+        <div class="tab-content" id="ac_glitch03_waiver"><div class="desc-section"><h4>Waiver 条件</h4><p>同 Ac_glitch01，使用 <code>Stable Combo Active Path</code> 或 <code>Stable Combo Muxed Path</code> 标签。Waive 时需要选中所有源路径。</p></div></div>
+      </div>
+    </div></div>
+    <div class="category-section" id="cat6">
+      <div class="category-header">
+        <div class="cat-icon" style="background:linear-gradient(135deg,rgba(255,107,129,0.2),rgba(255,107,129,0.05));color:#ff6b81;border:1px solid rgba(255,107,129,0.2)">🔄</div>
+        <h2>复位同步 (Reset Synchronization)</h2>
+        <span class="cat-count">4 条规则</span>
+      </div>
+    <div class="rule-card" id="ar_unsync01" data-name="ar_unsync01 复位信号跨时钟域未同步">
+      <div class="rule-header" onclick="toggleCard(this)">
+        <h3><code>Ar_unsync01</code> — 复位信号跨时钟域未同步</h3>
+        <div class="badges">
+          <span class="badge error">ERROR</span>
+          <span class="badge goal">cdc_verify_struct</span>
+        </div>
+      </div>
+      <div class="rule-body" id="body_ar_unsync01">
+        <div class="tab-bar">
+          <button class="active" onclick="switchTab(this,'ar_unsync01','circuit')">🔌 电路拓扑</button>
+          <button onclick="switchTab(this,'ar_unsync01','waveform')">📊 波形动画</button>
+          <button onclick="switchTab(this,'ar_unsync01','desc')">📖 详细说明</button>
+          <button onclick="switchTab(this,'ar_unsync01','fix')">🔧 修复方法</button>
+          <button onclick="switchTab(this,'ar_unsync01','waiver')">🏷️ Waiver建议</button>
+        </div>
+        <div class="tab-content active" id="ar_unsync01_circuit"><div class="svg-container"><svg viewBox="0 0 550 120" xmlns="http://www.w3.org/2000/svg">
+                  <rect x="10" y="5" width="200" height="110" rx="8" class="domain-a"/>
+                  <rect x="260" y="5" width="280" height="110" rx="8" class="domain-b"/>
+                  <text x="110" y="20" style="font-size:10px;fill:#0084ff;text-anchor:middle">Reset Source</text>
+                  <text x="400" y="20" style="font-size:10px;fill:#2ed573;text-anchor:middle">Domain B</text>
+                  <rect x="50" y="45" width="70" height="30" class="ff-rect"/><text x="85" y="64" class="ff-text" style="font-size:8px">RST_SRC</text>
+                  <rect x="350" y="45" width="70" height="30" class="ff-rect" style="stroke:#2ed573"/><text x="385" y="64" class="ff-text" style="font-size:8px">FF (rst)</text>
+                  <line x1="120" y1="60" x2="350" y2="75" class="err-line"/>
+                  <text x="235" y="55" style="font-size:10px;fill:var(--error);text-anchor:middle">✗ 复位直连</text>
+                  <text x="400" y="100" style="font-size:10px;fill:var(--error);text-anchor:middle">异步复位释放可能引起亚稳态</text>
+                </svg></div></div>
+        <div class="tab-content" id="ar_unsync01_waveform"><div class="svg-container"><svg viewBox="0 0 500 60" xmlns="http://www.w3.org/2000/svg">
+                  <text x="250" y="35" style="font-size:11px;fill:var(--text-secondary);text-anchor:middle">异步复位释放时，若接近 clk_b 有效沿 → recovery/removal 违例</text>
+                </svg></div></div>
+        <div class="tab-content" id="ar_unsync01_desc"><div class="desc-section">
+                  <h4>问题描述</h4>
+                  <p>异步复位信号从一个时钟域直接连接到另一个时钟域的寄存器异步复位端口。虽然<span class="highlight">复位断言 (assert) 通常是安全的</span>（立即复位），但<span class="highlight">复位释放 (deassert)</span> 如果发生在目的时钟边沿附近，会引起 recovery/removal time 违例，导致亚稳态。</p>
+                </div></div>
+        <div class="tab-content" id="ar_unsync01_fix"><div class="desc-section">
+                  <h4>修复方法: 异步断言、同步释放 (Async Assert, Sync Deassert)</h4>
+                  <p>使用<span class="success">复位同步器</span>，确保复位可以立即断言（异步），但释放时同步到目的时钟域。</p>
+                </div>
+                <div class="code-block"><span class="lang-tag">Verilog</span><span class="cmt">// 复位同步器: 异步断言, 同步释放</span>
+<span class="kw">reg</span> [1:0] rst_sync;
+
+<span class="kw">always</span> @(<span class="kw">posedge</span> clk_b <span class="kw">or negedge</span> rst_async_n) <span class="kw">begin</span>
+  <span class="kw">if</span> (!rst_async_n)
+    rst_sync <= <span class="num">2'b00</span>;        <span class="cmt">// 异步断言 (立即复位)</span>
+  <span class="kw">else</span>
+    rst_sync <= {rst_sync[0], <span class="num">1'b1</span>}; <span class="cmt">// 同步释放</span>
+<span class="kw">end</span>
+
+<span class="kw">assign</span> rst_b_n = rst_sync[1]; <span class="cmt">// 同步后的复位信号</span></div></div>
+        <div class="tab-content" id="ar_unsync01_waiver"><div class="desc-section"><h4>Waiver 条件</h4>
+                  <table class="waiver-table">
+                    <tr><th>标签</th><th>场景</th><th>SVA</th></tr>
+                    <tr><td><code>Clock Off Reset</code></td><td>复位时目的时钟关闭</td><td>✅</td></tr>
+                  </table></div></div>
+      </div>
+    </div>
+    <div class="rule-card" id="ar_asyncdeassert01" data-name="ar_asyncdeassert01 异步复位未同步释放">
+      <div class="rule-header" onclick="toggleCard(this)">
+        <h3><code>Ar_asyncdeassert01</code> — 异步复位未同步释放</h3>
+        <div class="badges">
+          <span class="badge error">ERROR</span>
+          <span class="badge goal">clock_reset_integrity</span>
+        </div>
+      </div>
+      <div class="rule-body" id="body_ar_asyncdeassert01">
+        <div class="tab-bar">
+          <button class="active" onclick="switchTab(this,'ar_asyncdeassert01','circuit')">🔌 电路拓扑</button>
+          <button onclick="switchTab(this,'ar_asyncdeassert01','waveform')">📊 波形动画</button>
+          <button onclick="switchTab(this,'ar_asyncdeassert01','desc')">📖 详细说明</button>
+          <button onclick="switchTab(this,'ar_asyncdeassert01','fix')">🔧 修复方法</button>
+          <button onclick="switchTab(this,'ar_asyncdeassert01','waiver')">🏷️ Waiver建议</button>
+        </div>
+        <div class="tab-content active" id="ar_asyncdeassert01_circuit"><div class="svg-container"><svg viewBox="0 0 500 100" xmlns="http://www.w3.org/2000/svg">
+                  <rect x="10" y="5" width="480" height="90" rx="8" class="domain-b"/>
+                  <text x="250" y="20" style="font-size:10px;fill:#2ed573;text-anchor:middle">Domain B</text>
+                  <rect x="50" y="35" width="80" height="35" class="ff-rect"/><text x="90" y="56" class="ff-text" style="font-size:8px">FF</text>
+                  <text x="50" y="75" style="font-size:9px;fill:var(--error)">rst_n (async)</text>
+                  <line x1="30" y1="68" x2="50" y2="68" class="err-line"/>
+                  <text x="250" y="55" style="font-size:11px;fill:var(--error);text-anchor:middle">✗ rst_n 直接连接 FF 异步复位端</text>
+                  <text x="250" y="75" style="font-size:10px;fill:var(--error);text-anchor:middle">释放时机不可控 → recovery time 违例</text>
+                </svg></div></div>
+        <div class="tab-content" id="ar_asyncdeassert01_waveform"><div class="svg-container"><svg viewBox="0 0 500 60" xmlns="http://www.w3.org/2000/svg">
+                  <text x="250" y="35" style="font-size:11px;fill:var(--text-secondary);text-anchor:middle">复位释放若靠近时钟上升沿 → 部分FF退出复位，部分未退出</text>
+                </svg></div></div>
+        <div class="tab-content" id="ar_asyncdeassert01_desc"><div class="desc-section">
+                  <h4>问题描述</h4>
+                  <p>异步复位信号可以异步地断言（使设计进入复位），但必须<span class="highlight">同步地释放</span>。如果异步释放发生在时钟有效沿附近，不同寄存器可能在不同周期退出复位，导致逻辑状态不一致。</p>
+                </div></div>
+        <div class="tab-content" id="ar_asyncdeassert01_fix"><div class="desc-section"><h4>修复方法</h4><p>同 Ar_unsync01，使用异步断言同步释放的复位同步器。</p></div></div>
+        <div class="tab-content" id="ar_asyncdeassert01_waiver"><div class="desc-section"><h4>Waiver 条件</h4><p>仅当复位释放时时钟确实关闭，可使用 <code>Clock Off Reset</code> 标签。</p></div></div>
+      </div>
+    </div>
+    <div class="rule-card" id="reset_sync01" data-name="reset_sync01 复位路径上存在组合逻辑">
+      <div class="rule-header" onclick="toggleCard(this)">
+        <h3><code>Reset_sync01</code> — 复位路径上存在组合逻辑</h3>
+        <div class="badges">
+          <span class="badge warning">WARNING</span>
+          <span class="badge goal">clock_reset_integrity</span>
+        </div>
+      </div>
+      <div class="rule-body" id="body_reset_sync01">
+        <div class="tab-bar">
+          <button class="active" onclick="switchTab(this,'reset_sync01','circuit')">🔌 电路拓扑</button>
+          <button onclick="switchTab(this,'reset_sync01','waveform')">📊 波形动画</button>
+          <button onclick="switchTab(this,'reset_sync01','desc')">📖 详细说明</button>
+          <button onclick="switchTab(this,'reset_sync01','fix')">🔧 修复方法</button>
+          <button onclick="switchTab(this,'reset_sync01','waiver')">🏷️ Waiver建议</button>
+        </div>
+        <div class="tab-content active" id="reset_sync01_circuit"><div class="svg-container"><svg viewBox="0 0 500 100" xmlns="http://www.w3.org/2000/svg">
+                  <rect x="10" y="5" width="480" height="90" rx="8" style="fill:rgba(255,107,129,0.05);stroke:#ff6b81;stroke-width:1"/>
+                  <text x="250" y="20" style="font-size:10px;fill:#ff6b81;text-anchor:middle">Reset Path</text>
+                  <rect x="50" y="35" width="60" height="30" class="ff-rect"/><text x="80" y="54" class="ff-text" style="font-size:8px">RST</text>
+                  <ellipse cx="210" cy="50" rx="40" ry="18" style="fill:rgba(255,71,87,0.1);stroke:var(--error);stroke-width:1"/>
+                  <text x="210" y="54" style="font-size:8px;fill:var(--error);text-anchor:middle">COMBO</text>
+                  <rect x="320" y="35" width="60" height="30" class="ff-rect"/><text x="350" y="54" class="ff-text" style="font-size:8px">FF(rst)</text>
+                  <line x1="110" y1="50" x2="170" y2="50" class="sig-line"/>
+                  <line x1="250" y1="50" x2="320" y2="65" class="err-line"/>
+                  <text x="250" y="85" style="font-size:10px;fill:var(--error);text-anchor:middle">⚠ 复位路径上的组合逻辑可能产生毛刺</text>
+                </svg></div></div>
+        <div class="tab-content" id="reset_sync01_waveform"><div class="svg-container"><svg viewBox="0 0 500 60" xmlns="http://www.w3.org/2000/svg">
+                  <text x="250" y="35" style="font-size:11px;fill:var(--text-secondary);text-anchor:middle">复位路径上的毛刺可能导致意外复位/释放</text>
+                </svg></div></div>
+        <div class="tab-content" id="reset_sync01_desc"><div class="desc-section"><h4>问题描述</h4>
+                  <p>复位信号路径上存在组合逻辑，组合逻辑的竞争冒险可能在复位线上产生毛刺，导致设计意外进入或退出复位状态。</p></div></div>
+        <div class="tab-content" id="reset_sync01_fix"><div class="desc-section"><h4>修复方法</h4>
+                  <ul><li>确保复位树是干净的，避免在复位路径上放置组合逻辑</li><li>如果必须用门控复位，使用无毛刺的 glitch-free 结构</li></ul></div></div>
+        <div class="tab-content" id="reset_sync01_waiver"><div class="desc-section"><h4>Waiver 条件</h4><p>如果组合逻辑的所有输入在复位期间都是稳定的，可以 waive。需要提供功能验证证据。</p></div></div>
+      </div>
+    <div class="rule-card" id="ar_sync01" data-name="ar_sync01 复位同步器结构不符合要求">
+      <div class="rule-header" onclick="toggleCard(this)">
+        <h3><code>Ar_sync01</code> &mdash; 复位同步器结构不符合要求</h3>
+        <div class="badges"><span class="badge warning">WARNING</span><span class="badge goal">clock_reset_integrity</span></div>
+      </div>
+      <div class="rule-body" id="body_ar_sync01">
+        <div class="tab-bar">
+          <button class="active" onclick="switchTab(this,'ar_sync01','circuit')">🔌 电路拓扑</button>
+          <button onclick="switchTab(this,'ar_sync01','waveform')">📊 波形动画</button>
+          <button onclick="switchTab(this,'ar_sync01','desc')">📖 详细说明</button>
+          <button onclick="switchTab(this,'ar_sync01','fix')">🔧 修复方法</button>
+          <button onclick="switchTab(this,'ar_sync01','waiver')">🏷️ Waiver建议</button>
+        </div>
+        <div class="tab-content active" id="ar_sync01_circuit"><div class="svg-container"><svg viewBox="0 0 600 130" xmlns="http://www.w3.org/2000/svg">
+          <rect x="10" y="5" width="580" height="120" rx="8" style="fill:rgba(46,213,115,0.05);stroke:#2ed573;stroke-width:1"/>
+          <text x="300" y="22" style="font-size:11px;fill:#2ed573;text-anchor:middle">Domain B (clk_b)</text>
+          <!-- Wrong: only 1 FF in reset synchronizer -->
+          <text x="30" y="55" style="font-size:9px;fill:var(--error)">rst_n</text>
+          <line x1="60" y1="50" x2="100" y2="50" class="err-line"/>
+          <rect x="100" y="35" width="60" height="30" class="ff-rect" style="stroke:var(--warn)"/><text x="130" y="54" class="ff-text" style="font-size:8px">S1 only</text>
+          <text x="130" y="68" style="font-size:8px;fill:var(--warn);text-anchor:middle">clk_b</text>
+          <line x1="160" y1="50" x2="250" y2="50" class="sig-line"/>
+          <rect x="250" y="35" width="60" height="30" class="ff-rect" style="stroke:#2ed573"/><text x="280" y="54" class="ff-text" style="font-size:8px">FF</text>
+          <text x="280" y="68" style="font-size:8px;fill:#2ed573;text-anchor:middle">clk_b</text>
+          <line x1="310" y1="50" x2="500" y2="50" class="sig-line"/>
+          <text x="300" y="100" style="font-size:10px;fill:var(--warn);text-anchor:middle">⚠ 复位同步器只有1级 → MTBF 不足，复位释放可能引起亚稳态</text>
+        </svg></div></div>
+        <div class="tab-content" id="ar_sync01_waveform"><div class="svg-container"><svg viewBox="0 0 500 60" xmlns="http://www.w3.org/2000/svg">
+          <text x="250" y="35" style="font-size:11px;fill:var(--text-secondary);text-anchor:middle">单级复位同步器无法充分消除复位释放时的亚稳态</text>
+        </svg></div></div>
+        <div class="tab-content" id="ar_sync01_desc"><div class="desc-section">
+          <h4>问题描述</h4>
+          <p>SpyGlass 检测到复位同步器的结构不符合要求，例如：</p>
+          <ul>
+            <li><span class="highlight">只有1级寄存器</span>（单级复位同步器），无法充分消除复位释放时的亚稳态</li>
+            <li>复位同步器的寄存器之间存在组合逻辑</li>
+            <li>复位同步器的寄存器没有使用异步复位端口</li>
+          </ul>
+          <h4>标准复位同步器要求</h4>
+          <ul>
+            <li>至少2级寄存器（推荐3级用于高频设计）</li>
+            <li>每级寄存器的异步复位端口连接到原始复位信号</li>
+            <li>每级寄存器的 D 端：第一级接 VCC（1'b1），后续级接前一级 Q 端</li>
+          </ul>
+          <h4>检查阶段</h4>
+          <p><span class="tag" style="background:rgba(255,165,2,0.15);color:var(--warn)">Severity: Warning</span> &nbsp; <span class="tag" style="background:rgba(0,212,255,0.1);color:var(--accent)">Goal: clock_reset_integrity</span></p>
+        </div></div>
+        <div class="tab-content" id="ar_sync01_fix"><div class="desc-section">
+          <h4>修复方法：使用标准复位同步器</h4>
+          <p>使用异步断言、同步释放的标准复位同步器，确保至少2级寄存器。</p>
+        </div>
+        <div class="code-block"><span class="lang-tag">Verilog</span><span class="cmt">// 标准复位同步器: 异步断言, 同步释放, 2级</span>
+<span class="kw">module</span> rst_sync_2ff (
+  <span class="kw">input</span>  clk, rst_async_n,
+  <span class="kw">output</span> rst_sync_n
+);
+  <span class="kw">reg</span> [1:0] sync_ff;
+  <span class="cmt">// 防止综合工具优化</span>
+  (* dont_touch = "true" *)
+  <span class="kw">always</span> @(<span class="kw">posedge</span> clk <span class="kw">or negedge</span> rst_async_n)
+    <span class="kw">if</span> (!rst_async_n) sync_ff &lt;= <span class="num">2'b00</span>;  <span class="cmt">// 异步断言</span>
+    <span class="kw">else</span>             sync_ff &lt;= {sync_ff[0], <span class="num">1'b1</span>};  <span class="cmt">// 同步释放</span>
+  <span class="kw">assign</span> rst_sync_n = sync_ff[1];
+<span class="kw">endmodule</span></div></div>
+        <div class="tab-content" id="ar_sync01_waiver"><div class="desc-section">
+          <h4>Waiver 条件</h4>
+          <ul>
+            <li>已使用标准复位同步器单元但工具未识别（需要在 SGDC 中声明）</li>
+            <li>复位信号为全局同步复位，不需要异步复位同步器</li>
+          </ul>
+        </div>
+        <div class="code-block"><span class="lang-tag">SGDC</span><span class="cmt"># 声明复位同步器</span>
+reset_sync -name "top.u_rst_sync.sync_ff[1]" -clock clk_b -stages 2</div></div>
+      </div>
+    </div>
+    </div></div>
+    <div class="category-section" id="cat7">
+      <div class="category-header">
+        <div class="cat-icon" style="background:linear-gradient(135deg,rgba(167,139,250,0.2),rgba(167,139,250,0.05));color:#a78bfa;border:1px solid rgba(167,139,250,0.2)">🕐</div>
+        <h2>时钟问题 (Clock Issues)</h2>
+        <span class="cat-count">3 条规则</span>
+      </div>
+    <div class="rule-card" id="clock_glitch01" data-name="clock_glitch01 时钟使能路径上存在组合逻辑（时钟使能毛刺）">
+      <div class="rule-header" onclick="toggleCard(this)">
+        <h3><code>Clock_glitch01</code> &mdash; 时钟使能路径上存在组合逻辑（时钟使能毛刺）</h3>
+        <div class="badges"><span class="badge warning">WARNING</span><span class="badge goal">clock_reset_integrity</span></div>
+      </div>
+      <div class="rule-body" id="body_clock_glitch01">
+        <div class="tab-bar">
+          <button class="active" onclick="switchTab(this,'clock_glitch01','circuit')">🔌 电路拓扑</button>
+          <button onclick="switchTab(this,'clock_glitch01','waveform')">📊 波形动画</button>
+          <button onclick="switchTab(this,'clock_glitch01','desc')">📖 详细说明</button>
+          <button onclick="switchTab(this,'clock_glitch01','fix')">🔧 修复方法</button>
+          <button onclick="switchTab(this,'clock_glitch01','waiver')">🏷️ Waiver建议</button>
+        </div>
+        <div class="tab-content active" id="clock_glitch01_circuit"><div class="svg-container"><svg viewBox="0 0 600 130" xmlns="http://www.w3.org/2000/svg">
+          <rect x="10" y="5" width="580" height="120" rx="8" style="fill:rgba(167,139,250,0.05);stroke:#a78bfa;stroke-width:1"/>
+          <text x="300" y="22" style="font-size:10px;fill:#a78bfa;text-anchor:middle">Clock Enable Path</text>
+          <text x="40" y="55" style="font-size:10px;fill:var(--accent)">CLK</text>
+          <text x="40" y="80" style="font-size:9px;fill:var(--text-secondary)">EN_A</text>
+          <text x="40" y="95" style="font-size:9px;fill:var(--text-secondary)">EN_B</text>
+          <ellipse cx="180" cy="82" rx="45" ry="20" style="fill:rgba(255,71,87,0.1);stroke:var(--error);stroke-width:1.5"/>
+          <text x="180" y="79" style="font-size:8px;fill:var(--error);text-anchor:middle">组合</text>
+          <text x="180" y="91" style="font-size:8px;fill:var(--error);text-anchor:middle">逻辑</text>
+          <rect x="290" y="55" width="80" height="40" style="fill:rgba(0,212,255,0.08);stroke:var(--accent);stroke-width:1.5" rx="4"/>
+          <text x="330" y="72" style="font-size:9px;fill:var(--accent);text-anchor:middle">ICG</text>
+          <text x="330" y="85" style="font-size:8px;fill:var(--text-secondary);text-anchor:middle">latch+AND</text>
+          <line x1="55" y1="50" x2="290" y2="65" class="sig-line" style="stroke:var(--accent)"/>
+          <line x1="55" y1="80" x2="135" y2="80" class="sig-line"/>
+          <line x1="55" y1="93" x2="135" y2="86" class="sig-line"/>
+          <line x1="225" y1="82" x2="290" y2="82" class="err-line"/>
+          <line x1="370" y1="75" x2="500" y2="75" class="sig-line" style="stroke:var(--accent)"/>
+          <text x="435" y="68" style="font-size:9px;fill:var(--accent)">GCLK</text>
+          <text x="300" y="110" style="font-size:10px;fill:var(--warn);text-anchor:middle">⚠ 使能信号经组合逻辑后进入 ICG → 使能毛刺可能导致时钟毛刺</text>
+        </svg></div></div>
+        <div class="tab-content" id="clock_glitch01_waveform"><div class="svg-container"><svg viewBox="0 0 600 130" xmlns="http://www.w3.org/2000/svg">
+          <text x="10" y="18" class="wave-label">EN_A</text>
+          <polyline points="60,35 60,15 200,15 200,35 500,35" class="wave-ok" style="stroke:#0084ff"/>
+          <text x="10" y="58" class="wave-label">EN_B</text>
+          <polyline points="60,75 60,55 180,55 180,75 500,75" class="wave-ok" style="stroke:#ffa502"/>
+          <text x="10" y="95" class="wave-label">EN_combo</text>
+          <polyline points="60,110 60,90 180,90 185,110 190,90 200,90 200,110 500,110" class="wave-err"/>
+          <text x="187" y="85" style="font-size:9px;fill:var(--error);text-anchor:middle">glitch!</text>
+          <text x="300" y="125" style="font-size:10px;fill:var(--warn);text-anchor:middle">EN_A 和 EN_B 同时变化 → 组合逻辑产生毛刺 → 进入 ICG 可能产生时钟毛刺</text>
+        </svg></div></div>
+        <div class="tab-content" id="clock_glitch01_desc"><div class="desc-section">
+          <h4>问题描述</h4>
+          <p>时钟使能信号（Clock Enable）在进入 ICG（集成时钟门控单元）之前经过了<span class="highlight">组合逻辑</span>。组合逻辑的竞争冒险可能在使能信号上产生毛刺，这个毛刺进入 ICG 后可能导致<span class="highlight">时钟使能毛刺</span>，进而产生时钟毛刺。</p>
+          <h4>与 Clock_glitch02 的区别</h4>
+          <ul>
+            <li>Clock_glitch02: 组合逻辑直接在时钟路径上（时钟信号本身有毛刺）</li>
+            <li>Clock_glitch01: 组合逻辑在时钟使能路径上（使能信号有毛刺，可能传入 ICG）</li>
+            <li>Clock_glitch01 的风险相对较低，但仍需关注</li>
+          </ul>
+          <h4>检查阶段</h4>
+          <p><span class="tag" style="background:rgba(255,165,2,0.15);color:var(--warn)">Severity: Warning</span> &nbsp; <span class="tag" style="background:rgba(0,212,255,0.1);color:var(--accent)">Goal: clock_reset_integrity</span></p>
+        </div></div>
+        <div class="tab-content" id="clock_glitch01_fix"><div class="desc-section">
+          <h4>修复方法</h4>
+          <ul>
+            <li><strong>寄存使能信号:</strong> 在组合逻辑输出后用寄存器打一拍，消除毛刺后再送入 ICG</li>
+            <li><strong>确保使能信号在时钟低电平期间稳定:</strong> ICG 要求使能信号在时钟低电平期间满足 setup/hold</li>
+            <li><strong>简化使能逻辑:</strong> 避免在使能路径上使用复杂的组合逻辑</li>
+          </ul>
+        </div>
+        <div class="code-block"><span class="lang-tag">Verilog</span><span class="cmt">// 修复: 寄存使能信号后再送入 ICG</span>
+<span class="kw">reg</span> en_reg;
+<span class="kw">always</span> @(<span class="kw">posedge</span> clk)
+  en_reg &lt;= en_a &amp; en_b;  <span class="cmt">// 寄存器消除组合逻辑毛刺</span>
+
+<span class="cmt">// 使用寄存后的使能信号驱动 ICG</span>
+CKLNQD1 u_icg (.TE(scan_en), .E(en_reg), .CP(clk), .Q(gated_clk));</div></div>
+        <div class="tab-content" id="clock_glitch01_waiver"><div class="desc-section">
+          <h4>Waiver 条件</h4>
+          <ul>
+            <li>使能信号的所有输入在时钟低电平期间不同时变化（功能上保证无毛刺）</li>
+            <li>已通过形式化验证确认使能信号稳定</li>
+          </ul>
+        </div>
+        <div class="code-block"><span class="lang-tag">SGDC</span><span class="cmt"># 声明使能信号稳定</span>
+set_cdc_waiver -scheme clock_enable_glitch   -from {top.u_clk_ctrl.en_combo}   -comment "Stable Combo Active Path;EN_A and EN_B do not change simultaneously"</div></div>
+      </div>
+    </div>
+    <div class="rule-card" id="clock_glitch02" data-name="clock_glitch02 时钟路径上存在组合逻辑（时钟毛刺）">
+      <div class="rule-header" onclick="toggleCard(this)">
+        <h3><code>Clock_glitch02</code> — 时钟路径上存在组合逻辑（时钟毛刺）</h3>
+        <div class="badges">
+          <span class="badge error">ERROR</span>
+          <span class="badge goal">clock_reset_integrity</span>
+        </div>
+      </div>
+      <div class="rule-body" id="body_clock_glitch02">
+        <div class="tab-bar">
+          <button class="active" onclick="switchTab(this,'clock_glitch02','circuit')">🔌 电路拓扑</button>
+          <button onclick="switchTab(this,'clock_glitch02','waveform')">📊 波形动画</button>
+          <button onclick="switchTab(this,'clock_glitch02','desc')">📖 详细说明</button>
+          <button onclick="switchTab(this,'clock_glitch02','fix')">🔧 修复方法</button>
+          <button onclick="switchTab(this,'clock_glitch02','waiver')">🏷️ Waiver建议</button>
+        </div>
+        <div class="tab-content active" id="clock_glitch02_circuit"><div class="svg-container"><svg viewBox="0 0 500 100" xmlns="http://www.w3.org/2000/svg">
+                  <rect x="10" y="5" width="480" height="90" rx="8" style="fill:rgba(167,139,250,0.05);stroke:#a78bfa;stroke-width:1"/>
+                  <text x="250" y="20" style="font-size:10px;fill:#a78bfa;text-anchor:middle">Clock Path</text>
+                  <text x="60" y="55" style="font-size:12px;fill:var(--accent)">CLK</text>
+                  <line x1="90" y1="50" x2="130" y2="50" class="sig-line" style="stroke:var(--accent)"/>
+                  <ellipse cx="190" cy="50" rx="40" ry="18" style="fill:rgba(255,71,87,0.1);stroke:var(--error);stroke-width:1.5"/>
+                  <text x="190" y="54" style="font-size:9px;fill:var(--error);text-anchor:middle">AND/OR</text>
+                  <line x1="230" y1="50" x2="300" y2="50" class="err-line"/>
+                  <rect x="300" y="35" width="70" height="30" class="ff-rect"/><text x="335" y="54" class="ff-text" style="font-size:8px">FF (clk)</text>
+                  <text x="250" y="85" style="font-size:10px;fill:var(--error);text-anchor:middle">⚠ 时钟路径上的门控逻辑 → 可能产生时钟毛刺</text>
+                </svg></div></div>
+        <div class="tab-content" id="clock_glitch02_waveform"><div class="svg-container"><svg viewBox="0 0 600 120" xmlns="http://www.w3.org/2000/svg">
+                  <text x="10" y="18" class="wave-label">CLK_in</text>
+                  <polyline points="60,35 60,15 100,15 100,35 140,35 140,15 180,15 180,35 220,35 220,15 260,15 260,35" class="wave-clk"/>
+                  <text x="10" y="58" class="wave-label">Gated CLK</text>
+                  <polyline points="60,75 60,55 100,55 100,75 140,75 145,55 148,75 180,75 180,55 220,55 220,75 260,75 260,55" class="wave-err"/>
+                  <text x="147" y="50" style="font-size:9px;fill:var(--error);text-anchor:middle">↑ glitch</text>
+                  <text x="300" y="100" style="font-size:11px;fill:var(--error);text-anchor:middle">时钟毛刺导致意外时钟边沿 → 寄存器误触发</text>
+                </svg></div></div>
+        <div class="tab-content" id="clock_glitch02_desc"><div class="desc-section"><h4>问题描述</h4>
+                  <p>时钟路径上存在组合逻辑（如 AND、OR 门），这些逻辑的延时差异可能在时钟信号上产生<span class="highlight">毛刺 (Glitch)</span>。时钟毛刺会被下游寄存器当作有效时钟边沿，导致数据被错误锁存。</p></div></div>
+        <div class="tab-content" id="clock_glitch02_fix"><div class="desc-section"><h4>修复方法</h4>
+                  <ul>
+                    <li>使用标准库提供的 <strong>ICG (Integrated Clock Gating) 单元</strong>，而不是手工门控</li>
+                    <li>ICG 内部使用 latch + AND 结构，确保无毛刺时钟门控</li>
+                    <li>对于时钟 MUX，使用 glitch-free clock MUX 结构</li>
+                  </ul></div>
+                <div class="code-block"><span class="lang-tag">Verilog</span><span class="cmt">// ✗ 错误: 直接用 AND 门控时钟</span>
+<span class="kw">assign</span> gated_clk = clk & enable; <span class="cmt">// 有毛刺风险!</span>
+
+<span class="cmt">// ✓ 正确: 使用 ICG 单元</span>
+CKLNQD1 u_icg (.TE(scan_en), .E(enable), .CP(clk), .Q(gated_clk));</div></div>
+        <div class="tab-content" id="clock_glitch02_waiver"><div class="desc-section"><h4>Waiver 条件</h4><p>时钟路径上的毛刺问题通常<span class="highlight">不建议 waive</span>。必须使用正确的 ICG 单元或 glitch-free MUX。</p></div></div>
+      </div>
+    </div>
+    <div class="rule-card" id="clock_converge01" data-name="clock_converge01 时钟信号再聚合">
+      <div class="rule-header" onclick="toggleCard(this)">
+        <h3><code>Clock_converge01</code> — 时钟信号再聚合</h3>
+        <div class="badges">
+          <span class="badge warning">WARNING</span>
+          <span class="badge goal">clock_reset_integrity</span>
+        </div>
+      </div>
+      <div class="rule-body" id="body_clock_converge01">
+        <div class="tab-bar">
+          <button class="active" onclick="switchTab(this,'clock_converge01','circuit')">🔌 电路拓扑</button>
+          <button onclick="switchTab(this,'clock_converge01','waveform')">📊 波形动画</button>
+          <button onclick="switchTab(this,'clock_converge01','desc')">📖 详细说明</button>
+          <button onclick="switchTab(this,'clock_converge01','fix')">🔧 修复方法</button>
+          <button onclick="switchTab(this,'clock_converge01','waiver')">🏷️ Waiver建议</button>
+        </div>
+        <div class="tab-content active" id="clock_converge01_circuit"><div class="svg-container"><svg viewBox="0 0 500 110" xmlns="http://www.w3.org/2000/svg">
+                  <rect x="10" y="5" width="480" height="100" rx="8" style="fill:rgba(167,139,250,0.05);stroke:#a78bfa;stroke-width:1"/>
+                  <text x="70" y="35" style="font-size:10px;fill:var(--accent)">CLK_A</text>
+                  <text x="70" y="85" style="font-size:10px;fill:#2ed573">CLK_B</text>
+                  <circle cx="250" cy="55" r="20" style="fill:rgba(255,165,2,0.1);stroke:#ffa502;stroke-width:1.5"/>
+                  <text x="250" y="59" style="font-size:9px;fill:#ffa502;text-anchor:middle">MUX</text>
+                  <line x1="120" y1="32" x2="235" y2="45" class="sig-line" style="stroke:var(--accent)"/>
+                  <line x1="120" y1="82" x2="235" y2="65" class="sig-line" style="stroke:#2ed573"/>
+                  <line x1="270" y1="55" x2="400" y2="55" class="sig-line"/>
+                  <rect x="400" y="40" width="60" height="30" class="ff-rect"/><text x="430" y="59" class="ff-text" style="font-size:8px">FF</text>
+                  <text x="250" y="100" style="font-size:10px;fill:var(--warn);text-anchor:middle">⚠ 时钟选择 MUX 需要 glitch-free 设计</text>
+                </svg></div></div>
+        <div class="tab-content" id="clock_converge01_waveform"><div class="svg-container"><svg viewBox="0 0 500 60" xmlns="http://www.w3.org/2000/svg">
+                  <text x="250" y="35" style="font-size:11px;fill:var(--text-secondary);text-anchor:middle">时钟切换时可能产生短脉冲或毛刺</text>
+                </svg></div></div>
+        <div class="tab-content" id="clock_converge01_desc"><div class="desc-section"><h4>问题描述</h4>
+                  <p>多个时钟源在 MUX 或其他逻辑处聚合，形成一条时钟路径。时钟切换过程中如果不使用 glitch-free 结构，可能产生短脉冲或毛刺。</p></div></div>
+        <div class="tab-content" id="clock_converge01_fix"><div class="desc-section"><h4>修复方法</h4>
+                  <p>使用 <strong>Glitch-Free Clock MUX</strong>：先停止两个时钟，切换选择，再启动新时钟。或使用标准库提供的时钟切换单元。</p></div></div>
+        <div class="tab-content" id="clock_converge01_waiver"><div class="desc-section"><h4>Waiver 条件</h4><p>如果使用了 <code>set_case_analysis</code> 固定选择信号（表示只有一种时钟活跃），可以 waive。</p></div></div>
+      </div>
+    </div></div>
+<div class="category-section" id="cat8">
+  <div class="category-header">
+    <div class="cat-icon" style="background:linear-gradient(135deg,rgba(46,213,115,0.2),rgba(46,213,115,0.05));color:#2ed573;border:1px solid rgba(46,213,115,0.2)">✅</div>
+    <h2 id="sync-schemes">同步方案参考 (Synchronization Schemes)</h2>
+    <span class="cat-count">6 种方案</span>
+  </div>
+
+  <!-- 2-FF Synchronizer -->
+  <div class="sync-card" id="sync_2ff">
+    <h3>🔹 二级同步器 (2-FF Synchronizer)</h3>
+    <p style="color:var(--text-secondary);font-size:13px;margin-bottom:16px">适用于 <strong>单bit电平信号 (Level Signal)</strong> 的跨时钟域同步。信号需在源端保持稳定至少 2~3 个目的时钟周期。</p>
+    <div class="sync-grid">
+      <div class="panel">
+        <h4>电路拓扑</h4>
+        <div class="svg-container">
+          <svg viewBox="0 0 420 100" xmlns="http://www.w3.org/2000/svg">
+            <rect x="5" y="5" width="100" height="90" rx="6" class="domain-a"/>
+            <rect x="130" y="5" width="285" height="90" rx="6" class="domain-b"/>
+            <text x="55" y="18" style="font-size:9px;fill:#0084ff;text-anchor:middle">Dom A</text>
+            <text x="272" y="18" style="font-size:9px;fill:#2ed573;text-anchor:middle">Domain B</text>
+            <rect x="25" y="35" width="55" height="30" class="ff-rect"/><text x="52" y="54" class="ff-text" style="font-size:8px">SRC</text>
+            <rect x="160" y="35" width="55" height="30" class="ff-rect" style="stroke:#2ed573"/><text x="187" y="54" class="ff-text" style="font-size:8px">S1</text>
+            <rect x="240" y="35" width="55" height="30" class="ff-rect" style="stroke:#2ed573"/><text x="267" y="54" class="ff-text" style="font-size:8px">S2</text>
+            <rect x="330" y="35" width="55" height="30" class="ff-rect" style="stroke:#2ed573"/><text x="357" y="54" class="ff-text" style="font-size:8px">DST</text>
+            <line x1="80" y1="50" x2="160" y2="50" class="sig-line"/>
+            <line x1="215" y1="50" x2="240" y2="50" class="sig-line"/>
+            <line x1="295" y1="50" x2="330" y2="50" class="sig-line"/>
+            <rect x="150" y="28" width="158" height="48" rx="5" style="fill:none;stroke:var(--success);stroke-width:1.5;stroke-dasharray:4,3"/>
+            <text x="229" y="84" style="font-size:9px;fill:var(--success);text-anchor:middle">2-FF Synchronizer</text>
+          </svg>
+        </div>
+      </div>
+      <div class="panel">
+        <h4>Verilog 代码</h4>
+        <div class="code-block" style="font-size:12px"><span class="lang-tag">Verilog</span><span class="cmt">// cdc_demet: 2-FF 同步器</span>
+<span class="kw">module</span> cdc_demet (
+  <span class="kw">input</span>  clk, rst_n, d,
+  <span class="kw">output</span> q
+);
+  <span class="kw">reg</span> [1:0] sync;
+  <span class="kw">always</span> @(<span class="kw">posedge</span> clk <span class="kw">or negedge</span> rst_n)
+    <span class="kw">if</span> (!rst_n) sync &lt;= 2'b0;
+    <span class="kw">else</span>        sync &lt;= {sync[0], d};
+  <span class="kw">assign</span> q = sync[1];
+<span class="kw">endmodule</span></div>
+        <p style="font-size:12px;color:var(--text-secondary);margin-top:8px"><strong>解决规则:</strong> Ac_unsync01, Ac_sync01</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Pulse Synchronizer -->
+  <div class="sync-card" id="sync_pulse">
+    <h3>🔹 脉冲同步器 (Toggle-based Pulse Synchronizer)</h3>
+    <p style="color:var(--text-secondary);font-size:13px;margin-bottom:16px">适用于 <strong>单bit脉冲/事件信号 (Event Signal)</strong>。源端将脉冲转为电平翻转 (toggle)，目的端通过 XOR 检测边沿还原脉冲。</p>
+    <div class="sync-grid">
+      <div class="panel">
+        <h4>电路拓扑</h4>
+        <div class="svg-container">
+          <svg viewBox="0 0 500 130" xmlns="http://www.w3.org/2000/svg">
+            <rect x="5" y="5" width="180" height="120" rx="6" class="domain-a"/>
+            <rect x="210" y="5" width="285" height="120" rx="6" class="domain-b"/>
+            <text x="95" y="18" style="font-size:9px;fill:#0084ff;text-anchor:middle">Domain A (Source)</text>
+            <text x="352" y="18" style="font-size:9px;fill:#2ed573;text-anchor:middle">Domain B (Destination)</text>
+            <!-- Toggle FF -->
+            <rect x="30" y="40" width="50" height="28" class="ff-rect"/>
+            <text x="55" y="58" class="ff-text" style="font-size:7px">Toggle</text>
+            <!-- XOR gate at input -->
+            <circle cx="105" cy="54" r="10" style="fill:rgba(0,212,255,0.1);stroke:var(--accent);stroke-width:1"/>
+            <text x="105" y="57" style="font-size:7px;fill:var(--accent);text-anchor:middle">⊕</text>
+            <line x1="20" y1="38" x2="95" y2="48" class="sig-line"/>
+            <text x="20" y="35" style="font-size:8px;fill:var(--text-secondary)">pulse_in</text>
+            <line x1="115" y1="54" x2="155" y2="54" class="sig-line"/>
+            <line x1="155" y1="54" x2="155" y2="68" class="sig-line"/>
+            <line x1="155" y1="68" x2="30" y2="68" class="sig-line"/>
+            <line x1="30" y1="68" x2="30" y2="54" class="sig-line"/>
+            <!-- Feedback loop -->
+            <line x1="80" y1="54" x2="95" y2="54" class="sig-line"/>
+            <!-- 2FF sync -->
+            <line x1="155" y1="54" x2="240" y2="54" class="sig-line"/>
+            <rect x="240" y="40" width="45" height="28" class="ff-rect" style="stroke:#2ed573"/><text x="262" y="58" class="ff-text" style="font-size:7px">S1</text>
+            <rect x="300" y="40" width="45" height="28" class="ff-rect" style="stroke:#2ed573"/><text x="322" y="58" class="ff-text" style="font-size:7px">S2</text>
+            <line x1="285" y1="54" x2="300" y2="54" class="sig-line"/>
+            <!-- Delay + XOR -->
+            <rect x="370" y="40" width="45" height="28" class="ff-rect" style="stroke:#2ed573"/><text x="392" y="58" class="ff-text" style="font-size:7px">DLY</text>
+            <line x1="345" y1="54" x2="370" y2="54" class="sig-line"/>
+            <circle cx="450" cy="54" r="10" style="fill:rgba(46,213,115,0.1);stroke:#2ed573;stroke-width:1"/>
+            <text x="450" y="57" style="font-size:7px;fill:#2ed573;text-anchor:middle">⊕</text>
+            <line x1="415" y1="54" x2="440" y2="54" class="sig-line"/>
+            <line x1="345" y1="54" x2="345" y2="80" class="sig-line"/>
+            <line x1="345" y1="80" x2="440" y2="60" class="sig-line"/>
+            <text x="478" y="57" style="font-size:8px;fill:var(--success)">pulse_out</text>
+            <text x="280" y="100" style="font-size:9px;fill:var(--success);text-anchor:middle">Toggle → 2FF Sync → XOR 还原脉冲</text>
+          </svg>
+        </div>
+      </div>
+      <div class="panel">
+        <h4>Verilog 代码</h4>
+        <div class="code-block" style="font-size:12px"><span class="lang-tag">Verilog</span><span class="cmt">// DW_pulse_sync 方案</span>
+<span class="kw">reg</span> toggle_src, toggle_d;
+<span class="kw">wire</span> toggle_sync;
+
+<span class="cmt">// 源端: pulse → toggle</span>
+<span class="kw">always</span> @(<span class="kw">posedge</span> clk_a)
+  toggle_src &lt;= toggle_src ^ pulse_in;
+
+<span class="cmt">// 2-FF 同步 toggle 信号</span>
+cdc_demet u_sync (
+  .clk(clk_b), .d(toggle_src),
+  .q(toggle_sync));
+
+<span class="cmt">// 目的端: toggle → pulse</span>
+<span class="kw">always</span> @(<span class="kw">posedge</span> clk_b)
+  toggle_d &lt;= toggle_sync;
+<span class="kw">assign</span> pulse_out = toggle_sync ^ toggle_d;</div>
+        <p style="font-size:12px;color:var(--text-secondary);margin-top:8px"><strong>解决规则:</strong> Ac_cdc01, Ac_cdc01a</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- MUX Synchronization -->
+  <div class="sync-card" id="sync_mux">
+    <h3>🔹 MUX 同步方案 (DMUX Synchronization)</h3>
+    <p style="color:var(--text-secondary);font-size:13px;margin-bottom:16px">适用于 <strong>多bit数据信号</strong>。使能信号通过 2-FF 同步，数据通过 MUX 选通。使能有效时数据必须稳定。</p>
+    <div class="sync-grid">
+      <div class="panel">
+        <h4>电路拓扑</h4>
+        <div class="svg-container">
+          <svg viewBox="0 0 420 110" xmlns="http://www.w3.org/2000/svg">
+            <rect x="5" y="5" width="140" height="100" rx="6" class="domain-a"/>
+            <rect x="170" y="5" width="245" height="100" rx="6" class="domain-b"/>
+            <text x="75" y="18" style="font-size:9px;fill:#0084ff;text-anchor:middle">Dom A</text>
+            <text x="292" y="18" style="font-size:9px;fill:#2ed573;text-anchor:middle">Domain B</text>
+            <rect x="20" y="30" width="50" height="22" class="ff-rect"/><text x="45" y="44" class="ff-text" style="font-size:7px">EN</text>
+            <rect x="20" y="65" width="50" height="22" class="ff-rect"/><text x="45" y="79" class="ff-text" style="font-size:7px">DATA</text>
+            <rect x="190" y="30" width="40" height="22" class="ff-rect" style="stroke:#2ed573"/><text x="210" y="44" class="ff-text" style="font-size:6px">S1</text>
+            <rect x="245" y="30" width="40" height="22" class="ff-rect" style="stroke:#2ed573"/><text x="265" y="44" class="ff-text" style="font-size:6px">S2</text>
+            <rect x="320" y="50" width="28" height="40" style="fill:rgba(255,255,255,0.05);stroke:var(--text-secondary);stroke-width:1" rx="2"/>
+            <text x="334" y="73" style="font-size:7px;fill:var(--text-primary);text-anchor:middle">M</text>
+            <rect x="370" y="55" width="40" height="22" class="ff-rect" style="stroke:#2ed573"/><text x="390" y="69" class="ff-text" style="font-size:6px">OUT</text>
+            <line x1="70" y1="41" x2="190" y2="41" class="sig-line"/>
+            <line x1="230" y1="41" x2="245" y2="41" class="sig-line"/>
+            <line x1="285" y1="41" x2="334" y2="50" class="sig-line"/>
+            <line x1="70" y1="76" x2="320" y2="76" class="sig-line"/>
+            <line x1="348" y1="66" x2="370" y2="66" class="sig-line"/>
+          </svg>
+        </div>
+      </div>
+      <div class="panel">
+        <h4>关键要求</h4>
+        <ul style="font-size:12px;color:var(--text-secondary);line-height:1.8;padding-left:16px">
+          <li>数据必须在 EN 拉高前稳定</li>
+          <li>EN 有效期间数据不能变化</li>
+          <li>EN 通过 2-FF 同步到目的域</li>
+          <li>同步后的 EN 控制 MUX/寄存器使能</li>
+        </ul>
+        <p style="font-size:12px;color:var(--text-secondary);margin-top:8px"><strong>解决规则:</strong> Ac_unsync02, Ac_datahold01a</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Handshake -->
+  <div class="sync-card" id="sync_handshake">
+    <h3>🔹 握手同步 (Handshake Synchronization)</h3>
+    <p style="color:var(--text-secondary);font-size:13px;margin-bottom:16px">适用于 <strong>需要双向确认的数据传输</strong>。源端发送 REQ，目的端确认后回 ACK，确保数据被安全采样。延迟较大但最安全。</p>
+    <div class="sync-grid">
+      <div class="panel">
+        <h4>协议流程</h4>
+        <div class="svg-container">
+          <svg viewBox="0 0 420 140" xmlns="http://www.w3.org/2000/svg">
+            <rect x="5" y="5" width="180" height="130" rx="6" class="domain-a"/>
+            <rect x="210" y="5" width="205" height="130" rx="6" class="domain-b"/>
+            <text x="95" y="20" style="font-size:9px;fill:#0084ff;text-anchor:middle">Source (clk_a)</text>
+            <text x="312" y="20" style="font-size:9px;fill:#2ed573;text-anchor:middle">Destination (clk_b)</text>
+            <!-- Steps -->
+            <text x="20" y="42" style="font-size:9px;fill:var(--text-primary)">① 稳定 DATA</text>
+            <text x="20" y="58" style="font-size:9px;fill:var(--text-primary)">② 拉高 REQ</text>
+            <text x="220" y="58" style="font-size:9px;fill:var(--text-primary)">③ 同步 REQ → 采 DATA</text>
+            <text x="220" y="75" style="font-size:9px;fill:var(--text-primary)">④ 拉高 ACK</text>
+            <text x="20" y="95" style="font-size:9px;fill:var(--text-primary)">⑤ 同步 ACK → 拉低 REQ</text>
+            <text x="220" y="112" style="font-size:9px;fill:var(--text-primary)">⑥ 检测 REQ↓ → 拉低 ACK</text>
+            <!-- Arrows -->
+            <line x1="165" y1="52" x2="220" y2="52" style="stroke:var(--accent);stroke-width:1.5" marker-end="url(#arr2)"/>
+            <line x1="220" y1="70" x2="165" y2="89" style="stroke:#2ed573;stroke-width:1.5" marker-end="url(#arr2)"/>
+            <defs><marker id="arr2" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="5" markerHeight="5" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="var(--accent)"/></marker></defs>
+          </svg>
+        </div>
+      </div>
+      <div class="panel">
+        <h4>特点</h4>
+        <ul style="font-size:12px;color:var(--text-secondary);line-height:1.8;padding-left:16px">
+          <li>需要 2 次 2-FF 同步（REQ + ACK）</li>
+          <li>延迟约 4~6 个时钟周期</li>
+          <li>吞吐量低但可靠性最高</li>
+          <li>保证数据不会丢失</li>
+        </ul>
+        <p style="font-size:12px;color:var(--text-secondary);margin-top:8px"><strong>解决规则:</strong> Ac_unsync01/02, Ac_cdc01, Ac_datahold01a</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Async FIFO -->
+  <div class="sync-card" id="sync_fifo">
+    <h3>🔹 异步 FIFO (Async FIFO with Gray Code Pointers)</h3>
+    <p style="color:var(--text-secondary);font-size:13px;margin-bottom:16px">适用于 <strong>高吞吐量多bit数据流</strong> 传输。使用格雷码编码的读写指针进行跨时钟域同步。</p>
+    <div class="sync-grid">
+      <div class="panel">
+        <h4>架构示意</h4>
+        <div class="svg-container">
+          <svg viewBox="0 0 420 120" xmlns="http://www.w3.org/2000/svg">
+            <rect x="5" y="5" width="130" height="110" rx="6" class="domain-a"/>
+            <rect x="160" y="15" width="100" height="90" rx="6" style="fill:rgba(255,255,255,0.03);stroke:var(--text-secondary);stroke-width:1"/>
+            <rect x="285" y="5" width="130" height="110" rx="6" class="domain-b"/>
+            <text x="70" y="18" style="font-size:9px;fill:#0084ff;text-anchor:middle">Write (clk_w)</text>
+            <text x="210" y="30" style="font-size:9px;fill:var(--text-secondary);text-anchor:middle">Dual-Port</text>
+            <text x="210" y="42" style="font-size:9px;fill:var(--text-secondary);text-anchor:middle">RAM</text>
+            <text x="350" y="18" style="font-size:9px;fill:#2ed573;text-anchor:middle">Read (clk_r)</text>
+            <text x="70" y="45" style="font-size:8px;fill:var(--text-secondary);text-anchor:middle">wr_ptr (gray)</text>
+            <text x="350" y="45" style="font-size:8px;fill:var(--text-secondary);text-anchor:middle">rd_ptr (gray)</text>
+            <line x1="70" y1="50" x2="70" y2="65" class="sig-line" style="stroke:var(--accent)"/>
+            <line x1="70" y1="65" x2="350" y2="65" class="sig-line" style="stroke:var(--accent);stroke-dasharray:4,3"/>
+            <text x="210" y="62" style="font-size:7px;fill:var(--accent);text-anchor:middle">2-FF sync</text>
+            <line x1="350" y1="50" x2="350" y2="80" class="sig-line" style="stroke:#2ed573"/>
+            <line x1="350" y1="80" x2="70" y2="80" class="sig-line" style="stroke:#2ed573;stroke-dasharray:4,3"/>
+            <text x="210" y="77" style="font-size:7px;fill:#2ed573;text-anchor:middle">2-FF sync</text>
+            <text x="70" y="100" style="font-size:8px;fill:var(--text-secondary);text-anchor:middle">full判断</text>
+            <text x="350" y="100" style="font-size:8px;fill:var(--text-secondary);text-anchor:middle">empty判断</text>
+          </svg>
+        </div>
+      </div>
+      <div class="panel">
+        <h4>关键设计点</h4>
+        <ul style="font-size:12px;color:var(--text-secondary);line-height:1.8;padding-left:16px">
+          <li><strong>格雷码指针:</strong> 相邻值只有1bit变化，避免多bit同步问题</li>
+          <li><strong>Dual-Port RAM:</strong> 写端口用 clk_w，读端口用 clk_r</li>
+          <li><strong>Full/Empty 判断:</strong> 在各自时钟域内比较同步后的对方指针</li>
+          <li><strong>深度:</strong> 需要 2^N 深度以适配格雷码</li>
+        </ul>
+        <p style="font-size:12px;color:var(--text-secondary);margin-top:8px"><strong>解决规则:</strong> Ac_unsync02, Ac_conv02 (gray code)</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Reset Synchronizer -->
+  <div class="sync-card" id="sync_reset">
+    <h3>🔹 复位同步器 (Async Assert, Sync Deassert)</h3>
+    <p style="color:var(--text-secondary);font-size:13px;margin-bottom:16px">适用于 <strong>异步复位信号</strong> 的跨时钟域同步。确保复位可以立即生效（异步断言），但释放时同步到目的时钟（同步释放）。</p>
+    <div class="sync-grid">
+      <div class="panel">
+        <h4>电路拓扑</h4>
+        <div class="svg-container">
+          <svg viewBox="0 0 380 110" xmlns="http://www.w3.org/2000/svg">
+            <rect x="5" y="5" width="370" height="100" rx="6" class="domain-b"/>
+            <text x="190" y="18" style="font-size:9px;fill:#2ed573;text-anchor:middle">Destination Domain (clk_b)</text>
+            <text x="15" y="50" style="font-size:9px;fill:var(--error)">rst_n</text>
+            <text x="15" y="62" style="font-size:8px;fill:var(--text-secondary)">(async)</text>
+            <!-- 2 FFs with async reset -->
+            <rect x="80" y="35" width="55" height="35" class="ff-rect" style="stroke:#2ed573"/>
+            <text x="107" y="56" class="ff-text" style="font-size:8px">S1</text>
+            <text x="85" y="68" style="font-size:7px;fill:var(--error)">rst_n↓</text>
+            <rect x="170" y="35" width="55" height="35" class="ff-rect" style="stroke:#2ed573"/>
+            <text x="197" y="56" class="ff-text" style="font-size:8px">S2</text>
+            <text x="175" y="68" style="font-size:7px;fill:var(--error)">rst_n↓</text>
+            <!-- VCC input -->
+            <text x="68" y="42" style="font-size:8px;fill:var(--success)">VCC</text>
+            <line x1="68" y1="45" x2="80" y2="50" class="sig-line" style="stroke:var(--success)"/>
+            <!-- Connections -->
+            <line x1="50" y1="55" x2="80" y2="65" class="sig-line" style="stroke:var(--error)"/>
+            <line x1="50" y1="55" x2="50" y2="55" class="sig-line"/>
+            <line x1="135" y1="50" x2="170" y2="50" class="sig-line"/>
+            <line x1="225" y1="50" x2="350" y2="50" class="sig-line" style="stroke:var(--success)"/>
+            <text x="300" y="45" style="font-size:9px;fill:var(--success)">rst_sync_n</text>
+            <text x="190" y="95" style="font-size:9px;fill:var(--success);text-anchor:middle">异步断言 (立即) + 同步释放 (安全)</text>
+          </svg>
+        </div>
+      </div>
+      <div class="panel">
+        <h4>Verilog 代码</h4>
+        <div class="code-block" style="font-size:12px"><span class="lang-tag">Verilog</span><span class="cmt">// 异步断言，同步释放</span>
+<span class="kw">reg</span> [1:0] rst_sync;
+<span class="kw">always</span> @(<span class="kw">posedge</span> clk_b <span class="kw">or negedge</span> rst_n)
+  <span class="kw">if</span> (!rst_n)
+    rst_sync &lt;= <span class="num">2'b00</span>;
+  <span class="kw">else</span>
+    rst_sync &lt;= {rst_sync[0], <span class="num">1'b1</span>};
+
+<span class="kw">assign</span> rst_sync_n = rst_sync[1];</div>
+        <p style="font-size:12px;color:var(--text-secondary);margin-top:8px"><strong>解决规则:</strong> Ar_unsync01, Ar_asyncdeassert01</p>
+      </div>
+    </div>
+  </div>
+
+</div><!-- end cat8 -->
+
+<div class="category-section" id="methodology">
+  <div class="category-header">
+    <div class="cat-icon" style="background:linear-gradient(135deg,rgba(0,212,255,0.2),rgba(0,212,255,0.05));color:var(--accent);border:1px solid rgba(0,212,255,0.2)">📋</div>
+    <h2>CDC 方法学流程 (Methodology)</h2>
+  </div>
+  <div class="sync-card">
+    <h3>SpyGlass CDC 检查流程</h3>
+    <div class="svg-container">
+      <svg viewBox="0 0 800 80" xmlns="http://www.w3.org/2000/svg">
+        <rect x="10" y="20" width="120" height="40" rx="8" style="fill:rgba(0,212,255,0.1);stroke:var(--accent);stroke-width:1.5"/>
+        <text x="70" y="44" style="font-size:11px;fill:var(--accent);text-anchor:middle;font-weight:600">cdc_setup</text>
+        <line x1="130" y1="40" x2="160" y2="40" style="stroke:var(--text-secondary);stroke-width:1.5" marker-end="url(#arr3)"/>
+        <rect x="160" y="20" width="140" height="40" rx="8" style="fill:rgba(0,212,255,0.1);stroke:var(--accent);stroke-width:1.5"/>
+        <text x="230" y="44" style="font-size:11px;fill:var(--accent);text-anchor:middle;font-weight:600">cdc_setup_check</text>
+        <line x1="300" y1="40" x2="330" y2="40" style="stroke:var(--text-secondary);stroke-width:1.5" marker-end="url(#arr3)"/>
+        <rect x="330" y="20" width="150" height="40" rx="8" style="fill:rgba(255,165,2,0.1);stroke:#ffa502;stroke-width:1.5"/>
+        <text x="405" y="44" style="font-size:11px;fill:#ffa502;text-anchor:middle;font-weight:600">clock_reset_integrity</text>
+        <line x1="480" y1="40" x2="510" y2="40" style="stroke:var(--text-secondary);stroke-width:1.5" marker-end="url(#arr3)"/>
+        <rect x="510" y="20" width="120" height="40" rx="8" style="fill:rgba(255,71,87,0.1);stroke:var(--error);stroke-width:1.5"/>
+        <text x="570" y="44" style="font-size:11px;fill:var(--error);text-anchor:middle;font-weight:600">cdc_verify</text>
+        <line x1="630" y1="40" x2="660" y2="40" style="stroke:var(--text-secondary);stroke-width:1.5" marker-end="url(#arr3)"/>
+        <rect x="660" y="20" width="130" height="40" rx="8" style="fill:rgba(255,71,87,0.1);stroke:var(--error);stroke-width:1.5"/>
+        <text x="725" y="44" style="font-size:11px;fill:var(--error);text-anchor:middle;font-weight:600">cdc_verify_struct</text>
+        <defs><marker id="arr3" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="5" markerHeight="5" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="var(--text-secondary)"/></marker></defs>
+      </svg>
+    </div>
+    <div class="desc-section" style="margin-top:16px">
+      <h4>推荐处理顺序</h4>
+      <ul>
+        <li>① <strong>cdc_setup:</strong> 指定时钟、复位、黑盒约束，生成 autoclock/autoreset</li>
+        <li>② <strong>cdc_setup_check:</strong> 验证约束完整性，必须修复所有 Fatal/Error</li>
+        <li>③ <strong>clock_reset_integrity:</strong> 检查时钟和复位树完整性，修复 glitch 和 race</li>
+        <li>④ <strong>cdc_verify:</strong> Block 级 CDC 验证（信号宽度、数据保持等功能性检查）</li>
+        <li>⑤ <strong>cdc_verify_struct:</strong> 结构级 CDC 验证（未同步、收敛、毛刺等）</li>
+      </ul>
+      <h4 style="margin-top:16px">Violation 处理优先级</h4>
+      <ul>
+        <li>🔴 <strong>Ac_unsync01/02:</strong> 最高优先级，先解决未同步问题</li>
+        <li>🔴 <strong>Ar_*/Reset_*:</strong> 复位同步问题</li>
+        <li>🟠 <strong>Ac_conv*:</strong> 收敛性问题</li>
+        <li>🟠 <strong>Ac_glitch*:</strong> 毛刺问题</li>
+        <li>🟡 <strong>Ac_cdc01*:</strong> 信号宽度问题</li>
+        <li>🟡 <strong>Ac_datahold*:</strong> 数据保持问题</li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+</div><!-- end .main -->
+
+<button class="fab" onclick="window.scrollTo({top:0,behavior:'smooth'})" title="回到顶部">↑</button>
+
+<script>
+// Toggle card expand/collapse
+function toggleCard(header) {
+  const body = header.nextElementSibling;
+  body.classList.toggle('open');
+}
+
+// Switch tabs
+function switchTab(btn, ruleId, tabName) {
+  const card = document.getElementById(ruleId);
+  card.querySelectorAll('.tab-bar button').forEach(b => b.classList.remove('active'));
+  card.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+  btn.classList.add('active');
+  document.getElementById(ruleId + '_' + tabName).classList.add('active');
+}
+
+// Toggle sidebar category
+function toggleCat(title) {
+  title.classList.toggle('collapsed');
+  const items = title.nextElementSibling;
+  items.classList.toggle('hidden');
+}
+
+// Toggle sidebar on mobile
+function toggleSidebar() {
+  document.getElementById('sidebar').classList.toggle('open');
+}
+function closeSidebarMobile() {
+  if (window.innerWidth <= 900) {
+    document.getElementById('sidebar').classList.remove('open');
+  }
+}
+
+// Expand all cards
+function expandAll() {
+  document.querySelectorAll('.rule-body').forEach(b => b.classList.add('open'));
+}
+
+// Search/filter rules
+function filterRules(query) {
+  query = query.toLowerCase();
+  document.querySelectorAll('.rule-card').forEach(card => {
+    const name = card.getAttribute('data-name') || '';
+    card.style.display = name.includes(query) ? '' : 'none';
+  });
+  // Also filter sidebar items
+  document.querySelectorAll('.cat-items a').forEach(a => {
+    a.style.display = a.textContent.toLowerCase().includes(query) ? '' : 'none';
+  });
+}
+
+// Highlight active sidebar item on scroll
+const observer = new IntersectionObserver(entries => {
+  entries.forEach(entry => {
+    if (entry.isIntersecting) {
+      const id = entry.target.id;
+      document.querySelectorAll('.cat-items a').forEach(a => {
+        a.classList.toggle('active', a.getAttribute('href') === '#' + id);
+      });
+    }
+  });
+}, { threshold: 0.3 });
+document.querySelectorAll('.rule-card, .sync-card').forEach(el => {
+  if (el.id) observer.observe(el);
+});
+</script>
+</body>
+</html>
