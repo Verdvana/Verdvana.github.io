@@ -267,16 +267,20 @@ body > :not(#ambient-bg):not(.page-loader) {
 }
 
 .site-nav {
-  position: fixed;
+  position: fixed !important;
   top: 0;
+  top: env(safe-area-inset-top, 0);
   left: 0;
   right: 0;
   width: 100%;
+  transform: none !important;
+  will-change: auto;
   padding: 14px var(--site-gutter);
   display: flex;
   justify-content: space-between;
   align-items: center;
-  z-index: 1000;
+  z-index: 5000;
+  isolation: isolate;
   background:
     linear-gradient(180deg, rgba(255, 255, 255, 0.16), rgba(255, 255, 255, 0.055)),
     rgba(8, 10, 14, 0.62);
