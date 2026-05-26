@@ -12,8 +12,8 @@
   --danger:#ff6b6b;
   --ok:#39d98a;
   --warn:#ffd166;
-  --mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
-  --sans: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji","Segoe UI Emoji";
+  --mono: "SFMono-Regular", "SF Mono", ui-monospace, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+  --sans: -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "Helvetica Neue", Arial, sans-serif;
   --radius: 16px;
 }
 
@@ -21,7 +21,7 @@
 *{box-sizing:border-box;margin:0;padding:0;}
 .lab-page{background:radial-gradient(1200px 700px at 80% -20%,rgba(122,162,255,.22),transparent 60%),
   radial-gradient(900px 550px at 20% 0%,rgba(125,240,196,.18),transparent 55%),var(--bg);
-  color:var(--text);font-family:var(--sans);line-height:1.5;min-height:100vh;}
+  color:var(--text);font-family:var(--sans);line-height:1.47059;min-height:100vh;}
 a{color:var(--accent);text-decoration:none;}a:hover{text-decoration:underline;}
 .wrap{max-width:960px;margin:0 auto;padding:24px 18px 80px;
     padding-top: 90px;
@@ -31,7 +31,7 @@ a{color:var(--accent);text-decoration:none;}a:hover{text-decoration:underline;}
 .brand-icon{width:40px;height:40px;border-radius:12px;
   background:linear-gradient(135deg,rgba(122,162,255,.95),rgba(125,240,196,.85));
   box-shadow:0 10px 30px rgba(0,0,0,.22);display:flex;align-items:center;justify-content:center;color:#fff;font-size:18px;}
-h1{font-size:18px;margin:0;letter-spacing:.2px;}
+h1{font-size:18px;margin:0;letter-spacing:0;}
 .subtitle{margin:2px 0 0;color:var(--muted);font-size:13px;}
 .tabs{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:22px;}
 .tab-btn{background:var(--panel);border:1px solid var(--border);color:var(--muted);

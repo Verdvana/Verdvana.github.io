@@ -5,7 +5,7 @@
         display: flex;
         flex-direction: column;
         justify-content: center;
-        padding: 80px 5% 40px;
+        padding: clamp(96px, 12vw, 148px) var(--site-gutter) clamp(44px, 6vw, 72px);
         background-image: linear-gradient(to bottom, rgba(0,0,0,0.5), rgba(0,0,0,1)), url('/static/img/wallpaper.jpg');
         background-size: cover;
         background-position: center;
@@ -19,11 +19,11 @@
     }
 
     header.post-hero h1 {
-        font-size: clamp(32px, 6vw, 64px);
+        font-size: clamp(40px, 6vw, 72px);
         font-weight: 700;
-        line-height: 1.2;
-        margin-bottom: 30px;
-        letter-spacing: -2px;
+        line-height: var(--heading-leading);
+        margin-bottom: 24px;
+        letter-spacing: 0;
         background: linear-gradient(to right, #fff, #a1a1a6);
         -webkit-background-clip: text;
         -webkit-text-fill-color: transparent;
@@ -36,7 +36,9 @@
         color: var(--secondary-text);
         font-size: 14px;
         font-weight: 500;
-        margin-bottom: 20px;
+        line-height: 1.28577;
+        letter-spacing: 0;
+        margin-bottom: 18px;
     }
 
     .post-meta i {
@@ -58,7 +60,7 @@
     .post-tag {
         font-size: 11px;
         text-transform: uppercase;
-        letter-spacing: 1px;
+        letter-spacing: 0;
         color: var(--accent-color);
         background: rgba(0, 113, 227, 0.1);
         padding: 4px 12px;
@@ -78,8 +80,8 @@
         display: grid;
         grid-template-columns: 250px minmax(0, 1fr);
         width: 100%;
-        padding: 60px 5% 120px;
-        gap: 60px;
+        padding: clamp(56px, 8vw, 88px) var(--site-gutter) var(--section-space);
+        gap: clamp(40px, 5vw, 72px);
     }
 
     .post-layout-left {
@@ -90,11 +92,12 @@
         grid-column: 2;
         grid-row: 1;
         width: 100%;
-        max-width: 1210px;
+        max-width: 980px;
         justify-self: center;
         min-width: 0;
-        font-size: 18px;
-        line-height: 1.8;
+        font-size: clamp(17px, 1.25vw, 19px);
+        line-height: 1.52947;
+        letter-spacing: 0;
         color: #d1d1d6;
     }
 
@@ -114,7 +117,8 @@
         font-size: 12px;
         font-weight: 700;
         color: var(--secondary-text);
-        letter-spacing: 1px;
+        letter-spacing: 0;
+        line-height: var(--eyebrow-leading);
         margin-bottom: 20px;
         text-transform: uppercase;
     }
@@ -122,7 +126,7 @@
     .toc-content {
         --toc-fade-size: 24px;
         font-size: 14px;
-        line-height: 1.6;
+        line-height: 1.42859;
         max-height: calc(100vh - 180px);
         overflow-y: auto;
         padding: var(--toc-fade-size) 10px var(--toc-fade-size) 0;
@@ -202,7 +206,7 @@
         margin: 0 !important;
         border: none !important;
         overflow-x: auto;
-        font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, Courier, monospace;
+        font-family: var(--font-mono);
         font-size: 0.9em;
         line-height: 1.5;
         position: relative;
@@ -227,7 +231,7 @@
     .code-lang {
         font-size: 10px !important;
         text-transform: uppercase !important;
-        letter-spacing: 1.5px !important;
+        letter-spacing: 0 !important;
         color: var(--secondary-text) !important;
         font-weight: 700 !important;
         pointer-events: none !important;
@@ -243,7 +247,7 @@
         cursor: pointer !important;
         transition: all 0.2s !important;
         font-weight: 600 !important;
-        letter-spacing: 0.5px !important;
+        letter-spacing: 0 !important;
         pointer-events: auto !important;
     }
 
@@ -254,16 +258,17 @@
 
     .post-content h1, .post-content h2, .post-content h3, .post-content h4 {
         color: #fff;
-        margin-top: 2em;
-        margin-bottom: 1em;
+        margin-top: 2.25em;
+        margin-bottom: 0.75em;
         font-weight: 700;
-        letter-spacing: -1px;
+        letter-spacing: 0;
+        line-height: var(--heading-leading);
     }
 
-    .post-content h2 { font-size: 32px; border-bottom: 1px solid var(--border-color); padding-bottom: 10px; }
-    .post-content h3 { font-size: 24px; }
+    .post-content h2 { font-size: clamp(28px, 3vw, 40px); border-bottom: 1px solid var(--border-color); padding-bottom: 12px; }
+    .post-content h3 { font-size: clamp(22px, 2vw, 28px); }
 
-    .post-content p { margin-bottom: 1.5em; }
+    .post-content p { margin-bottom: 1.35em; }
 
     .post-content strong, .post-content b {
         color: var(--accent-color);
@@ -273,7 +278,7 @@
     /* List Styling */
     .post-content ul, .post-content ol {
         padding-left: 2em;
-        margin-bottom: 1.5em;
+        margin-bottom: 1.35em;
     }
 
     .post-content li {

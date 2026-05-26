@@ -7,6 +7,9 @@
             --card-bg: rgba(28, 28, 30, 0.7);
             --glass: rgba(255, 255, 255, 0.05);
             --sidebar-width: 260px;
+            --font-sans: -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "Helvetica Neue", Arial, sans-serif;
+            --font-display: -apple-system, BlinkMacSystemFont, "SF Pro Display", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", Arial, sans-serif;
+            --font-mono: "SFMono-Regular", "SF Mono", ui-monospace, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
         }
 
         * {
@@ -16,14 +19,16 @@
         }
 
         .lab-page {
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            font-family: var(--font-sans);
             background:
                 radial-gradient(circle at 18% 12%, rgba(0, 113, 227, 0.18), transparent 32rem),
                 radial-gradient(circle at 88% 28%, rgba(124, 60, 255, 0.16), transparent 34rem),
                 linear-gradient(180deg, #05070b 0%, var(--bg-color) 42%);
             color: var(--text-color);
-            line-height: 1.6;
+            line-height: 1.47059;
+            letter-spacing: 0;
             -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
             overflow-x: hidden;
             display: flex;
             flex-direction: column;
@@ -65,7 +70,8 @@
             color: var(--accent-color);
             font-size: 12px;
             font-weight: 700;
-            letter-spacing: 1.6px;
+            letter-spacing: 0;
+            line-height: 1.33337;
             text-transform: uppercase;
         }
 
@@ -77,6 +83,7 @@
             margin-bottom: 24px;
             color: var(--secondary-text);
             font-size: 14px;
+            line-height: 1.47059;
         }
 
         .password-row {
@@ -128,7 +135,7 @@
             color: var(--secondary-text);
             font-size: 11px;
             font-weight: 700;
-            letter-spacing: 2px;
+            letter-spacing: 0;
             text-transform: uppercase;
         }
 
@@ -214,9 +221,11 @@
         }
 
         h1 {
+            font-family: var(--font-display);
             font-size: 32px;
             font-weight: 700;
-            letter-spacing: -1px;
+            line-height: 1.08349;
+            letter-spacing: 0;
         }
 
         .btn {
@@ -264,7 +273,8 @@
             font-weight: 600;
             color: var(--secondary-text);
             text-transform: uppercase;
-            letter-spacing: 1px;
+            letter-spacing: 0;
+            line-height: 1.33337;
             margin-bottom: 20px;
             display: flex;
             justify-content: space-between;
@@ -489,7 +499,7 @@
             max-height: 60vh;
             margin: 20px 0;
             font-size: 12px;
-            font-family: monospace;
+            font-family: var(--font-mono);
             color: #39d98a;
             border: 1px solid rgba(255, 255, 255, 0.1);
         }

@@ -1,10 +1,10 @@
 /* Archive Section */
-    section.archive { padding: 40px 10% 80px; min-height: 60vh; }
+    section.archive { padding: clamp(44px, 6vw, 72px) var(--site-gutter) var(--section-space); min-height: 60vh; }
     .archive-container { max-width: 1200px; margin: 0 auto; }
-    .archive-year-group { margin-bottom: 60px; }
-    .archive-controls { margin-bottom: 40px; display: flex; flex-direction: column; gap: 20px; }
+    .archive-year-group { margin-bottom: clamp(48px, 6vw, 72px); }
+    .archive-controls { margin-bottom: clamp(32px, 5vw, 48px); display: flex; flex-direction: column; gap: 18px; }
     .search-container { position: relative; width: 100%; }
-    .search-input { width: 100%; background: rgba(255, 255, 255, 0.05); border: 1px solid var(--border-color); border-radius: 12px; padding: 14px 20px 14px 48px; color: white; font-size: 16px; outline: none; transition: all 0.2s; }
+    .search-input { width: 100%; background: rgba(255, 255, 255, 0.05); border: 1px solid var(--border-color); border-radius: 12px; padding: 14px 20px 14px 48px; color: white; font-size: 16px; line-height: 1.47059; outline: none; transition: all 0.2s; }
     .search-input:focus { border-color: var(--accent-color); background: rgba(255, 255, 255, 0.08); box-shadow: 0 0 0 4px rgba(0, 113, 227, 0.1); }
     .search-icon { position: absolute; left: 18px; top: 50%; transform: translateY(-50%); color: var(--secondary-text); font-size: 18px; }
     .filter-container { display: flex; flex-wrap: wrap; gap: 8px; }
@@ -12,22 +12,22 @@
     .filter-tag:hover { color: white; border-color: var(--secondary-text); }
     .filter-tag.active { background: rgba(0, 113, 227, 0.1); color: var(--accent-color); border-color: var(--accent-color); }
     .archive-header { display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 30px; border-bottom: 1px solid var(--border-color); padding-bottom: 10px; }
-    .archive-year-title { font-size: 32px; font-weight: 700; color: var(--accent-color); border-bottom: none; margin-bottom: 0; padding-bottom: 0; }
+    .archive-year-title { font-size: clamp(28px, 3vw, 36px); font-weight: 700; line-height: var(--heading-leading); color: var(--accent-color); border-bottom: none; margin-bottom: 0; padding-bottom: 0; }
     .sort-controls { display: flex; gap: 10px; margin-bottom: 2px; }
     .sort-btn { background: transparent; border: 1px solid var(--border-color); color: var(--secondary-text); padding: 4px 12px; border-radius: 15px; font-size: 12px; cursor: pointer; transition: all 0.2s; text-decoration: none; }
     .sort-btn:hover { border-color: var(--accent-color); color: white; }
     .sort-btn.active { background: var(--accent-color); border-color: var(--accent-color); color: white; }
-    .archive-item { display: flex; justify-content: space-between; align-items: center; padding: 20px 0; border-bottom: 1px solid rgba(255, 255, 255, 0.05); transition: all 0.2s; }
+    .archive-item { display: flex; justify-content: space-between; align-items: center; padding: 18px 0; border-bottom: 1px solid rgba(255, 255, 255, 0.05); transition: all 0.2s; }
     .archive-item:hover { padding-left: 10px; border-bottom-color: var(--accent-color); }
     .archive-info { display: flex; align-items: center; gap: 24px; flex: 1; min-width: 0; }
-    .archive-date { font-family: monospace; font-size: 16px; color: var(--secondary-text); white-space: nowrap; }
-    .archive-title { display: inline-flex; align-items: center; gap: 10px; min-width: 0; font-size: 18px; font-weight: 500; color: #fff; text-decoration: none; white-space: nowrap; overflow: hidden; transition: color 0.2s; }
+    .archive-date { font-family: var(--font-mono); font-size: 14px; line-height: 1.42859; color: var(--secondary-text); white-space: nowrap; }
+    .archive-title { display: inline-flex; align-items: center; gap: 10px; min-width: 0; font-size: 18px; line-height: 1.381; font-weight: 500; letter-spacing: 0; color: #fff; text-decoration: none; white-space: nowrap; overflow: hidden; transition: color 0.2s; }
     .archive-title-text { overflow: hidden; text-overflow: ellipsis; }
     .ai-post .archive-title { color: #d9ffe8; text-shadow: 0 0 14px rgba(48, 209, 88, 0.28); }
     .ai-badge { display: inline-flex; align-items: center; justify-content: center; flex: 0 0 auto; height: 20px; padding: 0 8px; border-radius: 999px; background: linear-gradient(135deg, rgba(48, 209, 88, 0.22), rgba(0, 198, 120, 0.16)); border: 1px solid rgba(48, 209, 88, 0.42); color: #7dffad; font-size: 10px; font-weight: 700; line-height: 1; letter-spacing: 0; box-shadow: 0 0 18px rgba(48, 209, 88, 0.16); }
     .archive-item:hover .archive-title { color: var(--accent-color); }
     .archive-meta { display: flex; gap: 12px; margin-left: 20px; }
-    .archive-category { font-size: 11px; text-transform: uppercase; letter-spacing: 1px; color: var(--accent-color); background: rgba(0, 113, 227, 0.1); padding: 4px 12px; border-radius: 20px; border: 1px solid rgba(0, 113, 227, 0.2); white-space: nowrap; }
+    .archive-category { font-size: 11px; text-transform: uppercase; letter-spacing: 0; color: var(--accent-color); background: rgba(0, 113, 227, 0.1); padding: 4px 12px; border-radius: 20px; border: 1px solid rgba(0, 113, 227, 0.2); white-space: nowrap; }
 
     @media (max-width: 900px) {
 section.archive { padding: 10px 6%; }

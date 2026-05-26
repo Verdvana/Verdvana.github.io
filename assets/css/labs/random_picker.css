@@ -12,8 +12,8 @@
       --danger:#ff6b6b;
       --ok:#39d98a;
       --warn:#ffd166;
-      --mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
-      --sans: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji","Segoe UI Emoji";
+      --mono: "SFMono-Regular", "SF Mono", ui-monospace, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+      --sans: -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "Helvetica Neue", Arial, sans-serif;
       --radius: 16px;
     }
     
@@ -25,7 +25,7 @@
                   var(--bg);
       color: var(--text);
       font-family: var(--sans);
-      line-height: 1.5;
+      line-height: 1.47059;
     }
     a{ color: var(--accent); text-decoration: none; }
     a:hover{ text-decoration: underline; }
@@ -36,7 +36,7 @@
     .topbar{ display:flex; align-items:flex-start; justify-content:space-between; gap: 16px; margin-bottom: 18px; }
     .brand{ display:flex; gap:12px; align-items:center; }
     .brand-icon{ width: 40px; height: 40px; border-radius: 12px; background: linear-gradient(135deg, rgba(122,162,255,0.95), rgba(125,240,196,0.85)); box-shadow: 0 10px 30px rgba(0,0,0,0.22); }
-    h1{ font-size: 18px; margin:0; letter-spacing: 0.2px; }
+    h1{ font-size: 18px; margin:0; letter-spacing: 0; }
     .subtitle{ margin:2px 0 0; color: var(--muted); font-size: 13px; }
     .pill{ display:inline-flex; gap:8px; align-items:center; border:1px solid var(--border); background: rgba(255,255,255,0.02); padding:8px 12px; border-radius: 999px; color: var(--muted); font-size: 12px; }
 
@@ -45,7 +45,7 @@
 
     .card{ border: 1px solid var(--border); background: linear-gradient(180deg, rgba(255,255,255,0.05), rgba(255,255,255,0.03)); border-radius: var(--radius); box-shadow: var(--shadow); overflow: hidden; }
     .card .hd{ padding: 16px 18px; border-bottom: 1px solid var(--border); display:flex; align-items:center; justify-content:space-between; gap:12px; }
-    .card .hd h2{ font-size: 14px; margin:0; letter-spacing: 0.2px; }
+    .card .hd h2{ font-size: 14px; margin:0; letter-spacing: 0; }
     .card .bd{ padding: 16px 18px; }
 
     .section-title{ display:flex; align-items:center; gap:10px; }
@@ -77,7 +77,7 @@
     @media (max-width: 640px){ .kpi{ grid-template-columns: 1fr; } }
     .kpi .box{ border: 1px solid var(--border); border-radius: 14px; padding: 12px 12px; background: rgba(255,255,255,0.03); }
     .kpi .box .t{ font-size: 12px; color: var(--muted); margin-bottom: 6px; }
-    .kpi .box .v{ font-size: 16px; font-weight: 700; letter-spacing: .2px; }
+    .kpi .box .v{ font-size: 16px; font-weight: 700; letter-spacing:0; }
     .kpi .box .s{ font-size: 12px; color: var(--faint); margin-top: 4px; }
 
     .split{ height:1px; background: var(--border); margin: 14px 0; }
@@ -142,7 +142,7 @@
 
     .pick-display{ border: 1px solid var(--border); border-radius: 14px; padding: 14px 14px; background: rgba(255,255,255,0.03); position: relative; overflow:hidden; }
     .pick-display .label{ font-size: 12px; color: var(--muted); margin-bottom: 6px; }
-    .pick-display .value{ font-size: 20px; font-weight: 800; letter-spacing: .2px; line-height: 1.35; word-break: break-word; white-space: pre-wrap; }
+    .pick-display .value{ font-size: 20px; font-weight: 800; letter-spacing:0; line-height: 1.35; word-break: break-word; white-space: pre-wrap; }
     #finalPick{ white-space: pre-wrap; word-break: break-word; }
     .pulse{ animation: pulseGlow .5s ease-in-out infinite alternate; }
     @keyframes pulseGlow{ 0%{ box-shadow: 0 0 0 0 rgba(122,162,255,0.0); } 100%{ box-shadow: 0 0 0 6px rgba(122,162,255,0.10); } }
