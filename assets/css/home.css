@@ -6,6 +6,11 @@
             --border-color: rgba(255, 255, 255, 0.1);
             --card-bg: rgba(28, 28, 30, 0.7);
             --glass: rgba(255, 255, 255, 0.05);
+            --font-sans: -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "Helvetica Neue", Arial, sans-serif;
+            --font-display: -apple-system, BlinkMacSystemFont, "SF Pro Display", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "Helvetica Neue", Arial, sans-serif;
+            --font-mono: "SFMono-Regular", "SF Mono", ui-monospace, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+            --text-leading: 1.47059;
+            --heading-leading: 1.08349;
         }
 
         * {
@@ -15,11 +20,13 @@
         }
 
         body {
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            font-family: var(--font-sans);
             background-color: var(--bg-color);
             color: var(--text-color);
-            line-height: 1.6;
+            line-height: var(--text-leading);
+            letter-spacing: 0;
             -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
             overflow-x: hidden;
         }
 
@@ -49,9 +56,9 @@
         header.hero h1 {
             font-size: clamp(48px, 10vw, 96px);
             font-weight: 700;
-            line-height: 1.05;
+            line-height: var(--heading-leading);
             margin-bottom: 24px;
-            letter-spacing: -3px;
+            letter-spacing: 0;
             background: linear-gradient(to right, #fff, #a1a1a6);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
@@ -62,7 +69,8 @@
             color: #d1d1d6;
             max-width: 700px;
             font-weight: 400;
-            line-height: 1.4;
+            line-height: 1.381;
+            letter-spacing: 0;
         }
 
         .wallpaper-credit {
@@ -71,7 +79,7 @@
             right: 40px;
             font-size: 10px;
             text-transform: uppercase;
-            letter-spacing: 2px;
+            letter-spacing: 0;
             color: rgba(255, 255, 255, 0.3);
             text-decoration: none;
             transition: all 0.3s ease;
@@ -139,7 +147,7 @@
         .entry-block .label {
             font-size: 14px;
             text-transform: uppercase;
-            letter-spacing: 2px;
+            letter-spacing: 0;
             color: var(--accent-color);
             margin-bottom: 16px;
             display: block;
@@ -148,7 +156,8 @@
         .entry-block h3 {
             font-size: 56px;
             font-weight: 700;
-            letter-spacing: -2px;
+            line-height: var(--heading-leading);
+            letter-spacing: 0;
             margin-bottom: 50px;
         }
 
@@ -218,7 +227,7 @@
         }
 
         .list-link .item-meta {
-            font-family: monospace;
+            font-family: var(--font-mono);
             font-size: 14px;
             color: var(--secondary-text);
             flex-shrink: 0;
@@ -234,7 +243,7 @@
             font-size: 42px;
             font-weight: 700;
             margin-bottom: 60px;
-            letter-spacing: -1.5px;
+            letter-spacing: 0;
         }
 
         /* Labs Grid */
@@ -420,7 +429,7 @@
         .projects-area h5 {
             font-size: 14px;
             text-transform: uppercase;
-            letter-spacing: 1px;
+            letter-spacing: 0;
             color: var(--accent-color);
             margin-bottom: 0;
             grid-column: span 2;
@@ -484,7 +493,7 @@
             border-radius: 4px;
             font-weight: 800;
             text-transform: uppercase;
-            letter-spacing: 0.5px;
+            letter-spacing: 0;
         }
 
         .project-tags {
@@ -508,7 +517,7 @@
 
         .footer-left h2 {
             font-size: 48px;
-            letter-spacing: -2px;
+            letter-spacing: 0;
             margin-bottom: 24px;
         }
 
@@ -546,7 +555,7 @@
 
         @media (max-width: 900px) {
             header.hero { height: 60vh; padding: 0 6%; }
-            header.hero h1 { font-size: 36px; letter-spacing: -1px; }
+            header.hero h1 { font-size: 36px; letter-spacing: 0; }
             header.hero p { font-size: 16px; }
 
             section { padding: 60px 6%; }
@@ -776,7 +785,7 @@
         /* Footer Redesign */
         .footer-left h2 {
             font-size: 48px;
-            letter-spacing: -2px;
+            letter-spacing: 0;
             margin-bottom: 40px;
         }
 
@@ -789,7 +798,7 @@
         .contact-group h5 {
             font-size: 12px;
             text-transform: uppercase;
-            letter-spacing: 2px;
+            letter-spacing: 0;
             color: var(--secondary-text);
             margin-bottom: 20px;
         }
@@ -894,7 +903,7 @@
             font-size: 12px;
             color: var(--secondary-text);
             text-transform: uppercase;
-            letter-spacing: 1px;
+            letter-spacing: 0;
         }
 
         .stat-item {
@@ -915,7 +924,7 @@
 
         #uptime-stats {
             margin-top: 12px;
-            font-family: monospace;
+            font-family: var(--font-mono);
             display: flex;
             gap: 12px;
         }
