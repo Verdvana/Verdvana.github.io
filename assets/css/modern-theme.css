@@ -182,16 +182,88 @@ body.loader-removed .page-loader {
 
 #ambient-bg {
   position: fixed;
-  top: 0;
-  left: 0;
-  width: 100vw;
-  height: 100vh;
-  z-index: -1;
+  inset: -12vmax;
+  z-index: 0;
+  overflow: hidden;
   pointer-events: none;
   background:
-    radial-gradient(circle at 12% 22%, rgba(0, 113, 227, 0.16), transparent 34rem),
-    radial-gradient(circle at 86% 18%, rgba(100, 50, 255, 0.12), transparent 32rem),
-    radial-gradient(circle at 55% 84%, rgba(0, 220, 150, 0.1), transparent 30rem);
+    radial-gradient(circle at 12% 22%, rgba(0, 113, 227, 0.12), transparent 34rem),
+    radial-gradient(circle at 86% 18%, rgba(100, 50, 255, 0.1), transparent 32rem),
+    radial-gradient(circle at 55% 84%, rgba(0, 220, 150, 0.08), transparent 30rem),
+    #000;
+  contain: strict;
+}
+
+#ambient-bg::before,
+#ambient-bg::after {
+  position: absolute;
+  inset: 0;
+  content: "";
+  opacity: 0.72;
+  mix-blend-mode: screen;
+  transform: translate3d(0, 0, 0) scale(1);
+  will-change: transform, opacity;
+}
+
+#ambient-bg::before {
+  background:
+    radial-gradient(circle at 18% 28%, rgba(0, 212, 255, 0.2), transparent 18vmax),
+    radial-gradient(circle at 78% 24%, rgba(124, 60, 255, 0.18), transparent 20vmax),
+    radial-gradient(circle at 54% 76%, rgba(0, 255, 178, 0.14), transparent 17vmax);
+  filter: blur(12px);
+  animation: ambient-drift-primary 34s ease-in-out infinite alternate;
+}
+
+#ambient-bg::after {
+  background:
+    radial-gradient(circle at 28% 68%, rgba(0, 113, 227, 0.16), transparent 16vmax),
+    radial-gradient(circle at 66% 52%, rgba(66, 245, 255, 0.12), transparent 15vmax),
+    radial-gradient(circle at 88% 78%, rgba(167, 139, 250, 0.14), transparent 18vmax);
+  filter: blur(18px);
+  animation: ambient-drift-secondary 46s ease-in-out infinite alternate;
+}
+
+@keyframes ambient-drift-primary {
+  0% {
+    opacity: 0.48;
+    transform: translate3d(-2.5vw, -1.5vh, 0) scale(1);
+  }
+  45% {
+    opacity: 0.78;
+    transform: translate3d(3vw, 2vh, 0) scale(1.06);
+  }
+  100% {
+    opacity: 0.58;
+    transform: translate3d(1vw, -3vh, 0) scale(1.02);
+  }
+}
+
+@keyframes ambient-drift-secondary {
+  0% {
+    opacity: 0.34;
+    transform: translate3d(2vw, 3vh, 0) scale(1.04);
+  }
+  52% {
+    opacity: 0.62;
+    transform: translate3d(-3vw, -1vh, 0) scale(0.98);
+  }
+  100% {
+    opacity: 0.44;
+    transform: translate3d(1.5vw, 2vh, 0) scale(1.08);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  #ambient-bg::before,
+  #ambient-bg::after {
+    animation: none;
+    transform: none;
+  }
+}
+
+body > :not(#ambient-bg):not(.page-loader) {
+  position: relative;
+  z-index: 1;
 }
 
 .site-nav {
