@@ -193,15 +193,23 @@
 .rule-body.open{display:block}
 .tab-bar{
   display:flex;
+  flex-wrap:wrap;
+  align-items:stretch;
   border-bottom:1px solid var(--card-border);
   background:rgba(0,0,0,0.25);
-  overflow-x:auto;gap:0;
+  overflow:visible;
+  gap:4px;
+  padding:8px;
 }
 .tab-bar::-webkit-scrollbar{height:2px}
 .tab-bar button{
-  padding:11px 18px;border:none;background:none;
+  flex:0 1 auto;
+  min-height:38px;
+  padding:9px 14px;border:none;background:none;
   color:var(--text-secondary);font-size:12.5px;font-weight:500;
+  line-height:1.35;
   cursor:pointer;white-space:nowrap;
+  border-radius:8px;
   border-bottom:2px solid transparent;
   transition:all .15s;
   position:relative;
@@ -346,5 +354,7 @@
 @media(max-width:600px){
   .page-title{font-size:26px}
   .rule-header{padding:14px 16px}
+  .tab-bar{gap:6px;padding:8px}
+  .tab-bar button{flex:1 1 calc(50% - 6px);padding:8px 10px;font-size:12px}
   .tab-content{padding:16px}
 }
