@@ -1,1 +1,97 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="1050" height="520" viewBox="0 0 1050 520"><defs><marker id="a" markerWidth="12" markerHeight="12" refX="6" refY="6" orient="auto"><path d="M2,2 L10,6 L2,10 Z" fill="#2563eb"/></marker></defs><rect width="1050" height="520" rx="22" fill="#f8fafc"/><text x="525" y="44" text-anchor="middle" font-family="Arial, Microsoft YaHei, sans-serif" font-size="26" font-weight="700" fill="#0f172a">异步 FIFO CDC 架构</text><rect x="45" y="80" width="400" height="390" rx="18" fill="#eff6ff" stroke="#93c5fd"/><rect x="605" y="80" width="400" height="390" rx="18" fill="#f0fdf4" stroke="#86efac"/><text x="245" y="112" text-anchor="middle" font-family="Arial, Microsoft YaHei, sans-serif" font-size="20" font-weight="700">Write Clock Domain</text><text x="805" y="112" text-anchor="middle" font-family="Arial, Microsoft YaHei, sans-serif" font-size="20" font-weight="700">Read Clock Domain</text><rect x="365" y="215" width="320" height="90" rx="16" fill="#fff7ed" stroke="#fb923c" stroke-width="2"/><text x="525" y="266" text-anchor="middle" font-family="Arial, Microsoft YaHei, sans-serif" font-size="22" font-weight="700">Dual-Port Memory</text><g font-family="Arial, Microsoft YaHei, sans-serif" font-size="16" fill="#0f172a"><text x="100" y="170">wr_clk / wr_en / wr_data</text><text x="762" y="170">rd_clk / rd_en / rd_data</text><text x="95" y="345">wr_ptr_bin</text><text x="95" y="375">wr_ptr_gray</text><text x="785" y="345">rd_ptr_bin</text><text x="785" y="375">rd_ptr_gray</text><text x="155" y="430">full logic</text><text x="805" y="430">empty logic</text><text x="445" y="150" fill="#475569">Gray sync to rd_clk</text><text x="445" y="420" fill="#475569">Gray sync to wr_clk</text></g><g stroke="#2563eb" stroke-width="3" fill="none" marker-end="url(#a)"><path d="M210 180 C270 210 310 238 354 250"/><path d="M696 250 C742 232 780 205 840 180"/><path d="M220 382 H430 C500 382 550 382 625 382 H770"/><path d="M830 332 H645 C565 332 500 332 420 332 H205"/><path d="M205 382 V410"/><path d="M835 382 V410"/></g></svg>
+<svg xmlns="http://www.w3.org/2000/svg" width="1180" height="620" viewBox="0 0 1180 620">
+  <defs>
+    <marker id="arrow_blue" markerWidth="12" markerHeight="12" refX="10" refY="6" orient="auto" markerUnits="strokeWidth">
+      <path d="M2,2 L10,6 L2,10 Z" fill="#2563eb"/>
+    </marker>
+    <marker id="arrow_green" markerWidth="12" markerHeight="12" refX="10" refY="6" orient="auto" markerUnits="strokeWidth">
+      <path d="M2,2 L10,6 L2,10 Z" fill="#16a34a"/>
+    </marker>
+    <marker id="arrow_orange" markerWidth="12" markerHeight="12" refX="10" refY="6" orient="auto" markerUnits="strokeWidth">
+      <path d="M2,2 L10,6 L2,10 Z" fill="#ea580c"/>
+    </marker>
+    <marker id="arrow_purple" markerWidth="12" markerHeight="12" refX="10" refY="6" orient="auto" markerUnits="strokeWidth">
+      <path d="M2,2 L10,6 L2,10 Z" fill="#7c3aed"/>
+    </marker>
+  </defs>
+
+  <rect width="1180" height="620" rx="24" fill="#f8fafc"/>
+  <text x="590" y="42" text-anchor="middle" font-family="Arial, Microsoft YaHei, sans-serif" font-size="27" font-weight="700" fill="#0f172a">异步 FIFO CDC 架构</text>
+  <text x="590" y="70" text-anchor="middle" font-family="Arial, Microsoft YaHei, sans-serif" font-size="15" fill="#64748b">数据走 dual-port RAM；跨域只同步 Gray pointer；full/empty 均在本地时钟域生成</text>
+
+  <rect x="45" y="95" width="485" height="470" rx="18" fill="#eff6ff" stroke="#93c5fd" stroke-width="2"/>
+  <rect x="650" y="95" width="485" height="470" rx="18" fill="#f0fdf4" stroke="#86efac" stroke-width="2"/>
+
+  <text x="287" y="128" text-anchor="middle" font-family="Arial, Microsoft YaHei, sans-serif" font-size="20" font-weight="700" fill="#1e3a8a">Write Clock Domain</text>
+  <text x="892" y="128" text-anchor="middle" font-family="Arial, Microsoft YaHei, sans-serif" font-size="20" font-weight="700" fill="#166534">Read Clock Domain</text>
+
+  <rect x="440" y="245" width="300" height="100" rx="16" fill="#fff7ed" stroke="#fb923c" stroke-width="2"/>
+  <text x="590" y="289" text-anchor="middle" font-family="Arial, Microsoft YaHei, sans-serif" font-size="23" font-weight="700" fill="#0f172a">Dual-Port RAM</text>
+  <text x="590" y="318" text-anchor="middle" font-family="Arial, Microsoft YaHei, sans-serif" font-size="14" fill="#64748b">data storage, not synchronized by flops</text>
+
+  <rect x="95" y="175" width="175" height="76" rx="12" fill="#dbeafe" stroke="#60a5fa"/>
+  <text x="182" y="205" text-anchor="middle" font-family="Arial, Microsoft YaHei, sans-serif" font-size="16" font-weight="700">Write Interface</text>
+  <text x="182" y="230" text-anchor="middle" font-family="Arial, Microsoft YaHei, sans-serif" font-size="14">wr_en / wr_data</text>
+
+  <rect x="910" y="175" width="175" height="76" rx="12" fill="#dcfce7" stroke="#4ade80"/>
+  <text x="997" y="205" text-anchor="middle" font-family="Arial, Microsoft YaHei, sans-serif" font-size="16" font-weight="700">Read Interface</text>
+  <text x="997" y="230" text-anchor="middle" font-family="Arial, Microsoft YaHei, sans-serif" font-size="14">rd_en / rd_data</text>
+
+  <rect x="95" y="305" width="170" height="52" rx="10" fill="#e0f2fe" stroke="#38bdf8"/>
+  <text x="180" y="337" text-anchor="middle" font-family="Arial, Microsoft YaHei, sans-serif" font-size="15" font-weight="700">wr_ptr_bin</text>
+
+  <rect x="300" y="305" width="170" height="52" rx="10" fill="#e0f2fe" stroke="#38bdf8"/>
+  <text x="385" y="337" text-anchor="middle" font-family="Arial, Microsoft YaHei, sans-serif" font-size="15" font-weight="700">wr_ptr_gray</text>
+
+  <rect x="710" y="305" width="170" height="52" rx="10" fill="#dcfce7" stroke="#4ade80"/>
+  <text x="795" y="337" text-anchor="middle" font-family="Arial, Microsoft YaHei, sans-serif" font-size="15" font-weight="700">rd_ptr_bin</text>
+
+  <rect x="915" y="305" width="170" height="52" rx="10" fill="#dcfce7" stroke="#4ade80"/>
+  <text x="1000" y="337" text-anchor="middle" font-family="Arial, Microsoft YaHei, sans-serif" font-size="15" font-weight="700">rd_ptr_gray</text>
+
+  <rect x="680" y="405" width="210" height="58" rx="12" fill="#f5f3ff" stroke="#a78bfa"/>
+  <text x="785" y="428" text-anchor="middle" font-family="Arial, Microsoft YaHei, sans-serif" font-size="14" font-weight="700">2-flop synchronizer</text>
+  <text x="785" y="449" text-anchor="middle" font-family="Arial, Microsoft YaHei, sans-serif" font-size="13" fill="#475569">wr_ptr_gray → rd_clk</text>
+
+  <rect x="290" y="405" width="210" height="58" rx="12" fill="#f5f3ff" stroke="#a78bfa"/>
+  <text x="395" y="428" text-anchor="middle" font-family="Arial, Microsoft YaHei, sans-serif" font-size="14" font-weight="700">2-flop synchronizer</text>
+  <text x="395" y="449" text-anchor="middle" font-family="Arial, Microsoft YaHei, sans-serif" font-size="13" fill="#475569">rd_ptr_gray → wr_clk</text>
+
+  <rect x="95" y="472" width="175" height="58" rx="12" fill="#fee2e2" stroke="#f87171"/>
+  <text x="182" y="496" text-anchor="middle" font-family="Arial, Microsoft YaHei, sans-serif" font-size="15" font-weight="700">full logic</text>
+  <text x="182" y="517" text-anchor="middle" font-family="Arial, Microsoft YaHei, sans-serif" font-size="13" fill="#475569">wr_clk domain</text>
+
+  <rect x="910" y="472" width="175" height="58" rx="12" fill="#fee2e2" stroke="#f87171"/>
+  <text x="997" y="496" text-anchor="middle" font-family="Arial, Microsoft YaHei, sans-serif" font-size="15" font-weight="700">empty logic</text>
+  <text x="997" y="517" text-anchor="middle" font-family="Arial, Microsoft YaHei, sans-serif" font-size="13" fill="#475569">rd_clk domain</text>
+
+  <g stroke="#2563eb" stroke-width="3" fill="none" marker-end="url(#arrow_blue)">
+    <path d="M270 213 C330 225 380 247 430 270"/>
+    <path d="M265 331 H290"/>
+    <path d="M385 305 C410 285 420 270 437 265"/>
+  </g>
+
+  <g stroke="#16a34a" stroke-width="3" fill="none" marker-end="url(#arrow_green)">
+    <path d="M750 270 C800 247 850 225 910 213"/>
+    <path d="M880 331 H905"/>
+    <path d="M795 305 C770 285 760 270 743 265"/>
+  </g>
+
+  <g stroke="#7c3aed" stroke-width="3" fill="none" marker-end="url(#arrow_purple)">
+    <path d="M470 331 C570 360 625 390 675 420"/>
+    <path d="M915 348 C770 375 620 395 505 424"/>
+  </g>
+
+  <g stroke="#ea580c" stroke-width="3" fill="none" marker-end="url(#arrow_orange)">
+    <path d="M300 434 C250 445 215 455 190 468"/>
+    <path d="M385 357 C315 398 260 430 205 468"/>
+    <path d="M890 434 C940 445 975 455 990 468"/>
+    <path d="M795 357 C865 398 920 430 975 468"/>
+  </g>
+
+  <g font-family="Arial, Microsoft YaHei, sans-serif" font-size="13" fill="#475569">
+    <text x="585" y="392" text-anchor="middle">Gray pointer CDC paths</text>
+    <text x="205" y="455" text-anchor="middle">compare wr_ptr_gray_next</text>
+    <text x="985" y="455" text-anchor="middle">compare rd_ptr_gray_next</text>
+    <text x="590" y="590" text-anchor="middle">full uses local write pointer + synchronized read Gray pointer; empty uses local read pointer + synchronized write Gray pointer</text>
+  </g>
+</svg>

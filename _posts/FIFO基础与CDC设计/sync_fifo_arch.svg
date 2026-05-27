@@ -1,1 +1,55 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="900" height="360" viewBox="0 0 900 360"><defs><marker id="a" markerWidth="12" markerHeight="12" refX="6" refY="6" orient="auto"><path d="M2,2 L10,6 L2,10 Z" fill="#2563eb"/></marker></defs><rect width="900" height="360" rx="22" fill="#f8fafc"/><text x="450" y="42" text-anchor="middle" font-family="Arial, Microsoft YaHei, sans-serif" font-size="26" font-weight="700" fill="#0f172a">同步 FIFO 基本框图</text><rect x="330" y="115" width="240" height="110" rx="16" fill="#e0f2fe" stroke="#0284c7" stroke-width="2"/><text x="450" y="165" text-anchor="middle" font-family="Arial, Microsoft YaHei, sans-serif" font-size="24" font-weight="700" fill="#0f172a">FIFO MEM</text><text x="450" y="195" text-anchor="middle" font-family="Arial, Microsoft YaHei, sans-serif" font-size="14" fill="#475569">register array / SRAM</text><g stroke="#2563eb" stroke-width="3" fill="none" marker-end="url(#a)"><path d="M95 170 H318"/><path d="M582 170 H805"/><path d="M450 78 V104"/><path d="M390 285 V238"/><path d="M510 285 V238"/></g><g font-family="Arial, Microsoft YaHei, sans-serif" font-size="17" fill="#0f172a"><text x="105" y="154">wr_data</text><text x="218" y="154">wr_en</text><text x="710" y="154">rd_data</text><text x="450" y="72" text-anchor="middle">wr_en</text><text x="390" y="313" text-anchor="middle">wr_ptr</text><text x="510" y="313" text-anchor="middle">rd_ptr</text><text x="450" y="260" text-anchor="middle" fill="#475569">full / empty / level</text></g></svg>
+<svg xmlns="http://www.w3.org/2000/svg" width="980" height="420" viewBox="0 0 980 420">
+  <defs>
+    <marker id="arrow" markerWidth="12" markerHeight="12" refX="10" refY="6" orient="auto" markerUnits="strokeWidth">
+      <path d="M2,2 L10,6 L2,10 Z" fill="#2563eb"/>
+    </marker>
+    <marker id="arrow_gray" markerWidth="12" markerHeight="12" refX="10" refY="6" orient="auto" markerUnits="strokeWidth">
+      <path d="M2,2 L10,6 L2,10 Z" fill="#64748b"/>
+    </marker>
+  </defs>
+
+  <rect width="980" height="420" rx="24" fill="#f8fafc"/>
+  <text x="490" y="42" text-anchor="middle" font-family="Arial, Microsoft YaHei, sans-serif" font-size="27" font-weight="700" fill="#0f172a">同步 FIFO 基本框图</text>
+  <text x="490" y="70" text-anchor="middle" font-family="Arial, Microsoft YaHei, sans-serif" font-size="15" fill="#64748b">单时钟域内通过写指针、读指针和状态逻辑管理 FIFO memory</text>
+
+  <rect x="365" y="128" width="250" height="110" rx="16" fill="#e0f2fe" stroke="#0284c7" stroke-width="2"/>
+  <text x="490" y="174" text-anchor="middle" font-family="Arial, Microsoft YaHei, sans-serif" font-size="25" font-weight="700" fill="#0f172a">FIFO MEM</text>
+  <text x="490" y="203" text-anchor="middle" font-family="Arial, Microsoft YaHei, sans-serif" font-size="14" fill="#475569">register array / SRAM</text>
+
+  <rect x="125" y="135" width="145" height="96" rx="12" fill="#eff6ff" stroke="#93c5fd"/>
+  <text x="197" y="166" text-anchor="middle" font-family="Arial, Microsoft YaHei, sans-serif" font-size="17" font-weight="700" fill="#0f172a">Write Side</text>
+  <text x="197" y="194" text-anchor="middle" font-family="Arial, Microsoft YaHei, sans-serif" font-size="15" fill="#334155">wr_en</text>
+  <text x="197" y="215" text-anchor="middle" font-family="Arial, Microsoft YaHei, sans-serif" font-size="15" fill="#334155">wr_data</text>
+
+  <rect x="710" y="135" width="145" height="96" rx="12" fill="#f0fdf4" stroke="#86efac"/>
+  <text x="782" y="166" text-anchor="middle" font-family="Arial, Microsoft YaHei, sans-serif" font-size="17" font-weight="700" fill="#0f172a">Read Side</text>
+  <text x="782" y="194" text-anchor="middle" font-family="Arial, Microsoft YaHei, sans-serif" font-size="15" fill="#334155">rd_en</text>
+  <text x="782" y="215" text-anchor="middle" font-family="Arial, Microsoft YaHei, sans-serif" font-size="15" fill="#334155">rd_data</text>
+
+  <rect x="320" y="302" width="120" height="46" rx="10" fill="#fff7ed" stroke="#fdba74"/>
+  <text x="380" y="331" text-anchor="middle" font-family="Arial, Microsoft YaHei, sans-serif" font-size="16" font-weight="700" fill="#0f172a">wr_ptr</text>
+
+  <rect x="540" y="302" width="120" height="46" rx="10" fill="#fff7ed" stroke="#fdba74"/>
+  <text x="600" y="331" text-anchor="middle" font-family="Arial, Microsoft YaHei, sans-serif" font-size="16" font-weight="700" fill="#0f172a">rd_ptr</text>
+
+  <rect x="400" y="258" width="180" height="38" rx="10" fill="#fefce8" stroke="#facc15"/>
+  <text x="490" y="283" text-anchor="middle" font-family="Arial, Microsoft YaHei, sans-serif" font-size="15" font-weight="700" fill="#0f172a">full / empty / level</text>
+
+  <g stroke="#2563eb" stroke-width="3" fill="none" marker-end="url(#arrow)">
+    <path d="M270 183 H352"/>
+    <path d="M615 183 H700"/>
+  </g>
+
+  <g stroke="#64748b" stroke-width="2.4" fill="none" marker-end="url(#arrow_gray)">
+    <path d="M380 302 V250"/>
+    <path d="M600 302 V250"/>
+    <path d="M440 325 H530"/>
+    <path d="M490 258 V241"/>
+  </g>
+
+  <g font-family="Arial, Microsoft YaHei, sans-serif" font-size="13" fill="#475569">
+    <text x="307" y="174" text-anchor="middle">write path</text>
+    <text x="667" y="174" text-anchor="middle">read path</text>
+    <text x="490" y="365" text-anchor="middle">wr_ptr / rd_ptr feed status logic; arrows do not overlap status text</text>
+  </g>
+</svg>
