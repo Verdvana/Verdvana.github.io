@@ -201,8 +201,75 @@ post_assets: true
             });
         };
 
+        // Enable click-to-zoom for images rendered from Markdown in posts
+        function initPostImageLightbox() {
+            const postContent = document.querySelector('.post-content.js-toc-content');
+            if (!postContent || document.querySelector('.post-image-lightbox')) return;
+
+            const lightbox = document.createElement('div');
+            lightbox.className = 'post-image-lightbox';
+            lightbox.setAttribute('role', 'dialog');
+            lightbox.setAttribute('aria-modal', 'true');
+            lightbox.setAttribute('aria-label', 'Image preview');
+
+            const previewImage = document.createElement('img');
+            previewImage.alt = '';
+
+            const closeButton = document.createElement('button');
+            closeButton.className = 'post-image-lightbox-close';
+            closeButton.type = 'button';
+            closeButton.setAttribute('aria-label', 'Close image preview');
+            closeButton.innerHTML = '&times;';
+
+            lightbox.appendChild(previewImage);
+            lightbox.appendChild(closeButton);
+            document.body.appendChild(lightbox);
+
+            function openLightbox(sourceImage) {
+                const largeSrc = sourceImage.currentSrc || sourceImage.src;
+                if (!largeSrc) return;
+
+                previewImage.src = largeSrc;
+                previewImage.alt = sourceImage.alt || '';
+                lightbox.classList.add('is-active');
+                document.body.classList.add('post-image-lightbox-open');
+                closeButton.focus({ preventScroll: true });
+            }
+
+            function closeLightbox() {
+                lightbox.classList.remove('is-active');
+                document.body.classList.remove('post-image-lightbox-open');
+                window.setTimeout(() => {
+                    if (!lightbox.classList.contains('is-active')) {
+                        previewImage.removeAttribute('src');
+                    }
+                }, 220);
+            }
+
+            postContent.addEventListener('click', function(event) {
+                const image = event.target.closest && event.target.closest('img');
+                if (!image || !postContent.contains(image)) return;
+
+                event.preventDefault();
+                openLightbox(image);
+            });
+
+            lightbox.addEventListener('click', function(event) {
+                if (event.target === lightbox || event.target === previewImage || event.target === closeButton) {
+                    closeLightbox();
+                }
+            });
+
+            document.addEventListener('keydown', function(event) {
+                if (event.key === 'Escape' && lightbox.classList.contains('is-active')) {
+                    closeLightbox();
+                }
+            });
+        }
+
         // Run after DOM is ready and again for async highlighters
         addCodeHeader();
+        initPostImageLightbox();
         setTimeout(addCodeHeader, 500);
         setTimeout(addCodeHeader, 1500);
         // Also retry mermaid conversion in case library was late

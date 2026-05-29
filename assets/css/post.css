@@ -295,6 +295,82 @@
         border-radius: 12px;
         border: 1px solid var(--border-color);
         margin: 2em 0;
+        cursor: zoom-in;
+        transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+    }
+
+    .post-content img:hover {
+        border-color: rgba(255, 255, 255, 0.26);
+        box-shadow: 0 18px 46px rgba(0, 0, 0, 0.36);
+        transform: translateY(-2px);
+    }
+
+    .post-image-lightbox {
+        position: fixed;
+        inset: 0;
+        z-index: 10000;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: clamp(18px, 4vw, 52px);
+        background: rgba(0, 0, 0, 0.86);
+        backdrop-filter: blur(18px);
+        -webkit-backdrop-filter: blur(18px);
+        opacity: 0;
+        visibility: hidden;
+        pointer-events: none;
+        transition: opacity 0.22s ease, visibility 0.22s ease;
+    }
+
+    .post-image-lightbox.is-active {
+        opacity: 1;
+        visibility: visible;
+        pointer-events: auto;
+    }
+
+    .post-image-lightbox img {
+        display: block;
+        max-width: min(100%, 1440px);
+        max-height: calc(100vh - clamp(36px, 8vw, 104px));
+        object-fit: contain;
+        border-radius: 14px;
+        border: 1px solid rgba(255, 255, 255, 0.16);
+        box-shadow: 0 28px 90px rgba(0, 0, 0, 0.72);
+        cursor: zoom-out;
+        transform: scale(0.96);
+        transition: transform 0.22s ease;
+    }
+
+    .post-image-lightbox.is-active img {
+        transform: scale(1);
+    }
+
+    .post-image-lightbox-close {
+        position: fixed;
+        top: clamp(14px, 3vw, 28px);
+        right: clamp(14px, 3vw, 28px);
+        width: 44px;
+        height: 44px;
+        border: 1px solid rgba(255, 255, 255, 0.22);
+        border-radius: 50%;
+        background: rgba(255, 255, 255, 0.1);
+        color: #fff;
+        cursor: pointer;
+        display: grid;
+        place-items: center;
+        font-size: 24px;
+        line-height: 1;
+        transition: background 0.2s ease, border-color 0.2s ease, transform 0.2s ease;
+    }
+
+    .post-image-lightbox-close:hover {
+        background: rgba(255, 255, 255, 0.18);
+        border-color: rgba(255, 255, 255, 0.36);
+        transform: scale(1.04);
+    }
+
+    body.post-image-lightbox-open {
+        overflow: hidden;
     }
 
     .post-content blockquote {
