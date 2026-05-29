@@ -226,14 +226,19 @@ post_assets: true
             document.body.appendChild(lightbox);
 
             function openLightbox(sourceImage) {
-                const largeSrc = sourceImage.currentSrc || sourceImage.src;
-                if (!largeSrc) return;
+                const largeSrc = sourceImage.currentSrc || sourceImage.getAttribute('src');
+                if (!largeSrc || sourceImage.closest('.post-image-lightbox')) return;
 
-                previewImage.src = largeSrc;
                 previewImage.alt = sourceImage.alt || '';
+                previewImage.src = largeSrc;
                 lightbox.classList.add('is-active');
                 document.body.classList.add('post-image-lightbox-open');
-                closeButton.focus({ preventScroll: true });
+
+                requestAnimationFrame(() => {
+                    try {
+                        closeButton.focus({ preventScroll: true });
+                    } catch (e) {}
+                });
             }
 
             function closeLightbox() {
@@ -242,22 +247,28 @@ post_assets: true
                 window.setTimeout(() => {
                     if (!lightbox.classList.contains('is-active')) {
                         previewImage.removeAttribute('src');
+                        previewImage.alt = '';
                     }
                 }, 220);
             }
 
             postContent.addEventListener('click', function(event) {
-                const image = event.target.closest && event.target.closest('img');
-                if (!image || !postContent.contains(image)) return;
+                const image = event.target.closest && event.target.closest('.post-content img');
+                if (!image || !postContent.contains(image) || image.closest('a.no-lightbox')) return;
 
                 event.preventDefault();
+                event.stopPropagation();
                 openLightbox(image);
             });
 
             lightbox.addEventListener('click', function(event) {
-                if (event.target === lightbox || event.target === previewImage || event.target === closeButton) {
+                if (event.target === lightbox || event.target === closeButton) {
                     closeLightbox();
                 }
+            });
+
+            previewImage.addEventListener('click', function(event) {
+                event.stopPropagation();
             });
 
             document.addEventListener('keydown', function(event) {
