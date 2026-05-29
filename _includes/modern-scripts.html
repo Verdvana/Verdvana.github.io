@@ -1,6 +1,117 @@
 <script async src="//busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
 <script>
   (function () {
+    var lightbox = null;
+    var previewImage = null;
+    var closeButton = null;
+
+    function ensurePostImageLightbox() {
+      if (lightbox) {
+        return true;
+      }
+
+      if (!document.querySelector('.post-content.js-toc-content')) {
+        return false;
+      }
+
+      lightbox = document.querySelector('.post-image-lightbox');
+      if (lightbox) {
+        previewImage = lightbox.querySelector('img');
+        closeButton = lightbox.querySelector('.post-image-lightbox-close');
+        return !!previewImage;
+      }
+
+      lightbox = document.createElement('div');
+      lightbox.className = 'post-image-lightbox';
+      lightbox.setAttribute('role', 'dialog');
+      lightbox.setAttribute('aria-modal', 'true');
+      lightbox.setAttribute('aria-label', 'Image preview');
+
+      previewImage = document.createElement('img');
+      previewImage.alt = '';
+
+      closeButton = document.createElement('button');
+      closeButton.className = 'post-image-lightbox-close';
+      closeButton.type = 'button';
+      closeButton.setAttribute('aria-label', 'Close image preview');
+      closeButton.innerHTML = '&times;';
+
+      lightbox.appendChild(previewImage);
+      lightbox.appendChild(closeButton);
+      document.body.appendChild(lightbox);
+
+      lightbox.addEventListener('click', function (event) {
+        if (event.target === lightbox || event.target === closeButton) {
+          closePostImageLightbox();
+        }
+      });
+
+      previewImage.addEventListener('click', function (event) {
+        event.stopPropagation();
+      });
+
+      return true;
+    }
+
+    function openPostImageLightbox(sourceImage) {
+      if (!ensurePostImageLightbox() || !previewImage || !sourceImage) {
+        return;
+      }
+
+      var largeSrc = sourceImage.currentSrc || sourceImage.getAttribute('src');
+      if (!largeSrc || sourceImage.closest('.post-image-lightbox')) {
+        return;
+      }
+
+      previewImage.alt = sourceImage.alt || '';
+      previewImage.src = largeSrc;
+      lightbox.classList.add('is-active');
+      document.body.classList.remove('is-leaving');
+      document.body.classList.add('post-image-lightbox-open');
+
+      window.requestAnimationFrame(function () {
+        try {
+          if (closeButton) {
+            closeButton.focus({ preventScroll: true });
+          }
+        } catch (e) {}
+      });
+    }
+
+    function closePostImageLightbox() {
+      if (!lightbox) {
+        return;
+      }
+
+      lightbox.classList.remove('is-active');
+      document.body.classList.remove('post-image-lightbox-open');
+      window.setTimeout(function () {
+        if (!lightbox.classList.contains('is-active') && previewImage) {
+          previewImage.removeAttribute('src');
+          previewImage.alt = '';
+        }
+      }, 220);
+    }
+
+    document.addEventListener('click', function (event) {
+      var image = event.target.closest && event.target.closest('.post-content.js-toc-content img');
+      if (!image || image.closest('a.no-lightbox')) {
+        return;
+      }
+
+      event.preventDefault();
+      event.stopImmediatePropagation();
+      openPostImageLightbox(image);
+    }, true);
+
+    document.addEventListener('keydown', function (event) {
+      if (event.key === 'Escape' && lightbox && lightbox.classList.contains('is-active')) {
+        closePostImageLightbox();
+      }
+    });
+  }());
+
+  (function () {
     var pageLoaded = false;
 
     function markLoaded() {
@@ -36,7 +147,7 @@
       // Markdown image links in posts are handled by the post lightbox.
       // Do not run the global page-leave transition for them, otherwise clicking
       // an image wrapped in <a href="..."> can look like a frozen page.
-      if (link.closest && link.closest('.post-content') && link.querySelector('img')) {
+      if (link.closest && link.closest('.post-content') && (link.querySelector('img') || event.target.closest('.post-content img'))) {
         return;
       }
 
