@@ -33,6 +33,13 @@
         return;
       }
 
+      // Markdown image links in posts are handled by the post lightbox.
+      // Do not run the global page-leave transition for them, otherwise clicking
+      // an image wrapped in <a href="..."> can look like a frozen page.
+      if (link.closest && link.closest('.post-content') && link.querySelector('img')) {
+        return;
+      }
+
       if (link.target && link.target !== '_self') {
         return;
       }
