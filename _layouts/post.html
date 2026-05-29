@@ -117,30 +117,37 @@ post_assets: true
     document.addEventListener('DOMContentLoaded', function() {
         // Render TeX formulas in posts. KaTeX is loaded from modern-head.html for post pages.
         if (window.renderMathInElement) {
-            renderMathInElement(document.querySelector('.post-content'), {
-                delimiters: [
-                    { left: '$$', right: '$$', display: true },
-                    { left: '\\[', right: '\\]', display: true },
-                    { left: '$', right: '$', display: false },
-                    { left: '\\(', right: '\\)', display: false }
-                ],
-                ignoredTags: ['script', 'noscript', 'style', 'textarea', 'pre', 'code'],
-                throwOnError: false
-            });
+            try {
+                renderMathInElement(document.querySelector('.post-content'), {
+                    delimiters: [
+                        { left: '$$', right: '$$', display: true },
+                        { left: '\\[', right: '\\]', display: true },
+                        { left: '$', right: '$', display: false },
+                        { left: '\\(', right: '\\)', display: false }
+                    ],
+                    ignoredTags: ['script', 'noscript', 'style', 'textarea', 'pre', 'code'],
+                    throwOnError: false
+                });
+            } catch (e) {}
         }
 
-        // Init TOC
-        tocbot.init({
-            tocSelector: '.js-toc',
-            contentSelector: '.js-toc-content',
-            headingSelector: 'h1, h2, h3',
-            hasInnerContainers: true,
-            orderedList: false, // Use <ul> instead of <ol> for dots
-            scrollSmooth: true,
-            scrollSmoothDuration: 420,
-            headingsOffset: 100,
-            activeLinkClass: 'is-active-link',
-        });
+        // Init TOC. Keep this isolated so a CDN hiccup cannot break post features
+        // such as image preview and code copy.
+        if (window.tocbot) {
+            try {
+                tocbot.init({
+                    tocSelector: '.js-toc',
+                    contentSelector: '.js-toc-content',
+                    headingSelector: 'h1, h2, h3',
+                    hasInnerContainers: true,
+                    orderedList: false, // Use <ul> instead of <ol> for dots
+                    scrollSmooth: true,
+                    scrollSmoothDuration: 420,
+                    headingsOffset: 100,
+                    activeLinkClass: 'is-active-link',
+                });
+            } catch (e) {}
+        }
 
         // Add code headers and copy buttons
         function addCodeHeader() {
@@ -253,7 +260,7 @@ post_assets: true
             }
 
             postContent.addEventListener('click', function(event) {
-                const image = event.target.closest && event.target.closest('.post-content img');
+                const image = event.target.closest && event.target.closest('img');
                 if (!image || !postContent.contains(image) || image.closest('a.no-lightbox')) return;
 
                 // Capture the click before the global page-transition handler sees
@@ -282,10 +289,10 @@ post_assets: true
         }
 
         // Run after DOM is ready and again for async highlighters
-        addCodeHeader();
-        initPostImageLightbox();
-        setTimeout(addCodeHeader, 500);
-        setTimeout(addCodeHeader, 1500);
+        try { addCodeHeader(); } catch (e) {}
+        try { initPostImageLightbox(); } catch (e) {}
+        setTimeout(() => { try { addCodeHeader(); } catch (e) {} }, 500);
+        setTimeout(() => { try { addCodeHeader(); } catch (e) {} }, 1500);
         // Also retry mermaid conversion in case library was late
         setTimeout(convertMermaid, 500);
         setTimeout(convertMermaid, 1500);
