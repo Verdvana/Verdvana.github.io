@@ -462,6 +462,10 @@ jekyll-theme-WuK: # 用了wu-kan的主题，自定义样式都在这个命名空
           defer='defer'
         ></script>
       - | # 在这里自定义页面样式吧
+        <script
+          src="/assets/js/post-image-lightbox.js"
+          defer="defer"
+        ></script>
         <style>
         pre {
           max-height: 50vh;

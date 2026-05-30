@@ -34,6 +34,7 @@
 <link href="{{ '/assets/css/post.css' | relative_url }}" rel="stylesheet"/>
 {% endif %}
 {% if page.post_assets or page.layout == 'post' %}
+<script defer src="{{ '/assets/js/post-image-lightbox.js' | relative_url }}"></script>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex/dist/katex.min.css"/>
 <script src="https://cdn.jsdelivr.net/npm/katex/dist/katex.min.js" defer></script>
 <script src="https://cdn.jsdelivr.net/npm/katex/dist/contrib/auto-render.min.js" defer></script>
