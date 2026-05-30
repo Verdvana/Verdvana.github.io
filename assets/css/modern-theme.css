@@ -261,7 +261,7 @@ body.loader-removed .page-loader {
   }
 }
 
-body > :not(#ambient-bg):not(.page-loader):not(.site-nav) {
+body > :not(#ambient-bg):not(.page-loader):not(.site-nav):not(.post-image-lightbox) {
   position: relative;
   z-index: 1;
 }

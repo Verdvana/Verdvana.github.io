@@ -10,7 +10,7 @@
         return true;
       }
 
-      if (!document.querySelector('.post-content.js-toc-content')) {
+      if (!document.querySelector('article,.post-content,.js-toc-content,.markdown-body,.page-content,.content,main')) {
         return false;
       }
 
@@ -23,6 +23,9 @@
 
       lightbox = document.createElement('div');
       lightbox.className = 'post-image-lightbox';
+      lightbox.style.position = 'fixed';
+      lightbox.style.inset = '0';
+      lightbox.style.zIndex = '2147483647';
       lightbox.setAttribute('role', 'dialog');
       lightbox.setAttribute('aria-modal', 'true');
       lightbox.setAttribute('aria-label', 'Image preview');
@@ -94,12 +97,17 @@
     }
 
     document.addEventListener('click', function (event) {
-      var image = event.target.closest && event.target.closest('.post-content.js-toc-content img');
-      if (!image || image.closest('a.no-lightbox')) {
+      var image = event.target.closest && event.target.closest('img');
+      if (!image || image.closest('a.no-lightbox,.post-image-lightbox,nav,footer,.site-logo-area,.site-modal-content,.page-loader,#wechat-modal')) {
+        return;
+      }
+
+      if (!image.closest('article,.post-content,.js-toc-content,.markdown-body,.page-content,.content,main')) {
         return;
       }
 
       event.preventDefault();
+      event.stopPropagation();
       event.stopImmediatePropagation();
       openPostImageLightbox(image);
     }, true);
