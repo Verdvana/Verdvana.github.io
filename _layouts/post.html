@@ -180,7 +180,10 @@ post_assets: true
                 header.className = 'code-header';
                 header.innerHTML = `
                     <span class="code-lang">${lang}</span>
-                    <button class="copy-btn" onclick="window.copyCode(window.event ? window.event.target : this)">COPY</button>
+                    <span class="code-actions">
+                        <button class="copy-btn code-toggle-btn" type="button" onclick="window.toggleCodeBlock(window.event ? window.event.target : this)">EXPAND</button>
+                        <button class="copy-btn" type="button" onclick="window.copyCode(window.event ? window.event.target : this)">COPY</button>
+                    </span>
                 `;
 
                 // Re-structure DOM
@@ -195,6 +198,15 @@ post_assets: true
                     grandParent.insertBefore(wrapper, parent);
                     parent.remove();
                 }
+
+                const codeText = (code || pre).textContent || '';
+                const lineCount = codeText.split('\n').length;
+                window.requestAnimationFrame(() => {
+                    if (lineCount > 22 || pre.scrollHeight > 520) {
+                        wrapper.classList.add('is-collapsible');
+                        wrapper.classList.remove('is-expanded');
+                    }
+                });
             });
         }
 
@@ -206,6 +218,15 @@ post_assets: true
                 btn.innerText = 'COPIED!';
                 setTimeout(() => btn.innerText = oldText, 2000);
             });
+        };
+
+        window.toggleCodeBlock = function(btn) {
+            const wrapper = btn.closest('.code-block-wrapper');
+            if (!wrapper) return;
+
+            const expanded = wrapper.classList.toggle('is-expanded');
+            btn.innerText = expanded ? 'COLLAPSE' : 'EXPAND';
+            btn.setAttribute('aria-expanded', expanded ? 'true' : 'false');
         };
 
         // Enable click-to-zoom for images rendered from Markdown in posts
