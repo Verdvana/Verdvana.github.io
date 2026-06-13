@@ -566,7 +566,7 @@ $$
 
 那么余数寄存器宽度为 $4$，可以记为 $s_3,s_2,s_1,s_0$。最高项 $x^4$ 不对应一个额外抽头，它只说明余数宽度是 4；真正决定反馈异或位置的是低阶项 $x$ 和 $1$。
 
-![串行 LFSR 结构与生成多项式抽头的对应关系](finite-field-generator-polynomial/03-serial-lfsr-structure.png)
+![串行 LFSR 结构与生成多项式抽头的对应关系](https://raw.githubusercontent.com/Verdvana/Verdvana.github.io/master/_posts/finite-field-generator-polynomial/03-serial-lfsr-structure.png)
 
 如果采用高位先输入的一种常见写法，设当前输入 bit 为 $d$，反馈位为 $f$，则一次状态更新可以写成：
 
@@ -610,7 +610,7 @@ $$
 
 由于 CRC 在 $GF(2)$ 上是线性的，连续代入以后，新状态的每一位仍然只是“旧状态若干位”和“输入若干位”的 XOR。中间状态不需要真的保存成寄存器，它们可以被代入、消去，最后变成一片组合 XOR 网络。
 
-![把串行状态转移展开成 k bit 并行更新](finite-field-generator-polynomial/04-serial-to-parallel-unroll.png)
+![把串行状态转移展开成 k bit 并行更新](https://raw.githubusercontent.com/Verdvana/Verdvana.github.io/master/_posts/finite-field-generator-polynomial/04-serial-to-parallel-unroll.png)
 
 先看两拍展开，仍沿用上一节的状态方程。第一个输入 bit 记为 $d_0$：
 
@@ -698,7 +698,7 @@ $$
 
 其中 $n_3,n_2,n_1,n_0$ 是一次并行更新后的新余数状态。把这些加号换成 XOR，就得到硬件实现中的组合逻辑。
 
-![并行 CRC 的 XOR 网络与流水线切分](finite-field-generator-polynomial/05-parallel-xor-network.png)
+![并行 CRC 的 XOR 网络与流水线切分](https://raw.githubusercontent.com/Verdvana/Verdvana.github.io/master/_posts/finite-field-generator-polynomial/05-parallel-xor-network.png)
 
 并行度从 1 bit 提高到 $k$ bit 后，每个周期的数据吞吐率提高了，但代价也很直接：
 
