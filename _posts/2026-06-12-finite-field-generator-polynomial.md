@@ -24,6 +24,8 @@ tags:
 
 这种做法的好处是，它仍然只需要非常便宜的位运算。这里的加法没有进位，减法和加法相同，因此在二进制机器上天然对应异或。代数结构提供了检错能力，硬件和软件实现则把它折叠成移位与异或。
 
+下面这张图先把这个过程压成一条直观路径：原始比特串先被解释成 $GF(2)$ 上的多项式，再通过生成多项式求余，最后把余数作为校验字段并入发送码字。后面的章节会逐步拆开这条路径里的每个环节。
+
 ![从比特串到多项式再到余数校验的概念路径](https://raw.githubusercontent.com/Verdvana/Verdvana.github.io/master/_posts/finite-field-generator-polynomial/01-overview.png)
 
 ----
