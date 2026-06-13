@@ -24,7 +24,7 @@ tags:
 
 这种做法的好处是，它仍然只需要非常便宜的位运算。这里的加法没有进位，减法和加法相同，因此在二进制机器上天然对应异或。代数结构提供了检错能力，硬件和软件实现则把它折叠成移位与异或。
 
-![从比特串到多项式再到余数校验的概念路径](finite-field-generator-polynomial/01-overview.png)
+![从比特串到多项式再到余数校验的概念路径](https://raw.githubusercontent.com/Verdvana/Verdvana.github.io/master/_posts/finite-field-generator-polynomial/01-overview.png)
 
 ----
 
@@ -311,7 +311,7 @@ $$
 
 这正好可以用线性反馈移位寄存器表示。寄存器保存当前余数，输入比特逐个进入；当反馈位为 $1$ 时，把生成多项式中对应的抽头异或到寄存器里。所谓“抽头”，本质上就是生成多项式里哪些系数为 $1$。
 
-![生成多项式与 LFSR 抽头之间的对应关系](finite-field-generator-polynomial/02-lfsr-taps.png)
+![生成多项式与 LFSR 抽头之间的对应关系](https://raw.githubusercontent.com/Verdvana/Verdvana.github.io/master/_posts/finite-field-generator-polynomial/02-lfsr-taps.png)
 
 ----
 
