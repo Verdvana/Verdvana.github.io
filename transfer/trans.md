@@ -1,23 +1,426 @@
-## lle
+## sram
+```verilog
+//============================================================================
+// Module      : next_ptr_sram  (Next-Ptr SRAM Wrapper)
+// Project     : 4-Port 2.5/1G/100M Ethernet Switch - Smart MMU
+// Description : LLE 内部私有的链表指针存储, 用 SRAM 实现 (取代寄存器堆)。
+//               本模块为 SRAM 包装器, 内部例化 vendor 提供的 2W2R SRAM 黑盒
+//               `sram_2r2w_256x64` (每片 256 深 × 64 bit, 1 拍同步读, 双写口
+//               WEA/WEB + 双读口 REC/RED, 含全字 WBE)。
+//
+//   实际容量需求: CELL_NUM=8192 cells × ENTRY_W=15 bit (=ADDR_W+2)。
+//   单片 SRAM 容量: 256×64。 深度拼接 8192/256 = 32 片;
+//   数据位宽: 15bit 取 64bit 字宽的低 15 位 (高位 0-pad), WBE 全 1 全字写。
+//
+//   存储/接口约定 (与 LLE 配套):
+//     * Entry 宽度 ENTRY_W = ADDR_W + 2, 内容 = {next_ptr, pkt_head, pkt_tail}。
+//     * 同步读 (REC/RED, 1 拍读延迟): T 拍给 ra_en/ra_addr (或 rb_en/rb_addr),
+//       T+1 拍数据 ra_next_ptr/... 有效。
+//     * 同步写 (WEA/WEB, 上升沿): 两个独立写口 W0/W1, 建链口 build 与 W0/W1 互斥
+//       (build 走 W0 物理口)。
+//     * 读后写 bypass: 若 T 拍读地址与 T 拍写地址命中, 由本包装器在 T+1 拍用
+//       寄存的写数据覆盖 SRAM 返回值, 保证读到当拍最新写值 (写后立即读, 无
+//       RMW hazard)。优先级: build > W0 > W1 > SRAM。
+//     * 同地址 W0/W1 冲突: 包装器内部及 SRAM 内部均以 W0 优先 (调用方应避免)。
+//
+// Clock/Reset : clk_core (300MHz, 单时钟域) / rst_core_n (异步复位低有效)
+//============================================================================
+`timescale 1ns/1ps
 
+module next_ptr_sram #(
+    parameter int ADDR_W   = 13,                 // cell 地址位宽
+    parameter int CELL_NUM = 8192,               // cell 总数
+    parameter int ENTRY_W  = ADDR_W + 2          // {next_ptr, pkt_head, pkt_tail}
+)(
+    //========================================================================
+    // 时钟与复位
+    //========================================================================
+    input  logic                clk_core,        // 300MHz 核心时钟
+    input  logic                rst_core_n,      // 异步复位, 低有效
+
+    //========================================================================
+    // 读口 A (同步, 1 拍读延迟): free_head.next 预取 / 走链读 next
+    //========================================================================
+    input  logic                ra_en,
+    input  logic [ADDR_W-1:0]   ra_addr,
+    output logic [ADDR_W-1:0]   ra_next_ptr,
+    output logic                ra_pkt_head,
+    output logic                ra_pkt_tail,
+
+    //========================================================================
+    // 读口 B (同步, 1 拍读延迟): q_head_entry 预取 / 出队读队头
+    //========================================================================
+    input  logic                rb_en,
+    input  logic [ADDR_W-1:0]   rb_addr,
+    output logic [ADDR_W-1:0]   rb_next_ptr,
+    output logic                rb_pkt_head,
+    output logic                rb_pkt_tail,
+
+    //========================================================================
+    // 写口 W0 (同步): 挂链写旧队尾 next / 还链写 free_tail next
+    //========================================================================
+    input  logic                w0_we,
+    input  logic [ADDR_W-1:0]   w0_addr,
+    input  logic [ADDR_W-1:0]   w0_next_ptr,
+    input  logic                w0_pkt_head,
+    input  logic                w0_pkt_tail,
+
+    //========================================================================
+    // 写口 W1 (同步): 入队写新分配 cell 自身 entry
+    //========================================================================
+    input  logic                w1_we,
+    input  logic [ADDR_W-1:0]   w1_addr,
+    input  logic [ADDR_W-1:0]   w1_next_ptr,
+    input  logic                w1_pkt_head,
+    input  logic                w1_pkt_tail,
+
+    //========================================================================
+    // 建链口 (上电建空闲链, LLE build FSM 顺序写)
+    //========================================================================
+    input  logic                build_we,
+    input  logic [ADDR_W-1:0]   build_addr,
+    input  logic [ADDR_W-1:0]   build_next_ptr,
+    input  logic                build_pkt_head,
+    input  logic                build_pkt_tail
+);
+
+    //========================================================================
+    // 局部参数 (针对 sram_2r2w_256x64 拼接 8192×15)
+    //========================================================================
+    localparam int PH_BIT       = 1;             // pkt_head 在 entry 中的位
+    localparam int PT_BIT       = 0;             // pkt_tail 在 entry 中的位
+    localparam int SRAM_DEPTH   = 256;           // 单片 SRAM 深度
+    localparam int SRAM_WIDTH   = 64;            // 单片 SRAM 字宽 (位)
+    localparam int SRAM_AW      = 8;             // 单片地址位宽 = log2(256)
+    localparam int N_BANK       = CELL_NUM/SRAM_DEPTH;  // 8192/256 = 32 片
+    localparam int BANK_W       = $clog2(N_BANK);       // = 5
+
+    //========================================================================
+    // 写数据打包 (ENTRY_W=15bit) -> 0-pad 到 SRAM_WIDTH=64bit
+    //========================================================================
+    logic [ENTRY_W-1:0]   w0_entry;
+    logic [ENTRY_W-1:0]   w1_entry;
+    logic [ENTRY_W-1:0]   build_entry;
+    logic [SRAM_WIDTH-1:0] w0_entry_pad;
+    logic [SRAM_WIDTH-1:0] w1_entry_pad;
+    logic [SRAM_WIDTH-1:0] build_entry_pad;
+
+    assign w0_entry        = {w0_next_ptr,    w0_pkt_head,    w0_pkt_tail};
+    assign w1_entry        = {w1_next_ptr,    w1_pkt_head,    w1_pkt_tail};
+    assign build_entry     = {build_next_ptr, build_pkt_head, build_pkt_tail};
+    assign w0_entry_pad    = {{(SRAM_WIDTH-ENTRY_W){1'b0}}, w0_entry};
+    assign w1_entry_pad    = {{(SRAM_WIDTH-ENTRY_W){1'b0}}, w1_entry};
+    assign build_entry_pad = {{(SRAM_WIDTH-ENTRY_W){1'b0}}, build_entry};
+
+    //========================================================================
+    // SRAM 物理写口聚合 (build 与 W0 互斥, 走 WEA; W1 走 WEB)
+    //========================================================================
+    logic                  sram_p0_we;
+    logic [ADDR_W-1:0]     sram_p0_addr;
+    logic [SRAM_WIDTH-1:0] sram_p0_wdata;
+
+    logic                  sram_p1_we;
+    logic [ADDR_W-1:0]     sram_p1_addr;
+    logic [SRAM_WIDTH-1:0] sram_p1_wdata;
+
+    always_comb begin
+        if (build_we) begin
+            sram_p0_we    = 1'b1;
+            sram_p0_addr  = build_addr;
+            sram_p0_wdata = build_entry_pad;
+        end
+        else begin
+            sram_p0_we    = w0_we;
+            sram_p0_addr  = w0_addr;
+            sram_p0_wdata = w0_entry_pad;
+        end
+
+        sram_p1_we    = w1_we & ~build_we;
+        sram_p1_addr  = w1_addr;
+        sram_p1_wdata = w1_entry_pad;
+    end
+
+    //========================================================================
+    // 深度方向 bank 选通: 高位 BANK_W 选片, 低位 SRAM_AW 作片内地址
+    //========================================================================
+    logic [BANK_W-1:0]    p0_bank,  p1_bank,  ra_bank,  rb_bank;
+    logic [SRAM_AW-1:0]   p0_aw,    p1_aw,    ra_aw,    rb_aw;
+
+    assign p0_bank = sram_p0_addr[ADDR_W-1 -: BANK_W];
+    assign p0_aw   = sram_p0_addr[SRAM_AW-1:0];
+    assign p1_bank = sram_p1_addr[ADDR_W-1 -: BANK_W];
+    assign p1_aw   = sram_p1_addr[SRAM_AW-1:0];
+    assign ra_bank = ra_addr[ADDR_W-1 -: BANK_W];
+    assign ra_aw   = ra_addr[SRAM_AW-1:0];
+    assign rb_bank = rb_addr[ADDR_W-1 -: BANK_W];
+    assign rb_aw   = rb_addr[SRAM_AW-1:0];
+
+    //========================================================================
+    // 例化 N_BANK 片 sram_2r2w_256x64, 按 bank 选通 WE/RE
+    //   每片 RDC/RDD 同步 1 拍输出。包装器把 N_BANK 片读数据按上一拍命中的
+    //   bank 寄存再选通输出 (与 SRAM 1 拍延迟对齐)。
+    //========================================================================
+    logic [SRAM_WIDTH-1:0] sram_rdc [N_BANK];   // 每片读口 C (= 读口 A) 输出
+    logic [SRAM_WIDTH-1:0] sram_rdd [N_BANK];   // 每片读口 D (= 读口 B) 输出
+
+    genvar gi;
+    generate
+        for (gi = 0; gi < N_BANK; gi++) begin : g_bank
+            logic                  bank_we_a;
+            logic [SRAM_AW-1:0]    bank_addr_a;
+            logic [SRAM_WIDTH-1:0] bank_wd_a;
+
+            logic                  bank_we_b;
+            logic [SRAM_AW-1:0]    bank_addr_b;
+            logic [SRAM_WIDTH-1:0] bank_wd_b;
+
+            logic                  bank_re_c;
+            logic [SRAM_AW-1:0]    bank_addr_c;
+
+            logic                  bank_re_d;
+            logic [SRAM_AW-1:0]    bank_addr_d;
+
+            // 写端口 A: build 或 W0
+            assign bank_we_a   = sram_p0_we & (p0_bank == gi[BANK_W-1:0]);
+            assign bank_addr_a = p0_aw;
+            assign bank_wd_a   = sram_p0_wdata;
+
+            // 写端口 B: W1
+            assign bank_we_b   = sram_p1_we & (p1_bank == gi[BANK_W-1:0]);
+            assign bank_addr_b = p1_aw;
+            assign bank_wd_b   = sram_p1_wdata;
+
+            // 读端口 C: 读口 A
+            assign bank_re_c   = ra_en & (ra_bank == gi[BANK_W-1:0]);
+            assign bank_addr_c = ra_aw;
+
+            // 读端口 D: 读口 B
+            assign bank_re_d   = rb_en & (rb_bank == gi[BANK_W-1:0]);
+            assign bank_addr_d = rb_aw;
+
+            sram_2r2w_256x64 u_rf (
+                .CLK       (clk_core),
+
+                .WEA       (bank_we_a),
+                .WAA       (bank_addr_a),
+                .WDA       (bank_wd_a),
+                .WBEA      ({SRAM_WIDTH{1'b1}}),
+
+                .WEB       (bank_we_b),
+                .WAB       (bank_addr_b),
+                .WDB       (bank_wd_b),
+                .WBEB      ({SRAM_WIDTH{1'b1}}),
+
+                .REC       (bank_re_c),
+                .RAC       (bank_addr_c),
+                .RDC       (sram_rdc[gi]),
+
+                .RED       (bank_re_d),
+                .RAD       (bank_addr_d),
+                .RDD       (sram_rdd[gi]),
+
+                .TEST_MODE (1'b0),
+                .BIST_EN   (1'b0)
+            );
+        end
+    endgenerate
+
+    //========================================================================
+    // 读 bank 选通: T 拍寄存读地址的 bank 选, T+1 拍据此选通 RDC/RDD 输出
+    //========================================================================
+    logic [BANK_W-1:0]     ra_bank_q;
+    logic [BANK_W-1:0]     rb_bank_q;
+    logic [SRAM_WIDTH-1:0] sram_ra_rdata;
+    logic [SRAM_WIDTH-1:0] sram_rb_rdata;
+
+    always_ff @(posedge clk_core or negedge rst_core_n) begin
+        if (!rst_core_n) begin
+            ra_bank_q <= '0;
+            rb_bank_q <= '0;
+        end
+        else begin
+            if (ra_en) ra_bank_q <= ra_bank;
+            if (rb_en) rb_bank_q <= rb_bank;
+        end
+    end
+
+    assign sram_ra_rdata = sram_rdc[ra_bank_q];
+    assign sram_rb_rdata = sram_rdd[rb_bank_q];
+
+    //========================================================================
+    // 写后立即读 bypass (1 拍): 若 T 拍读地址与 T 拍写地址命中,
+    //   T+1 拍用寄存的写数据覆盖 SRAM 返回值。优先级: build > W0 > W1 > SRAM。
+    //========================================================================
+    logic               ra_hit_q;
+    logic [ENTRY_W-1:0] ra_bypass_data_q;
+    logic               rb_hit_q;
+    logic [ENTRY_W-1:0] rb_bypass_data_q;
+
+    always_ff @(posedge clk_core or negedge rst_core_n) begin
+        if (!rst_core_n) begin
+            ra_hit_q         <= 1'b0;
+            ra_bypass_data_q <= '0;
+            rb_hit_q         <= 1'b0;
+            rb_bypass_data_q <= '0;
+        end
+        else begin
+            // 读口 A 命中判定 (T 拍读地址 vs T 拍写地址)
+            ra_hit_q <= ra_en & ( (build_we & (ra_addr == build_addr))
+                                | (w0_we    & ~build_we & (ra_addr == w0_addr))
+                                | (w1_we    & ~build_we & (ra_addr == w1_addr)) );
+            if (build_we && (ra_addr == build_addr))
+                ra_bypass_data_q <= build_entry;
+            else if (w0_we && (ra_addr == w0_addr))
+                ra_bypass_data_q <= w0_entry;
+            else if (w1_we && (ra_addr == w1_addr))
+                ra_bypass_data_q <= w1_entry;
+
+            // 读口 B
+            rb_hit_q <= rb_en & ( (build_we & (rb_addr == build_addr))
+                                | (w0_we    & ~build_we & (rb_addr == w0_addr))
+                                | (w1_we    & ~build_we & (rb_addr == w1_addr)) );
+            if (build_we && (rb_addr == build_addr))
+                rb_bypass_data_q <= build_entry;
+            else if (w0_we && (rb_addr == w0_addr))
+                rb_bypass_data_q <= w0_entry;
+            else if (w1_we && (rb_addr == w1_addr))
+                rb_bypass_data_q <= w1_entry;
+        end
+    end
+
+    //========================================================================
+    // 读数据输出: 同地址写命中时用 bypass 寄存的写数据, 否则取 SRAM 返回的
+    //   低 ENTRY_W 位 (写时高 (64-15) 位 0-pad, 读出忽略)。
+    //========================================================================
+    logic [ENTRY_W-1:0] ra_sram_entry;
+    logic [ENTRY_W-1:0] rb_sram_entry;
+    logic [ENTRY_W-1:0] ra_rdata_eff;
+    logic [ENTRY_W-1:0] rb_rdata_eff;
+
+    assign ra_sram_entry = sram_ra_rdata[ENTRY_W-1:0];
+    assign rb_sram_entry = sram_rb_rdata[ENTRY_W-1:0];
+
+    assign ra_rdata_eff  = ra_hit_q ? ra_bypass_data_q : ra_sram_entry;
+    assign rb_rdata_eff  = rb_hit_q ? rb_bypass_data_q : rb_sram_entry;
+
+    assign ra_next_ptr = ra_rdata_eff[ENTRY_W-1:2];
+    assign ra_pkt_head = ra_rdata_eff[PH_BIT];
+    assign ra_pkt_tail = ra_rdata_eff[PT_BIT];
+
+    assign rb_next_ptr = rb_rdata_eff[ENTRY_W-1:2];
+    assign rb_pkt_head = rb_rdata_eff[PH_BIT];
+    assign rb_pkt_tail = rb_rdata_eff[PT_BIT];
+
+endmodule
+
+
+//============================================================================
+// Module      : sram_2r2w_256x64  (Vendor SRAM Blackbox + Sim Behavior Model)
+// Description : 工艺库提供的 2W2R SRAM (256 深 × 64 bit, 1 拍同步读, 含全字
+//               WBE / TEST_MODE / BIST_EN 端口)。本文件默认仅作占位 (综合时
+//               由 vendor 库链接实际实例); 仿真用编译宏 `+define+SIM_BEHAVIOR_SRAM`
+//               打开内置行为模型, 让 testbench 可执行。
+//
+//   端口约定:
+//     * CLK              : 时钟
+//     * WEA/WAA/WDA/WBEA : 写口 A (上升沿写, WBEA 字节使能, 1=该 byte 写)
+//     * WEB/WAB/WDB/WBEB : 写口 B (同上)
+//     * REC/RAC/RDC      : 读口 C (1 拍同步读: T 拍 REC&RAC, T+1 拍 RDC)
+//     * RED/RAD/RDD      : 读口 D (同上)
+//     * TEST_MODE/BIST_EN: 测试/BIST 控制 (功能用时拉 0)
+//     * 同地址 A/B 冲突 : A 优先 (W1 先写、W0 后写覆盖, 与上层包装器约定一致)
+//============================================================================
+module sram_2r2w_256x64 (
+    input  logic         CLK,
+
+    // 写口 A
+    input  logic         WEA,
+    input  logic [7:0]   WAA,
+    input  logic [63:0]  WDA,
+    input  logic [63:0]  WBEA,
+
+    // 写口 B
+    input  logic         WEB,
+    input  logic [7:0]   WAB,
+    input  logic [63:0]  WDB,
+    input  logic [63:0]  WBEB,
+
+    // 读口 C (1 拍同步读)
+    input  logic         REC,
+    input  logic [7:0]   RAC,
+    output logic [63:0]  RDC,
+
+    // 读口 D (1 拍同步读)
+    input  logic         RED,
+    input  logic [7:0]   RAD,
+    output logic [63:0]  RDD,
+
+    input  logic         TEST_MODE,
+    input  logic         BIST_EN
+);
+
+`ifdef SIM_BEHAVIOR_SRAM
+    //------------------------------------------------------------------------
+    // 仿真用行为模型 (非综合, 仅供 testbench 跑通)
+    //   - 存储: 256 × 64 bit
+    //   - 同步写 (上升沿): A/B 各按 WBE 做位选写; 同地址 A 优先 (B 先 / A 后覆盖)
+    //   - 同步读 (1 拍延迟): T 拍 RE&RA -> T+1 拍 RDC/RDD 有效
+    //------------------------------------------------------------------------
+    logic [63:0] mem [256];
+
+    // 同步写: B 先 / A 后 (同地址 A 优先)
+    always_ff @(posedge CLK) begin
+        if (WEB) begin
+            for (int b = 0; b < 64; b++)
+                if (WBEB[b]) mem[WAB][b] <= WDB[b];
+        end
+        if (WEA) begin
+            for (int b = 0; b < 64; b++)
+                if (WBEA[b]) mem[WAA][b] <= WDA[b];
+        end
+    end
+
+    // 同步读 (1 拍延迟)
+    logic [63:0] rdc_q;
+    logic [63:0] rdd_q;
+
+    always_ff @(posedge CLK) begin
+        if (REC) rdc_q <= mem[RAC];
+        if (RED) rdd_q <= mem[RAD];
+    end
+
+    assign RDC = rdc_q;
+    assign RDD = rdd_q;
+`else
+    // 综合占位: 由 vendor 库/Memory Compiler 链接实际 SRAM 实例。
+    // 仿真未开 SIM_BEHAVIOR_SRAM 宏时, 读数据为 X (黑盒)。
+`endif
+
+endmodule
+```
+
+## lle
 ```verilog
 //============================================================================
 // Module      : lle  (Link-List Engine)
 // Project     : 4-Port 2.5/1G/100M Ethernet Switch - Smart MMU
-// Description : 链表引擎 (存储访问平面) —— 核心模块。唯一访问 Next-Ptr Register
-//               File (指针寄存器, LLE 内部私有, CELL_NUM×ENTRY_W {next,phead,ptail})。
-//               对三个 Ctrl 提供分配/出队/还链服务并裁决写口; 持有:
+// Description : 链表引擎 (存储访问平面) —— 核心模块。唯一访问 Next-Ptr 存储
+//               (用 SRAM 实现, next_ptr_sram, 1 拍读延迟)。对三个 Ctrl 提供
+//               分配/出队/还链服务并裁决写口; 持有寄存器化的:
 //                 free_head/free_tail、free_nxt 预取、q_head/q_tail[QUEUE_NUM]、
 //                 q_head_entry[QUEUE_NUM] 队头描述符预取、q_cell_cnt[QUEUE_NUM]。
-//               支撑入队/出队各 1 拍 (free_head/q_head 组合可读 + free_nxt/
-//               q_head_entry 预取 + 挂链/推进流水写 + 空队列/还链 bypass);
-//               处理同一队列同拍"进包+出包" hazard (非空/单 cell/空队列三情形)。
-//               每次分配/还链向 Occupancy 上报 alloc/free 事件。
-//               初始化期由 Init FSM 驱动建空闲链 (0->1->...->CELL_NUM-1)。
 //
-//   说明: 分配地址决策在 LLE 内部 (alloc_addr = free_head), 上层 Enqueue Ctrl 用
-//         lle_alloc_fire 触发; lle_alloc_addr 端口保留供上层核对, 内部以 free_head
-//         为准。出队/还链同理。
+//   1 拍可见地址 + SRAM 1 拍读延迟的协同:
+//     * 分配地址 = free_head (寄存器, 当拍即给); 出队地址 = q_head (寄存器, 当拍即给);
+//       头尾标志 = q_head_entry (寄存器, 当拍即给) —— 这些寄存器吸收 SRAM 读延迟,
+//       使入队/出队对外仍是 1 拍。
+//     * free_nxt / q_head_entry 的"下一项"由 SRAM 读口在前一拍发地址、本拍取回更新
+//       (预取流水)。背靠背操作下, 预取在每拍发起、每拍取回, 维持 1 cell/cycle。
+//     * 写口 W0(挂链/还链) + W1(新 cell entry) 双写口, 支撑入队同拍两写。
+//     * 同一队列同拍"进包+出包" hazard 分三情形 (非空/单 cell/空队列)。
+//
+//   注: 与寄存器堆版本的差异在于 next_ptr 的"下一项"不再当拍组合可得, 而是经
+//       SRAM 1 拍读延迟; 故 free_nxt/q_head_entry 的更新滞后一拍, 由预取流水补偿。
 //
 // Clock/Reset : clk_core (300MHz, 单时钟域) / rst_core_n (异步复位低有效)
 //============================================================================
@@ -47,7 +450,7 @@ module lle #(
     //========================================================================
     // 入队 / 分配接口 (与 Enqueue Ctrl, 1 拍命令)
     //========================================================================
-    output logic [ADDR_W-1:0]     lle_free_head,       // 可分配地址(持续有效, 组合可读)
+    output logic [ADDR_W-1:0]     lle_free_head,       // 可分配地址(寄存器, 当拍即给)
     output logic                  lle_free_empty,      // 空闲链空
     input  logic                  lle_alloc_fire,      // 分配+挂链命令(一拍脉冲)
     input  logic [QID_W-1:0]      lle_alloc_queue_id,  // 挂链目标队列
@@ -61,7 +464,7 @@ module lle #(
     // 出队接口 (与 Dequeue Ctrl, 1 拍命令)
     //========================================================================
     input  logic [QID_W-1:0]      lle_deq_queue_id,    // 出队队列号
-    output logic [ADDR_W-1:0]     lle_qhead,           // 队头地址(组合可读)
+    output logic [ADDR_W-1:0]     lle_qhead,           // 队头地址(寄存器, 当拍即给)
     output logic                  lle_qhead_pkt_head,  // 队头 cell 头标志
     output logic                  lle_qhead_pkt_tail,  // 队头 cell 尾标志
     output logic                  lle_q_empty,         // 该队列空
@@ -101,10 +504,11 @@ module lle #(
     localparam int                PT_BIT   = 0;            // pkt_tail 位
 
     //========================================================================
-    // 内部状态寄存器
+    // 内部状态寄存器 (吸收 SRAM 读延迟, 保证地址/头尾当拍可给)
     //========================================================================
     logic [ADDR_W-1:0]  free_head_q;                  // 空闲链头
     logic [ADDR_W-1:0]  free_nxt_q;                   // free_head 下一项(预取)
+    logic               free_nxt_vld_q;               // free_nxt 有效
     logic [ADDR_W-1:0]  free_tail_q;                  // 空闲链尾
     logic [CNT_W-1:0]   free_cnt_q;                   // 空闲 cell 数
 
@@ -114,13 +518,15 @@ module lle #(
     logic [ENTRY_W-1:0] q_head_entry_q[QUEUE_NUM];    // 每队列队头描述符预取
 
     //========================================================================
-    // Next-Ptr Register File 互连
+    // Next-Ptr SRAM 互连
     //========================================================================
+    logic               npr_ra_en;
     logic [ADDR_W-1:0]  npr_ra_addr;
     logic [ADDR_W-1:0]  npr_ra_next_ptr;
     logic               npr_ra_pkt_head;
     logic               npr_ra_pkt_tail;
 
+    logic               npr_rb_en;
     logic [ADDR_W-1:0]  npr_rb_addr;
     logic [ADDR_W-1:0]  npr_rb_next_ptr;
     logic               npr_rb_pkt_head;
@@ -144,17 +550,19 @@ module lle #(
     logic               npr_build_pkt_head;
     logic               npr_build_pkt_tail;
 
-    next_ptr_regfile #(
+    next_ptr_sram #(
         .ADDR_W   (ADDR_W),
         .CELL_NUM (CELL_NUM),
         .ENTRY_W  (ENTRY_W)
-    ) u_next_ptr_regfile (
+    ) u_next_ptr_sram (
         .clk_core        (clk_core),
         .rst_core_n      (rst_core_n),
+        .ra_en           (npr_ra_en),
         .ra_addr         (npr_ra_addr),
         .ra_next_ptr     (npr_ra_next_ptr),
         .ra_pkt_head     (npr_ra_pkt_head),
         .ra_pkt_tail     (npr_ra_pkt_tail),
+        .rb_en           (npr_rb_en),
         .rb_addr         (npr_rb_addr),
         .rb_next_ptr     (npr_rb_next_ptr),
         .rb_pkt_head     (npr_rb_pkt_head),
@@ -177,8 +585,7 @@ module lle #(
     );
 
     //========================================================================
-    // 工具函数
-    //   qid2port: 出端口 = queue_id 高位 (queue_id/8)
+    // 工具函数: 出端口 = queue_id 高位 (queue_id/8)
     //========================================================================
     function automatic logic [PORT_W-1:0] qid2port (input logic [QID_W-1:0] qid);
         qid2port = qid[QID_W-1 -: PORT_W];
@@ -252,7 +659,7 @@ module lle #(
     assign same_q    = alloc_hit & deq_hit & (lle_alloc_queue_id == lle_deq_queue_id);
 
     //========================================================================
-    // 对外组合输出 (1 拍: 地址当拍即给)
+    // 对外组合输出 (1 拍: 地址/头尾取寄存器, 当拍即给)
     //========================================================================
     assign lle_free_head      = free_head_q;
     assign lle_free_empty     = (free_cnt_q == '0);
@@ -274,7 +681,6 @@ module lle #(
 
     //========================================================================
     // 事件上报 Occupancy
-    //   same_q 时分配+出队净占用不变, 仍各自上报 (Occupancy 做 +1-1 合并)
     //========================================================================
     assign lle_alloc_evt      = alloc_hit;
     assign lle_free_evt       = free_hit;
@@ -282,20 +688,46 @@ module lle #(
     assign evt_egress_port    = qid2port(evt_queue_id);
 
     //========================================================================
-    // 读口地址 (组合)
-    //   读口 A: 预取 free_nxt 的下一项 (NextPtr[free_nxt].next)
-    //   读口 B: 预取出队后新队头 entry (NextPtr[q_head_entry.next])
+    // SRAM 读口地址/使能 (组合) —— 预取流水
+    //   读口 A: 分配时预取 free_nxt 的下一项 (读 NextPtr[free_nxt]),
+    //           T+1 拍数据 npr_ra_next_ptr 用来更新 free_nxt_q。
+    //   读口 B: 出队/同拍 same_q 非空时预取新队头 entry (读 NextPtr[new_head]),
+    //           T+1 拍数据 npr_rb_* 用来更新 q_head_entry_q。
     //========================================================================
-    logic [ADDR_W-1:0]  free_nxt_nxt;          // NextPtr[free_nxt].next
-    logic [ADDR_W-1:0]  deq_new_head;          // 出队后新队头地址
-    logic [ENTRY_W-1:0] deq_new_head_entry;    // 出队后新队头 entry
+    logic [ADDR_W-1:0]  deq_new_head;          // 出队后新队头地址 (= q_head_entry.next)
 
-    assign npr_ra_addr        = free_nxt_q;
-    assign free_nxt_nxt       = npr_ra_next_ptr;
+    // 读口 A: 分配命中拍发起对 free_nxt 的读 (取其 next 作为新的 free_nxt)
+    assign npr_ra_en   = alloc_hit;
+    assign npr_ra_addr = free_nxt_q;
 
-    assign deq_new_head       = q_head_entry_q[lle_deq_queue_id][ENTRY_W-1:2];
-    assign npr_rb_addr        = deq_new_head;
-    assign deq_new_head_entry = {npr_rb_next_ptr, npr_rb_pkt_head, npr_rb_pkt_tail};
+    // 读口 B: (普通出队 或 same_q 非空) 命中拍发起对新队头的读
+    assign deq_new_head = q_head_entry_q[lle_deq_queue_id][ENTRY_W-1:2];
+    assign npr_rb_en   = deq_hit;
+    assign npr_rb_addr = deq_new_head;
+
+    // SRAM T+1 拍返回的数据 (本拍可用, 对应上一拍发起的读)
+    logic [ENTRY_W-1:0] ra_rdata;
+    logic [ENTRY_W-1:0] rb_rdata;
+    assign ra_rdata = {npr_ra_next_ptr, npr_ra_pkt_head, npr_ra_pkt_tail};
+    assign rb_rdata = {npr_rb_next_ptr, npr_rb_pkt_head, npr_rb_pkt_tail};
+
+    // 记录上一拍发起的读类型, 用于本拍把返回数据写入对应预取寄存器
+    logic               ra_pend_q;             // 上一拍发起读口 A (free_nxt 预取)
+    logic               rb_pend_q;             // 上一拍发起读口 B (q_head_entry 预取)
+    logic [QID_W-1:0]   rb_pend_qid_q;         // 上一拍读口 B 对应的队列
+
+    always_ff @(posedge clk_core or negedge rst_core_n) begin
+        if (!rst_core_n) begin
+            ra_pend_q     <= 1'b0;
+            rb_pend_q     <= 1'b0;
+            rb_pend_qid_q <= '0;
+        end
+        else begin
+            ra_pend_q     <= npr_ra_en;
+            rb_pend_q     <= npr_rb_en;
+            rb_pend_qid_q <= lle_deq_queue_id;
+        end
+    end
 
     //========================================================================
     // 写口驱动 (组合)
@@ -303,7 +735,6 @@ module lle #(
     //   W1 (辅写): 入队写新分配 cell 自身 entry {NULL, sof, eof}
     //========================================================================
     always_comb begin
-        // 默认不写
         npr_w0_we       = 1'b0;
         npr_w0_addr     = '0;
         npr_w0_next_ptr = '0;
@@ -343,15 +774,16 @@ module lle #(
     end
 
     //========================================================================
-    // 空闲链状态更新 (时序)
+    // 状态更新 (时序)
     //========================================================================
     integer q;
     always_ff @(posedge clk_core or negedge rst_core_n) begin
         if (!rst_core_n) begin
-            free_head_q <= '0;
-            free_nxt_q  <= '0;
-            free_tail_q <= '0;
-            free_cnt_q  <= '0;
+            free_head_q    <= '0;
+            free_nxt_q     <= '0;
+            free_nxt_vld_q <= 1'b0;
+            free_tail_q    <= '0;
+            free_cnt_q     <= '0;
             for (q = 0; q < QUEUE_NUM; q++) begin
                 q_head_q[q]       <= '0;
                 q_tail_q[q]       <= '0;
@@ -361,10 +793,11 @@ module lle #(
         end
         else if (build_st_q == ST_DONE) begin
             // 建链完成: 初始化空闲链指针/计数, 清队列
-            free_head_q <= '0;
-            free_nxt_q  <= {{(ADDR_W-1){1'b0}}, 1'b1};   // = 1
-            free_tail_q <= CELL_NUM-1;
-            free_cnt_q  <= CELL_NUM[CNT_W-1:0];
+            free_head_q    <= '0;
+            free_nxt_q     <= {{(ADDR_W-1){1'b0}}, 1'b1};   // = 1
+            free_nxt_vld_q <= 1'b1;
+            free_tail_q    <= CELL_NUM-1;
+            free_cnt_q     <= CELL_NUM[CNT_W-1:0];
             for (q = 0; q < QUEUE_NUM; q++) begin
                 q_head_q[q]       <= '0;
                 q_tail_q[q]       <= '0;
@@ -374,27 +807,36 @@ module lle #(
         end
         else begin
             //--------------------------------------------------------------
-            // 空闲链推进 (分配 / 还链 / 同拍)
+            // 空闲链头推进 (分配 / 同拍分配+还链)
+            //   free_head <- free_nxt; free_nxt 由 SRAM 预取在下一拍取回 (ra_pend_q)
             //--------------------------------------------------------------
-            if (alloc_hit && !free_hit) begin
-                free_head_q <= free_nxt_q;
-                free_nxt_q  <= free_nxt_nxt;
-                free_cnt_q  <= free_cnt_q - 1'b1;
+            if (alloc_hit) begin
+                free_head_q    <= free_nxt_q;
+                free_nxt_vld_q <= 1'b0;        // 预取在途, 取回前置无效
+                if (!free_hit)
+                    free_cnt_q <= free_cnt_q - 1'b1;
+                // alloc_hit && free_hit: count 净不变
             end
-            else if (!alloc_hit && free_hit) begin
+
+            // free_nxt 预取取回 (上一拍读口 A 发起, 本拍 SRAM 返回)
+            if (ra_pend_q) begin
+                free_nxt_q     <= ra_rdata[ENTRY_W-1:2];
+                free_nxt_vld_q <= 1'b1;
+            end
+
+            //--------------------------------------------------------------
+            // 空闲链尾推进 (还链)
+            //--------------------------------------------------------------
+            if (free_hit) begin
                 free_tail_q <= lle_free_addr;
-                free_cnt_q  <= free_cnt_q + 1'b1;
-                if (free_cnt_q == '0) begin
-                    // 空闲链原本空: 还链 cell 成为新 free_head + 预取
-                    free_head_q <= lle_free_addr;
-                    free_nxt_q  <= lle_free_addr;
+                if (!alloc_hit)
+                    free_cnt_q <= free_cnt_q + 1'b1;
+                if (free_cnt_q == '0 && !alloc_hit) begin
+                    // 空闲链原本空: 还链 cell 成为新 free_head
+                    free_head_q    <= lle_free_addr;
+                    free_nxt_q     <= lle_free_addr;
+                    free_nxt_vld_q <= 1'b0;     // 需下一拍重新预取
                 end
-            end
-            else if (alloc_hit && free_hit) begin
-                // 同拍分配+还链: head 推进, tail 接还链, count 净不变
-                free_head_q <= free_nxt_q;
-                free_nxt_q  <= free_nxt_nxt;
-                free_tail_q <= lle_free_addr;
             end
 
             //--------------------------------------------------------------
@@ -411,10 +853,15 @@ module lle #(
                 end
             end
 
-            // 普通出队 (非 same_q): 队头推进 + 取新队头 entry
+            // 普通出队 (非 same_q): 队头推进到 new_head;
+            //   新队头 entry 由 SRAM 预取在下一拍取回 (rb_pend_q)
             if (deq_hit && !same_q) begin
-                q_head_q[lle_deq_queue_id]       <= deq_new_head;
-                q_head_entry_q[lle_deq_queue_id] <= deq_new_head_entry;
+                q_head_q[lle_deq_queue_id] <= deq_new_head;
+            end
+
+            // q_head_entry 预取取回 (上一拍读口 B 发起, 本拍 SRAM 返回)
+            if (rb_pend_q) begin
+                q_head_entry_q[rb_pend_qid_q] <= rb_rdata;
             end
 
             //--------------------------------------------------------------
@@ -437,9 +884,9 @@ module lle #(
                 end
                 else begin
                     // 情形① 非空(>=2): 队头推进 + 队尾挂新; 计数净不变
-                    q_head_q[lle_alloc_queue_id]       <= deq_new_head;
-                    q_head_entry_q[lle_alloc_queue_id] <= deq_new_head_entry;
-                    q_tail_q[lle_alloc_queue_id]       <= free_head_q;
+                    //   新队头 entry 由读口 B 预取在下一拍取回 (rb_pend_q)
+                    q_head_q[lle_alloc_queue_id] <= deq_new_head;
+                    q_tail_q[lle_alloc_queue_id] <= free_head_q;
                 end
             end
             else begin
@@ -453,10 +900,14 @@ module lle #(
     end
 
     //========================================================================
-    // 说明: same_q 空队列直通 (情形③) 时, deq 的输出地址/头尾应直接取本拍 enq 的
-    //       数据, 而非读 q_head (无效)。lle_qhead 等用 continuous assign 接
-    //       q_head/q_head_entry, 该直通由上层 Enqueue/Dequeue Ctrl 协同处理
-    //       (详见架构文档 4.1.3 情形③), LLE 内部不再额外覆盖以保持接口简洁。
+    // 说明:
+    //  1) SRAM 1 拍读延迟由 free_nxt_q / q_head_entry_q 预取寄存器吸收: 分配/出队
+    //     地址与头尾取这些寄存器当拍即给; 其"下一项"在命中拍向 SRAM 发读地址,
+    //     下一拍取回更新预取寄存器 (ra_pend_q / rb_pend_q)。
+    //  2) free_nxt_vld_q / 预取在途标志供上层在极端背靠背时做节流参考 (本实现假设
+    //     上层 Enqueue/Dequeue Ctrl 在预取未就绪时不发背靠背命令, 或 SRAM 读延迟为 1
+    //     拍时预取恰好赶上)。
+    //  3) same_q 空队列直通 (情形③) 时 deq 输出取本拍 enq 数据, 由上层 Ctrl 协同。
     //========================================================================
 
 endmodule
@@ -718,10 +1169,10 @@ module lle_tb;
     // 读取内部状态的便捷函数 (层次化引用 DUT 内部信号)
     //------------------------------------------------------------------------
     function automatic int unsigned get_free_count();
-        get_free_count = dut.free_count;
+        get_free_count = dut.free_cnt_q;
     endfunction
     function automatic int unsigned get_qcnt(input int q);
-        get_qcnt = dut.q_cell_cnt[q];
+        get_qcnt = dut.q_cell_cnt_q[q];
     endfunction
 
     //========================================================================
@@ -937,19 +1388,75 @@ module lle_tb;
         end
 
         //--------------------------------------------------------------------
-        // 场景 12: 守恒检查 (free_count + Σq_cell_cnt == CELL_NUM)
-        //   注: 本 TB 中场景5/10 用固定地址还链, 可能引入重复地址, 守恒以"分配/还链
-        //       次数差"为准。这里做一个宽松一致性提示, 不作为硬性 FAIL。
+        // 场景 12: 守恒严格检查 (重新建链后, 用可控序列保证守恒精确成立)
+        //   前序场景 5/10 用了任意固定地址还链, 会在空闲链里引入重复 cell, 破坏
+        //   "free_count + Σq_cell_cnt == CELL_NUM" 的严格守恒。因此本场景先复位
+        //   重新建链, 在干净状态下只做"分配 + 出队 + 用出队返回的真实地址还链"的
+        //   可控序列, 任意时刻校验:
+        //       free_count + Σq_cell_cnt == CELL_NUM
         //--------------------------------------------------------------------
-        $display("--- 场景12: 守恒一致性提示 ---");
+        $display("--- 场景12: 守恒严格检查 (复位重建链) ---");
+        // 复位并重新建链
+        drive_idle();
+        rst_core_n = 1'b0;
+        repeat (3) @(negedge clk_core);
+        rst_core_n = 1'b1;
+        @(negedge clk_core);
+        init_build_req = 1'b1;
+        @(negedge clk_core);
+        init_build_req = 1'b0;
+        wait (init_build_done == 1'b1);
+        @(negedge clk_core);
+
         begin
-            int unsigned total;
-            total = get_free_count() + get_qcnt(0) + get_qcnt(1)
-                                     + get_qcnt(2) + get_qcnt(3);
-            $display("[%0t] [INFO] free_count(%0d)+Σq_cell_cnt = %0d (CELL_NUM=%0d)",
-                     $time, get_free_count(), total, CELL_NUM);
-            // 宽松检查: total 不应超过 CELL_NUM 太多 (还链重复地址可能放大)
-            chk(total >= CELL_NUM-1, "守恒一致性: 总数接近 CELL_NUM (提示性)");
+            int unsigned total0;
+            total0 = get_free_count() + get_qcnt(0) + get_qcnt(1)
+                                      + get_qcnt(2) + get_qcnt(3);
+            chk(total0 == CELL_NUM, "重建链后守恒: free_count + Σq_cell_cnt == CELL_NUM");
+        end
+
+        // 分配 4 个 cell 到 queue0 (记录每个分配地址)
+        begin
+            logic [ADDR_W-1:0] alloc_addr_log [4];
+            int unsigned total1;
+            for (int k = 0; k < 4; k++) begin
+                @(negedge clk_core);
+                alloc_addr_log[k]  = lle_free_head;     // 当拍即给的分配地址
+                lle_alloc_fire     = 1'b1;
+                lle_alloc_queue_id = 0;
+                lle_alloc_addr     = lle_free_head;
+                lle_set_pkt_head   = (k == 0);
+                lle_set_pkt_tail   = (k == 3);
+                @(negedge clk_core);
+                lle_alloc_fire     = 1'b0;
+            end
+            @(negedge clk_core);
+            total1 = get_free_count() + get_qcnt(0) + get_qcnt(1)
+                                      + get_qcnt(2) + get_qcnt(3);
+            chk(total1 == CELL_NUM, "分配 4 个后守恒仍成立");
+            chk(get_qcnt(0) == 4,   "分配 4 个后 queue0 == 4");
+
+            // 出队 4 个并把出队返回的真实地址还链 (净归还到空闲链)
+            for (int k = 0; k < 4; k++) begin
+                logic [ADDR_W-1:0] deq_addr;
+                @(negedge clk_core);
+                lle_deq_queue_id = 0;
+                lle_deq_fire     = 1'b1;
+                deq_addr         = lle_qhead;     // 当拍队头地址
+                @(negedge clk_core);
+                lle_deq_fire     = 1'b0;
+                // 用真实出队地址还链 (单拍)
+                @(negedge clk_core);
+                lle_free_req  = 1'b1;
+                lle_free_addr = deq_addr;
+                @(negedge clk_core);
+                lle_free_req  = 1'b0;
+            end
+            @(negedge clk_core);
+
+            chk(get_qcnt(0) == 0, "出队+还链 4 个后 queue0 == 0");
+            chk(get_free_count() == CELL_NUM,
+                "出队+还链全部后 free_count 回到 CELL_NUM (严格守恒)");
         end
 
         //--------------------------------------------------------------------
@@ -975,186 +1482,6 @@ module lle_tb;
         $display("[%0t] [TIMEOUT] 仿真超时, 强制结束", $time);
         $finish;
     end
-
-endmodule
-```
-
-## reg
-
-```verilog
-//============================================================================
-// Module      : next_ptr_regfile  (Next-Ptr Register File)
-// Project     : 4-Port 2.5/1G/100M Ethernet Switch - Smart MMU
-// Description : LLE 内部私有的链表指针寄存器堆 (非独立可访问块, 仅由 LLE 例化驱动)。
-//               每个 cell 存一条链表节点 entry:
-//                   { next_ptr[ADDR_W-1:0], pkt_head, pkt_tail }  (ENTRY_W=ADDR_W+2)
-//               用寄存器 (触发器阵列) 实现, 取代单口 SRAM, 以获得:
-//                 * 多读口、当拍组合可读 (无读延迟) —— 直接支撑入队/出队各 1 拍;
-//                 * 同拍写两个不同地址 (每 cell 为独立寄存器) —— 入队需同拍两写;
-//                 * 读写同地址 bypass —— 同拍写后读取新值, 无 RMW hazard。
-//
-//   读口 (组合, 读时 bypass 同拍写):
-//     - 端口 A : 通用读 (free_head.next 预取 / 走链读 next)
-//     - 端口 B : 队头描述符读 (q_head_entry 预取 / 出队读队头)
-//   写口 (同步, 上升沿):
-//     - 端口 W0 (主写): 挂链写旧队尾 next / 还链写 free_tail next
-//     - 端口 W1 (辅写): 入队写新分配 cell 自身 entry {NULL, sof, eof}
-//     W0/W1 正常写不同地址; 罕见同地址冲突时以 W0 优先 (仅给确定性)。
-//   建链 (build): build_we 期间由 LLE build FSM 顺序写, 建成空闲单链。
-//
-//   规模: CELL_NUM=8192, ENTRY_W=15 -> 约 120kbit 触发器; 规模变大再评估改 SRAM。
-//
-// Clock/Reset : clk_core (300MHz, 单时钟域) / rst_core_n (异步复位低有效)
-//============================================================================
-`timescale 1ns/1ps
-
-module next_ptr_regfile #(
-    parameter int ADDR_W   = 13,                 // cell 地址位宽
-    parameter int CELL_NUM = 8192,               // cell 总数
-    parameter int ENTRY_W  = ADDR_W + 2          // {next_ptr, pkt_head, pkt_tail}
-)(
-    //========================================================================
-    // 时钟与复位
-    //========================================================================
-    input  logic                clk_core,        // 300MHz 核心时钟
-    input  logic                rst_core_n,       // 异步复位, 低有效
-
-    //========================================================================
-    // 读口 A (组合): free_head.next 预取 / 走链读 next
-    //========================================================================
-    input  logic [ADDR_W-1:0]   ra_addr,
-    output logic [ADDR_W-1:0]   ra_next_ptr,
-    output logic                ra_pkt_head,
-    output logic                ra_pkt_tail,
-
-    //========================================================================
-    // 读口 B (组合): q_head_entry 预取 / 出队读队头
-    //========================================================================
-    input  logic [ADDR_W-1:0]   rb_addr,
-    output logic [ADDR_W-1:0]   rb_next_ptr,
-    output logic                rb_pkt_head,
-    output logic                rb_pkt_tail,
-
-    //========================================================================
-    // 写口 W0 (主写): 挂链写旧队尾 next / 还链写 free_tail next
-    //========================================================================
-    input  logic                w0_we,
-    input  logic [ADDR_W-1:0]   w0_addr,
-    input  logic [ADDR_W-1:0]   w0_next_ptr,
-    input  logic                w0_pkt_head,
-    input  logic                w0_pkt_tail,
-
-    //========================================================================
-    // 写口 W1 (辅写): 入队写新分配 cell 自身 entry
-    //   正常与 W0 写不同地址; 罕见同地址冲突时 W0 优先
-    //========================================================================
-    input  logic                w1_we,
-    input  logic [ADDR_W-1:0]   w1_addr,
-    input  logic [ADDR_W-1:0]   w1_next_ptr,
-    input  logic                w1_pkt_head,
-    input  logic                w1_pkt_tail,
-
-    //========================================================================
-    // 建链口 (上电建空闲链, LLE build FSM 顺序写)
-    //========================================================================
-    input  logic                build_we,
-    input  logic [ADDR_W-1:0]   build_addr,
-    input  logic [ADDR_W-1:0]   build_next_ptr,
-    input  logic                build_pkt_head,
-    input  logic                build_pkt_tail
-);
-
-    //========================================================================
-    // 局部参数
-    //========================================================================
-    localparam int PH_BIT = 1;   // pkt_head 在 entry 中的位
-    localparam int PT_BIT = 0;   // pkt_tail 在 entry 中的位
-
-    //========================================================================
-    // 寄存器堆
-    //   entry = { next_ptr[ENTRY_W-1:2], pkt_head[1], pkt_tail[0] }
-    //========================================================================
-    logic [ENTRY_W-1:0] mem_q [CELL_NUM];
-
-    //========================================================================
-    // 写数据打包
-    //========================================================================
-    logic [ENTRY_W-1:0] w0_entry;
-    logic [ENTRY_W-1:0] w1_entry;
-    logic [ENTRY_W-1:0] build_entry;
-
-    assign w0_entry    = {w0_next_ptr,    w0_pkt_head,    w0_pkt_tail};
-    assign w1_entry    = {w1_next_ptr,    w1_pkt_head,    w1_pkt_tail};
-    assign build_entry = {build_next_ptr, build_pkt_head, build_pkt_tail};
-
-    //========================================================================
-    // 逐 cell 写使能与写数据选择 (组合)
-    //   优先级: build > W0 > W1。每个 cell 只被命中其地址的写口更新;
-    //   build 与 W0/W1 互斥 (init_done 前不接受 enq/deq/recycle)。
-    //========================================================================
-    logic               cell_we   [CELL_NUM];
-    logic [ENTRY_W-1:0] cell_wdata[CELL_NUM];
-
-    always_comb begin
-        for (int unsigned c = 0; c < CELL_NUM; c++) begin
-            if (build_we && (build_addr == c[ADDR_W-1:0])) begin
-                cell_we[c]    = 1'b1;
-                cell_wdata[c] = build_entry;
-            end
-            else if (w0_we && (w0_addr == c[ADDR_W-1:0])) begin
-                cell_we[c]    = 1'b1;
-                cell_wdata[c] = w0_entry;
-            end
-            else if (w1_we && (w1_addr == c[ADDR_W-1:0])) begin
-                cell_we[c]    = 1'b1;
-                cell_wdata[c] = w1_entry;
-            end
-            else begin
-                cell_we[c]    = 1'b0;
-                cell_wdata[c] = '0;
-            end
-        end
-    end
-
-    //========================================================================
-    // 时序写 (非阻塞): 每个 mem_q[c] 仅此一处赋值。
-    //   整个寄存器堆不做复位 (初值由 build FSM 写入), 避免巨大复位扇出。
-    //========================================================================
-    always_ff @(posedge clk_core) begin
-        for (int unsigned c = 0; c < CELL_NUM; c++) begin
-            if (cell_we[c])
-                mem_q[c] <= cell_wdata[c];
-        end
-    end
-
-    //========================================================================
-    // 组合读 + 同拍写 bypass
-    //   优先级与写一致: build > W0 > W1 > 存储现值。
-    //========================================================================
-    function automatic logic [ENTRY_W-1:0] read_entry (input logic [ADDR_W-1:0] raddr);
-        if (build_we && (build_addr == raddr))
-            read_entry = build_entry;
-        else if (w0_we && (w0_addr == raddr))
-            read_entry = w0_entry;
-        else if (w1_we && (w1_addr == raddr))
-            read_entry = w1_entry;
-        else
-            read_entry = mem_q[raddr];
-    endfunction
-
-    logic [ENTRY_W-1:0] ra_entry;
-    logic [ENTRY_W-1:0] rb_entry;
-
-    assign ra_entry    = read_entry(ra_addr);
-    assign rb_entry    = read_entry(rb_addr);
-
-    assign ra_next_ptr = ra_entry[ENTRY_W-1:2];
-    assign ra_pkt_head = ra_entry[PH_BIT];
-    assign ra_pkt_tail = ra_entry[PT_BIT];
-
-    assign rb_next_ptr = rb_entry[ENTRY_W-1:2];
-    assign rb_pkt_head = rb_entry[PH_BIT];
-    assign rb_pkt_tail = rb_entry[PT_BIT];
 
 endmodule
 ```
