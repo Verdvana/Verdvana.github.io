@@ -1,62 +1,69 @@
 ## sram
 ```verilog
 //============================================================================
-// Module      : next_ptr_regfile  (Next-Ptr Register File) —— 已废弃(DEPRECATED)
+// Module      : next_ptr_sram  (Next-Ptr SRAM Wrapper)
 // Project     : 4-Port 2.5/1G/100M Ethernet Switch - Smart MMU
-// Note        : 本寄存器堆版本已被 next_ptr_sram.sv (SRAM 实现, 1 拍读延迟) 取代,
-//               LLE 现例化 next_ptr_sram。本文件仅作历史参考保留, 不再使用。
-// Description : LLE 内部私有的链表指针寄存器堆 (非独立可访问块, 仅由 LLE 例化驱动)。
-//               每个 cell 存一条链表节点 entry:
-//                   { next_ptr[ADDR_W-1:0], pkt_head, pkt_tail }  (ENTRY_W=ADDR_W+2)
-//               用寄存器 (触发器阵列) 实现, 取代单口 SRAM, 以获得:
-//                 * 多读口、当拍组合可读 (无读延迟) —— 直接支撑入队/出队各 1 拍;
-//                 * 同拍写两个不同地址 (每 cell 为独立寄存器) —— 入队需同拍两写;
-//                 * 读写同地址 bypass —— 同拍写后读取新值, 无 RMW hazard。
+// Description : LLE 内部私有的链表指针存储, 用单片 SRAM 实现 (取代寄存器堆)。
+//               本模块为 SRAM 包装器, 内部例化 vendor 提供的 2W2R SRAM 黑盒
+//               `sram_2r2w_8192x16` (8192 深 × 16 bit, 1 拍同步读, 双写口
+//               WEA/WEB + 双读口 REC/RED, 含全字 WBE)。
 //
-//   读口 (组合, 读时 bypass 同拍写):
-//     - 端口 A : 通用读 (free_head.next 预取 / 走链读 next)
-//     - 端口 B : 队头描述符读 (q_head_entry 预取 / 出队读队头)
-//   写口 (同步, 上升沿):
-//     - 端口 W0 (主写): 挂链写旧队尾 next / 还链写 free_tail next
-//     - 端口 W1 (辅写): 入队写新分配 cell 自身 entry {NULL, sof, eof}
-//     W0/W1 正常写不同地址; 罕见同地址冲突时以 W0 优先 (仅给确定性)。
-//   建链 (build): build_we 期间由 LLE build FSM 顺序写, 建成空闲单链。
+//   容量匹配: CELL_NUM=8192 cells × ENTRY_W=15 bit (=ADDR_W+2)。
+//             SRAM 字宽取 16 bit (2 的幂, 便于工艺库; entry 15 bit 占低 15 位,
+//             高 1 位 0-pad)。深度 8192 = SRAM 深度, 不需深度方向拼接。
 //
-//   规模: CELL_NUM=8192, ENTRY_W=15 -> 约 120kbit 触发器; 规模变大再评估改 SRAM。
+//   存储/接口约定 (与 LLE 配套):
+//     * Entry 宽度 ENTRY_W = ADDR_W + 2, 内容 = {next_ptr, pkt_head, pkt_tail}。
+//     * 同步读 (REC/RED, 1 拍读延迟): T 拍给 ra_en/ra_addr (或 rb_en/rb_addr),
+//       T+1 拍数据 ra_next_ptr/... 有效。
+//     * 同步写 (WEA/WEB, 上升沿): 两个独立写口 W0/W1, 建链口 build 与 W0/W1 互斥
+//       (build 走 W0 物理口)。
+//     * 读后写 bypass: 若 T 拍读地址与 T 拍写地址命中, 由本包装器在 T+1 拍用
+//       寄存的写数据覆盖 SRAM 返回值, 保证读到当拍最新写值 (写后立即读, 无
+//       RMW hazard)。优先级: build > W0 > W1 > SRAM。
+//     * 同地址 W0/W1 冲突: 包装器内部及 SRAM 内部均以 W0 优先 (调用方应避免)。
 //
 // Clock/Reset : clk_core (300MHz, 单时钟域) / rst_core_n (异步复位低有效)
 //============================================================================
 `timescale 1ns/1ps
 
-module next_ptr_regfile #(
+// 仿真宏: 在本文件内 define, 确保不论上层文件/工具的编译单元如何划分,
+// 下方 sram_2r2w_8192x16 内的行为模型 (always_ff/mem 存储) 总能被激活,
+// 让 testbench 跑得起来。综合时把此 define 注释掉即可由 vendor SRAM 库
+// 链接实际实例 (此 ifdef 块下没有 vendor 库需要的逻辑)。
+`define SIM_BEHAVIOR_SRAM
+
+module next_ptr_sram #(
     parameter int ADDR_W   = 13,                 // cell 地址位宽
-    parameter int CELL_NUM = 8192,               // cell 总数
+    parameter int CELL_NUM = 8192,               // cell 总数 (= 1 << ADDR_W)
     parameter int ENTRY_W  = ADDR_W + 2          // {next_ptr, pkt_head, pkt_tail}
 )(
     //========================================================================
     // 时钟与复位
     //========================================================================
     input  logic                clk_core,        // 300MHz 核心时钟
-    input  logic                rst_core_n,       // 异步复位, 低有效
+    input  logic                rst_core_n,      // 异步复位, 低有效
 
     //========================================================================
-    // 读口 A (组合): free_head.next 预取 / 走链读 next
+    // 读口 A (同步, 1 拍读延迟): free_head.next 预取 / 走链读 next
     //========================================================================
+    input  logic                ra_en,
     input  logic [ADDR_W-1:0]   ra_addr,
     output logic [ADDR_W-1:0]   ra_next_ptr,
     output logic                ra_pkt_head,
     output logic                ra_pkt_tail,
 
     //========================================================================
-    // 读口 B (组合): q_head_entry 预取 / 出队读队头
+    // 读口 B (同步, 1 拍读延迟): q_head_entry 预取 / 出队读队头
     //========================================================================
+    input  logic                rb_en,
     input  logic [ADDR_W-1:0]   rb_addr,
     output logic [ADDR_W-1:0]   rb_next_ptr,
     output logic                rb_pkt_head,
     output logic                rb_pkt_tail,
 
     //========================================================================
-    // 写口 W0 (主写): 挂链写旧队尾 next / 还链写 free_tail next
+    // 写口 W0 (同步): 挂链写旧队尾 next / 还链写 free_tail next
     //========================================================================
     input  logic                w0_we,
     input  logic [ADDR_W-1:0]   w0_addr,
@@ -65,8 +72,7 @@ module next_ptr_regfile #(
     input  logic                w0_pkt_tail,
 
     //========================================================================
-    // 写口 W1 (辅写): 入队写新分配 cell 自身 entry
-    //   正常与 W0 写不同地址; 罕见同地址冲突时 W0 优先
+    // 写口 W1 (同步): 入队写新分配 cell 自身 entry
     //========================================================================
     input  logic                w1_we,
     input  logic [ADDR_W-1:0]   w1_addr,
@@ -87,95 +93,246 @@ module next_ptr_regfile #(
     //========================================================================
     // 局部参数
     //========================================================================
-    localparam int PH_BIT = 1;   // pkt_head 在 entry 中的位
-    localparam int PT_BIT = 0;   // pkt_tail 在 entry 中的位
+    localparam int PH_BIT     = 1;               // pkt_head 在 entry 中的位
+    localparam int PT_BIT     = 0;               // pkt_tail 在 entry 中的位
+    localparam int SRAM_WIDTH = 16;              // 单片 SRAM 字宽 (≥ ENTRY_W=15, 取 2 的幂)
 
     //========================================================================
-    // 寄存器堆
-    //   entry = { next_ptr[ENTRY_W-1:2], pkt_head[1], pkt_tail[0] }
+    // 写数据打包 (ENTRY_W=15bit) -> 0-pad 到 SRAM_WIDTH=16bit
     //========================================================================
-    logic [ENTRY_W-1:0] mem_q [CELL_NUM];
+    logic [ENTRY_W-1:0]    w0_entry;
+    logic [ENTRY_W-1:0]    w1_entry;
+    logic [ENTRY_W-1:0]    build_entry;
+    logic [SRAM_WIDTH-1:0] w0_entry_pad;
+    logic [SRAM_WIDTH-1:0] w1_entry_pad;
+    logic [SRAM_WIDTH-1:0] build_entry_pad;
+
+    assign w0_entry        = {w0_next_ptr,    w0_pkt_head,    w0_pkt_tail};
+    assign w1_entry        = {w1_next_ptr,    w1_pkt_head,    w1_pkt_tail};
+    assign build_entry     = {build_next_ptr, build_pkt_head, build_pkt_tail};
+    assign w0_entry_pad    = {{(SRAM_WIDTH-ENTRY_W){1'b0}}, w0_entry};
+    assign w1_entry_pad    = {{(SRAM_WIDTH-ENTRY_W){1'b0}}, w1_entry};
+    assign build_entry_pad = {{(SRAM_WIDTH-ENTRY_W){1'b0}}, build_entry};
 
     //========================================================================
-    // 写数据打包
+    // SRAM 物理写口聚合 (build 与 W0 互斥, 走 WEA; W1 走 WEB)
     //========================================================================
-    logic [ENTRY_W-1:0] w0_entry;
-    logic [ENTRY_W-1:0] w1_entry;
-    logic [ENTRY_W-1:0] build_entry;
+    logic                  sram_p0_we;
+    logic [ADDR_W-1:0]     sram_p0_addr;
+    logic [SRAM_WIDTH-1:0] sram_p0_wdata;
 
-    assign w0_entry    = {w0_next_ptr,    w0_pkt_head,    w0_pkt_tail};
-    assign w1_entry    = {w1_next_ptr,    w1_pkt_head,    w1_pkt_tail};
-    assign build_entry = {build_next_ptr, build_pkt_head, build_pkt_tail};
-
-    //========================================================================
-    // 逐 cell 写使能与写数据选择 (组合)
-    //   优先级: build > W0 > W1。每个 cell 只被命中其地址的写口更新;
-    //   build 与 W0/W1 互斥 (init_done 前不接受 enq/deq/recycle)。
-    //========================================================================
-    logic               cell_we   [CELL_NUM];
-    logic [ENTRY_W-1:0] cell_wdata[CELL_NUM];
+    logic                  sram_p1_we;
+    logic [ADDR_W-1:0]     sram_p1_addr;
+    logic [SRAM_WIDTH-1:0] sram_p1_wdata;
 
     always_comb begin
-        for (int unsigned c = 0; c < CELL_NUM; c++) begin
-            if (build_we && (build_addr == c[ADDR_W-1:0])) begin
-                cell_we[c]    = 1'b1;
-                cell_wdata[c] = build_entry;
-            end
-            else if (w0_we && (w0_addr == c[ADDR_W-1:0])) begin
-                cell_we[c]    = 1'b1;
-                cell_wdata[c] = w0_entry;
-            end
-            else if (w1_we && (w1_addr == c[ADDR_W-1:0])) begin
-                cell_we[c]    = 1'b1;
-                cell_wdata[c] = w1_entry;
-            end
-            else begin
-                cell_we[c]    = 1'b0;
-                cell_wdata[c] = '0;
-            end
+        if (build_we) begin
+            sram_p0_we    = 1'b1;
+            sram_p0_addr  = build_addr;
+            sram_p0_wdata = build_entry_pad;
+        end
+        else begin
+            sram_p0_we    = w0_we;
+            sram_p0_addr  = w0_addr;
+            sram_p0_wdata = w0_entry_pad;
+        end
+
+        sram_p1_we    = w1_we & ~build_we;
+        sram_p1_addr  = w1_addr;
+        sram_p1_wdata = w1_entry_pad;
+    end
+
+    //========================================================================
+    // SRAM 例化 (2R + 2W, 1 拍同步读, 单片 CELL_NUM × SRAM_WIDTH)
+    //   vendor 工艺库/Memory Compiler 提供具体实现; 本文件仅做端口连线。
+    //========================================================================
+    logic [SRAM_WIDTH-1:0] sram_ra_rdata;
+    logic [SRAM_WIDTH-1:0] sram_rb_rdata;
+
+    sram_2r2w_8192x16 #(
+        .ADDR_W (ADDR_W),
+        .DEPTH  (CELL_NUM),
+        .DATA_W (SRAM_WIDTH)
+    ) u_sram (
+        .CLK       (clk_core),
+
+        .WEA       (sram_p0_we),
+        .WAA       (sram_p0_addr),
+        .WDA       (sram_p0_wdata),
+        .WBEA      ({SRAM_WIDTH{1'b1}}),
+
+        .WEB       (sram_p1_we),
+        .WAB       (sram_p1_addr),
+        .WDB       (sram_p1_wdata),
+        .WBEB      ({SRAM_WIDTH{1'b1}}),
+
+        .REC       (ra_en),
+        .RAC       (ra_addr),
+        .RDC       (sram_ra_rdata),
+
+        .RED       (rb_en),
+        .RAD       (rb_addr),
+        .RDD       (sram_rb_rdata),
+
+        .TEST_MODE (1'b0),
+        .BIST_EN   (1'b0)
+    );
+
+    //========================================================================
+    // 写后立即读 bypass (1 拍): 若 T 拍读地址与 T 拍写地址命中,
+    //   T+1 拍用寄存的写数据覆盖 SRAM 返回值。优先级: build > W0 > W1 > SRAM。
+    //========================================================================
+    logic               ra_hit_q;
+    logic [ENTRY_W-1:0] ra_bypass_data_q;
+    logic               rb_hit_q;
+    logic [ENTRY_W-1:0] rb_bypass_data_q;
+
+    always_ff @(posedge clk_core or negedge rst_core_n) begin
+        if (!rst_core_n) begin
+            ra_hit_q         <= 1'b0;
+            ra_bypass_data_q <= '0;
+            rb_hit_q         <= 1'b0;
+            rb_bypass_data_q <= '0;
+        end
+        else begin
+            // 读口 A 命中判定 (T 拍读地址 vs T 拍写地址)
+            ra_hit_q <= ra_en & ( (build_we & (ra_addr == build_addr))
+                                | (w0_we    & ~build_we & (ra_addr == w0_addr))
+                                | (w1_we    & ~build_we & (ra_addr == w1_addr)) );
+            if (build_we && (ra_addr == build_addr))
+                ra_bypass_data_q <= build_entry;
+            else if (w0_we && (ra_addr == w0_addr))
+                ra_bypass_data_q <= w0_entry;
+            else if (w1_we && (ra_addr == w1_addr))
+                ra_bypass_data_q <= w1_entry;
+
+            // 读口 B
+            rb_hit_q <= rb_en & ( (build_we & (rb_addr == build_addr))
+                                | (w0_we    & ~build_we & (rb_addr == w0_addr))
+                                | (w1_we    & ~build_we & (rb_addr == w1_addr)) );
+            if (build_we && (rb_addr == build_addr))
+                rb_bypass_data_q <= build_entry;
+            else if (w0_we && (rb_addr == w0_addr))
+                rb_bypass_data_q <= w0_entry;
+            else if (w1_we && (rb_addr == w1_addr))
+                rb_bypass_data_q <= w1_entry;
         end
     end
 
     //========================================================================
-    // 时序写 (非阻塞): 每个 mem_q[c] 仅此一处赋值。
-    //   整个寄存器堆不做复位 (初值由 build FSM 写入), 避免巨大复位扇出。
+    // 读数据输出: 同地址写命中时用 bypass 寄存的写数据, 否则取 SRAM 返回的
+    //   低 ENTRY_W 位 (写时高 (SRAM_WIDTH-ENTRY_W)=1 位 0-pad, 读出忽略)。
     //========================================================================
-    always_ff @(posedge clk_core) begin
-        for (int unsigned c = 0; c < CELL_NUM; c++) begin
-            if (cell_we[c])
-                mem_q[c] <= cell_wdata[c];
-        end
-    end
+    logic [ENTRY_W-1:0] ra_sram_entry;
+    logic [ENTRY_W-1:0] rb_sram_entry;
+    logic [ENTRY_W-1:0] ra_rdata_eff;
+    logic [ENTRY_W-1:0] rb_rdata_eff;
 
-    //========================================================================
-    // 组合读 + 同拍写 bypass
-    //   优先级与写一致: build > W0 > W1 > 存储现值。
-    //========================================================================
-    function automatic logic [ENTRY_W-1:0] read_entry (input logic [ADDR_W-1:0] raddr);
-        if (build_we && (build_addr == raddr))
-            read_entry = build_entry;
-        else if (w0_we && (w0_addr == raddr))
-            read_entry = w0_entry;
-        else if (w1_we && (w1_addr == raddr))
-            read_entry = w1_entry;
-        else
-            read_entry = mem_q[raddr];
-    endfunction
+    assign ra_sram_entry = sram_ra_rdata[ENTRY_W-1:0];
+    assign rb_sram_entry = sram_rb_rdata[ENTRY_W-1:0];
 
-    logic [ENTRY_W-1:0] ra_entry;
-    logic [ENTRY_W-1:0] rb_entry;
+    assign ra_rdata_eff  = ra_hit_q ? ra_bypass_data_q : ra_sram_entry;
+    assign rb_rdata_eff  = rb_hit_q ? rb_bypass_data_q : rb_sram_entry;
 
-    assign ra_entry    = read_entry(ra_addr);
-    assign rb_entry    = read_entry(rb_addr);
+    assign ra_next_ptr = ra_rdata_eff[ENTRY_W-1:2];
+    assign ra_pkt_head = ra_rdata_eff[PH_BIT];
+    assign ra_pkt_tail = ra_rdata_eff[PT_BIT];
 
-    assign ra_next_ptr = ra_entry[ENTRY_W-1:2];
-    assign ra_pkt_head = ra_entry[PH_BIT];
-    assign ra_pkt_tail = ra_entry[PT_BIT];
-
-    assign rb_next_ptr = rb_entry[ENTRY_W-1:2];
-    assign rb_pkt_head = rb_entry[PH_BIT];
-    assign rb_pkt_tail = rb_entry[PT_BIT];
+    assign rb_next_ptr = rb_rdata_eff[ENTRY_W-1:2];
+    assign rb_pkt_head = rb_rdata_eff[PH_BIT];
+    assign rb_pkt_tail = rb_rdata_eff[PT_BIT];
 
 endmodule
 
+
+//============================================================================
+// Module      : sram_2r2w_8192x16  (Vendor SRAM Blackbox + Sim Behavior Model)
+// Description : 工艺库提供的 2W2R SRAM (8192 深 × 16 bit, 1 拍同步读, 含
+//               全字 WBE / TEST_MODE / BIST_EN 端口)。综合时由 vendor 库链接
+//               实际实例; 仿真用编译宏 `+define+SIM_BEHAVIOR_SRAM` 打开内置
+//               行为模型, 让 testbench 可执行。
+//
+//   参数: ADDR_W / DEPTH / DATA_W 可被例化方覆写以适配小规模仿真 (例如
+//         testbench 用 ADDR_W=5/DEPTH=16); 综合时使用默认值 13/8192/16。
+//
+//   端口约定:
+//     * CLK              : 时钟
+//     * WEA/WAA/WDA/WBEA : 写口 A (上升沿写, WBEA 位选使能, 1=该 bit 写)
+//     * WEB/WAB/WDB/WBEB : 写口 B (同上)
+//     * REC/RAC/RDC      : 读口 C (1 拍同步读: T 拍 REC&RAC, T+1 拍 RDC)
+//     * RED/RAD/RDD      : 读口 D (同上)
+//     * TEST_MODE/BIST_EN: 测试/BIST 控制 (功能用时拉 0)
+//     * 同地址 A/B 冲突 : A 优先 (B 先写、A 后写覆盖)
+//============================================================================
+module sram_2r2w_8192x16 #(
+    parameter int ADDR_W = 13,
+    parameter int DEPTH  = 8192,
+    parameter int DATA_W = 16
+)(
+    input  logic                CLK,
+
+    // 写口 A
+    input  logic                WEA,
+    input  logic [ADDR_W-1:0]   WAA,
+    input  logic [DATA_W-1:0]   WDA,
+    input  logic [DATA_W-1:0]   WBEA,
+
+    // 写口 B
+    input  logic                WEB,
+    input  logic [ADDR_W-1:0]   WAB,
+    input  logic [DATA_W-1:0]   WDB,
+    input  logic [DATA_W-1:0]   WBEB,
+
+    // 读口 C (1 拍同步读)
+    input  logic                REC,
+    input  logic [ADDR_W-1:0]   RAC,
+    output logic [DATA_W-1:0]   RDC,
+
+    // 读口 D (1 拍同步读)
+    input  logic                RED,
+    input  logic [ADDR_W-1:0]   RAD,
+    output logic [DATA_W-1:0]   RDD,
+
+    input  logic                TEST_MODE,
+    input  logic                BIST_EN
+);
+
+`ifdef SIM_BEHAVIOR_SRAM
+    //------------------------------------------------------------------------
+    // 仿真用行为模型 (非综合, 仅供 testbench 跑通)
+    //   - 存储: DEPTH × DATA_W bit
+    //   - 同步写 (上升沿): A/B 各按 WBE 做位选写; 同地址 A 优先 (B 先 / A 后覆盖)
+    //   - 同步读 (1 拍延迟): T 拍 RE&RA -> T+1 拍 RDC/RDD 有效
+    //------------------------------------------------------------------------
+    logic [DATA_W-1:0] mem [DEPTH];
+
+    // 同步写: B 先 / A 后 (同地址 A 优先)
+    always_ff @(posedge CLK) begin
+        if (WEB) begin
+            for (int b = 0; b < DATA_W; b++)
+                if (WBEB[b]) mem[WAB][b] <= WDB[b];
+        end
+        if (WEA) begin
+            for (int b = 0; b < DATA_W; b++)
+                if (WBEA[b]) mem[WAA][b] <= WDA[b];
+        end
+    end
+
+    // 同步读 (1 拍延迟)
+    logic [DATA_W-1:0] rdc_q;
+    logic [DATA_W-1:0] rdd_q;
+
+    always_ff @(posedge CLK) begin
+        if (REC) rdc_q <= mem[RAC];
+        if (RED) rdd_q <= mem[RAD];
+    end
+
+    assign RDC = rdc_q;
+    assign RDD = rdd_q;
+`else
+    // 综合占位: 由 vendor 库/Memory Compiler 链接实际 SRAM 实例。
+    // 仿真未开 SIM_BEHAVIOR_SRAM 宏时, 读数据为 X (黑盒)。
+`endif
+
+endmodule
 ```
