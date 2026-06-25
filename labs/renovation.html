@@ -9,21 +9,8 @@ extra_css:
 
 <div class="lab-page">
 
-    <section class="password-gate" id="passwordGate">
-        <form class="password-card" id="passwordForm">
-            <div class="password-kicker">VERDVANA Labs</div>
-            <h1>装修进度管理中心</h1>
-            <p>请输入访问密码继续。</p>
-            <div class="password-row">
-                <input id="passwordInput" type="password" autocomplete="current-password" placeholder="访问密码" autofocus>
-                <button class="btn" type="submit">进入</button>
-            </div>
-            <div class="password-error" id="passwordError" aria-live="polite"></div>
-        </form>
-    </section>
-
 <!-- Main Navigation -->
-    <div class="app-container" id="renovationApp" hidden>
+    <div class="app-container" id="renovationApp">
         <!-- Sidebar Navigation -->
         <aside>
             <div class="nav-label">空间选择</div>
@@ -487,9 +474,6 @@ window._defaultProjectData = {
     </script>
 
     <script>
-        const ACCESS_SESSION_KEY = 'renovation_access_granted';
-        const ACCESS_PASSWORD_HASH = '729b48470d03d8bfbdb9e271e98370c27af675f95859ccfbf6044e80b00c545a';
-
         // Load data from localStorage if available, else use default projectData
         const STORAGE_KEY = 'renovation_hub_data';
         const SHARED_CAD_PATH = '/labs/renovation/assets/CAD.png';
@@ -503,45 +487,6 @@ window._defaultProjectData = {
 
         let renovationData = normalizeProjectData(JSON.parse(localStorage.getItem(STORAGE_KEY)) || window._defaultProjectData);
         let currentRoom = Object.keys(renovationData)[0];
-
-        async function sha256(text) {
-            const bytes = new TextEncoder().encode(text);
-            const hash = await crypto.subtle.digest('SHA-256', bytes);
-            return Array.from(new Uint8Array(hash)).map(byte => byte.toString(16).padStart(2, '0')).join('');
-        }
-
-        function unlockPage() {
-            document.getElementById('passwordGate').hidden = true;
-            document.getElementById('renovationApp').hidden = false;
-            init();
-        }
-
-        function initPasswordGate() {
-            if (sessionStorage.getItem(ACCESS_SESSION_KEY) === 'true') {
-                unlockPage();
-                return;
-            }
-
-            const form = document.getElementById('passwordForm');
-            const input = document.getElementById('passwordInput');
-            const error = document.getElementById('passwordError');
-
-            form.addEventListener('submit', async event => {
-                event.preventDefault();
-                error.textContent = '';
-                const digest = await sha256(input.value);
-
-                if (digest === ACCESS_PASSWORD_HASH) {
-                    sessionStorage.setItem(ACCESS_SESSION_KEY, 'true');
-                    unlockPage();
-                    return;
-                }
-
-                input.value = '';
-                input.focus();
-                error.textContent = '密码不正确，请重试。';
-            });
-        }
 
         function init() {
             renderNav();
@@ -770,6 +715,6 @@ window._defaultProjectData = {
             }
         }
 
-        window.onload = initPasswordGate;
+        window.onload = init;
     </script>
 </div>
