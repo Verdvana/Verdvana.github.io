@@ -534,29 +534,48 @@
             cursor: zoom-out;
             align-items: center;
             justify-content: center;
-            padding: 40px;
+            padding: 0;
         }
 
         #viewerModal img {
-            max-width: 100%;
-            max-height: 100%;
-            border-radius: 8px;
-            box-shadow: 0 0 50px rgba(0, 0, 0, 0.5);
+            width: 100vw;
+            height: 100vh;
+            max-width: none;
+            max-height: none;
+            border-radius: 0;
+            box-shadow: none;
             object-fit: contain;
+            background: #000;
+            cursor: default;
         }
 
         .viewer-close {
-            position: absolute;
-            top: 30px;
-            right: 30px;
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            width: 46px;
+            height: 46px;
+            border: 1px solid rgba(255, 255, 255, 0.35);
+            border-radius: 999px;
+            background: rgba(0, 0, 0, 0.58);
             color: white;
-            font-size: 24px;
-            opacity: 0.5;
-            transition: opacity 0.2s;
+            font-size: 22px;
+            opacity: 0.85;
+            transition: opacity 0.2s, background 0.2s, transform 0.2s;
+            display: grid;
+            place-items: center;
+            cursor: pointer;
+            z-index: 1;
         }
 
         .viewer-close:hover {
             opacity: 1;
+            background: rgba(255, 255, 255, 0.18);
+            transform: scale(1.04);
+        }
+
+        body.viewer-open {
+            overflow: hidden;
         }
 
         pre {

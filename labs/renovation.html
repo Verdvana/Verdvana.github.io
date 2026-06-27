@@ -90,8 +90,10 @@ extra_css:
 
     <!-- Image Viewer Modal -->
     <div id="viewerModal" onclick="closeViewer()">
-        <div class="viewer-close"><i class="fas fa-times"></i></div>
-        <img id="viewerImg" src="" alt="Full view">
+        <button class="viewer-close" type="button" onclick="event.stopPropagation(); closeViewer();" aria-label="关闭图片预览">
+            <i class="fas fa-times" aria-hidden="true"></i>
+        </button>
+        <img id="viewerImg" src="" alt="Full view" onclick="event.stopPropagation();">
     </div>
 
     <!-- Data Center -->
@@ -755,10 +757,15 @@ window._defaultProjectData = {
             const img = document.getElementById('viewerImg');
             img.src = src;
             modal.style.display = 'flex';
+            document.body.classList.add('viewer-open');
         }
 
         function closeViewer() {
-            document.getElementById('viewerModal').style.display = 'none';
+            const modal = document.getElementById('viewerModal');
+            const img = document.getElementById('viewerImg');
+            modal.style.display = 'none';
+            img.removeAttribute('src');
+            document.body.classList.remove('viewer-open');
         }
 
         function showSaveModal() {
