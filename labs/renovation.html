@@ -51,14 +51,12 @@ extra_css:
                 </div>
 
                 <div class="editor-area">
-                    <div class="card">
-                        <div class="card-title">全屋定制需求清单</div>
-                        <div class="todo-list" id="reqList"></div>
-                        <button class="btn btn-outline" onclick="addTodo()"
-                            style="width: 100%; margin-top: 20px; border-style: dashed;">
-                            新增需求条目
-                        </button>
-                    </div>
+                    <div class="side-panel-title">全屋定制需求清单</div>
+                    <div class="todo-list req-list" id="reqList"></div>
+                    <button class="btn btn-outline" onclick="addTodo()"
+                        style="width: 100%; margin-top: 0; border-style: dashed;">
+                        新增需求条目
+                    </button>
                 </div>
 
                 <div class="item-area">
@@ -578,7 +576,7 @@ window._defaultProjectData = {
 
             groupedTodos.forEach(group => {
                 const section = document.createElement('section');
-                section.className = 'req-round-group';
+                section.className = 'card req-round-card';
                 section.dataset.roundIndex = group.roundIndex;
                 section.innerHTML = `
                     <div class="req-round-title">
@@ -601,7 +599,7 @@ window._defaultProjectData = {
 
             if (looseTodos.length > 0) {
                 const section = document.createElement('section');
-                section.className = 'req-round-group req-round-group-loose';
+                section.className = 'card req-round-card req-round-card-loose';
                 section.innerHTML = '<div class="req-round-title"><span>未关联</span></div>';
                 looseTodos.forEach(({ todo, index }) => {
                     section.appendChild(createTodoElement(todo, index, iters));
@@ -632,7 +630,7 @@ window._defaultProjectData = {
         function syncRequirementRounds() {
             const list = document.getElementById('reqList');
             if (!list) return;
-            const groups = Array.from(list.querySelectorAll('.req-round-group[data-round-index]'));
+            const groups = Array.from(list.querySelectorAll('.req-round-card[data-round-index]'));
             groups.forEach(group => {
                 group.style.marginTop = '';
             });
@@ -640,9 +638,9 @@ window._defaultProjectData = {
             const listTop = list.getBoundingClientRect().top;
             groups.forEach(group => {
                 const roundIndex = group.dataset.roundIndex;
-                const title = document.querySelector(`.iteration-card[data-round-index="${roundIndex}"] .iteration-title`);
-                if (!title) return;
-                const desiredTop = title.getBoundingClientRect().top - listTop;
+                const card = document.querySelector(`.iteration-card[data-round-index="${roundIndex}"]`);
+                if (!card) return;
+                const desiredTop = card.getBoundingClientRect().top - listTop;
                 const currentTop = group.getBoundingClientRect().top - listTop;
                 const marginTop = Math.max(0, desiredTop - currentTop);
                 group.style.marginTop = `${marginTop}px`;
