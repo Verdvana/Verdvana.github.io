@@ -539,19 +539,22 @@ window._defaultProjectData = {
                         <div style="font-size:16px; font-weight:700; color:white;" contenteditable="true" oninput="updateIterTitle(${idx}, this.innerText)">${iter.title}</div>
                         <div class="iteration-meta">${iter.date || ''}</div>
                     </div>
-                    <div class="image-gallery">
-                        ${iter.images.map(src => `
-                            <div class="image-container" onclick="openViewer('${src}')">
-                                <img src="${src}" onerror="this.parentElement.innerHTML='<div class=no-image>图片路径错误</div>'">
-                            </div>
-                        `).join('')}
-                        <button class="btn btn-outline" onclick="addImageToIter(${idx})" style="aspect-ratio:16/9; font-size:10px;">添加图片路径</button>
-                    </div>
-                    <div style="margin-top:20px;">
-                        <div class="badge-list">
-                            ${solved.length > 0 ? solved.map(s => `<span class="badge"><i class="fas fa-check"></i> ${s.text}</span>`).join('') : '<span style="color:var(--secondary-text); font-size:12px;">暂未关联需求</span>'}
+                    <div class="iteration-body">
+                        <div class="image-gallery iteration-gallery">
+                            ${iter.images.map(src => `
+                                <div class="image-container" onclick="openViewer('${src}')">
+                                    <img src="${src}" onerror="this.parentElement.innerHTML='<div class=no-image>图片路径错误</div>'">
+                                </div>
+                            `).join('')}
+                            <button class="btn btn-outline add-image-btn" onclick="addImageToIter(${idx})">添加图片路径</button>
                         </div>
-                        <div contenteditable="true" oninput="updateIterNote(${idx}, this.innerText)" style="margin-top:16px; font-size:13px; color:var(--secondary-text); outline:none;" placeholder="添加本轮修改说明...">${iter.note || ''}</div>
+                        <div class="iteration-changelog">
+                            <div class="iteration-section-title">更改记录</div>
+                            <div class="badge-list">
+                                ${solved.length > 0 ? solved.map(s => `<span class="badge"><i class="fas fa-check"></i> ${s.text}</span>`).join('') : '<span class="empty-change-log">暂未关联需求</span>'}
+                            </div>
+                            <div contenteditable="true" oninput="updateIterNote(${idx}, this.innerText)" class="iteration-note" placeholder="添加本轮修改说明...">${iter.note || ''}</div>
+                        </div>
                     </div>
                     <button style="margin-top:20px; background:transparent; border:none; color:#ff453a; cursor:pointer; font-size:11px; opacity:0.6" onclick="removeIteration(${idx})">删除此版本</button>
                 `;

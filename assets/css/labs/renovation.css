@@ -331,11 +331,53 @@
             margin-bottom: 12px;
         }
 
+        .iteration-body {
+            display: grid;
+            grid-template-columns: minmax(0, 1fr) minmax(220px, 34%);
+            gap: 20px;
+            align-items: start;
+        }
+
+        .iteration-gallery {
+            align-self: start;
+        }
+
+        .iteration-changelog {
+            align-self: start;
+            min-height: 100%;
+            padding: 16px;
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+        }
+
+        .iteration-section-title {
+            margin-bottom: 12px;
+            color: rgba(255, 255, 255, 0.88);
+            font-size: 13px;
+            font-weight: 700;
+            line-height: 1.33337;
+        }
+
+        .iteration-note {
+            margin-top: 16px;
+            min-height: 22px;
+            color: var(--secondary-text);
+            font-size: 13px;
+            line-height: 1.47059;
+            outline: none;
+        }
+
+        .add-image-btn {
+            min-height: 120px;
+            aspect-ratio: 16 / 9;
+            font-size: 10px;
+        }
+
         .badge-list {
             display: flex;
             flex-wrap: wrap;
             gap: 8px;
-            margin-top: 16px;
         }
 
         .badge {
@@ -346,6 +388,11 @@
             font-size: 12px;
             font-weight: 500;
             border: 1px solid rgba(0, 113, 227, 0.2);
+        }
+
+        .empty-change-log {
+            color: var(--secondary-text);
+            font-size: 12px;
         }
 
         /* Todo List */
@@ -537,6 +584,10 @@
             }
 
             .grid {
+                grid-template-columns: 1fr;
+            }
+
+            .iteration-body {
                 grid-template-columns: 1fr;
             }
 
