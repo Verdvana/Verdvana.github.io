@@ -755,6 +755,7 @@ window._defaultProjectData = {
         function openViewer(src) {
             const modal = document.getElementById('viewerModal');
             const img = document.getElementById('viewerImg');
+            if (!modal || !img || !src) return;
             img.src = src;
             modal.style.display = 'flex';
             modal.setAttribute('aria-hidden', 'false');
@@ -764,15 +765,18 @@ window._defaultProjectData = {
         function closeViewer() {
             const modal = document.getElementById('viewerModal');
             const img = document.getElementById('viewerImg');
-            modal.style.display = 'none';
-            modal.setAttribute('aria-hidden', 'true');
-            img.removeAttribute('src');
+            if (modal) {
+                modal.style.display = 'none';
+                modal.setAttribute('aria-hidden', 'true');
+            }
+            if (img) img.removeAttribute('src');
+            // Always restore page interactivity, even if state was inconsistent.
             document.body.classList.remove('viewer-open');
         }
 
         document.addEventListener('keydown', function (event) {
             const modal = document.getElementById('viewerModal');
-            if (event.key === 'Escape' && modal && modal.style.display === 'flex') {
+            if (event.key === 'Escape' && modal && modal.style.display !== 'none' && modal.getAttribute('aria-hidden') === 'false') {
                 closeViewer();
             }
         });
