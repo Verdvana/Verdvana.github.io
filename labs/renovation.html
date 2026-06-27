@@ -89,9 +89,9 @@ extra_css:
     </div>
 
     <!-- Image Viewer Modal -->
-    <div id="viewerModal" onclick="closeViewer()">
+    <div id="viewerModal" role="dialog" aria-modal="true" aria-hidden="true" onclick="closeViewer()">
         <button class="viewer-close" type="button" onclick="event.stopPropagation(); closeViewer();" aria-label="关闭图片预览">
-            <i class="fas fa-times" aria-hidden="true"></i>
+            <span aria-hidden="true">&times;</span>
         </button>
         <img id="viewerImg" src="" alt="Full view" onclick="event.stopPropagation();">
     </div>
@@ -757,6 +757,7 @@ window._defaultProjectData = {
             const img = document.getElementById('viewerImg');
             img.src = src;
             modal.style.display = 'flex';
+            modal.setAttribute('aria-hidden', 'false');
             document.body.classList.add('viewer-open');
         }
 
@@ -764,9 +765,17 @@ window._defaultProjectData = {
             const modal = document.getElementById('viewerModal');
             const img = document.getElementById('viewerImg');
             modal.style.display = 'none';
+            modal.setAttribute('aria-hidden', 'true');
             img.removeAttribute('src');
             document.body.classList.remove('viewer-open');
         }
+
+        document.addEventListener('keydown', function (event) {
+            const modal = document.getElementById('viewerModal');
+            if (event.key === 'Escape' && modal && modal.style.display === 'flex') {
+                closeViewer();
+            }
+        });
 
         function showSaveModal() {
             const output = `window._defaultProjectData = ${JSON.stringify(renovationData, null, 4)};`;

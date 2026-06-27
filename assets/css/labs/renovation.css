@@ -529,48 +529,58 @@
             display: none;
             position: fixed;
             inset: 0;
-            background: rgba(0, 0, 0, 0.95);
+            background: rgba(0, 0, 0, 0.9);
             z-index: 3000;
             cursor: zoom-out;
             align-items: center;
             justify-content: center;
-            padding: 0;
+            padding: clamp(18px, 4vw, 56px);
+            box-sizing: border-box;
+            backdrop-filter: blur(10px);
         }
 
         #viewerModal img {
-            width: 100vw;
-            height: 100vh;
-            max-width: none;
-            max-height: none;
-            border-radius: 0;
-            box-shadow: none;
-            object-fit: contain;
-            background: #000;
+            display: block !important;
+            width: auto !important;
+            height: auto !important;
+            max-width: calc(100vw - clamp(36px, 8vw, 112px)) !important;
+            max-height: calc(100vh - clamp(36px, 8vw, 112px)) !important;
+            border-radius: 14px;
+            box-shadow: 0 24px 80px rgba(0, 0, 0, 0.72);
+            object-fit: contain !important;
+            background: rgba(0, 0, 0, 0.35);
             cursor: default;
         }
 
         .viewer-close {
             position: fixed;
-            top: 20px;
-            right: 20px;
-            width: 46px;
-            height: 46px;
-            border: 1px solid rgba(255, 255, 255, 0.35);
+            top: clamp(14px, 3vw, 28px);
+            right: clamp(14px, 3vw, 28px);
+            width: 48px;
+            height: 48px;
+            border: 1px solid rgba(255, 255, 255, 0.28);
             border-radius: 999px;
-            background: rgba(0, 0, 0, 0.58);
+            background: rgba(20, 20, 24, 0.72);
             color: white;
-            font-size: 22px;
-            opacity: 0.85;
-            transition: opacity 0.2s, background 0.2s, transform 0.2s;
+            font-size: 34px;
+            line-height: 1;
+            font-family: Arial, sans-serif;
+            opacity: 0.92;
+            transition: opacity 0.2s, background 0.2s, transform 0.2s, border-color 0.2s;
             display: grid;
             place-items: center;
             cursor: pointer;
             z-index: 1;
+            box-shadow: 0 14px 40px rgba(0, 0, 0, 0.38);
+            backdrop-filter: blur(12px);
+            appearance: none;
+            padding: 0;
         }
 
         .viewer-close:hover {
             opacity: 1;
             background: rgba(255, 255, 255, 0.18);
+            border-color: rgba(255, 255, 255, 0.52);
             transform: scale(1.04);
         }
 
