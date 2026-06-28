@@ -754,16 +754,59 @@ window._defaultProjectData = {
             modal.setAttribute('aria-modal', 'true');
             modal.setAttribute('aria-label', '图片预览');
             modal.className = 'renovation-image-viewer';
+            modal.style.cssText = [
+                'position:fixed',
+                'inset:0',
+                'z-index:2147483647',
+                'display:flex',
+                'align-items:center',
+                'justify-content:center',
+                'padding:clamp(18px,4vw,56px)',
+                'box-sizing:border-box',
+                'background:rgba(0,0,0,.9)',
+                'cursor:zoom-out'
+            ].join(';');
 
             const img = document.createElement('img');
             img.src = src;
             img.alt = 'Full view';
+            img.style.cssText = [
+                'display:block',
+                'width:auto',
+                'height:auto',
+                'max-width:calc(100vw - clamp(36px,8vw,112px))',
+                'max-height:calc(100vh - clamp(36px,8vw,112px))',
+                'object-fit:contain',
+                'border-radius:14px',
+                'box-shadow:0 24px 80px rgba(0,0,0,.72)',
+                'background:rgba(0,0,0,.35)',
+                'cursor:default'
+            ].join(';');
 
             const closeButton = document.createElement('button');
             closeButton.type = 'button';
             closeButton.className = 'renovation-image-viewer-close';
             closeButton.setAttribute('aria-label', '关闭图片预览');
             closeButton.innerHTML = '&times;';
+            closeButton.style.cssText = [
+                'position:fixed',
+                'top:clamp(14px,3vw,28px)',
+                'right:clamp(14px,3vw,28px)',
+                'width:48px',
+                'height:48px',
+                'border:1px solid rgba(255,255,255,.28)',
+                'border-radius:999px',
+                'background:rgba(20,20,24,.72)',
+                'color:#fff',
+                'font:34px/1 Arial,sans-serif',
+                'display:grid',
+                'place-items:center',
+                'cursor:pointer',
+                'z-index:2147483647',
+                'box-shadow:0 14px 40px rgba(0,0,0,.38)',
+                'padding:0',
+                'appearance:none'
+            ].join(';');
 
             modal.addEventListener('click', closeViewer);
             img.addEventListener('click', function (event) { event.stopPropagation(); });
