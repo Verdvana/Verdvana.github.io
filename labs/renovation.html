@@ -4,7 +4,7 @@ title: "装修进度管理中心 | VERDVANA Labs"
 back_button: true
 permalink: /labs/renovation.html
 extra_css:
-  - /assets/css/labs/renovation.css
+  - /assets/css/labs/renovation.css?v=20260628-fit-viewer
 ---
 
 <div class="lab-page">
@@ -755,9 +755,56 @@ window._defaultProjectData = {
         function openViewer(src) {
             const modal = document.getElementById('viewerModal');
             const img = document.getElementById('viewerImg');
+            const closeButton = modal ? modal.querySelector('.viewer-close') : null;
             if (!modal || !img || !src) return;
+
+            Object.assign(modal.style, {
+                display: 'flex',
+                position: 'fixed',
+                inset: '0',
+                zIndex: '2147483647',
+                alignItems: 'center',
+                justifyContent: 'center',
+                padding: 'clamp(18px, 4vw, 56px)',
+                boxSizing: 'border-box',
+                background: 'rgba(0, 0, 0, 0.9)'
+            });
+
+            Object.assign(img.style, {
+                display: 'block',
+                width: 'auto',
+                height: 'auto',
+                maxWidth: 'calc(100vw - clamp(36px, 8vw, 112px))',
+                maxHeight: 'calc(100vh - clamp(36px, 8vw, 112px))',
+                objectFit: 'contain',
+                borderRadius: '14px',
+                boxShadow: '0 24px 80px rgba(0, 0, 0, 0.72)',
+                cursor: 'default'
+            });
+
+            if (closeButton) {
+                Object.assign(closeButton.style, {
+                    position: 'fixed',
+                    top: 'clamp(14px, 3vw, 28px)',
+                    right: 'clamp(14px, 3vw, 28px)',
+                    width: '48px',
+                    height: '48px',
+                    border: '1px solid rgba(255, 255, 255, 0.28)',
+                    borderRadius: '999px',
+                    background: 'rgba(20, 20, 24, 0.72)',
+                    color: '#fff',
+                    fontSize: '34px',
+                    lineHeight: '1',
+                    display: 'grid',
+                    placeItems: 'center',
+                    cursor: 'pointer',
+                    zIndex: '2147483647',
+                    boxShadow: '0 14px 40px rgba(0, 0, 0, 0.38)',
+                    padding: '0'
+                });
+            }
+
             img.src = src;
-            modal.style.display = 'flex';
             modal.setAttribute('aria-hidden', 'false');
             document.body.classList.add('viewer-open');
         }
