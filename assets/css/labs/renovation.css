@@ -525,13 +525,13 @@
         }
 
         /* Image Viewer Modal */
-        #viewerModal {
-            display: none;
+        .renovation-image-viewer {
             position: fixed;
             inset: 0;
             background: rgba(0, 0, 0, 0.9);
-            z-index: 3000;
+            z-index: 2147483647;
             cursor: zoom-out;
+            display: flex;
             align-items: center;
             justify-content: center;
             padding: clamp(18px, 4vw, 56px);
@@ -539,7 +539,7 @@
             backdrop-filter: blur(10px);
         }
 
-        #viewerModal img {
+        .renovation-image-viewer img {
             display: block !important;
             width: auto !important;
             height: auto !important;
@@ -552,7 +552,7 @@
             cursor: default;
         }
 
-        .viewer-close {
+        .renovation-image-viewer-close {
             position: fixed;
             top: clamp(14px, 3vw, 28px);
             right: clamp(14px, 3vw, 28px);
@@ -570,14 +570,14 @@
             display: grid;
             place-items: center;
             cursor: pointer;
-            z-index: 1;
+            z-index: 2147483647;
             box-shadow: 0 14px 40px rgba(0, 0, 0, 0.38);
             backdrop-filter: blur(12px);
             appearance: none;
             padding: 0;
         }
 
-        .viewer-close:hover {
+        .renovation-image-viewer-close:hover {
             opacity: 1;
             background: rgba(255, 255, 255, 0.18);
             border-color: rgba(255, 255, 255, 0.52);

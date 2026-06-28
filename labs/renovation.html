@@ -4,7 +4,7 @@ title: "装修进度管理中心 | VERDVANA Labs"
 back_button: true
 permalink: /labs/renovation.html
 extra_css:
-  - /assets/css/labs/renovation.css?v=20260628-fit-viewer
+  - /assets/css/labs/renovation.css?v=20260628-dynamic-viewer
 ---
 
 <div class="lab-page">
@@ -86,14 +86,6 @@ extra_css:
                 <button class="btn btn-outline" onclick="hideSaveModal()">关闭</button>
             </div>
         </div>
-    </div>
-
-    <!-- Image Viewer Modal -->
-    <div id="viewerModal" role="dialog" aria-modal="true" aria-hidden="true" onclick="closeViewer()">
-        <button class="viewer-close" type="button" onclick="event.stopPropagation(); closeViewer();" aria-label="关闭图片预览">
-            <span aria-hidden="true">&times;</span>
-        </button>
-        <img id="viewerImg" src="" alt="Full view" onclick="event.stopPropagation();">
     </div>
 
     <!-- Data Center -->
@@ -753,77 +745,47 @@ window._defaultProjectData = {
         }
 
         function openViewer(src) {
-            const modal = document.getElementById('viewerModal');
-            const img = document.getElementById('viewerImg');
-            const closeButton = modal ? modal.querySelector('.viewer-close') : null;
-            if (!modal || !img || !src) return;
+            if (!src) return;
+            closeViewer();
 
-            Object.assign(modal.style, {
-                display: 'flex',
-                position: 'fixed',
-                inset: '0',
-                zIndex: '2147483647',
-                alignItems: 'center',
-                justifyContent: 'center',
-                padding: 'clamp(18px, 4vw, 56px)',
-                boxSizing: 'border-box',
-                background: 'rgba(0, 0, 0, 0.9)'
-            });
+            const modal = document.createElement('div');
+            modal.id = 'renovationImageViewer';
+            modal.setAttribute('role', 'dialog');
+            modal.setAttribute('aria-modal', 'true');
+            modal.setAttribute('aria-label', '图片预览');
+            modal.className = 'renovation-image-viewer';
 
-            Object.assign(img.style, {
-                display: 'block',
-                width: 'auto',
-                height: 'auto',
-                maxWidth: 'calc(100vw - clamp(36px, 8vw, 112px))',
-                maxHeight: 'calc(100vh - clamp(36px, 8vw, 112px))',
-                objectFit: 'contain',
-                borderRadius: '14px',
-                boxShadow: '0 24px 80px rgba(0, 0, 0, 0.72)',
-                cursor: 'default'
-            });
-
-            if (closeButton) {
-                Object.assign(closeButton.style, {
-                    position: 'fixed',
-                    top: 'clamp(14px, 3vw, 28px)',
-                    right: 'clamp(14px, 3vw, 28px)',
-                    width: '48px',
-                    height: '48px',
-                    border: '1px solid rgba(255, 255, 255, 0.28)',
-                    borderRadius: '999px',
-                    background: 'rgba(20, 20, 24, 0.72)',
-                    color: '#fff',
-                    fontSize: '34px',
-                    lineHeight: '1',
-                    display: 'grid',
-                    placeItems: 'center',
-                    cursor: 'pointer',
-                    zIndex: '2147483647',
-                    boxShadow: '0 14px 40px rgba(0, 0, 0, 0.38)',
-                    padding: '0'
-                });
-            }
-
+            const img = document.createElement('img');
             img.src = src;
-            modal.setAttribute('aria-hidden', 'false');
+            img.alt = 'Full view';
+
+            const closeButton = document.createElement('button');
+            closeButton.type = 'button';
+            closeButton.className = 'renovation-image-viewer-close';
+            closeButton.setAttribute('aria-label', '关闭图片预览');
+            closeButton.innerHTML = '&times;';
+
+            modal.addEventListener('click', closeViewer);
+            img.addEventListener('click', function (event) { event.stopPropagation(); });
+            closeButton.addEventListener('click', function (event) {
+                event.stopPropagation();
+                closeViewer();
+            });
+
+            modal.appendChild(img);
+            modal.appendChild(closeButton);
+            document.body.appendChild(modal);
             document.body.classList.add('viewer-open');
         }
 
         function closeViewer() {
-            const modal = document.getElementById('viewerModal');
-            const img = document.getElementById('viewerImg');
-            if (modal) {
-                modal.style.display = 'none';
-                modal.setAttribute('aria-hidden', 'true');
-            }
-            if (img) img.removeAttribute('src');
-            // Always restore page interactivity, even if state was inconsistent.
+            const modal = document.getElementById('renovationImageViewer');
+            if (modal) modal.remove();
             document.body.classList.remove('viewer-open');
         }
 
         document.addEventListener('keydown', function (event) {
-            const modal = document.getElementById('viewerModal');
-            if (event.key === 'Escape' && modal && modal.style.display !== 'none' && modal.getAttribute('aria-hidden') === 'false') {
+            if (event.key === 'Escape' && document.getElementById('renovationImageViewer')) {
                 closeViewer();
             }
         });
