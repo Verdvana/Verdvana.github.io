@@ -259,7 +259,7 @@ module occupancy_pool_mgr #(
         global_full     = (global_used_q >= cfg_global_high_wm);
 
         // 高水位无条件丢弃 (兜底) 或 空闲池空
-        occ_drop      = occ_query_vld & (occ_no_free | (~occ_use_static & ));
+        occ_drop      = occ_query_vld & (occ_no_free | (~occ_use_static & hi_wm_drop));
         occ_accept    = occ_query_vld & ~occ_drop;
         // 双池: 该队列静态额度未用满 → 记静态账
         occ_use_static= use_static_vec[evt_queue_id];
@@ -276,7 +276,7 @@ module occupancy_pool_mgr #(
     always_comb begin
         for (int i = 0; i < PORT_NUM; i++) begin
             port_full[i]  = per_port_used_q[i]    >= cfg_port_max[i];
-            port_hi_wm_vec = = per_port_used_q[i]    >= cfg_port_max[i];
+            port_hi_wm_vec[i] = per_port_used_q[i]    >= cfg_port_max[i];
         end
     end
     
@@ -398,13 +398,13 @@ module occupancy_pool_mgr #(
     assign st_pause_tx_cnt       = '0;
     always_comb begin
         for (int i = 0; i < QUEUE_NUM; i++) begin
-            assign st_q_static_used[i]  = q_static_used_q[i];
-            assign st_per_queue_used[i] = q_cell_cnt_q[i];
+            st_q_static_used[i]  = q_static_used_q[i];
+            st_per_queue_used[i] = q_cell_cnt_q[i];
         end
         for (int i = 0; i < PORT_NUM; i++) begin 
-            assign st_per_port_used[i]  = per_port_used_q[i];
+            st_per_port_used[i]  = per_port_used_q[i];
         end
-    endgenerate
+    end
     //========================================================================
     // 守恒 / 溢出 / 下溢 告警
     //========================================================================
