@@ -14,16 +14,25 @@
 //     [33]     : 多播专用数据链 (B1 模型: 多播数据 cell 一份)
 //     free 链  : 独立维护 (free_head/free_tail/free_cnt 寄存器), 共享给所有 cell
 //
+//   ── 两级预取模型 (Two-Level Prefetch) ──
+//
+//     ★ free 链 (enq 路径): free_head / free_head_next / free_head_next2
+//        - enq 当拍: head ← next, next ← next2(或 bypass), 读 SRAM 回填 next2
+//        - 消除 enq_pend RAW hazard, 实现真正无气泡背靠背 alloc
+//
+//     ★ 队列链 (deq 路径): q_head(+ph/pt) / q_head_next(+ph/pt) / q_head_next2(addr)
+//        - deq 当拍: head ← next, ph/pt ← next_ph/pt, next ← next2
+//                    next_ph/pt 由 deq_pend SRAM 取回填充(或 bypass)
+//        - 消除 deq back-to-back 同队列 ph/pt 失效, 实现无气泡走链
+//
 //   ── 仲裁模型: 三事务每拍三选一 (按优先级)  ──
 //
 //     ★ 每拍 lle 整体只服务一个事务 (赢家独占 SRAM 读+写口)。
 //
 //     单独事务时各自背靠背 (无并发请求每拍可处理):
-//        - enq 独占: 每拍 SRAM 读 free_head.next (更新预取) + 同拍 SRAM 写
-//                    new_cell.entry (挂链). 同地址不同口, 1R1W read-first 读旧
-//                    next 给 free_head_next, 写新 entry 给挂链。
-//        - deq 独占: 每拍 SRAM 读 q_head_next.entry (更新队头预取).
-//        - rcy 独占: 每拍 SRAM 写 free_tail.next = X (还链).
+//        - enq 独占: 每拍 SRAM 写 new_cell.entry + 读 next2 回填预取
+//        - deq 独占: 每拍 SRAM 读 next2 → 回填 next_ph/pt + next2_addr
+//        - rcy 独占: 每拍 SRAM 写 free_tail.next = X (还链)
 //
 //     同拍多请求时按优先级二/三选一, 让步者等下拍:
 //        - P0 deq  最高: 走链, 出端口在线发包关键路径, 不能 underrun
@@ -36,18 +45,15 @@
 //
 //   ── 关键写策略 (每事务 1 次 SRAM 写) ──
 //
-//     【挂链】(enq): SRAM[new_cell] = { next = free_head_after , sof, eof }
-//        - 同拍发起 SRAM 读 SRAM[free_head].next (read-first 取旧 next 给预取)
-//        - 同拍发起 SRAM 写 SRAM[free_head] = {old_next_pred, sof, eof}
-//        - 读写同地址, 1R1W read-first 保证读到旧值 (=新 free_head_next 的来源)
-//        - "old_next_pred" 即 free_head_next_q 寄存器, 上次 enq 已预取好
-//        - 第一次 enq: free_head_next_q 由建链后初始化为 cell 1 (free_head=0 之后)
+//     【挂链】(enq): SRAM[free_head] = { free_head_next, sof, eof }
+//        - free_head_next 两级预取始终有效 (不依赖 SRAM 刚取回)
+//        - 同拍读 SRAM[next2] 回填 next2 预取 (准备下下次 alloc)
 //
 //     【还链】(rcy): SRAM[free_tail].next = released_cell
 //        - free_tail 寄存器判尾, 不依赖 SRAM 里 NULL
 //
-//     【走链】(deq): 读 SRAM[q_head_next].entry, 取回下一项 next/sof/eof
-//        - q_head_next/ph/pt 是预取寄存器, dequeue_ctrl 当拍可读
+//     【走链】(deq): 读 SRAM[next2] → 取回 {next3, next2_ph, next2_pt}
+//        - next2_ph/pt 回填 next_ph/pt (promote), next3 回填 next2
 //
 //   ── 协议假设 ──
 //     1) **QM 帧级原子入队**: 同一帧 (sof~eof) 的连续 cell 入队请求不被打断;
@@ -56,8 +62,8 @@
 //     3) **多播数据 cell 出队不摘链**: B1 模型, 回收由 mcast_refcount_mgr ref 归零驱动。
 //
 //   ── 对外延迟 (spec L327/L443: ≤ 5 cycle) ──
-//     - enq: T0 fire → T1 alloc 返回 (无 deq 抢占时 1 拍, 让 1 拍时 2 拍)
-//     - deq: T0 fire → T1 deq 返回 (永远 1 拍, 最高优先级)
+//     - enq: T0 fire → T0 alloc 落地 (两级预取无气泡, 每拍 1 cell)
+//     - deq: T0 fire → T0 deq 落地 (两级预取无气泡, 每拍 1 cell)
 //     - rcy: T0 入 FIFO 即受理, SRAM 落地由仲裁决定 (透明, 平均 1~几拍)
 //     - 三者都远在 5 cycle 预算内。
 //
@@ -145,22 +151,31 @@ module lle #(
 );
 
     //========================================================================
-    // 链表寄存器: 34 chain
+    // 链表寄存器: 34 chain (两级预取)
     //========================================================================
+    // Level 0: 当前队头
     logic [ADDR_W-1:0]   q_head_q       [QUEUE_NUM];
     logic [ADDR_W-1:0]   q_tail_q       [QUEUE_NUM];
     logic [CNT_W-1:0]    q_cell_cnt_q   [QUEUE_NUM];
-    logic [ADDR_W-1:0]   q_head_next_q  [QUEUE_NUM];
-    logic                q_head_ph_q    [QUEUE_NUM];
-    logic                q_head_pt_q    [QUEUE_NUM];
+    logic                q_head_ph_q    [QUEUE_NUM];     // 当前队头的 pkt_head
+    logic                q_head_pt_q    [QUEUE_NUM];     // 当前队头的 pkt_tail
+
+    // Level 1: 下一个 (地址 + ph/pt 完整)
+    logic [ADDR_W-1:0]   q_head_next_q    [QUEUE_NUM];
+    logic                q_head_next_ph_q [QUEUE_NUM];   // next cell 的 pkt_head
+    logic                q_head_next_pt_q [QUEUE_NUM];   // next cell 的 pkt_tail
+
+    // Level 2: 下下个 (仅地址, ph/pt 在 promote 时由 SRAM 取回)
+    logic [ADDR_W-1:0]   q_head_next2_q   [QUEUE_NUM];
 
     //========================================================================
-    // free 链寄存器
+    // free 链寄存器 (两级预取)
     //========================================================================
-    logic [ADDR_W-1:0]   free_head_q;
+    logic [ADDR_W-1:0]   free_head_q;                    // 当前 free head
     logic [ADDR_W-1:0]   free_tail_q;
     logic [CNT_W-1:0]    free_cnt_q;
-    logic [ADDR_W-1:0]   free_head_next_q;               // 预取下一项 (enq 当拍用)
+    logic [ADDR_W-1:0]   free_head_next_q;               // 一级预取 (下一个 free cell)
+    logic [ADDR_W-1:0]   free_head_next2_q;              // 二级预取 (下下个 free cell)
 
     assign lle_free_head  = free_head_q;
     assign lle_free_empty = (free_cnt_q == '0);
@@ -240,32 +255,27 @@ module lle #(
     //========================================================================
     logic enq_req_int;      // 内部 enq 请求 (fire + free 非空)
     logic deq_req_int;      // 内部 deq 请求 (fire + 队列非空)
-    logic deq_need_sram;    // deq 实际需要读 SRAM (单 cell 队列出完不读)
+    logic deq_need_sram;    // deq 需要读 SRAM 回填 next 预取 (cnt >= 3)
     logic rcy_req_int;      // 内部 rcy 请求 (FIFO 非空)
 
     assign enq_req_int   = lle_alloc_fire & ~build_active & ~lle_free_empty;
     assign deq_req_int   = lle_deq_fire   & ~build_active &
                            (q_cell_cnt_q[lle_deq_queue_id] != '0);
-    assign deq_need_sram = deq_req_int & (q_cell_cnt_q[lle_deq_queue_id] != 1);
+    // 两级预取: cnt >= 3 时需要 SRAM 读取回填 (cnt==2 deq 后仅剩 1 cell, 不需预取)
+    assign deq_need_sram = deq_req_int & (q_cell_cnt_q[lle_deq_queue_id] >= 3);
     assign rcy_req_int   = ~rcy_fifo_empty & ~build_active;
 
     //========================================================================
     // ★ 三选一仲裁 (整拍 SRAM 独占): P0 deq > P1 enq > P2 rcy
-    //   注: 单 cell deq 不读 SRAM, 让出 SRAM 给 enq/rcy (deq_need_sram=0 时,
-    //        deq 仍可同拍发生, 因为它不占 SRAM)。
-    //   - 但为简化"三者互斥"语义, 即使 deq 不读 SRAM, 它仍按 P0 处理 deq 状态
-    //     更新, 不阻塞 enq/rcy 的 SRAM 操作 (因为 SRAM 空着)。
+    //   - deq 需 SRAM (cnt>=3) 时占读口 → enq 让步
+    //   - 单/双 cell deq (cnt<=2) 不读 SRAM → 不阻塞 enq
     //========================================================================
     logic deq_grant, enq_grant, rcy_grant;
 
-    // deq 永远可处理状态 (q_head/cnt 更新, 与 SRAM 操作无关)
+    // deq 永远可处理状态 (q_head/cnt 更新, 与 SRAM 占用无关)
     assign deq_grant = deq_req_int;
 
-    // SRAM 仲裁: deq 用 SRAM (deq_need_sram) 时, enq 让步; 否则 enq 可用 SRAM
-    // enq 让步条件: deq 占 SRAM (deq_need_sram) 或 build 期
-    // enq_pend_q=1 那拍: 上拍 enq 的 SRAM 读取回即将更新 free_head_next_q,
-    //   本拍如果再 enq_grant, free_head_q <= free_head_next_q 拿到的是旧值 → RAW hazard。
-    //   解决: enq_pend 那拍强制让 1 拍, 等 free_head_next 更新完 (下一拍才允许新 enq)。
+    // SRAM 仲裁: deq 占 SRAM (deq_need_sram) 时, enq 让步
     assign enq_grant = enq_req_int & ~build_active & ~deq_need_sram;
 
     // rcy 让步条件: deq 占 SRAM 或 enq 占 SRAM 或 build 期
@@ -274,17 +284,21 @@ module lle #(
     // 对外: enq ready (deq 占 SRAM / build / free空 → 0)
     assign lle_alloc_ready = ~build_active & ~lle_free_empty & ~deq_need_sram;
 
-    // recycle FIFO push/pop 使能 (在 rcy_grant / build_active 声明之后赋值)
+    // recycle FIFO push/pop 使能
     assign do_push = lle_free_req & ~rcy_fifo_full & ~build_active;
     assign do_pop  = rcy_grant;
 
     //========================================================================
-    // SRAM 读写口驱动
-    //   - deq 赢: 读 SRAM[q_head_next].entry (读口); 不动写口
-    //   - enq 赢: 读 SRAM[free_head].next (读口, read-first 取旧 next 给预取)
-    //             + 写 SRAM[free_head] = {old_pred, sof, eof} (写口) ★ 同地址!
-    //   - rcy 赢: 写 SRAM[free_tail].next = X (写口); 不动读口
-    //   - build : 写 SRAM[idx] = {idx+1, 0, 0} (写口); 不动读口
+    // SRAM 读写口驱动 (两级预取版本)
+    //
+    //   - deq 赢 (cnt>=3): 读 SRAM[q_head_next2] → 取回 next 的 ph/pt + 新 next2
+    //   - enq 赢: 读 SRAM[free_head_next2] → 回填 next2 预取
+    //             + 写 SRAM[free_head] = {free_head_next, sof, eof} (挂链)
+    //   - rcy 赢: 写 SRAM[free_tail].next = X (还链)
+    //   - build : 写 SRAM[idx] = {idx+1, 0, 0} (建链)
+    //
+    //   bypass 情况: 当 pend 和 grant 同拍时, SRAM 取回值 (npr_r_data) 可直接
+    //   用作本拍 SRAM 读地址 (链式预取), 因为 npr_r_data 是寄存器输出, 拍头可用。
     //========================================================================
     logic [ADDR_W-1:0]  build_addr;
     logic [ENTRY_W-1:0] build_wdata;
@@ -294,6 +308,28 @@ module lle #(
 
     logic [ADDR_W-1:0] enq_cell;
     assign enq_cell = free_head_q;
+
+    // pend 信号 (声明, 赋值在后面时序块)
+    logic               deq_pend_q;
+    logic [QID_W-1:0]   deq_pend_qid_q;
+    logic               enq_pend_q;
+
+    // bypass 条件
+    logic deq_pend_same_q;   // deq_pend 和 本拍 deq 是同一队列
+    logic enq_bypass;        // enq_pend 和 本拍 enq_grant 同时有效
+
+    assign deq_pend_same_q = deq_pend_q & deq_grant &
+                             (deq_pend_qid_q == lle_deq_queue_id);
+    assign enq_bypass      = enq_pend_q & enq_grant;
+
+    // enq SRAM 读地址: 正常=next2, bypass=npr_r_data(刚取回的新 next2 值)
+    logic [ADDR_W-1:0] enq_sram_rd_addr;
+    assign enq_sram_rd_addr = enq_bypass ? npr_r_data[2 +: ADDR_W] : free_head_next2_q;
+
+    // deq SRAM 读地址: 正常=next2[qid], bypass=npr_r_data.next(刚取回的新 next2)
+    logic [ADDR_W-1:0] deq_sram_rd_addr;
+    assign deq_sram_rd_addr = deq_pend_same_q ? npr_r_data[2 +: ADDR_W]
+                                              : q_head_next2_q[lle_deq_queue_id];
 
     always_comb begin
         // 读口默认: 关
@@ -311,18 +347,17 @@ module lle #(
             npr_w_data = build_wdata;
         end
         else if (deq_grant && deq_need_sram) begin
-            // P0 deq: 读 SRAM[q_head_next].entry (取下下个队头预取)
+            // P0 deq (cnt>=3): 读 SRAM[next2] 取回 {next3, next2_ph, next2_pt}
             npr_r_en   = 1'b1;
-            npr_r_addr = q_head_next_q[lle_deq_queue_id];
+            npr_r_addr = deq_sram_rd_addr;
         end
         else if (enq_grant) begin
-            // P1 enq: 读 SRAM[free_head].next (旧值, 给 free_head_next 预取)
-            //        + 写 SRAM[free_head] = {free_head_next_q, sof, eof} (新值)
-            //        1R1W 同地址 read-first: 读到的是旧 next, 写入新 entry, 完美一拍完成
-            // 读 SRAM[free_head_next] (取"下下个" free cell, 给 T+1 拍更新 free_head_next)
+            // P1 enq: 读 SRAM[next2](回填二级预取) + 写 SRAM[head](挂链)
+            // 读口: 读 next2 或 bypass 地址
             npr_r_en   = 1'b1;
-            npr_r_addr = free_head_next_q;
-            // 写 SRAM[free_head] (当前分配的 cell entry)
+            npr_r_addr = enq_sram_rd_addr;
+            // 写口: 写当前分配的 cell 的 queue entry
+            //   next 字段 = free_head_next_q (两级预取保证始终有效)
             npr_w_en   = 1'b1;
             npr_w_addr = free_head_q;
             npr_w_data = {free_head_next_q, lle_set_pkt_head, lle_set_pkt_tail};
@@ -352,13 +387,13 @@ module lle #(
     );
 
     //========================================================================
-    // SRAM 取回 → 预取寄存器更新 (T+1 拍)
-    //   - deq pend: 上拍 deq 读了, 本拍取回的是新队头的 entry
-    //   - enq pend: 上拍 enq 读了, 本拍取回的是 SRAM[old_free_head].next
+    // SRAM 取回 → 预取寄存器更新 pipeline (T+1 拍)
+    //   - deq_pend: 上拍 deq 读了 SRAM[next2], 本拍取回 {next3, next2_ph, next2_pt}
+    //              → next_ph/pt 更新为取回的 next2 自身属性 (因为 next2 promote 成了 next)
+    //              → next2 更新为取回的 .next 字段 (新 next2 地址)
+    //   - enq_pend: 上拍 enq 读了 SRAM[next2], 本拍取回 {next3, -, -}
+    //              → free_head_next2 更新为取回的 .next 字段
     //========================================================================
-    logic               deq_pend_q;
-    logic [QID_W-1:0]   deq_pend_qid_q;
-    logic               enq_pend_q;        // 上拍 enq 占用读口, 本拍要更新 free_head_next
 
     always_ff @(posedge clk_core or negedge rst_core_n) begin
         if (!rst_core_n) begin
@@ -380,17 +415,21 @@ module lle #(
     always_ff @(posedge clk_core or negedge rst_core_n) begin
         if (!rst_core_n) begin
             for (q = 0; q < QUEUE_NUM; q++) begin
-                q_head_q[q]      <= '0;
-                q_tail_q[q]      <= '0;
-                q_cell_cnt_q[q]  <= '0;
-                q_head_next_q[q] <= '0;
-                q_head_ph_q[q]   <= 1'b0;
-                q_head_pt_q[q]   <= 1'b0;
+                q_head_q[q]         <= '0;
+                q_tail_q[q]         <= '0;
+                q_cell_cnt_q[q]     <= '0;
+                q_head_ph_q[q]      <= 1'b0;
+                q_head_pt_q[q]      <= 1'b0;
+                q_head_next_q[q]    <= '0;
+                q_head_next_ph_q[q] <= 1'b0;
+                q_head_next_pt_q[q] <= 1'b0;
+                q_head_next2_q[q]   <= '0;
             end
             free_head_q       <= '0;
             free_tail_q       <= '0;
             free_cnt_q        <= '0;
             free_head_next_q  <= '0;
+            free_head_next2_q <= '0;
             rcy_fifo_cnt_q    <= '0;
             rcy_fifo_wptr_q   <= '0;
             rcy_fifo_rptr_q   <= '0;
@@ -398,18 +437,22 @@ module lle #(
         end
         else if (build_st_q == ST_DONE) begin
             //----------------------------------------------------------------
-            // 建链完成
+            // 建链完成: free 链 0→1→2→...→(N-1), 全队列清空
             //----------------------------------------------------------------
             for (q = 0; q < QUEUE_NUM; q++) begin
-                q_head_q[q]      <= '0;
-                q_tail_q[q]      <= '0;
-                q_cell_cnt_q[q]  <= '0;
-                q_head_next_q[q] <= '0;
-                q_head_ph_q[q]   <= 1'b0;
-                q_head_pt_q[q]   <= 1'b0;
+                q_head_q[q]         <= '0;
+                q_tail_q[q]         <= '0;
+                q_cell_cnt_q[q]     <= '0;
+                q_head_ph_q[q]      <= 1'b0;
+                q_head_pt_q[q]      <= 1'b0;
+                q_head_next_q[q]    <= '0;
+                q_head_next_ph_q[q] <= 1'b0;
+                q_head_next_pt_q[q] <= 1'b0;
+                q_head_next2_q[q]   <= '0;
             end
-            free_head_q       <= '0;                                    // = 0
-            free_head_next_q  <= {{(ADDR_W-1){1'b0}}, 1'b1};            // = 1
+            free_head_q       <= '0;                                    // cell 0
+            free_head_next_q  <= {{(ADDR_W-1){1'b0}}, 1'b1};            // cell 1
+            free_head_next2_q <= {{(ADDR_W-2){1'b0}}, 2'b10};           // cell 2
             free_tail_q       <= CELL_NUM[ADDR_W-1:0] - 1'b1;
             free_cnt_q        <= CELL_NUM[CNT_W-1:0];
             rcy_fifo_cnt_q    <= '0;
@@ -417,65 +460,122 @@ module lle #(
             rcy_fifo_rptr_q   <= '0;
         end
         else begin
-            //----------------------------------------------------------------
-            // enq 落地 (enq_grant = 1):
-            //   - SRAM[free_head] 本拍已写入 {free_head_next_q, sof, eof}
-            //   - SRAM[free_head].next 本拍已发起读, T+1 拍取回 → 更新 free_head_next
-            //   - free_head 推进到 free_head_next_q
-            //   - 挂尾: q_tail 推进, q_cell_cnt++
-            //   - 空队 bypass: 新 cell 兼任队头
-            //----------------------------------------------------------------
+            //================================================================
+            // ────── ENQ 落地 (enq_grant = 1) ──────
+            //
+            //   两级预取推进:
+            //     head ← next (始终有效)
+            //     next ← next2 (正常) 或 bypass(npr_r_data) (enq_pend 同拍)
+            //     SRAM 读口已发出对 next2/bypass_addr 的读取, T+1 回填 next2
+            //
+            //   挂链:
+            //     SRAM[head] = {next, sof, eof} (写口已在 comb 驱动)
+            //     q_tail 推进, q_cell_cnt++
+            //     空队 bypass: 新 cell 兼任队头
+            //================================================================
             if (enq_grant) begin
-                // free 链头推进: 如果同拍 enq_pend 也有效 (上拍 enq 读取回了新值),
-                //   bypass 直接用 npr_r_data (刚取回的"下下一个") 跳过 free_head_next 寄存器延迟;
-                //   否则用 free_head_next_q 正常推进。
-                if (enq_pend_q)
-                    free_head_q <= npr_r_data[2 +: ADDR_W];  // bypass: 用 SRAM 刚取回的新值
-                else
-                    free_head_q <= free_head_next_q;          // 正常
+                // ---- free 链两级预取推进 ----
+                free_head_q <= free_head_next_q;          // head 推进到 next
+                if (enq_bypass) begin
+                    // bypass: 上拍读的 SRAM 刚取回 → 取回值即为新 next2
+                    //   本拍 next ← 取回值 (因为 old next2 被 head←next 消耗后已过时)
+                    free_head_next_q <= npr_r_data[2 +: ADDR_W];
+                end
+                else begin
+                    free_head_next_q <= free_head_next2_q; // 正常: next ← next2
+                end
+                // next2 将由下拍 enq_pend 取回 SRAM 数据回填
 
-                // 挂尾
+                // ---- 挂尾 ----
                 q_tail_q[lle_alloc_queue_id] <= enq_cell;
 
+                // ---- 队列预取寄存器更新 (入队侧) ----
                 if (q_cell_cnt_q[lle_alloc_queue_id] == '0) begin
-                    // 空队 bypass: 新 cell 兼任队头
-                    q_head_q[lle_alloc_queue_id]      <= enq_cell;
-                    q_head_next_q[lle_alloc_queue_id] <= free_head_next_q;
-                    q_head_ph_q[lle_alloc_queue_id]   <= lle_set_pkt_head;
-                    q_head_pt_q[lle_alloc_queue_id]   <= lle_set_pkt_tail;
+                    // 空队: 新 cell 兼任队头, 设置 head 及 ph/pt
+                    q_head_q[lle_alloc_queue_id]         <= enq_cell;
+                    q_head_ph_q[lle_alloc_queue_id]      <= lle_set_pkt_head;
+                    q_head_pt_q[lle_alloc_queue_id]      <= lle_set_pkt_tail;
+                    // next 指向下一个将分配的 cell (=free_head_next)
+                    q_head_next_q[lle_alloc_queue_id]    <= free_head_next_q;
+                    q_head_next_ph_q[lle_alloc_queue_id] <= 1'b0;
+                    q_head_next_pt_q[lle_alloc_queue_id] <= 1'b0;
                 end
                 else if (q_cell_cnt_q[lle_alloc_queue_id] == 1) begin
-                    // 单 cell + enq: 旧 head 还在, q_head_next 原自指, 现指新 cell
-                    q_head_next_q[lle_alloc_queue_id] <= enq_cell;
+                    // 单 cell → 双 cell: 设置 next 地址及其 ph/pt
+                    q_head_next_q[lle_alloc_queue_id]    <= enq_cell;
+                    q_head_next_ph_q[lle_alloc_queue_id] <= lle_set_pkt_head;
+                    q_head_next_pt_q[lle_alloc_queue_id] <= lle_set_pkt_tail;
+                    // next2 先指向下一个 free cell (若帧继续则会用到)
+                    q_head_next2_q[lle_alloc_queue_id]   <= free_head_next_q;
                 end
-                // 多 cell: q_head/q_head_next 不变, 仅 q_tail 推进
+                else if (q_cell_cnt_q[lle_alloc_queue_id] == 2) begin
+                    // 双 cell → 三 cell: 设置 next2 地址
+                    q_head_next2_q[lle_alloc_queue_id]   <= enq_cell;
+                end
+                // cnt >= 3: 仅 tail 推进, 预取不变 (后续由 deq SRAM 走链填充)
             end
 
-            // enq T+1 拍 SRAM 取回 (旧 SRAM[free_head].next) → 更新 free_head_next
+            // ---- enq_pend T+1: SRAM 取回 → 回填 free_head_next2 ----
             if (enq_pend_q) begin
-                free_head_next_q <= npr_r_data[2 +: ADDR_W];
+                free_head_next2_q <= npr_r_data[2 +: ADDR_W];
             end
 
-            //----------------------------------------------------------------
-            // deq 落地 (deq_grant = 1):
-            //   - q_head 推进到 q_head_next 寄存器
-            //   - q_cell_cnt --
-            //   - deq_need_sram 时, T+1 拍 SRAM 取回新队头 entry 更新预取
-            //----------------------------------------------------------------
+            //================================================================
+            // ────── DEQ 落地 (deq_grant = 1) ──────
+            //
+            //   两级预取推进:
+            //     head ← next, head_ph/pt ← next_ph/pt
+            //     next ← next2, next_ph/pt ← bypass(SRAM 取回) 或保持待 pend 填充
+            //     next2 ← 由 deq_pend T+1 SRAM 取回回填
+            //
+            //   bypass: deq_pend 与本拍 deq 同队列同拍
+            //     → next_ph/pt 直接从 npr_r_data 取
+            //     → next2 从 npr_r_data.next 取
+            //================================================================
             if (deq_grant) begin
+                // head 推进
                 q_head_q[lle_deq_queue_id] <= q_head_next_q[lle_deq_queue_id];
+
+                // head_ph/pt ← next_ph/pt (两级预取: next 层始终有正确 ph/pt)
+                if (deq_pend_same_q) begin
+                    // bypass: SRAM 刚取回的是 old_next2 的 ph/pt
+                    //   old_next2 在上拍 deq 时被 promote 成了 next
+                    //   所以取回的 ph/pt 正是当前 next 的属性 → 赋给新 head
+                    q_head_ph_q[lle_deq_queue_id] <= npr_r_data[PH_BIT];
+                    q_head_pt_q[lle_deq_queue_id] <= npr_r_data[PT_BIT];
+                end
+                else begin
+                    q_head_ph_q[lle_deq_queue_id] <= q_head_next_ph_q[lle_deq_queue_id];
+                    q_head_pt_q[lle_deq_queue_id] <= q_head_next_pt_q[lle_deq_queue_id];
+                end
+
+                // next 推进 (level 1 ← level 2)
+                if (deq_pend_same_q) begin
+                    // bypass: next addr ← SRAM 取回的 .next 字段 (新 next2)
+                    q_head_next_q[lle_deq_queue_id] <= npr_r_data[2 +: ADDR_W];
+                    // next_ph/pt: 本拍无法得知 (要等下一拍 SRAM 取回), 先保持
+                    // 但不影响功能: 下拍 deq_pend 会填充
+                end
+                else begin
+                    q_head_next_q[lle_deq_queue_id]    <= q_head_next2_q[lle_deq_queue_id];
+                    // next_ph/pt 暂保持 (由 deq_pend 下一拍回填, 或 bypass 填充)
+                end
+                // next2 将由下拍 deq_pend SRAM 取回回填
             end
 
-            // deq T+1 拍 SRAM 取回 → 更新预取 (q_head_next/ph/pt)
+            // ---- deq_pend T+1: SRAM 取回 → 回填 next_ph/pt 和 next2 ----
             if (deq_pend_q) begin
-                q_head_next_q[deq_pend_qid_q] <= npr_r_data[2 +: ADDR_W];
-                q_head_ph_q[deq_pend_qid_q]   <= npr_r_data[PH_BIT];
-                q_head_pt_q[deq_pend_qid_q]   <= npr_r_data[PT_BIT];
+                // SRAM[old_next2] 返回 {next3, old_next2_ph, old_next2_pt}
+                // old_next2 在上拍已 promote 为 next → 其 ph/pt 即为新 next 的属性
+                q_head_next_ph_q[deq_pend_qid_q] <= npr_r_data[PH_BIT];
+                q_head_next_pt_q[deq_pend_qid_q] <= npr_r_data[PT_BIT];
+                // .next 字段 = next3 → 成为新 next2
+                q_head_next2_q[deq_pend_qid_q]   <= npr_r_data[2 +: ADDR_W];
             end
 
-            //----------------------------------------------------------------
+            //================================================================
             // 计数 q_cell_cnt 合并 (同 queue enq+deq 净不变, 不同 queue 各动)
-            //----------------------------------------------------------------
+            //================================================================
             if (enq_grant && deq_grant && (lle_alloc_queue_id == lle_deq_queue_id)) begin
                 // 同 queue 同拍: 净不变
             end
@@ -486,10 +586,9 @@ module lle #(
                     q_cell_cnt_q[lle_deq_queue_id]   <= q_cell_cnt_q[lle_deq_queue_id]   - 1'b1;
             end
 
-            //----------------------------------------------------------------
-            // recycle FIFO push (lle_free_req 当拍受理) + pop (rcy_grant 当拍)
-            //----------------------------------------------------------------
-
+            //================================================================
+            // recycle FIFO push + pop
+            //================================================================
             if (do_push) begin
                 rcy_fifo_mem[rcy_fifo_wptr_q] <= lle_free_addr;
                 rcy_fifo_wptr_q <= rcy_fifo_wptr_q + 1'b1;
@@ -503,113 +602,5 @@ module lle #(
             unique case ({do_push, do_pop})
                 2'b10: rcy_fifo_cnt_q <= rcy_fifo_cnt_q + 1'b1;
                 2'b01: rcy_fifo_cnt_q <= rcy_fifo_cnt_q - 1'b1;
-                2'b11: rcy_fifo_cnt_q <= rcy_fifo_cnt_q;
-                default: ;
-            endcase
-
-            // free_cnt 净变化 (enq -1, recycle push +1)
-            unique case ({enq_grant, do_push})
-                2'b10: free_cnt_q <= free_cnt_q - 1'b1;
-                2'b01: free_cnt_q <= free_cnt_q + 1'b1;
-                2'b11: free_cnt_q <= free_cnt_q;
-                default: ;
-            endcase
-        end
-    end
-
-    //========================================================================
-    // 对外组合输出
-    //========================================================================
-    assign lle_qhead          = q_head_q[lle_deq_queue_id];
-    assign lle_qhead_pkt_head = q_head_ph_q[lle_deq_queue_id];
-    assign lle_qhead_pkt_tail = q_head_pt_q[lle_deq_queue_id];
-    assign lle_q_empty        = (q_cell_cnt_q[lle_deq_queue_id] == '0);
-
-    assign lle_free_grant = lle_free_req & ~build_active & ~rcy_fifo_full;
-    assign lle_free_done  = rcy_grant;
-
-    assign mc_set_req  = enq_grant & lle_alloc_is_mcast;
-    assign mc_set_addr = enq_cell;
-    assign mc_set_init = lle_alloc_ref_init;
-
-    assign lle_alloc_evt = enq_grant;
-    assign lle_free_evt  = lle_free_grant;
-    assign evt_queue_id  = enq_grant ? lle_alloc_queue_id : lle_deq_queue_id;
-
-    localparam int Q_PER_PORT_LOG = $clog2(QUEUE_NUM / PORT_NUM);
-    assign evt_egress_port = evt_queue_id >> Q_PER_PORT_LOG;
-
-`ifdef SIM_BEHAVIOR_SRAM
-    //========================================================================
-    // 仿真断言
-    //========================================================================
-    always_ff @(posedge clk_core) begin
-        if (rst_core_n && lle_free_req && rcy_fifo_full && !build_active)
-            $warning("[lle] recycle FIFO full: free request ignored");
-    end
-    always_ff @(posedge clk_core) begin
-        if (rst_core_n && enq_grant && (free_cnt_q == '0))
-            $error("[lle] free pool underflow: alloc when free_cnt==0");
-    end
-    // SRAM 读写口同时驱动到不同地址应该不会发生 (按本设计仲裁互斥)
-    always_ff @(posedge clk_core) begin
-        if (rst_core_n && npr_r_en && npr_w_en && (npr_r_addr != npr_w_addr))
-            $error("[lle] SRAM r/w different addrs in same cycle (arbiter bug?)");
-    end
-`endif
-
-    //========================================================================
-    // 设计说明:
-    //   1) 三选一仲裁 (整拍 SRAM 独占): P0 deq > P1 enq > P2 rcy
-    //      - 单独事务每拍处理 → 各自背靠背 ✓
-    //      - 同拍并发时让步: enq 让 deq (lle_alloc_ready=0), rcy 让 deq/enq (FIFO)
-    //   2) enq 一拍内 1R1W 双口都用 (同一地址 free_head): 
-    //      - 读口取旧 SRAM[free_head].next → T+1 更新 free_head_next 预取
-    //      - 写口写 SRAM[free_head] = {old_pred, sof, eof}
-    //      - read-first 保证读到的是旧 next (写之前的值), 正好给预取
-    //   3) deq 用读口取 SRAM[q_head_next].entry, T+1 更新 q_head_next/ph/pt 预取
-    //   4) rcy 用写口写 SRAM[free_tail].next = X, free_tail 寄存器判尾
-    //   5) 让步机制对外:
-    //      - lle_alloc_ready=0 时 enqueue_ctrl 当拍不发 fire, 自动等
-    //      - rcy 进 lle 内部 FIFO, 对 recycle_ctrl 透明
-    //   6) 对外延迟 (spec L327/L443 ≤ 5 cycle):
-    //      - deq: 永远 1 拍
-    //      - enq: 1~2 拍 (无 deq 抢占 1 拍, 让 1 拍则 2 拍)
-    //      - rcy: 入 FIFO 受理立即, SRAM 落地几拍 (对外透明)
-    //========================================================================
-
-endmodule
-
-
-//============================================================================
-// 1R1W Next-Ptr SRAM 行为模型 (综合时换 vendor 1R1W SRAM)
-//   - 1 读口 + 1 写口, 同拍可并行
-//   - 同拍读写同一地址: read-first (读到旧值, 符合本设计 enq 用法)
-//============================================================================
-module next_ptr_sram_1r1w #(
-    parameter int CELL_NUM = 8192,
-    parameter int DATA_W   = 15,
-    localparam int ADDR_W  = $clog2(CELL_NUM)
-)(
-    input  logic              clk_core,
-    input  logic              rst_core_n,
-    input  logic              r_en,
-    input  logic [ADDR_W-1:0] r_addr,
-    output logic [DATA_W-1:0] r_data,
-    input  logic              w_en,
-    input  logic [ADDR_W-1:0] w_addr,
-    input  logic [DATA_W-1:0] w_data
-);
-    logic [DATA_W-1:0] mem [CELL_NUM];
-
-    // read-first: 读到的是写之前的旧值
-    always_ff @(posedge clk_core or negedge rst_core_n) begin
-        if (!rst_core_n) r_data <= '0;
-        else if (r_en)   r_data <= mem[r_addr];
-    end
-
-    always_ff @(posedge clk_core) begin
-        if (w_en) mem[w_addr] <= w_data;
-    end
-endmodule
+                2'b11: rcy_fifo_cnt_q <= rcy
 ```
