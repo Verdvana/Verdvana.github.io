@@ -289,9 +289,9 @@ module occupancy_pool_mgr #(
         else begin
             for(int i=0;i<QUEUE_NUM;i++)begin
                 if(q_near_full_set[i])
-                    q_near_full <= 1'b1;
+                    q_near_full[i] <= 1'b1;
                 else 
-                    q_near_full <= 1'b0;
+                    q_near_full[i] <= 1'b0;
             end
         end
     end
