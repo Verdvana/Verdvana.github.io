@@ -71,23 +71,23 @@ module occupancy_pool_mgr #(
     input  logic [CNT_W-1:0]            cfg_global_pause_xon,  //全局：占用<此值撤销PAUSE
     input  logic                        cfg_pfc_en,             // PFC使能
     input  logic [PORT_NUM-1:0][TC_NUM-1:0][CNT_W-1:0]  cfg_pfc_xoff, //每TC：占用>=此值触发PAUSE
-    input  logic [PORT_NUM-1:0][TC_NUM-1:0][CNT_W-1:0]  cfg_pfc_xon   //每TC：占用>=此值触发PAUSE
+    input  logic [PORT_NUM-1:0][TC_NUM-1:0][CNT_W-1:0]  cfg_pfc_xon,   //每TC：占用>=此值触发PAUSE
 
 
     //------------------------------------------------------------------------
     // 统计上报 (→ CSR)
     //------------------------------------------------------------------------
-    //output logic [CNT_W-1:0]                st_global_used,      // 全局占用
-    //output logic [CNT_W-1:0]                st_free_count,       // 空闲计数
-    //output logic [QUEUE_NUM-1:0][CNT_W-1:0] st_q_static_used,    // 每队列静态池占用
-    //output logic [PORT_NUM-1:0][CNT_W-1:0]  st_per_port_used,    // 每端口占用(端口级聚合)
-    //output logic [QUEUE_NUM-1:0][CNT_W-1:0] st_per_queue_used,   // 每队列占用
-    //output logic [QUEUE_NUM-1:0]            st_q_near_full_status,// 快满状态镜像
-    //output logic [QUEUE_NUM-1:0][STAT_W-1:0] st_tail_drop_cnt,   // 高水位无条件丢包计数
-    //output logic [QUEUE_NUM-1:0][STAT_W-1:0] st_near_full_assert_cnt,// 快满置位次数
-    //output logic [PORT_NUM-1:0][STAT_W-1:0]  st_pause_tx_cnt,    // PAUSE 发送计数
-    //output logic                            overflow_alarm,      // cell 池溢出告警
-    //output logic                            underflow_alarm      // 守恒/下溢告警
+    output logic [CNT_W-1:0]                st_global_used,      // 全局占用
+    output logic [CNT_W-1:0]                st_free_count,       // 空闲计数
+    output logic [QUEUE_NUM-1:0][CNT_W-1:0] st_q_static_used,    // 每队列静态池占用
+    output logic [PORT_NUM-1:0][CNT_W-1:0]  st_per_port_used,    // 每端口占用(端口级聚合)
+    output logic [QUEUE_NUM-1:0][CNT_W-1:0] st_per_queue_used,   // 每队列占用
+    output logic [QUEUE_NUM-1:0]            st_q_near_full_status,// 快满状态镜像
+    output logic [QUEUE_NUM-1:0][STAT_W-1:0] st_tail_drop_cnt,   // 高水位无条件丢包计数
+    output logic [QUEUE_NUM-1:0][STAT_W-1:0] st_near_full_assert_cnt,// 快满置位次数
+    output logic [PORT_NUM-1:0][STAT_W-1:0]  st_pause_tx_cnt,    // PAUSE 发送计数
+    output logic                            overflow_alarm,      // cell 池溢出告警
+    output logic                            underflow_alarm      // 守恒/下溢告警
 );
     //========================================================================
     // 
@@ -233,11 +233,11 @@ module occupancy_pool_mgr #(
         end
         else begin
             case ({alloc_allowed, free_allowed})
-                2'b10: begin // 仅分配
+                2'b10: if (free_count_q != '0) begin   // 仅分配
                     free_count_q  <= free_count_q  - 1'b1;
                     global_used_q <= global_used_q + 1'b1;
                 end
-                2'b01: begin // 仅回收
+                2'b01: if (global_used_q != '0) begin  // 仅回收
                     free_count_q  <= free_count_q  + 1'b1;
                     global_used_q <= global_used_q - 1'b1;
                 end
@@ -250,27 +250,33 @@ module occupancy_pool_mgr #(
         end
     end
     
+    logic hi_wm_drop;
+    logic [QUEUE_NUM-1:0] q_hi_wm_vec;     // >= cfg_q_max_cell (tail-drop 阈值)
+    logic [PORT_NUM-1:0] port_hi_wm_vec; // per-port 高水位向量
 
     always_comb begin
         occ_no_free   = (free_count_q == '0);
         global_full     = (global_used_q >= cfg_global_high_wm);
 
         // 高水位无条件丢弃 (兜底) 或 空闲池空
-        occ_drop      = occ_query_vld & (occ_no_free | |q_full | |port_full | global_full);
+        occ_drop      = occ_query_vld & (occ_no_free | (~occ_use_static & ));
         occ_accept    = occ_query_vld & ~occ_drop;
         // 双池: 该队列静态额度未用满 → 记静态账
-        occ_use_static= (&use_static_vec);
+        occ_use_static= use_static_vec[evt_queue_id];
+        hi_wm_drop = q_hi_wm_vec[evt_queue_id] | port_hi_wm_vec[evt_queue_id] | global_full;
     end
 
     always_comb begin
         for (int i = 0; i < QUEUE_NUM; i++) begin
             use_static_vec[i] = q_static_used_q[i] < cfg_queue_min_cell[i];
-            q_full[i]  = q_cell_cnt_q[i]    >= cfg_q_max_cell[i];
+            q_full[i]         = q_cell_cnt_q[i]    >= cfg_q_full[i];
+            q_hi_wm_vec[i]    = q_cell_cnt_q[i]    >= cfg_q_max_cell[i];
         end
     end
     always_comb begin
         for (int i = 0; i < PORT_NUM; i++) begin
             port_full[i]  = per_port_used_q[i]    >= cfg_port_max[i];
+            port_hi_wm_vec = = per_port_used_q[i]    >= cfg_port_max[i];
         end
     end
     
@@ -289,9 +295,9 @@ module occupancy_pool_mgr #(
         else begin
             for(int i=0;i<QUEUE_NUM;i++)begin
                 if(q_near_full_set[i])
-                    q_near_full[i] <= 1'b1;
+                    q_near_full <= 1'b1;
                 else 
-                    q_near_full[i] <= 1'b0;
+                    q_near_full <= 1'b0;
             end
         end
     end
@@ -377,5 +383,45 @@ module occupancy_pool_mgr #(
             end
         end
     end
+    //========================================================================
+    // 统计输出
+    //========================================================================
+    assign st_global_used        = global_used_q;
+    assign st_free_count         = free_count_q;
+    //assign st_q_near_full_status = q_near_full_q;
+    //assign st_tail_drop_cnt      = tail_drop_cnt_q;
+    //assign st_near_full_assert_cnt = near_full_assert_cnt_q;
+    //assign st_pause_tx_cnt       = pause_tx_cnt_q;
+    assign st_q_near_full_status = '0;
+    assign st_tail_drop_cnt      = '0;
+    assign st_near_full_assert_cnt = '0;
+    assign st_pause_tx_cnt       = '0;
+    always_comb begin
+        for (int i = 0; i < QUEUE_NUM; i++) begin
+            assign st_q_static_used[i]  = q_static_used_q[i];
+            assign st_per_queue_used[i] = q_cell_cnt_q[i];
+        end
+        for (int i = 0; i < PORT_NUM; i++) begin 
+            assign st_per_port_used[i]  = per_port_used_q[i];
+        end
+    endgenerate
+    //========================================================================
+    // 守恒 / 溢出 / 下溢 告警
+    //========================================================================
+    logic conserve_ok;
+    assign conserve_ok = ((free_count_q + global_used_q) == CELL_NUM[CNT_W-1:0]);
+    always_ff @(posedge clk_core or negedge rst_core_n) begin
+        if (!rst_core_n) begin
+            overflow_alarm  <= 1'b0;
+            underflow_alarm <= 1'b0;
+        end
+        else begin
+            overflow_alarm  <= (global_used_q > CELL_NUM[CNT_W-1:0]);
+            underflow_alarm <= ~conserve_ok
+                               | (alloc_allowed & (free_count_q  == '0))
+                               | (free_allowed  & (global_used_q == '0));
+        end
+    end
+
 
 endmodule
