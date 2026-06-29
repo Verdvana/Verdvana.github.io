@@ -426,8 +426,13 @@ module lle #(
             //   - 空队 bypass: 新 cell 兼任队头
             //----------------------------------------------------------------
             if (enq_grant) begin
-                // free 链头推进 (本拍读出的新 next 在 T+1 拍由 enq_pend 更新)
-                free_head_q      <= free_head_next_q;
+                // free 链头推进: 如果同拍 enq_pend 也有效 (上拍 enq 读取回了新值),
+                //   bypass 直接用 npr_r_data (刚取回的"下下一个") 跳过 free_head_next 寄存器延迟;
+                //   否则用 free_head_next_q 正常推进。
+                if (enq_pend_q)
+                    free_head_q <= npr_r_data[2 +: ADDR_W];  // bypass: 用 SRAM 刚取回的新值
+                else
+                    free_head_q <= free_head_next_q;          // 正常
 
                 // 挂尾
                 q_tail_q[lle_alloc_queue_id] <= enq_cell;
