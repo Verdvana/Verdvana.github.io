@@ -178,10 +178,8 @@ module lle #(
     logic [ADDR_W-1:0]   rcy_cell;
     assign rcy_cell = rcy_fifo_mem[rcy_fifo_rptr_q];
 
-    // recycle FIFO push/pop 使能 (模块级组合信号, 在 always_ff 内使用)
+    // do_push/do_pop 声明 (赋值在仲裁信号声明之后, 避免前向引用)
     logic do_push, do_pop;
-    assign do_push = lle_free_req & ~rcy_fifo_full & ~build_active;
-    assign do_pop  = rcy_grant;
 
     //========================================================================
     // Next-Ptr SRAM (1R1W) 互连
@@ -268,13 +266,17 @@ module lle #(
     // enq_pend_q=1 那拍: 上拍 enq 的 SRAM 读取回即将更新 free_head_next_q,
     //   本拍如果再 enq_grant, free_head_q <= free_head_next_q 拿到的是旧值 → RAW hazard。
     //   解决: enq_pend 那拍强制让 1 拍, 等 free_head_next 更新完 (下一拍才允许新 enq)。
-    assign enq_grant = enq_req_int & ~build_active & ~deq_need_sram & ~enq_pend_q;
+    assign enq_grant = enq_req_int & ~build_active & ~deq_need_sram;
 
     // rcy 让步条件: deq 占 SRAM 或 enq 占 SRAM 或 build 期
     assign rcy_grant = rcy_req_int & ~build_active & ~deq_need_sram & ~enq_grant;
 
-    // 对外: enq ready (deq 占 SRAM / build / free空 / enq_pend 预取未完成 → 0)
-    assign lle_alloc_ready = ~build_active & ~lle_free_empty & ~deq_need_sram & ~enq_pend_q;
+    // 对外: enq ready (deq 占 SRAM / build / free空 → 0)
+    assign lle_alloc_ready = ~build_active & ~lle_free_empty & ~deq_need_sram;
+
+    // recycle FIFO push/pop 使能 (在 rcy_grant / build_active 声明之后赋值)
+    assign do_push = lle_free_req & ~rcy_fifo_full & ~build_active;
+    assign do_pop  = rcy_grant;
 
     //========================================================================
     // SRAM 读写口驱动
@@ -317,8 +319,10 @@ module lle #(
             // P1 enq: 读 SRAM[free_head].next (旧值, 给 free_head_next 预取)
             //        + 写 SRAM[free_head] = {free_head_next_q, sof, eof} (新值)
             //        1R1W 同地址 read-first: 读到的是旧 next, 写入新 entry, 完美一拍完成
+            // 读 SRAM[free_head_next] (取"下下个" free cell, 给 T+1 拍更新 free_head_next)
             npr_r_en   = 1'b1;
-            npr_r_addr = free_head_q;
+            npr_r_addr = free_head_next_q;
+            // 写 SRAM[free_head] (当前分配的 cell entry)
             npr_w_en   = 1'b1;
             npr_w_addr = free_head_q;
             npr_w_data = {free_head_next_q, lle_set_pkt_head, lle_set_pkt_tail};
