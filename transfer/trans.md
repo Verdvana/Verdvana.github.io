@@ -180,42 +180,51 @@ module lle_tb;
 
     //========================================================================
     // 辅助 task: 出队一整包 (背靠背, 每拍 1 cell, 直到 pkt_tail)
-    //   全程在 negedge: 先采样 (上个 posedge 结果稳定), 再驱动 (下个 posedge 生效)
+    //   ★ 关键: 出队的 cell = posedge 当拍的 lle_qhead (推进前的值),
+    //     与 dequeue_ctrl 在 posedge 锁存 lle_qhead 的行为一致。
+    //   时序:
+    //     - negedge 驱动 fire/queue_id (寄存器输出, 到 posedge 稳定)
+    //     - posedge Active 区采样 lle_qhead (NBA 推进前 = 本拍出队的 cell)
     //========================================================================
     task automatic dequeue_pkt(input int qid);
         integer cnt;
         cnt = 0;
         $display("[%0t] >>> DEQ start: q=%0d", $time, qid);
 
-        // negedge: 驱动 queue_id (fire=0)
+        // negedge: 驱动 queue_id, fire 暂 0
         @(negedge clk);
         lle_deq_queue_id_r = qid[QID_W-1:0];
         lle_deq_fire_r     = 1'b0;
-        // 等 1 拍: 经过 1 个 posedge, queue_id 生效, DUT 输出稳定
+        // 再等 1 个 negedge: queue_id 经过 posedge 生效, 输出稳定
         @(negedge clk);
 
-        while (1) begin
-            // ---- 采样 (negedge: 上个 posedge 的 deq 结果已稳定) ----
-            if (lle_q_empty) begin
-                $display("[%0t]   DEQ: queue %0d empty, abort", $time, qid);
-                break;
-            end
+        // 队列空则直接退出
+        if (lle_q_empty) begin
+            $display("[%0t]   DEQ: queue %0d empty, abort", $time, qid);
+            lle_deq_fire_r = 1'b0;
+            repeat (2) @(negedge clk);
+            $display("[%0t] <<< DEQ done: q=%0d cells=0", $time, qid);
+            return;
+        end
+
+        // negedge: 拉高 fire (寄存器输出, 到下个 posedge 稳定)
+        lle_deq_fire_r = 1'b1;
+
+        // 背靠背出队循环: 每个 posedge 出 1 个 cell
+        forever begin
+            @(posedge clk);   // DUT 在此 posedge 处理 deq
+            // Active 区读 lle_qhead = 推进前的队头 = 本拍出队的 cell
             $display("[%0t]   DEQ cell: addr=%0d ph=%0b pt=%0b", $time,
                      lle_qhead, lle_qhead_pkt_head, lle_qhead_pkt_tail);
             cnt++;
 
-            // ---- 驱动 fire=1 (negedge: 保持到下个 posedge, DUT 采样) ----
-            lle_deq_fire_r = 1'b1;
-
             if (lle_qhead_pkt_tail) begin
-                // 最后一个 cell: fire 保持 1 拍(到下个 posedge), 然后撤销
-                @(negedge clk);   // 经过 posedge, DUT 采到 fire=1 处理最后 deq
+                // 本拍是最后一个 cell, fire 已在本 posedge 完成最后 deq
+                @(negedge clk);
                 lle_deq_fire_r = 1'b0;
                 break;
             end
-
-            // 等 1 拍: 经过 posedge (DUT 采 fire=1 推进 head), 到下个 negedge 采样
-            @(negedge clk);
+            // fire 保持 1, 下个 posedge 继续出队
         end
 
         lle_deq_fire_r = 1'b0;
@@ -384,5 +393,6 @@ module lle_tb;
         print_status("final state");
         $finish;
     end
+
 
 ```
