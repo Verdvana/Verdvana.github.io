@@ -3,9 +3,10 @@
 // Testbench : lle_tb
 // Description:
 //   针对 lle 模块的功能验证 testbench。
-//   ★ 所有驱动 DUT 的信号均采用寄存器输出模式 (非阻塞赋值 @posedge clk),
-//     确保信号在时钟沿变化并保持一个完整周期, 与实际硬件行为一致。
-//   ★ 读取 DUT 输出前用 #1 等待 NBA 稳定, 避免同沿读写竞争。
+//   ★ 驱动模式: 在 @(posedge clk) 后用阻塞赋值驱动 DUT 输入
+//     (模拟寄存器输出: 值在 posedge 变化, 保持到下个 posedge)
+//   ★ 采样模式: 在 @(negedge clk) 读 DUT 输出
+//     (保证 DUT 的 NBA 已完成, 组合输出已稳定)
 //
 //   参数: 2 port × 2 queue/port = 4 queue + 1 free + 1 multicast = 6 chain
 //         CELL_NUM = 64
@@ -15,7 +16,7 @@
 module lle_tb;
 
     //========================================================================
-    // 参数 (缩小规模便于仿真)
+    // 参数
     //========================================================================
     localparam int CELL_NUM       = 64;
     localparam int QUEUE_NUM      = 6;
@@ -37,7 +38,7 @@ module lle_tb;
     always #1.667 clk = ~clk;   // ~300MHz
 
     //========================================================================
-    // DUT 输入寄存器
+    // DUT 输入信号 (TB 驱动)
     //========================================================================
     logic                  init_build_req_r;
     logic                  lle_alloc_fire_r;
@@ -78,14 +79,6 @@ module lle_tb;
     logic [PORT_W-1:0]    evt_egress_port;
 
     assign mc_set_ack = 1'b1;
-
-    //========================================================================
-    // 等待时钟沿 + NBA 稳定 的宏/task
-    //========================================================================
-    task automatic wait_clk();
-        @(posedge clk);
-        #1;   // 等 NBA 稳定后再读 DUT 输出
-    endtask
 
     //========================================================================
     // DUT 例化
@@ -132,7 +125,7 @@ module lle_tb;
     );
 
     //========================================================================
-    // 辅助 task: 打印状态
+    // 辅助 task: 打印状态 (在 negedge 调用, 输出已稳定)
     //========================================================================
     task automatic print_status(string tag);
         integer qi;
@@ -154,7 +147,8 @@ module lle_tb;
     endtask
 
     //========================================================================
-    // 辅助 task: 入队一整包 (背靠背, 每拍 1 cell)
+    // 辅助 task: 入队一整包
+    //   时序: @posedge 驱动 → DUT 处理 → @negedge 采样结果
     //========================================================================
     task automatic enqueue_pkt(input int qid, input int num_cells, input bit is_mcast, input int ref_init);
         integer i;
@@ -162,49 +156,50 @@ module lle_tb;
         alloc_cnt = 0;
         $display("[%0t] >>> ENQ start: q=%0d cells=%0d mcast=%0b", $time, qid, num_cells, is_mcast);
         for (i = 0; i < num_cells; i++) begin
-            // 等 lle_alloc_ready=1
-            wait_clk();
-            while (!lle_alloc_ready) wait_clk();
-            // ready=1 已确认 → 驱动 fire=1 (DUT 在下一 posedge 采样)
-            lle_alloc_fire_r     <= 1'b1;
-            lle_alloc_queue_id_r <= qid[QID_W-1:0];
-            lle_alloc_addr_r     <= lle_free_head;
-            lle_set_pkt_head_r   <= (i == 0);
-            lle_set_pkt_tail_r   <= (i == num_cells-1);
-            lle_alloc_is_mcast_r <= is_mcast;
-            lle_alloc_ref_init_r <= ref_init[REF_W-1:0];
+            // 在 negedge 采样 ready (DUT posedge 更新后已稳定)
+            @(negedge clk);
+            while (!lle_alloc_ready) @(negedge clk);
+            // ready=1 → 在下个 posedge 驱动 fire=1
+            @(posedge clk);
+            lle_alloc_fire_r     = 1'b1;
+            lle_alloc_queue_id_r = qid[QID_W-1:0];
+            lle_alloc_addr_r     = lle_free_head;
+            lle_set_pkt_head_r   = (i == 0);
+            lle_set_pkt_tail_r   = (i == num_cells-1);
+            lle_alloc_is_mcast_r = is_mcast;
+            lle_alloc_ref_init_r = ref_init[REF_W-1:0];
             alloc_cnt++;
         end
-        wait_clk();
-        lle_alloc_fire_r <= 1'b0;
+        @(posedge clk);
+        lle_alloc_fire_r = 1'b0;
         // 等 2 拍让 pend pipeline 完成
-        wait_clk();
-        wait_clk();
+        repeat (2) @(posedge clk);
+        @(negedge clk);
         $display("[%0t] <<< ENQ done: q=%0d cells=%0d (took %0d cycles fire)", $time, qid, num_cells, alloc_cnt);
         print_status($sformatf("after enq q%0d %0d-cell pkt", qid, num_cells));
     endtask
 
     //========================================================================
     // 辅助 task: 出队一整包 (背靠背, 每拍 1 cell, 直到 pkt_tail)
-    //   时序模型:
-    //     1) 设置 queue_id, 等 1 拍 DUT 输出稳定
-    //     2) 每拍: 采样 head → 驱动 fire=1 → 等 1 拍 DUT 推进
-    //     3) 遇到 pkt_tail 时 fire 保持最后 1 拍后撤销
+    //   时序:
+    //     posedge: 驱动 fire/queue_id (DUT 在此 posedge 的 always_ff 采样)
+    //     negedge: 采样 DUT 输出 (DUT posedge NBA 已完成, 组合输出稳定)
     //========================================================================
     task automatic dequeue_pkt(input int qid);
         integer cnt;
         cnt = 0;
         $display("[%0t] >>> DEQ start: q=%0d", $time, qid);
 
-        // 设置 queue_id
+        // 驱动 queue_id (fire 还是 0)
         @(posedge clk);
-        lle_deq_queue_id_r <= qid[QID_W-1:0];
+        lle_deq_queue_id_r = qid[QID_W-1:0];
+        lle_deq_fire_r     = 1'b0;
 
-        // 等 1 拍: DUT 输出 lle_qhead/lle_q_empty 稳定
-        wait_clk();
+        // 等 DUT 输出稳定 (queue_id 生效后组合输出更新)
+        @(negedge clk);
 
         while (1) begin
-            // 采样 (此时 NBA 已稳定)
+            // ---- 采样 (negedge: DUT 输出已稳定) ----
             if (lle_q_empty) begin
                 $display("[%0t]   DEQ: queue %0d empty, abort", $time, qid);
                 break;
@@ -213,44 +208,48 @@ module lle_tb;
                      lle_qhead, lle_qhead_pkt_head, lle_qhead_pkt_tail);
             cnt++;
 
-            // 驱动 fire=1
-            lle_deq_fire_r <= 1'b1;
-
             if (lle_qhead_pkt_tail) begin
-                // 最后一个 cell: fire 保持 1 拍后撤销
-                wait_clk();   // DUT 采到 fire=1, 处理 deq
-                lle_deq_fire_r <= 1'b0;
+                // 最后一个 cell: 驱动 fire=1 一拍, 然后撤销
+                @(posedge clk);
+                lle_deq_fire_r = 1'b1;
+                @(posedge clk);
+                lle_deq_fire_r = 1'b0;
                 break;
             end
 
-            // 等 1 拍: DUT 处理 fire=1, 推进 head, 输出更新
-            wait_clk();
+            // ---- 驱动 fire=1 (posedge) ----
+            @(posedge clk);
+            lle_deq_fire_r = 1'b1;
+
+            // ---- 等 DUT 处理: posedge 采到 fire=1 → NBA 推进 head ----
+            // ---- negedge: 新的 lle_qhead 已稳定, 回到循环顶部采样 ----
+            @(negedge clk);
         end
 
-        lle_deq_fire_r <= 1'b0;
+        lle_deq_fire_r = 1'b0;
         // 等 2 拍让 pend pipeline 完成
-        wait_clk();
-        wait_clk();
+        repeat (2) @(posedge clk);
+        @(negedge clk);
         $display("[%0t] <<< DEQ done: q=%0d cells=%0d", $time, qid, cnt);
         print_status($sformatf("after deq q%0d", qid));
     endtask
 
     //========================================================================
-    // 辅助 task: 还链 N 个 cell (背靠背发 req, 每拍 1 个)
+    // 辅助 task: 还链 N 个 cell
     //========================================================================
     task automatic recycle_cells(input int cells[$]);
         integer i;
         $display("[%0t] >>> RCY start: %0d cells", $time, cells.size());
         for (i = 0; i < cells.size(); i++) begin
             @(posedge clk);
-            lle_free_req_r  <= 1'b1;
-            lle_free_addr_r <= cells[i][ADDR_W-1:0];
+            lle_free_req_r  = 1'b1;
+            lle_free_addr_r = cells[i][ADDR_W-1:0];
         end
         @(posedge clk);
-        lle_free_req_r <= 1'b0;
+        lle_free_req_r = 1'b0;
         // 等几拍让 rcy_grant 有机会写 SRAM
         repeat (cells.size() + 3) @(posedge clk);
-        #1;
+        @(negedge clk);
         $display("[%0t] <<< RCY done: %0d cells", $time, cells.size());
         print_status($sformatf("after rcy %0d cells", cells.size()));
     endtask
@@ -268,40 +267,47 @@ module lle_tb;
 
         // 设置 deq queue_id
         @(posedge clk);
-        lle_deq_queue_id_r <= deq_qid[QID_W-1:0];
-        wait_clk();  // 稳定
+        lle_deq_queue_id_r = deq_qid[QID_W-1:0];
+        @(negedge clk);  // 稳定
 
         while (ei < enq_cells || !deq_done) begin
-            // --- enq 驱动 ---
+            // --- 采样 DUT 输出 (negedge) ---
+            // --- 在下个 posedge 驱动 ---
+            @(posedge clk);
+
+            // enq 驱动
             if (ei < enq_cells && lle_alloc_ready) begin
-                lle_alloc_fire_r     <= 1'b1;
-                lle_alloc_queue_id_r <= enq_qid[QID_W-1:0];
-                lle_alloc_addr_r     <= lle_free_head;
-                lle_set_pkt_head_r   <= (ei == 0);
-                lle_set_pkt_tail_r   <= (ei == enq_cells-1);
-                lle_alloc_is_mcast_r <= 1'b0;
-                lle_alloc_ref_init_r <= '0;
+                lle_alloc_fire_r     = 1'b1;
+                lle_alloc_queue_id_r = enq_qid[QID_W-1:0];
+                lle_alloc_addr_r     = lle_free_head;
+                lle_set_pkt_head_r   = (ei == 0);
+                lle_set_pkt_tail_r   = (ei == enq_cells-1);
+                lle_alloc_is_mcast_r = 1'b0;
+                lle_alloc_ref_init_r = '0;
                 ei++;
             end
             else begin
-                lle_alloc_fire_r <= 1'b0;
+                lle_alloc_fire_r = 1'b0;
             end
-            // --- deq 驱动 ---
+
+            // deq 驱动
             if (!deq_done && !lle_q_empty) begin
-                lle_deq_fire_r <= 1'b1;
+                lle_deq_fire_r = 1'b1;
                 $display("[%0t]   CONC DEQ: addr=%0d pt=%0b | ENQ ei=%0d ready=%0b",
                          $time, lle_qhead, lle_qhead_pkt_tail, ei, lle_alloc_ready);
                 if (lle_qhead_pkt_tail) deq_done = 1;
             end
             else begin
-                lle_deq_fire_r <= 1'b0;
+                lle_deq_fire_r = 1'b0;
                 if (!deq_done && lle_q_empty) deq_done = 1;
             end
-            wait_clk();
+
+            @(negedge clk);  // 等 DUT 处理, 输出稳定
         end
-        lle_alloc_fire_r <= 1'b0;
-        lle_deq_fire_r   <= 1'b0;
-        repeat (4) wait_clk();
+        lle_alloc_fire_r = 1'b0;
+        lle_deq_fire_r   = 1'b0;
+        repeat (4) @(posedge clk);
+        @(negedge clk);
         $display("[%0t] <<< CONCURRENT done", $time);
         print_status("after concurrent enq+deq");
     endtask
@@ -310,7 +316,7 @@ module lle_tb;
     // 主测试序列
     //========================================================================
     initial begin
-        // 初始化 (复位期间所有寄存器清零)
+        // 初始化
         rst_n = 0;
         init_build_req_r     = 0;
         lle_alloc_fire_r     = 0;
@@ -327,18 +333,17 @@ module lle_tb;
 
         repeat (5) @(posedge clk);
         rst_n = 1;
-        repeat (2) wait_clk();
+        repeat (2) @(posedge clk);
 
         //---- 1. 建链 ----
         $display("\n========== BUILD FREE LIST ==========");
         @(posedge clk);
-        init_build_req_r <= 1'b1;
+        init_build_req_r = 1'b1;
         @(posedge clk);
-        init_build_req_r <= 1'b0;
-        // 等 init_build_done
-        wait_clk();
-        while (!init_build_done) wait_clk();
-        wait_clk();
+        init_build_req_r = 1'b0;
+        @(negedge clk);
+        while (!init_build_done) @(negedge clk);
+        @(negedge clk);
         print_status("after build");
 
         //---- 2. q0 入队 4 cell ----
@@ -408,4 +413,5 @@ module lle_tb;
     end
 
 endmodule
+
 ```
