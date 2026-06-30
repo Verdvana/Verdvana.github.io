@@ -100,12 +100,10 @@ module lle #(
 
     //========================================================================
     // 与 Enqueue Ctrl 的接口 —— 入队 / 分配
-    //   ★ lle_alloc_ready: deq 抢占 / build 中 / free 池空时 = 0,
-    //     enqueue_ctrl 看到 ready=0 当拍不发 fire, 自动等下拍。
     //========================================================================
     output logic [ADDR_W-1:0]     lle_free_head,
     output logic                  lle_free_empty,
-    output logic                  lle_alloc_ready,        // lle 可受理 alloc
+    output logic                  lle_alloc_ready,
     input  logic                  lle_alloc_fire,
     input  logic [QID_W-1:0]      lle_alloc_queue_id,
     input  logic [ADDR_W-1:0]     lle_alloc_addr,
@@ -129,11 +127,11 @@ module lle #(
     //========================================================================
     input  logic                  lle_free_req,
     input  logic [ADDR_W-1:0]     lle_free_addr,
-    output logic                  lle_free_grant,         // = !fifo_full
-    output logic                  lle_free_done,          // SRAM 写真正完成那拍
+    output logic                  lle_free_grant,
+    output logic                  lle_free_done,
 
     //========================================================================
-    // 与 Multicast Ref-Count Mgr 的接口 —— 组播 ref_count 初值转发
+    // 与 Multicast Ref-Count Mgr 的接口
     //========================================================================
     output logic                  mc_set_req,
     output logic [ADDR_W-1:0]     mc_set_addr,
@@ -142,10 +140,9 @@ module lle #(
 
     //========================================================================
     // 与 Occupancy & Pool Mgr 的接口 —— 分配/回收事件上报
-    //   新版 occ 用 occ_query_vld&occ_accept 主计数源, 此 evt 保留供调试。
     //========================================================================
-    output logic                  lle_alloc_evt,          // enq 落地那拍
-    output logic                  lle_free_evt,           // recycle 入 FIFO 那拍
+    output logic                  lle_alloc_evt,
+    output logic                  lle_free_evt,
     output logic [QID_W-1:0]      evt_queue_id,
     output logic [PORT_W-1:0]     evt_egress_port
 );
@@ -157,13 +154,13 @@ module lle #(
     logic [ADDR_W-1:0]   q_head_q       [QUEUE_NUM];
     logic [ADDR_W-1:0]   q_tail_q       [QUEUE_NUM];
     logic [CNT_W-1:0]    q_cell_cnt_q   [QUEUE_NUM];
-    logic                q_head_ph_q    [QUEUE_NUM];     // 当前队头的 pkt_head
-    logic                q_head_pt_q    [QUEUE_NUM];     // 当前队头的 pkt_tail
+    logic                q_head_ph_q    [QUEUE_NUM];
+    logic                q_head_pt_q    [QUEUE_NUM];
 
-    // Level 1: 下一个 (地址 + ph/pt 完整)
+    // Level 1: 下一个 (地址 + ph/pt 完整预取)
     logic [ADDR_W-1:0]   q_head_next_q    [QUEUE_NUM];
-    logic                q_head_next_ph_q [QUEUE_NUM];   // next cell 的 pkt_head
-    logic                q_head_next_pt_q [QUEUE_NUM];   // next cell 的 pkt_tail
+    logic                q_head_next_ph_q [QUEUE_NUM];
+    logic                q_head_next_pt_q [QUEUE_NUM];
 
     // Level 2: 下下个 (仅地址, ph/pt 在 promote 时由 SRAM 取回)
     logic [ADDR_W-1:0]   q_head_next2_q   [QUEUE_NUM];
@@ -171,11 +168,11 @@ module lle #(
     //========================================================================
     // free 链寄存器 (两级预取)
     //========================================================================
-    logic [ADDR_W-1:0]   free_head_q;                    // 当前 free head
+    logic [ADDR_W-1:0]   free_head_q;
     logic [ADDR_W-1:0]   free_tail_q;
     logic [CNT_W-1:0]    free_cnt_q;
-    logic [ADDR_W-1:0]   free_head_next_q;               // 一级预取 (下一个 free cell)
-    logic [ADDR_W-1:0]   free_head_next2_q;              // 二级预取 (下下个 free cell)
+    logic [ADDR_W-1:0]   free_head_next_q;
+    logic [ADDR_W-1:0]   free_head_next2_q;
 
     assign lle_free_head  = free_head_q;
     assign lle_free_empty = (free_cnt_q == '0);
@@ -193,7 +190,6 @@ module lle #(
     logic [ADDR_W-1:0]   rcy_cell;
     assign rcy_cell = rcy_fifo_mem[rcy_fifo_rptr_q];
 
-    // do_push/do_pop 声明 (赋值在仲裁信号声明之后, 避免前向引用)
     logic do_push, do_pop;
 
     //========================================================================
@@ -201,14 +197,14 @@ module lle #(
     //========================================================================
     logic                npr_r_en;
     logic [ADDR_W-1:0]   npr_r_addr;
-    logic [ENTRY_W-1:0]  npr_r_data;       // T+1 拍有效
+    logic [ENTRY_W-1:0]  npr_r_data;
 
     logic                npr_w_en;
     logic [ADDR_W-1:0]   npr_w_addr;
     logic [ENTRY_W-1:0]  npr_w_data;
 
     //========================================================================
-    // 建链 FSM (独占 SRAM 期间 enq/deq/rcy 全等)
+    // 建链 FSM
     //========================================================================
     typedef enum logic [1:0] {
         ST_IDLE  = 2'b00,
@@ -253,52 +249,34 @@ module lle #(
     //========================================================================
     // 事务请求信号 (T0 当拍判定)
     //========================================================================
-    logic enq_req_int;      // 内部 enq 请求 (fire + free 非空)
-    logic deq_req_int;      // 内部 deq 请求 (fire + 队列非空)
-    logic deq_need_sram;    // deq 需要读 SRAM 回填 next 预取 (cnt >= 3)
-    logic rcy_req_int;      // 内部 rcy 请求 (FIFO 非空)
+    logic enq_req_int;
+    logic deq_req_int;
+    logic deq_need_sram;
+    logic rcy_req_int;
 
     assign enq_req_int   = lle_alloc_fire & ~build_active & ~lle_free_empty;
     assign deq_req_int   = lle_deq_fire   & ~build_active &
                            (q_cell_cnt_q[lle_deq_queue_id] != '0);
-    // 两级预取: cnt >= 3 时需要 SRAM 读取回填 (cnt==2 deq 后仅剩 1 cell, 不需预取)
+    // 两级预取: cnt >= 3 时需要 SRAM 读取回填 next_ph/pt + next2
     assign deq_need_sram = deq_req_int & (q_cell_cnt_q[lle_deq_queue_id] >= 3);
     assign rcy_req_int   = ~rcy_fifo_empty & ~build_active;
 
     //========================================================================
-    // ★ 三选一仲裁 (整拍 SRAM 独占): P0 deq > P1 enq > P2 rcy
-    //   - deq 需 SRAM (cnt>=3) 时占读口 → enq 让步
-    //   - 单/双 cell deq (cnt<=2) 不读 SRAM → 不阻塞 enq
+    // ★ 三选一仲裁: P0 deq > P1 enq > P2 rcy
     //========================================================================
     logic deq_grant, enq_grant, rcy_grant;
 
-    // deq 永远可处理状态 (q_head/cnt 更新, 与 SRAM 占用无关)
     assign deq_grant = deq_req_int;
-
-    // SRAM 仲裁: deq 占 SRAM (deq_need_sram) 时, enq 让步
     assign enq_grant = enq_req_int & ~build_active & ~deq_need_sram;
-
-    // rcy 让步条件: deq 占 SRAM 或 enq 占 SRAM 或 build 期
     assign rcy_grant = rcy_req_int & ~build_active & ~deq_need_sram & ~enq_grant;
 
-    // 对外: enq ready (deq 占 SRAM / build / free空 → 0)
     assign lle_alloc_ready = ~build_active & ~lle_free_empty & ~deq_need_sram;
 
-    // recycle FIFO push/pop 使能
     assign do_push = lle_free_req & ~rcy_fifo_full & ~build_active;
     assign do_pop  = rcy_grant;
 
     //========================================================================
     // SRAM 读写口驱动 (两级预取版本)
-    //
-    //   - deq 赢 (cnt>=3): 读 SRAM[q_head_next2] → 取回 next 的 ph/pt + 新 next2
-    //   - enq 赢: 读 SRAM[free_head_next2] → 回填 next2 预取
-    //             + 写 SRAM[free_head] = {free_head_next, sof, eof} (挂链)
-    //   - rcy 赢: 写 SRAM[free_tail].next = X (还链)
-    //   - build : 写 SRAM[idx] = {idx+1, 0, 0} (建链)
-    //
-    //   bypass 情况: 当 pend 和 grant 同拍时, SRAM 取回值 (npr_r_data) 可直接
-    //   用作本拍 SRAM 读地址 (链式预取), 因为 npr_r_data 是寄存器输出, 拍头可用。
     //========================================================================
     logic [ADDR_W-1:0]  build_addr;
     logic [ENTRY_W-1:0] build_wdata;
@@ -309,55 +287,49 @@ module lle #(
     logic [ADDR_W-1:0] enq_cell;
     assign enq_cell = free_head_q;
 
-    // pend 信号 (声明, 赋值在后面时序块)
+    // ---- pend 流水寄存器 ----
     logic               deq_pend_q;
     logic [QID_W-1:0]   deq_pend_qid_q;
     logic               enq_pend_q;
 
-    // bypass 条件
-    logic deq_pend_same_q;   // deq_pend 和 本拍 deq 是同一队列
-    logic enq_bypass;        // enq_pend 和 本拍 enq_grant 同时有效
+    // ---- bypass 条件 ----
+    logic deq_pend_same_q;
+    logic enq_bypass;
 
     assign deq_pend_same_q = deq_pend_q & deq_grant &
                              (deq_pend_qid_q == lle_deq_queue_id);
     assign enq_bypass      = enq_pend_q & enq_grant;
 
-    // enq SRAM 读地址: 正常=next2, bypass=npr_r_data(刚取回的新 next2 值)
+    // enq SRAM 读地址: 正常=next2, bypass=npr_r_data.next (刚取回的新 next2)
     logic [ADDR_W-1:0] enq_sram_rd_addr;
     assign enq_sram_rd_addr = enq_bypass ? npr_r_data[2 +: ADDR_W] : free_head_next2_q;
 
-    // deq SRAM 读地址: 正常=next2[qid], bypass=npr_r_data.next(刚取回的新 next2)
+    // deq SRAM 读地址: 正常=next2[qid], bypass=npr_r_data.next (刚取回的新 next2)
     logic [ADDR_W-1:0] deq_sram_rd_addr;
     assign deq_sram_rd_addr = deq_pend_same_q ? npr_r_data[2 +: ADDR_W]
                                               : q_head_next2_q[lle_deq_queue_id];
 
     always_comb begin
-        // 读口默认: 关
         npr_r_en   = 1'b0;
         npr_r_addr = '0;
-        // 写口默认: 关
         npr_w_en   = 1'b0;
         npr_w_addr = '0;
         npr_w_data = '0;
 
         if (build_active) begin
-            // build: 独占写口
             npr_w_en   = 1'b1;
             npr_w_addr = build_addr;
             npr_w_data = build_wdata;
         end
         else if (deq_grant && deq_need_sram) begin
-            // P0 deq (cnt>=3): 读 SRAM[next2] 取回 {next3, next2_ph, next2_pt}
+            // P0 deq: 读 SRAM[next2] → {next3, next2_ph, next2_pt}
             npr_r_en   = 1'b1;
             npr_r_addr = deq_sram_rd_addr;
         end
         else if (enq_grant) begin
-            // P1 enq: 读 SRAM[next2](回填二级预取) + 写 SRAM[head](挂链)
-            // 读口: 读 next2 或 bypass 地址
+            // P1 enq: 读 SRAM[next2](回填) + 写 SRAM[head](挂链)
             npr_r_en   = 1'b1;
             npr_r_addr = enq_sram_rd_addr;
-            // 写口: 写当前分配的 cell 的 queue entry
-            //   next 字段 = free_head_next_q (两级预取保证始终有效)
             npr_w_en   = 1'b1;
             npr_w_addr = free_head_q;
             npr_w_data = {free_head_next_q, lle_set_pkt_head, lle_set_pkt_tail};
@@ -376,25 +348,17 @@ module lle #(
     ) u_npr (
         .clk_core   (clk_core),
         .rst_core_n (rst_core_n),
-        // 读口
         .r_en       (npr_r_en),
         .r_addr     (npr_r_addr),
-        .r_data     (npr_r_data),                                       // T+1 拍有效
-        // 写口
+        .r_data     (npr_r_data),
         .w_en       (npr_w_en),
         .w_addr     (npr_w_addr),
         .w_data     (npr_w_data)
     );
 
     //========================================================================
-    // SRAM 取回 → 预取寄存器更新 pipeline (T+1 拍)
-    //   - deq_pend: 上拍 deq 读了 SRAM[next2], 本拍取回 {next3, next2_ph, next2_pt}
-    //              → next_ph/pt 更新为取回的 next2 自身属性 (因为 next2 promote 成了 next)
-    //              → next2 更新为取回的 .next 字段 (新 next2 地址)
-    //   - enq_pend: 上拍 enq 读了 SRAM[next2], 本拍取回 {next3, -, -}
-    //              → free_head_next2 更新为取回的 .next 字段
+    // Pend 流水寄存器
     //========================================================================
-
     always_ff @(posedge clk_core or negedge rst_core_n) begin
         if (!rst_core_n) begin
             deq_pend_q     <= 1'b0;
@@ -409,7 +373,7 @@ module lle #(
     end
 
     //========================================================================
-    // 主状态更新 (T0 末沿同拍完成)
+    // 主状态更新
     //========================================================================
     integer q, i;
     always_ff @(posedge clk_core or negedge rst_core_n) begin
@@ -450,9 +414,9 @@ module lle #(
                 q_head_next_pt_q[q] <= 1'b0;
                 q_head_next2_q[q]   <= '0;
             end
-            free_head_q       <= '0;                                    // cell 0
-            free_head_next_q  <= {{(ADDR_W-1){1'b0}}, 1'b1};            // cell 1
-            free_head_next2_q <= {{(ADDR_W-2){1'b0}}, 2'b10};           // cell 2
+            free_head_q       <= '0;                                     // cell 0
+            free_head_next_q  <= {{(ADDR_W-1){1'b0}}, 1'b1};             // cell 1
+            free_head_next2_q <= {{(ADDR_W-2){1'b0}}, 2'b10};            // cell 2
             free_tail_q       <= CELL_NUM[ADDR_W-1:0] - 1'b1;
             free_cnt_q        <= CELL_NUM[CNT_W-1:0];
             rcy_fifo_cnt_q    <= '0;
@@ -460,59 +424,43 @@ module lle #(
             rcy_fifo_rptr_q   <= '0;
         end
         else begin
+
             //================================================================
             // ────── ENQ 落地 (enq_grant = 1) ──────
-            //
-            //   两级预取推进:
-            //     head ← next (始终有效)
-            //     next ← next2 (正常) 或 bypass(npr_r_data) (enq_pend 同拍)
-            //     SRAM 读口已发出对 next2/bypass_addr 的读取, T+1 回填 next2
-            //
-            //   挂链:
-            //     SRAM[head] = {next, sof, eof} (写口已在 comb 驱动)
-            //     q_tail 推进, q_cell_cnt++
-            //     空队 bypass: 新 cell 兼任队头
             //================================================================
             if (enq_grant) begin
                 // ---- free 链两级预取推进 ----
-                free_head_q <= free_head_next_q;          // head 推进到 next
-                if (enq_bypass) begin
-                    // bypass: 上拍读的 SRAM 刚取回 → 取回值即为新 next2
-                    //   本拍 next ← 取回值 (因为 old next2 被 head←next 消耗后已过时)
-                    free_head_next_q <= npr_r_data[2 +: ADDR_W];
-                end
-                else begin
-                    free_head_next_q <= free_head_next2_q; // 正常: next ← next2
-                end
-                // next2 将由下拍 enq_pend 取回 SRAM 数据回填
+                free_head_q <= free_head_next_q;
+                if (enq_bypass)
+                    free_head_next_q <= npr_r_data[2 +: ADDR_W]; // bypass
+                else
+                    free_head_next_q <= free_head_next2_q;        // 正常 promote
 
                 // ---- 挂尾 ----
                 q_tail_q[lle_alloc_queue_id] <= enq_cell;
 
                 // ---- 队列预取寄存器更新 (入队侧) ----
                 if (q_cell_cnt_q[lle_alloc_queue_id] == '0) begin
-                    // 空队: 新 cell 兼任队头, 设置 head 及 ph/pt
+                    // 空队: 新 cell 兼任队头
                     q_head_q[lle_alloc_queue_id]         <= enq_cell;
                     q_head_ph_q[lle_alloc_queue_id]      <= lle_set_pkt_head;
                     q_head_pt_q[lle_alloc_queue_id]      <= lle_set_pkt_tail;
-                    // next 指向下一个将分配的 cell (=free_head_next)
                     q_head_next_q[lle_alloc_queue_id]    <= free_head_next_q;
                     q_head_next_ph_q[lle_alloc_queue_id] <= 1'b0;
                     q_head_next_pt_q[lle_alloc_queue_id] <= 1'b0;
                 end
                 else if (q_cell_cnt_q[lle_alloc_queue_id] == 1) begin
-                    // 单 cell → 双 cell: 设置 next 地址及其 ph/pt
+                    // 单→双: 设置 next 及其 ph/pt
                     q_head_next_q[lle_alloc_queue_id]    <= enq_cell;
                     q_head_next_ph_q[lle_alloc_queue_id] <= lle_set_pkt_head;
                     q_head_next_pt_q[lle_alloc_queue_id] <= lle_set_pkt_tail;
-                    // next2 先指向下一个 free cell (若帧继续则会用到)
                     q_head_next2_q[lle_alloc_queue_id]   <= free_head_next_q;
                 end
                 else if (q_cell_cnt_q[lle_alloc_queue_id] == 2) begin
-                    // 双 cell → 三 cell: 设置 next2 地址
+                    // 双→三: 设置 next2 地址
                     q_head_next2_q[lle_alloc_queue_id]   <= enq_cell;
                 end
-                // cnt >= 3: 仅 tail 推进, 预取不变 (后续由 deq SRAM 走链填充)
+                // cnt >= 3: 仅 tail 推进, 预取不变
             end
 
             // ---- enq_pend T+1: SRAM 取回 → 回填 free_head_next2 ----
@@ -522,25 +470,14 @@ module lle #(
 
             //================================================================
             // ────── DEQ 落地 (deq_grant = 1) ──────
-            //
-            //   两级预取推进:
-            //     head ← next, head_ph/pt ← next_ph/pt
-            //     next ← next2, next_ph/pt ← bypass(SRAM 取回) 或保持待 pend 填充
-            //     next2 ← 由 deq_pend T+1 SRAM 取回回填
-            //
-            //   bypass: deq_pend 与本拍 deq 同队列同拍
-            //     → next_ph/pt 直接从 npr_r_data 取
-            //     → next2 从 npr_r_data.next 取
             //================================================================
             if (deq_grant) begin
-                // head 推进
+                // head 推进到 next
                 q_head_q[lle_deq_queue_id] <= q_head_next_q[lle_deq_queue_id];
 
-                // head_ph/pt ← next_ph/pt (两级预取: next 层始终有正确 ph/pt)
+                // head_ph/pt ← next_ph/pt (或 bypass)
                 if (deq_pend_same_q) begin
-                    // bypass: SRAM 刚取回的是 old_next2 的 ph/pt
-                    //   old_next2 在上拍 deq 时被 promote 成了 next
-                    //   所以取回的 ph/pt 正是当前 next 的属性 → 赋给新 head
+                    // bypass: SRAM 取回的 ph/pt = old_next2(现为 next) 的属性
                     q_head_ph_q[lle_deq_queue_id] <= npr_r_data[PH_BIT];
                     q_head_pt_q[lle_deq_queue_id] <= npr_r_data[PT_BIT];
                 end
@@ -551,30 +488,23 @@ module lle #(
 
                 // next 推进 (level 1 ← level 2)
                 if (deq_pend_same_q) begin
-                    // bypass: next addr ← SRAM 取回的 .next 字段 (新 next2)
+                    // bypass: next ← SRAM 取回的 .next 字段
                     q_head_next_q[lle_deq_queue_id] <= npr_r_data[2 +: ADDR_W];
-                    // next_ph/pt: 本拍无法得知 (要等下一拍 SRAM 取回), 先保持
-                    // 但不影响功能: 下拍 deq_pend 会填充
                 end
                 else begin
-                    q_head_next_q[lle_deq_queue_id]    <= q_head_next2_q[lle_deq_queue_id];
-                    // next_ph/pt 暂保持 (由 deq_pend 下一拍回填, 或 bypass 填充)
+                    q_head_next_q[lle_deq_queue_id] <= q_head_next2_q[lle_deq_queue_id];
                 end
-                // next2 将由下拍 deq_pend SRAM 取回回填
             end
 
             // ---- deq_pend T+1: SRAM 取回 → 回填 next_ph/pt 和 next2 ----
             if (deq_pend_q) begin
-                // SRAM[old_next2] 返回 {next3, old_next2_ph, old_next2_pt}
-                // old_next2 在上拍已 promote 为 next → 其 ph/pt 即为新 next 的属性
                 q_head_next_ph_q[deq_pend_qid_q] <= npr_r_data[PH_BIT];
                 q_head_next_pt_q[deq_pend_qid_q] <= npr_r_data[PT_BIT];
-                // .next 字段 = next3 → 成为新 next2
                 q_head_next2_q[deq_pend_qid_q]   <= npr_r_data[2 +: ADDR_W];
             end
 
             //================================================================
-            // 计数 q_cell_cnt 合并 (同 queue enq+deq 净不变, 不同 queue 各动)
+            // 计数 q_cell_cnt
             //================================================================
             if (enq_grant && deq_grant && (lle_alloc_queue_id == lle_deq_queue_id)) begin
                 // 同 queue 同拍: 净不变
@@ -587,7 +517,7 @@ module lle #(
             end
 
             //================================================================
-            // recycle FIFO push + pop
+            // Recycle FIFO push + pop
             //================================================================
             if (do_push) begin
                 rcy_fifo_mem[rcy_fifo_wptr_q] <= lle_free_addr;
@@ -600,7 +530,475 @@ module lle #(
 
             // FIFO cnt 净变化
             unique case ({do_push, do_pop})
-                2'b10: rcy_fifo_cnt_q <= rcy_fifo_cnt_q + 1'b1;
-                2'b01: rcy_fifo_cnt_q <= rcy_fifo_cnt_q - 1'b1;
-                2'b11: rcy_fifo_cnt_q <= rcy
+                2'b10:   rcy_fifo_cnt_q <= rcy_fifo_cnt_q + 1'b1;
+                2'b01:   rcy_fifo_cnt_q <= rcy_fifo_cnt_q - 1'b1;
+                2'b11:   rcy_fifo_cnt_q <= rcy_fifo_cnt_q;
+                default: ;
+            endcase
+
+            // free_cnt 净变化 (enq -1, recycle push +1)
+            unique case ({enq_grant, do_push})
+                2'b10:   free_cnt_q <= free_cnt_q - 1'b1;
+                2'b01:   free_cnt_q <= free_cnt_q + 1'b1;
+                2'b11:   free_cnt_q <= free_cnt_q;
+                default: ;
+            endcase
+        end
+    end
+
+    //========================================================================
+    // 对外组合输出
+    //========================================================================
+    assign lle_qhead          = q_head_q[lle_deq_queue_id];
+    assign lle_qhead_pkt_head = q_head_ph_q[lle_deq_queue_id];
+    assign lle_qhead_pkt_tail = q_head_pt_q[lle_deq_queue_id];
+    assign lle_q_empty        = (q_cell_cnt_q[lle_deq_queue_id] == '0);
+
+    assign lle_free_grant = lle_free_req & ~build_active & ~rcy_fifo_full;
+    assign lle_free_done  = rcy_grant;
+
+    assign mc_set_req  = enq_grant & lle_alloc_is_mcast;
+    assign mc_set_addr = enq_cell;
+    assign mc_set_init = lle_alloc_ref_init;
+
+    assign lle_alloc_evt = enq_grant;
+    assign lle_free_evt  = lle_free_grant;
+    assign evt_queue_id  = enq_grant ? lle_alloc_queue_id : lle_deq_queue_id;
+
+    localparam int Q_PER_PORT_LOG = $clog2(QUEUE_NUM / PORT_NUM);
+    assign evt_egress_port = evt_queue_id >> Q_PER_PORT_LOG;
+
+`ifdef SIM_BEHAVIOR_SRAM
+    //========================================================================
+    // 仿真断言
+    //========================================================================
+    always_ff @(posedge clk_core) begin
+        if (rst_core_n && lle_free_req && rcy_fifo_full && !build_active)
+            $warning("[lle] recycle FIFO full: free request ignored");
+    end
+    always_ff @(posedge clk_core) begin
+        if (rst_core_n && enq_grant && (free_cnt_q == '0))
+            $error("[lle] free pool underflow: alloc when free_cnt==0");
+    end
+    always_ff @(posedge clk_core) begin
+        if (rst_core_n && npr_r_en && npr_w_en && (npr_r_addr == npr_w_addr))
+            $warning("[lle] SRAM r/w same addr in same cycle (enq read-first OK)");
+    end
+`endif
+
+endmodule
+
+
+//============================================================================
+// 1R1W Next-Ptr SRAM 行为模型 (综合时换 vendor 1R1W SRAM)
+//   - 1 读口 + 1 写口, 同拍可并行
+//   - 同拍读写同一地址: read-first (读到旧值)
+//============================================================================
+module next_ptr_sram_1r1w #(
+    parameter int CELL_NUM = 8192,
+    parameter int DATA_W   = 15,
+    localparam int ADDR_W  = $clog2(CELL_NUM)
+)(
+    input  logic              clk_core,
+    input  logic              rst_core_n,
+    input  logic              r_en,
+    input  logic [ADDR_W-1:0] r_addr,
+    output logic [DATA_W-1:0] r_data,
+    input  logic              w_en,
+    input  logic [ADDR_W-1:0] w_addr,
+    input  logic [DATA_W-1:0] w_data
+);
+    logic [DATA_W-1:0] mem [CELL_NUM];
+
+    // read-first: 读到的是写之前的旧值
+    always_ff @(posedge clk_core or negedge rst_core_n) begin
+        if (!rst_core_n) r_data <= '0;
+        else if (r_en)   r_data <= mem[r_addr];
+    end
+
+    always_ff @(posedge clk_core) begin
+        if (w_en) mem[w_addr] <= w_data;
+    end
+endmodule
+```
+
+```
+//============================================================================
+// Testbench : lle_tb
+// Description:
+//   针对 lle 模块的功能验证 testbench。
+//   参数: 2 port × 2 queue/port = 4 queue + 1 free + 1 multicast = 6 chain
+//         CELL_NUM = 64
+//
+//   测试序列:
+//     1. 建链 (init_build)
+//     2. q0 入队 1 包 4 cell
+//     3. q1 入队 1 包 5 cell
+//     4. q1 入队 1 包 6 cell
+//     5. q0 入队 1 包 2 cell
+//     6. q0 入队 1 包 7 cell
+//     7. q2 入队 1 包 10 cell (多播队列)
+//     8. q1 走链第一个包 (5 cell)
+//     9. 还链 5 cell
+//    10. q3 入队 2 cell 同时 q0 走链一包 (4 cell) → 仲裁冲突覆盖
+//    11. 附加场景: 背靠背 deq 连续 / enq+deq 同拍冲突 / rcy burst 等
+//
+//   每次整包操作后打印:
+//     - 各队列 head/tail/cnt
+//     - free 链 head/tail/cnt
+//     - 验证背靠背时序 (每拍消耗/输出)
+//============================================================================
+`timescale 1ns/1ps
+
+module lle_tb;
+
+    //========================================================================
+    // 参数 (缩小规模便于仿真)
+    //========================================================================
+    localparam int CELL_NUM       = 64;
+    localparam int QUEUE_NUM      = 6;    // q0,q1 (port0); q2,q3 (port1); q4=free概念; q5=mcast
+    localparam int PORT_NUM       = 2;
+    localparam int REF_W          = 3;
+    localparam int RCY_FIFO_DEPTH = 8;
+
+    localparam int ADDR_W  = $clog2(CELL_NUM);
+    localparam int QID_W   = $clog2(QUEUE_NUM-1)+1;
+    localparam int PORT_W  = $clog2(PORT_NUM-1)+1;
+    localparam int CNT_W   = ADDR_W + 1;
+    localparam int ENTRY_W = ADDR_W + 2;
+
+    //========================================================================
+    // 时钟与复位
+    //========================================================================
+    logic clk, rst_n;
+    initial clk = 0;
+    always #1.667 clk = ~clk;   // ~300MHz
+
+    //========================================================================
+    // DUT 信号
+    //========================================================================
+    logic                  init_build_req, init_build_done;
+    logic [ADDR_W-1:0]    lle_free_head;
+    logic                  lle_free_empty;
+    logic                  lle_alloc_ready;
+    logic                  lle_alloc_fire;
+    logic [QID_W-1:0]     lle_alloc_queue_id;
+    logic [ADDR_W-1:0]    lle_alloc_addr;
+    logic                  lle_set_pkt_head, lle_set_pkt_tail;
+    logic                  lle_alloc_is_mcast;
+    logic [REF_W-1:0]     lle_alloc_ref_init;
+
+    logic [QID_W-1:0]     lle_deq_queue_id;
+    logic [ADDR_W-1:0]    lle_qhead;
+    logic                  lle_qhead_pkt_head, lle_qhead_pkt_tail;
+    logic                  lle_q_empty;
+    logic                  lle_deq_fire;
+
+    logic                  lle_free_req;
+    logic [ADDR_W-1:0]    lle_free_addr;
+    logic                  lle_free_grant, lle_free_done;
+
+    logic                  mc_set_req;
+    logic [ADDR_W-1:0]    mc_set_addr;
+    logic [REF_W-1:0]     mc_set_init;
+    logic                  mc_set_ack;
+
+    logic                  lle_alloc_evt, lle_free_evt;
+    logic [QID_W-1:0]     evt_queue_id;
+    logic [PORT_W-1:0]    evt_egress_port;
+
+    assign mc_set_ack = 1'b1;
+
+    //========================================================================
+    // DUT 例化
+    //========================================================================
+    lle #(
+        .CELL_NUM       (CELL_NUM),
+        .QUEUE_NUM      (QUEUE_NUM),
+        .PORT_NUM       (PORT_NUM),
+        .REF_W          (REF_W),
+        .RCY_FIFO_DEPTH (RCY_FIFO_DEPTH)
+    ) u_dut (
+        .clk_core           (clk),
+        .rst_core_n         (rst_n),
+        .init_build_req     (init_build_req),
+        .init_build_done    (init_build_done),
+        .lle_free_head      (lle_free_head),
+        .lle_free_empty     (lle_free_empty),
+        .lle_alloc_ready    (lle_alloc_ready),
+        .lle_alloc_fire     (lle_alloc_fire),
+        .lle_alloc_queue_id (lle_alloc_queue_id),
+        .lle_alloc_addr     (lle_alloc_addr),
+        .lle_set_pkt_head   (lle_set_pkt_head),
+        .lle_set_pkt_tail   (lle_set_pkt_tail),
+        .lle_alloc_is_mcast (lle_alloc_is_mcast),
+        .lle_alloc_ref_init (lle_alloc_ref_init),
+        .lle_deq_queue_id   (lle_deq_queue_id),
+        .lle_qhead          (lle_qhead),
+        .lle_qhead_pkt_head (lle_qhead_pkt_head),
+        .lle_qhead_pkt_tail (lle_qhead_pkt_tail),
+        .lle_q_empty        (lle_q_empty),
+        .lle_deq_fire       (lle_deq_fire),
+        .lle_free_req       (lle_free_req),
+        .lle_free_addr      (lle_free_addr),
+        .lle_free_grant     (lle_free_grant),
+        .lle_free_done      (lle_free_done),
+        .mc_set_req         (mc_set_req),
+        .mc_set_addr        (mc_set_addr),
+        .mc_set_init        (mc_set_init),
+        .mc_set_ack         (mc_set_ack),
+        .lle_alloc_evt      (lle_alloc_evt),
+        .lle_free_evt       (lle_free_evt),
+        .evt_queue_id       (evt_queue_id),
+        .evt_egress_port    (evt_egress_port)
+    );
+
+    //========================================================================
+    // 辅助 task: 打印状态
+    //========================================================================
+    task automatic print_status(string tag);
+        integer qi;
+        $display("──── [%0t] %s ────", $time, tag);
+        $display("  free: head=%0d tail=%0d cnt=%0d empty=%0b",
+                 u_dut.free_head_q, u_dut.free_tail_q, u_dut.free_cnt_q, lle_free_empty);
+        $display("  free_head_next=%0d  free_head_next2=%0d",
+                 u_dut.free_head_next_q, u_dut.free_head_next2_q);
+        for (qi = 0; qi < QUEUE_NUM; qi++) begin
+            if (u_dut.q_cell_cnt_q[qi] != 0)
+                $display("  q[%0d]: head=%0d tail=%0d cnt=%0d next=%0d(ph=%0b,pt=%0b) next2=%0d  head_ph=%0b head_pt=%0b",
+                         qi, u_dut.q_head_q[qi], u_dut.q_tail_q[qi], u_dut.q_cell_cnt_q[qi],
+                         u_dut.q_head_next_q[qi], u_dut.q_head_next_ph_q[qi], u_dut.q_head_next_pt_q[qi],
+                         u_dut.q_head_next2_q[qi],
+                         u_dut.q_head_ph_q[qi], u_dut.q_head_pt_q[qi]);
+        end
+        $display("  rcy FIFO: cnt=%0d", u_dut.rcy_fifo_cnt_q);
+        $display("");
+    endtask
+
+    //========================================================================
+    // 辅助 task: 入队一整包 (背靠背, 每拍 1 cell)
+    //========================================================================
+    task automatic enqueue_pkt(input int qid, input int num_cells, input bit is_mcast, input int ref_init);
+        integer i;
+        int alloc_cnt;
+        alloc_cnt = 0;
+        $display("[%0t] >>> ENQ start: q=%0d cells=%0d mcast=%0b", $time, qid, num_cells, is_mcast);
+        for (i = 0; i < num_cells; i++) begin
+            // 等 lle_alloc_ready
+            while (!lle_alloc_ready) @(posedge clk);
+            lle_alloc_fire     = 1'b1;
+            lle_alloc_queue_id = qid[QID_W-1:0];
+            lle_alloc_addr     = lle_free_head;
+            lle_set_pkt_head   = (i == 0);
+            lle_set_pkt_tail   = (i == num_cells-1);
+            lle_alloc_is_mcast = is_mcast;
+            lle_alloc_ref_init = ref_init[REF_W-1:0];
+            @(posedge clk);
+            alloc_cnt++;
+        end
+        lle_alloc_fire = 1'b0;
+        // 等 1 拍让 SRAM 取回完成 (free_head_next 更新)
+        @(posedge clk);
+        $display("[%0t] <<< ENQ done: q=%0d cells=%0d (took %0d cycles fire)", $time, qid, num_cells, alloc_cnt);
+        print_status($sformatf("after enq q%0d %0d-cell pkt", qid, num_cells));
+    endtask
+
+    //========================================================================
+    // 辅助 task: 出队一整包 (背靠背, 每拍 1 cell, 直到 pkt_tail)
+    //========================================================================
+    task automatic dequeue_pkt(input int qid);
+        integer cnt;
+        cnt = 0;
+        $display("[%0t] >>> DEQ start: q=%0d", $time, qid);
+        lle_deq_queue_id = qid[QID_W-1:0];
+        while (1) begin
+            if (lle_q_empty) begin
+                $display("[%0t]   DEQ: queue %0d empty, abort", $time, qid);
+                break;
+            end
+            lle_deq_fire = 1'b1;
+            $display("[%0t]   DEQ cell: addr=%0d ph=%0b pt=%0b", $time,
+                     lle_qhead, lle_qhead_pkt_head, lle_qhead_pkt_tail);
+            cnt++;
+            if (lle_qhead_pkt_tail) begin
+                @(posedge clk);
+                lle_deq_fire = 1'b0;
+                break;
+            end
+            @(posedge clk);
+        end
+        lle_deq_fire = 1'b0;
+        // 等 1 拍让 SRAM 取回
+        @(posedge clk);
+        $display("[%0t] <<< DEQ done: q=%0d cells=%0d", $time, qid, cnt);
+        print_status($sformatf("after deq q%0d", qid));
+    endtask
+
+    //========================================================================
+    // 辅助 task: 还链 N 个 cell (背靠背发 req, 每拍 1 个)
+    //========================================================================
+    task automatic recycle_cells(input int cells[$]);
+        integer i;
+        $display("[%0t] >>> RCY start: %0d cells", $time, cells.size());
+        for (i = 0; i < cells.size(); i++) begin
+            lle_free_req  = 1'b1;
+            lle_free_addr = cells[i][ADDR_W-1:0];
+            @(posedge clk);
+            if (!lle_free_grant)
+                $display("[%0t]   RCY: grant=0 for cell %0d (FIFO full?)", $time, cells[i]);
+        end
+        lle_free_req = 1'b0;
+        // 等几拍让 rcy_grant 有机会写 SRAM
+        repeat (cells.size() + 2) @(posedge clk);
+        $display("[%0t] <<< RCY done: %0d cells", $time, cells.size());
+        print_status($sformatf("after rcy %0d cells", cells.size()));
+    endtask
+
+    //========================================================================
+    // 辅助 task: 同时入队 + 走链 (覆盖仲裁冲突)
+    //========================================================================
+    task automatic enq_and_deq_concurrent(input int enq_qid, input int enq_cells,
+                                          input int deq_qid);
+        integer ei, di;
+        bit deq_done;
+        ei = 0;
+        di = 0;
+        deq_done = 0;
+        $display("[%0t] >>> CONCURRENT: enq q%0d %0d cells + deq q%0d", $time, enq_qid, enq_cells, deq_qid);
+        lle_deq_queue_id = deq_qid[QID_W-1:0];
+        while (ei < enq_cells || !deq_done) begin
+            // enq
+            if (ei < enq_cells && lle_alloc_ready) begin
+                lle_alloc_fire     = 1'b1;
+                lle_alloc_queue_id = enq_qid[QID_W-1:0];
+                lle_alloc_addr     = lle_free_head;
+                lle_set_pkt_head   = (ei == 0);
+                lle_set_pkt_tail   = (ei == enq_cells-1);
+                lle_alloc_is_mcast = 1'b0;
+                lle_alloc_ref_init = '0;
+                ei++;
+            end
+            else begin
+                lle_alloc_fire = 1'b0;
+            end
+            // deq
+            if (!deq_done && !lle_q_empty) begin
+                lle_deq_fire = 1'b1;
+                $display("[%0t]   CONC DEQ: addr=%0d pt=%0b | ENQ fire=%0b ready=%0b",
+                         $time, lle_qhead, lle_qhead_pkt_tail, lle_alloc_fire, lle_alloc_ready);
+                if (lle_qhead_pkt_tail) deq_done = 1;
+            end
+            else begin
+                lle_deq_fire = 1'b0;
+                if (!deq_done && lle_q_empty) deq_done = 1;
+            end
+            @(posedge clk);
+        end
+        lle_alloc_fire = 1'b0;
+        lle_deq_fire   = 1'b0;
+        repeat (3) @(posedge clk);
+        $display("[%0t] <<< CONCURRENT done", $time);
+        print_status("after concurrent enq+deq");
+    endtask
+
+    //========================================================================
+    // 主测试序列
+    //========================================================================
+    initial begin
+        // 初始化
+        rst_n = 0;
+        init_build_req     = 0;
+        lle_alloc_fire     = 0;
+        lle_alloc_queue_id = 0;
+        lle_alloc_addr     = 0;
+        lle_set_pkt_head   = 0;
+        lle_set_pkt_tail   = 0;
+        lle_alloc_is_mcast = 0;
+        lle_alloc_ref_init = 0;
+        lle_deq_queue_id   = 0;
+        lle_deq_fire       = 0;
+        lle_free_req       = 0;
+        lle_free_addr      = 0;
+
+        repeat (5) @(posedge clk);
+        rst_n = 1;
+        repeat (2) @(posedge clk);
+
+        //---- 1. 建链 ----
+        $display("\n========== BUILD FREE LIST ==========");
+        init_build_req = 1;
+        @(posedge clk);
+        init_build_req = 0;
+        // 轮询等 init_build_done (只拉高 1 拍, 用 posedge 捕获避免 race)
+        while (!init_build_done) @(posedge clk);
+        @(posedge clk);
+        print_status("after build");
+
+        //---- 2. q0 入队 4 cell ----
+        enqueue_pkt(0, 4, 0, 0);
+
+        //---- 3. q1 入队 5 cell ----
+        enqueue_pkt(1, 5, 0, 0);
+
+        //---- 4. q1 入队 6 cell ----
+        enqueue_pkt(1, 6, 0, 0);
+
+        //---- 5. q0 入队 2 cell ----
+        enqueue_pkt(0, 2, 0, 0);
+
+        //---- 6. q0 入队 7 cell ----
+        enqueue_pkt(0, 7, 0, 0);
+
+        //---- 7. q2 入队 10 cell (多播队列, 假设 qid=4 为多播专用, ref=2) ----
+        enqueue_pkt(4, 10, 1, 2);
+
+        //---- 8. q1 走链第一个包 (5 cell) ----
+        dequeue_pkt(1);
+
+        //---- 9. 还链 5 cell (cell 4~8, 即 q1 第一包) ----
+        begin
+            int rcy_cells[$];
+            rcy_cells = '{4, 5, 6, 7, 8};
+            recycle_cells(rcy_cells);
+        end
+
+        //---- 10. q3 入队 2 cell 同时 q0 走链 (4 cell 第一包) ----
+        enq_and_deq_concurrent(3, 2, 0);
+
+        //---- 11. 附加: 背靠背 deq q1 第二个包 (6 cell) ----
+        dequeue_pkt(1);
+
+        //---- 12. 附加: 背靠背 enq + rcy 同拍冲突 ----
+        $display("\n========== ENQ + RCY CONFLICT ==========");
+        fork
+            enqueue_pkt(2, 3, 0, 0);     // q2 入队 3 cell (非 mcast, 普通 queue)
+            begin
+                int rcy2[$];
+                rcy2 = '{0, 1, 2};        // 还 3 个 cell (q0 第一包前 3 个)
+                recycle_cells(rcy2);
+            end
+        join
+        print_status("after enq+rcy conflict test");
+
+        //---- 13. 附加: 连续 deq 背靠背确认 ----
+        $display("\n========== BACK-TO-BACK DEQ q0 ==========");
+        dequeue_pkt(0);  // q0 还有 2+7=9 cell 分两包, 先出第二包 (2 cell)
+
+        //---- 结束 ----
+        repeat (10) @(posedge clk);
+        $display("\n========== ALL TESTS DONE ==========");
+        print_status("final state");
+        $finish;
+    end
+
+    //========================================================================
+    // 超时保护
+    //========================================================================
+    initial begin
+        #100000;
+        $display("TIMEOUT!");
+        $finish;
+    end
+
+endmodule
 ```
