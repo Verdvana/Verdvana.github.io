@@ -296,6 +296,11 @@ module lle #(
     logic               deq_pend_q;
     logic [QID_W-1:0]   deq_pend_qid_q;
     logic               enq_pend_q;
+    // deq 读的 cell 是否为 tail (其 SRAM entry 尚未 relink, 数据 stale)
+    //   → 用捕获的 q_tail flags 覆盖 SRAM 取回值
+    logic               deq_pend_tail_q;
+    logic               deq_pend_tail_ph_q;
+    logic               deq_pend_tail_pt_q;
 
     // ---- bypass 条件 ----
     logic deq_pend_same_q;
@@ -384,6 +389,12 @@ module lle #(
             deq_pend_q     <= deq_grant & deq_need_sram;
             deq_pend_qid_q <= lle_deq_queue_id;
             enq_pend_q     <= enq_grant;
+            // 捕获: 本拍 deq 读的 cell (deq_sram_rd_addr) 是否为该队列 tail。
+            //   若是, tail 的 SRAM entry 尚未 relink (stale), 下拍用 q_tail flags 覆盖。
+            deq_pend_tail_q    <= (deq_grant & deq_need_sram) &
+                                  (deq_sram_rd_addr == q_tail_q[lle_deq_queue_id]);
+            deq_pend_tail_ph_q <= q_tail_ph_q[lle_deq_queue_id];
+            deq_pend_tail_pt_q <= q_tail_pt_q[lle_deq_queue_id];
         end
     end
 
@@ -480,6 +491,11 @@ module lle #(
                     q_head_next2_q[lle_alloc_queue_id]   <= enq_cell;
                 end
                 // cnt >= 3: 仅 tail 推进, 预取不变
+
+                // ---- 更新队尾 flags (新 cell 成为新 tail) ----
+                //   注: 上面 comb relink 写 old tail 用的是更新前的 q_tail_ph/pt
+                q_tail_ph_q[lle_alloc_queue_id] <= lle_set_pkt_head;
+                q_tail_pt_q[lle_alloc_queue_id] <= lle_set_pkt_tail;
             end
 
             // ---- enq_pend T+1: SRAM 取回 → 回填 free_head_next2 ----
@@ -497,8 +513,15 @@ module lle #(
                 // head_ph/pt ← next_ph/pt (或 bypass)
                 if (deq_pend_same_q) begin
                     // bypass: SRAM 取回的 ph/pt = old_next2(现为 next) 的属性
-                    q_head_ph_q[lle_deq_queue_id] <= npr_r_data[PH_BIT];
-                    q_head_pt_q[lle_deq_queue_id] <= npr_r_data[PT_BIT];
+                    //   若上拍读的是 tail (SRAM stale), 用捕获的 q_tail flags 覆盖
+                    if (deq_pend_tail_q) begin
+                        q_head_ph_q[lle_deq_queue_id] <= deq_pend_tail_ph_q;
+                        q_head_pt_q[lle_deq_queue_id] <= deq_pend_tail_pt_q;
+                    end
+                    else begin
+                        q_head_ph_q[lle_deq_queue_id] <= npr_r_data[PH_BIT];
+                        q_head_pt_q[lle_deq_queue_id] <= npr_r_data[PT_BIT];
+                    end
                 end
                 else begin
                     q_head_ph_q[lle_deq_queue_id] <= q_head_next_ph_q[lle_deq_queue_id];
@@ -516,10 +539,18 @@ module lle #(
             end
 
             // ---- deq_pend T+1: SRAM 取回 → 回填 next_ph/pt 和 next2 ----
+            //   若上拍读的是 tail (SRAM stale), 用捕获的 q_tail flags 覆盖 next_ph/pt;
+            //   tail 无后继, next2 不更新 (此时队列已近空, next2 不会被使用)。
             if (deq_pend_q) begin
-                q_head_next_ph_q[deq_pend_qid_q] <= npr_r_data[PH_BIT];
-                q_head_next_pt_q[deq_pend_qid_q] <= npr_r_data[PT_BIT];
-                q_head_next2_q[deq_pend_qid_q]   <= npr_r_data[2 +: ADDR_W];
+                if (deq_pend_tail_q) begin
+                    q_head_next_ph_q[deq_pend_qid_q] <= deq_pend_tail_ph_q;
+                    q_head_next_pt_q[deq_pend_qid_q] <= deq_pend_tail_pt_q;
+                end
+                else begin
+                    q_head_next_ph_q[deq_pend_qid_q] <= npr_r_data[PH_BIT];
+                    q_head_next_pt_q[deq_pend_qid_q] <= npr_r_data[PT_BIT];
+                    q_head_next2_q[deq_pend_qid_q]   <= npr_r_data[2 +: ADDR_W];
+                end
             end
 
             //================================================================
