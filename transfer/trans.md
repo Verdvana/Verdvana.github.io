@@ -78,6 +78,7 @@ module smart_mmu #(
     output logic                  alloc_pkt_head,      // 报文头 (= enq_sof)
     output logic                  alloc_pkt_tail,      // 报文尾 (= enq_eof)
     output logic                  alloc_full_frame_drop, // 整帧丢弃指示
+    output logic                  mcast_busy_drop,     // ★ B2: 多播槽占用, 新多播帧被丢弃
 
     //------------------------------------------------------------------------
     // G3 - 出队 / 地址读取接口 (QM ↔ MMU, 1 拍)
@@ -141,6 +142,8 @@ module smart_mmu #(
     input  logic                                        cfg_in_pfc_en,            // PFC 使能
     input  logic [PORT_NUM-1:0][TC_NUM-1:0][CNT_W-1:0]  cfg_in_pfc_xoff,          // 每 TC PFC XOFF
     input  logic [PORT_NUM-1:0][TC_NUM-1:0][CNT_W-1:0]  cfg_in_pfc_xon,           // 每 TC PFC XON
+    // ★ B2: 每端口多播承载 TC (选“承载单播队列”; 直采, 不走 csr)
+    input  logic [PORT_NUM-1:0][$clog2(TC_NUM)-1:0]     cfg_in_mcast_carry_tc,
 
     //------------------------------------------------------------------------
     // G5 - 统计输出 (MMU → 外部 CSR/CPU, clk_core 域直接输出, 无总线)
@@ -177,7 +180,8 @@ module smart_mmu #(
     logic [ADDR_W-1:0]     lle_alloc_addr;
     logic                  lle_set_pkt_head, lle_set_pkt_tail;
     logic                  lle_alloc_is_mcast;
-    logic [REF_W-1:0]      lle_alloc_ref_init;
+    logic [PORT_NUM-1:0]   lle_alloc_mcast_bitmap;   // ★ B2
+    logic                  mc_busy;                  // ★ B2
 
     // Dequeue Ctrl ↔ LLE
     logic [QID_W-1:0]      lle_deq_queue_id;
@@ -192,17 +196,10 @@ module smart_mmu #(
     logic [QID_W-1:0]      lle_free_queue_id;
     logic                  lle_free_grant, lle_free_done;
 
-    // LLE ↔ Mcast (置初值)
-    logic                  mc_set_req;
-    logic [ADDR_W-1:0]     mc_set_addr;
-    logic [REF_W-1:0]      mc_set_init;
-    logic                  mc_set_ack;
-
-    // Recycle Ctrl ↔ Mcast (递减)
-    logic                  mc_dec_req;
-    logic [ADDR_W-1:0]     mc_dec_addr;
-    logic                  mc_dec_ack, mc_ref_zero;
-    logic                  mc_ref_underflow;
+    // ★ B2: Recycle Ctrl → LLE 多播逐端口回收 + LLE 多播回收下溢告警
+    logic                  mc_rcy_vld;
+    logic [PORT_W-1:0]     mc_rcy_port;
+    logic                  mcast_underflow;
 
     // LLE ↔ Occupancy:
     //   alloc 事件: lle_alloc_evt + evt_queue_id/evt_egress_port (per-queue/port ++)
@@ -247,9 +244,9 @@ module smart_mmu #(
     logic                  init_build_req, init_build_done;
     logic                  clr_ptr_cnt;
 
-    // 顶层告警: occ 溢出/下溢 + 组播 ref 下溢, 一并汇入 (csr 内再聚成 irq)。
+    // 顶层告警: occ 溢出/下溢 + 组播回收下溢, 一并汇入 (csr 内再聚成 irq)。
     assign overflow_alarm  = occ_overflow_alarm;
-    assign underflow_alarm = occ_underflow_alarm | mc_ref_underflow;
+    assign underflow_alarm = occ_underflow_alarm | mcast_underflow;
 
     //========================================================================
     // 子模块例化
@@ -298,7 +295,9 @@ module smart_mmu #(
         .lle_set_pkt_head      (lle_set_pkt_head),
         .lle_set_pkt_tail      (lle_set_pkt_tail),
         .lle_alloc_is_mcast    (lle_alloc_is_mcast),
-        .lle_alloc_ref_init    (lle_alloc_ref_init)
+        .lle_alloc_mcast_bitmap(lle_alloc_mcast_bitmap),   // ★ B2
+        .mc_busy               (mc_busy),                  // ★ B2
+        .mcast_busy_drop       (mcast_busy_drop)           // ★ B2
     );
 
     // ---- Dequeue Ctrl ----
@@ -337,15 +336,14 @@ module smart_mmu #(
         .mcast_recycle_addr     (mcast_recycle_addr),
         .mcast_recycle_queue_id (mcast_recycle_queue_id),
         .recycle_ack            (recycle_ack),
-        .mc_dec_req             (mc_dec_req),
-        .mc_dec_addr            (mc_dec_addr),
-        .mc_dec_ack             (mc_dec_ack),
-        .mc_ref_zero            (mc_ref_zero),
         .lle_free_req           (lle_free_req),
         .lle_free_addr          (lle_free_addr),
         .lle_free_queue_id      (lle_free_queue_id),
         .lle_free_grant         (lle_free_grant),
-        .lle_free_done          (lle_free_done)
+        .lle_free_done          (lle_free_done),
+        // ★ B2: 组播逐端口回收 → LLE
+        .mc_rcy_vld             (mc_rcy_vld),
+        .mc_rcy_port            (mc_rcy_port)
     );
 
     // ---- Link-List Engine (含内部 Next-Ptr SRAM) ----
@@ -366,7 +364,9 @@ module smart_mmu #(
         .lle_set_pkt_head   (lle_set_pkt_head),
         .lle_set_pkt_tail   (lle_set_pkt_tail),
         .lle_alloc_is_mcast (lle_alloc_is_mcast),
-        .lle_alloc_ref_init (lle_alloc_ref_init),
+        .lle_alloc_mcast_bitmap (lle_alloc_mcast_bitmap),  // ★ B2
+        .mc_busy            (mc_busy),                      // ★ B2
+        .cfg_mcast_carry_tc (cfg_in_mcast_carry_tc),        // ★ B2
         .lle_deq_queue_id   (lle_deq_queue_id),
         .lle_qhead          (lle_qhead),
         .lle_qhead_pkt_head (lle_qhead_pkt_head),
@@ -378,10 +378,10 @@ module smart_mmu #(
         .lle_free_queue_id  (lle_free_queue_id),
         .lle_free_grant     (lle_free_grant),
         .lle_free_done      (lle_free_done),
-        .mc_set_req         (mc_set_req),
-        .mc_set_addr        (mc_set_addr),
-        .mc_set_init        (mc_set_init),
-        .mc_set_ack         (mc_set_ack),
+        // ★ B2: 组播逐端口回收 + 下溢告警
+        .mc_rcy_vld         (mc_rcy_vld),
+        .mc_rcy_port        (mc_rcy_port),
+        .mcast_underflow    (mcast_underflow),
         // alloc 事件 → occ (per-queue/port ++)
         .lle_alloc_evt      (lle_alloc_evt),
         .evt_queue_id       (evt_queue_id),
@@ -455,22 +455,9 @@ module smart_mmu #(
         .underflow_alarm         (occ_underflow_alarm)
     );
 
-    // ---- Multicast Ref-Count Mgr ----
-    mcast_refcount_mgr #(
-        .ADDR_W (ADDR_W), .CELL_NUM (CELL_NUM), .REF_W (REF_W)
-    ) u_mc (
-        .clk_core         (clk_core),
-        .rst_core_n       (rst_core_n),
-        .mc_set_req       (mc_set_req),
-        .mc_set_addr      (mc_set_addr),
-        .mc_set_init      (mc_set_init),
-        .mc_set_ack       (mc_set_ack),
-        .mc_dec_req       (mc_dec_req),
-        .mc_dec_addr      (mc_dec_addr),
-        .mc_dec_ack       (mc_dec_ack),
-        .mc_ref_zero      (mc_ref_zero),
-        .mc_ref_underflow (mc_ref_underflow)
-    );
+    // ---- Multicast Ref-Count Mgr: ★ B2 已移除 ----
+    //   B2 单槽模型用 LLE 内的 mc_rd_done/mc_rcy_done 位图取代 8192×3bit ref_count,
+    //   mcast_refcount_mgr 不再例化 (源文件保留但未使用)。
 
     // ---- CSR / Stats + Init FSM (无总线; cfg_in_* 直采, 下发 occ; 统计置 0) ----
     csr_stats_init #(
@@ -549,6 +536,7 @@ module smart_mmu #(
     //       u_csr 的 clr_ptr_cnt 在详细设计阶段连到各 Ctrl/Occupancy 的初始化清零口。
 
 endmodule
+
 ```
 
 ## occ
@@ -1036,79 +1024,42 @@ module occupancy_pool_mgr #(
 
 
 endmodule
-
 ```
+
 
 
 ## lle
 ```
 //============================================================================
-// Module      : lle  (Link-List Engine)
+// Module      : lle  (Link-List Engine) —— B2 多播逻辑拼接版
 // Project     : 4-Port 2.5/1G/100M Ethernet Switch - Smart MMU
 //
 // Description :
-//   LLE 是 MMU 的存储访问平面核心: 唯一访问 Next-Ptr SRAM (1R1W, 一拍可同时
-//   1 读 + 1 写并行), 对 Enqueue / Dequeue / Recycle 三个控制模块提供分配 /
-//   出队 / 还链服务。
+//   LLE 是 MMU 的存储访问平面核心: 唯一访问 Next-Ptr SRAM (1R1W), 对 Enqueue /
+//   Dequeue / Recycle 提供分配/出队/还链服务。
 //
-//   ── 链表组织 (34 chain, 全部 head/tail/cnt 寄存器化) ──
-//     [0..31]  : per-(port,TC) 单播队列链 (4 ports × 8 TC, spec 要求)
-//     [32]     : 保留 (按 queue_id 索引)
-//     [33]     : 多播专用数据链 (B1 模型: 多播数据 cell 一份)
-//     free 链  : 独立维护 (free_head/free_tail/free_cnt 寄存器), 共享给所有 cell
+//   ── 链表组织 (34 chain, 全部在 Next-Ptr SRAM 中) ──
+//     [0..31]  : per-(port,TC) 单播队列链
+//     [32]     : 多播链 (MC_QID)。★ B2: chain33 是**真实的 SRAM 链表**, 与 32 条单播
+//                链同构 —— enqueue 用 lle_alloc_queue_id=MC_QID 走同一挂链路径写 SRAM,
+//                维护 q_head/tail/cnt[MC_QID]。QM 从不直接出队 MC_QID (只发 32 单播 qid),
+//                故 chain33 的 SRAM 队头不推进, 被多端口共享读。
+//                另有一份小寄存器镜像 mc_cells_q[] (≤MAX_MC_CELLS, 存本帧各 cell 地址,
+//                报文序) **仅作逐端口读加速**: 出队时用 per-port 索引 O(1) 取地址, 不占
+//                SRAM 读口、不改变 "SRAM 为权威链" 这一事实。
+//     free 链  : 独立维护 (free_head/free_tail/free_cnt 寄存器)
 //
-//   ── 两级预取模型 (Two-Level Prefetch) ──
-//
-//     ★ free 链 (enq 路径): free_head / free_head_next / free_head_next2
-//        - enq 当拍: head ← next, next ← next2(或 bypass), 读 SRAM 回填 next2
-//        - 消除 enq_pend RAW hazard, 实现真正无气泡背靠背 alloc
-//
-//     ★ 队列链 (deq 路径): q_head(+ph/pt) / q_head_next(+ph/pt) / q_head_next2(addr)
-//        - deq 当拍: head ← next, ph/pt ← next_ph/pt, next ← next2
-//                    next_ph/pt 由 deq_pend SRAM 取回填充(或 bypass)
-//        - 消除 deq back-to-back 同队列 ph/pt 失效, 实现无气泡走链
-//
-//   ── 仲裁模型: 三事务每拍三选一 (按优先级)  ──
-//
-//     ★ 每拍 lle 整体只服务一个事务 (赢家独占 SRAM 读+写口)。
-//
-//     单独事务时各自背靠背 (无并发请求每拍可处理):
-//        - enq 独占: 每拍 SRAM 写 new_cell.entry + 读 next2 回填预取
-//        - deq 独占: 每拍 SRAM 读 next2 → 回填 next_ph/pt + next2_addr
-//        - rcy 独占: 每拍 SRAM 写 free_tail.next = X (还链)
-//
-//     同拍多请求时按优先级二/三选一, 让步者等下拍:
-//        - P0 deq  最高: 走链, 出端口在线发包关键路径, 不能 underrun
-//        - P1 enq  中  : 挂链, 上游 IPS 有 DATA BUFFER 缓冲 20G burst
-//        - P2 rcy  最低: 还链, 不在数据路径, recycle 让 1 拍后进 FIFO 等
-//
-//     反压机制:
-//        - lle_alloc_ready: enq 让 deq 时 =0, enqueue_ctrl 自动等下拍
-//        - rcy 走 lle 内部 FIFO 缓冲, 对 recycle_ctrl 透明 (FIFO 不满恒 grant)
-//
-//   ── 关键写策略 (每事务 1 次 SRAM 写) ──
-//
-//     【挂链】(enq): SRAM[free_head] = { free_head_next, sof, eof }
-//        - free_head_next 两级预取始终有效 (不依赖 SRAM 刚取回)
-//        - 同拍读 SRAM[next2] 回填 next2 预取 (准备下下次 alloc)
-//
-//     【还链】(rcy): SRAM[free_tail].next = released_cell
-//        - free_tail 寄存器判尾, 不依赖 SRAM 里 NULL
-//
-//     【走链】(deq): 读 SRAM[next2] → 取回 {next3, next2_ph, next2_pt}
-//        - next2_ph/pt 回填 next_ph/pt (promote), next3 回填 next2
-//
-//   ── 协议假设 ──
-//     1) **QM 帧级原子入队**: 同一帧 (sof~eof) 的连续 cell 入队请求不被打断;
-//        保证挂链时 free_head_next 预测准确 (下次 alloc 拿的也是同 queue 下一项)。
-//     2) **回收平均速率 ≤ 入队速率** (cell 守恒): FIFO 不溢。
-//     3) **多播数据 cell 出队不摘链**: B1 模型, 回收由 mcast_refcount_mgr ref 归零驱动。
-//
-//   ── 对外延迟 (spec L327/L443: ≤ 5 cycle) ──
-//     - enq: T0 fire → T0 alloc 落地 (两级预取无气泡, 每拍 1 cell)
-//     - deq: T0 fire → T0 deq 落地 (两级预取无气泡, 每拍 1 cell)
-//     - rcy: T0 入 FIFO 即受理, SRAM 落地由仲裁决定 (透明, 平均 1~几拍)
-//     - 三者都远在 5 cycle 预算内。
+//   ── B2 多播模型 (单槽 + 零复制 + 逐端口私有读指针 + 逻辑插入位置锚定) ──
+//     1) 单槽: mc_valid=1 时拒收新多播 (enqueue_ctrl 靠 mc_busy 整帧 drop)。
+//     2) 多播数据只存一份 (chain33 在 SRAM 里唯一一条; mc_cells_q[] 是其读加速镜像)。
+//     3) 每目的端口私有读索引 mc_rd_idx_q[p] 独立遍历同一份 chain33 (只读, 不推进队头)。
+//     4) 逻辑插入位置: 多播帧 SOF 到达时对每个目的端口快照“承载单播队列”当时在队
+//        的真实单播完整包数 mc_pend_uni_q[p]; 出队每出完一个真实单播包(pkt_tail)-1;
+//        减到 0 且多播未读完 → 该端口下一个包切多播 cell-list。
+//     5) 回收: EPS 每端口发完 → mc_rcy_done_q[p]=1; 所有目的端口 rd_done & rcy_done
+//        → 整帧 cell 逐个还回 free 链 (走 recycle FIFO, queue_id=MC_QID, occ 每 cell--),
+//        还完清 mc_valid, 方可收下一条多播。
+//     6) 双池按实际存入计: 多播 alloc/free 事件均用 MC_QID, global 只 ±M 一次。
 //
 // Clock/Reset : clk_core (300MHz, 单时钟域) / rst_core_n (异步复位低有效)
 //============================================================================
@@ -1118,34 +1069,33 @@ module lle #(
     parameter  int CELL_NUM        = 8192,
     parameter  int PORT_NUM        = 4,
     parameter  int TC_NUM          = 8,      // 每端口 TC 数
-    parameter  int REF_W           = 3,
+    parameter  int REF_W           = 3,      // (兼容保留, 未用)
     parameter  int RCY_FIFO_DEPTH  = 8,
-    // ★ 队列数 = 端口数×每端口TC + 1 (仅 1 多播专用队列; free 链在本模块内独立维护)
+    parameter  int MAX_MC_CELLS    = 8,      // 多播帧最大 cell 数 (1522B/256B=6, 取 8 余量)
+    // ★ 队列数 = 端口数×每端口TC + 1 (1 多播专用队列; free 链独立)
     localparam int QUEUE_NUM       = PORT_NUM*TC_NUM + 1,
-    // 派生位宽:
+    localparam int MC_QID          = QUEUE_NUM-1,        // 多播队列号 (=32)
     localparam int ADDR_W          = $clog2(CELL_NUM),
     localparam int QID_W           = $clog2(QUEUE_NUM-1)+1,
     localparam int PORT_W          = $clog2(PORT_NUM-1)+1,
     localparam int CNT_W           = ADDR_W + 1,
     localparam int ENTRY_W         = ADDR_W + 2,         // entry = {next, ph, pt}
     localparam int PH_BIT          = 1,
-    localparam int PT_BIT          = 0
+    localparam int PT_BIT          = 0,
+    localparam int Q_PER_PORT_LOG  = $clog2(TC_NUM),
+    localparam int MC_IDX_W        = $clog2(MAX_MC_CELLS+1)
 )(
-    //========================================================================
-    // 时钟与复位 (公共)
-    //========================================================================
     input  logic                  clk_core,
     input  logic                  rst_core_n,
 
-    //========================================================================
-    // 与 Init FSM (csr_stats_init) 的接口 —— 上电建链
-    //========================================================================
+    // Init FSM
     input  logic                  init_build_req,
     output logic                  init_build_done,
 
-    //========================================================================
-    // 与 Enqueue Ctrl 的接口 —— 入队 / 分配
-    //========================================================================
+    // 多播承载队列 TC 配置 (每端口)
+    input  logic [PORT_NUM-1:0][Q_PER_PORT_LOG-1:0] cfg_mcast_carry_tc,
+
+    // Enqueue Ctrl
     output logic [ADDR_W-1:0]     lle_free_head,
     output logic                  lle_free_empty,
     output logic                  lle_alloc_ready,
@@ -1155,11 +1105,10 @@ module lle #(
     input  logic                  lle_set_pkt_head,
     input  logic                  lle_set_pkt_tail,
     input  logic                  lle_alloc_is_mcast,
-    input  logic [REF_W-1:0]      lle_alloc_ref_init,
+    input  logic [PORT_NUM-1:0]   lle_alloc_mcast_bitmap,
+    output logic                  mc_busy,
 
-    //========================================================================
-    // 与 Dequeue Ctrl 的接口 —— 出队 (最高优先级, 永不被阻塞)
-    //========================================================================
+    // Dequeue Ctrl (含多播 splice)
     input  logic [QID_W-1:0]      lle_deq_queue_id,
     output logic [ADDR_W-1:0]     lle_qhead,
     output logic                  lle_qhead_pkt_head,
@@ -1167,30 +1116,17 @@ module lle #(
     output logic                  lle_q_empty,
     input  logic                  lle_deq_fire,
 
-    //========================================================================
-    // 与 Recycle Ctrl 的接口 —— 还链 (入 FIFO, 异步写 SRAM)
-    //   ★ lle_free_queue_id: recycle_ctrl/QM 提供被回收 cell 所属队列号,
-    //     LLE 透传给 occupancy (free 事件携带 queue_id, 供 per-queue 计数 --)。
-    //========================================================================
+    // Recycle Ctrl (单播还链 + 多播逐端口回收)
     input  logic                  lle_free_req,
     input  logic [ADDR_W-1:0]     lle_free_addr,
     input  logic [QID_W-1:0]      lle_free_queue_id,
     output logic                  lle_free_grant,
     output logic                  lle_free_done,
+    input  logic                  mc_rcy_vld,
+    input  logic [PORT_W-1:0]     mc_rcy_port,
+    output logic                  mcast_underflow,
 
-    //========================================================================
-    // 与 Multicast Ref-Count Mgr 的接口
-    //========================================================================
-    output logic                  mc_set_req,
-    output logic [ADDR_W-1:0]     mc_set_addr,
-    output logic [REF_W-1:0]      mc_set_init,
-    input  logic                  mc_set_ack,
-
-    //========================================================================
-    // 与 Occupancy & Pool Mgr 的接口 —— 分配/回收事件上报
-    //   alloc 事件: lle_alloc_evt + evt_queue_id/evt_egress_port (per-queue ++)
-    //   free  事件: lle_free_evt  + evt_free_queue_id/evt_free_egress_port (--)
-    //========================================================================
+    // Occupancy
     output logic                  lle_alloc_evt,
     output logic [QID_W-1:0]      evt_queue_id,
     output logic [PORT_W-1:0]     evt_egress_port,
@@ -1200,27 +1136,22 @@ module lle #(
 );
 
     //========================================================================
-    // 链表寄存器: 34 chain (两级预取)
+    // per-queue 链表寄存器 (两级预取, 仅单播队列使用; MC_QID 不走 SRAM)
     //========================================================================
-    // Level 0: 当前队头
     logic [ADDR_W-1:0]   q_head_q       [QUEUE_NUM];
     logic [ADDR_W-1:0]   q_tail_q       [QUEUE_NUM];
     logic [CNT_W-1:0]    q_cell_cnt_q   [QUEUE_NUM];
     logic                q_head_ph_q    [QUEUE_NUM];
     logic                q_head_pt_q    [QUEUE_NUM];
-
-    // Level 1: 下一个 (地址 + ph/pt 完整预取)
     logic [ADDR_W-1:0]   q_head_next_q    [QUEUE_NUM];
     logic                q_head_next_ph_q [QUEUE_NUM];
     logic                q_head_next_pt_q [QUEUE_NUM];
-
-    // Level 2: 下下个 (仅地址, ph/pt 在 promote 时由 SRAM 取回)
     logic [ADDR_W-1:0]   q_head_next2_q   [QUEUE_NUM];
-
-    // 队尾的 ph/pt (标准链表 relink 用: 写 old_tail.entry 时保留其 flags)
-    //   ★ tail cell 的 SRAM entry 尚未写 (无后继), 其 flags 只在此寄存器
     logic                q_tail_ph_q      [QUEUE_NUM];
     logic                q_tail_pt_q      [QUEUE_NUM];
+
+    // ★ 每单播队列: 在队“真实单播完整包”计数
+    logic [CNT_W-1:0]    q_uni_pkt_backlog_q [QUEUE_NUM];
 
     //========================================================================
     // free 链寄存器 (两级预取)
@@ -1235,7 +1166,37 @@ module lle #(
     assign lle_free_empty = (free_cnt_q == '0);
 
     //========================================================================
-    // Recycle FIFO
+    // ★ B2 多播槽 (单槽)
+    //========================================================================
+    logic                mc_valid_q;
+    logic [PORT_NUM-1:0]  mc_dst_bitmap_q;
+    logic [QID_W-1:0]     mc_carry_qid_q  [PORT_NUM];   // 各端口承载单播 QID
+    logic [ADDR_W-1:0]    mc_cells_q      [MAX_MC_CELLS];// 多播帧 cell 地址列表 (报文序)
+    logic [MC_IDX_W-1:0]  mc_ncell_q;                    // 多播帧 cell 数
+    logic [MC_IDX_W-1:0]  mc_wr_idx_q;                   // 入队写指针
+    logic [MC_IDX_W-1:0]  mc_rd_idx_q     [PORT_NUM];    // 每端口读指针
+    logic                 mc_rd_done_q    [PORT_NUM];
+    logic                 mc_rcy_done_q   [PORT_NUM];
+    logic [CNT_W-1:0]     mc_pend_uni_q   [PORT_NUM];    // 多播前面待出单播包数
+
+    // 多播整帧还链 walk FSM
+    logic                 mc_rel_active_q;
+    logic [MC_IDX_W-1:0]  mc_rel_idx_q;
+
+    assign mc_busy = mc_valid_q;
+
+    // 各端口承载单播队列号 (组合): carry_qid[p] = p*TC_NUM + cfg_mcast_carry_tc[p]
+    logic [QID_W-1:0] carry_qid_c [PORT_NUM];
+    genvar gp;
+    generate
+        for (gp = 0; gp < PORT_NUM; gp++) begin : g_carry_qid
+            assign carry_qid_c[gp] = QID_W'(gp*TC_NUM) +
+                                     QID_W'(cfg_mcast_carry_tc[gp]);
+        end
+    endgenerate
+
+    //========================================================================
+    // Recycle FIFO (还链 cell 缓冲)
     //========================================================================
     logic [ADDR_W-1:0]   rcy_fifo_mem [RCY_FIFO_DEPTH];
     logic [$clog2(RCY_FIFO_DEPTH+1)-1:0] rcy_fifo_cnt_q;
@@ -1255,7 +1216,6 @@ module lle #(
     logic                npr_r_en;
     logic [ADDR_W-1:0]   npr_r_addr;
     logic [ENTRY_W-1:0]  npr_r_data;
-
     logic                npr_w_en;
     logic [ADDR_W-1:0]   npr_w_addr;
     logic [ENTRY_W-1:0]  npr_w_data;
@@ -1263,12 +1223,7 @@ module lle #(
     //========================================================================
     // 建链 FSM
     //========================================================================
-    typedef enum logic [1:0] {
-        ST_IDLE  = 2'b00,
-        ST_BUILD = 2'b01,
-        ST_DONE  = 2'b10
-    } build_st_e;
-
+    typedef enum logic [1:0] {ST_IDLE=2'b00, ST_BUILD=2'b01, ST_DONE=2'b10} build_st_e;
     build_st_e          build_st_q;
     logic [ADDR_W-1:0]  build_idx_q;
     logic               build_active;
@@ -1290,8 +1245,7 @@ module lle #(
                     end
                 end
                 ST_BUILD: begin
-                    if (build_idx_q == CELL_NUM-1)
-                        build_st_q <= ST_DONE;
+                    if (build_idx_q == CELL_NUM-1) build_st_q <= ST_DONE;
                     build_idx_q <= build_idx_q + 1'b1;
                 end
                 ST_DONE: begin
@@ -1304,36 +1258,69 @@ module lle #(
     end
 
     //========================================================================
-    // 事务请求信号 (T0 当拍判定)
+    // 多播出队目标端口/承载判定 (对当前 lle_deq_queue_id, 组合)
     //========================================================================
-    logic enq_req_int;
-    logic deq_req_int;
-    logic deq_need_sram;
+    logic [QID_W-1:0]   deq_port_full;
+    logic               deq_is_uni;
+    logic [PORT_W-1:0]  deq_port;
+    logic               is_carry_deq;
+    logic               mc_take_deq;
+
+    assign deq_port_full = lle_deq_queue_id >> Q_PER_PORT_LOG;
+    assign deq_is_uni    = (lle_deq_queue_id < (PORT_NUM*TC_NUM));
+    assign deq_port      = deq_is_uni ? deq_port_full[PORT_W-1:0] : '0;
+    assign is_carry_deq  = deq_is_uni & mc_valid_q & mc_dst_bitmap_q[deq_port] &
+                           ~mc_rd_done_q[deq_port] &
+                           (lle_deq_queue_id == mc_carry_qid_q[deq_port]);
+    assign mc_take_deq   = is_carry_deq & (mc_pend_uni_q[deq_port] == '0);
+
+    //========================================================================
+    // 事务请求信号
+    //========================================================================
+    logic enq_req_int, enq_is_uni;
+    logic deq_req_int, deq_need_sram;
     logic rcy_req_int;
 
-    assign enq_req_int   = lle_alloc_fire & ~build_active & ~lle_free_empty;
-    assign deq_req_int   = lle_deq_fire   & ~build_active &
-                           (q_cell_cnt_q[lle_deq_queue_id] != '0);
-    // 两级预取: cnt >= 3 时需要 SRAM 读取回填 next_ph/pt + next2
-    assign deq_need_sram = deq_req_int & (q_cell_cnt_q[lle_deq_queue_id] >= 3);
+    assign enq_is_uni  = ~lle_alloc_is_mcast;
+    assign enq_req_int = lle_alloc_fire & ~build_active & ~lle_free_empty;
+
+    // deq: 多播 take 或单播队列非空
+    assign deq_req_int   = lle_deq_fire & ~build_active &
+                           (mc_take_deq | (q_cell_cnt_q[lle_deq_queue_id] != '0));
+    // 仅单播走链且 cnt>=3 时需要 SRAM 读; 多播 take 不读 SRAM
+    assign deq_need_sram = deq_req_int & ~mc_take_deq &
+                           (q_cell_cnt_q[lle_deq_queue_id] >= 3);
     assign rcy_req_int   = ~rcy_fifo_empty & ~build_active;
 
     //========================================================================
-    // ★ 三选一仲裁: P0 deq > P1 enq > P2 rcy
+    // 三选一仲裁: P0 deq > P1 enq > P2 rcy
     //========================================================================
     logic deq_grant, enq_grant, rcy_grant;
-
     assign deq_grant = deq_req_int;
     assign enq_grant = enq_req_int & ~build_active & ~deq_need_sram;
     assign rcy_grant = rcy_req_int & ~build_active & ~deq_need_sram & ~enq_grant;
 
     assign lle_alloc_ready = ~build_active & ~lle_free_empty & ~deq_need_sram;
 
-    assign do_push = lle_free_req & ~rcy_fifo_full & ~build_active;
+    //========================================================================
+    // 还链 push 源仲裁: 外部单播回收 优先; 多播整帧还链(walk) 让位
+    //========================================================================
+    logic               ext_free_push;   // 外部单播回收 push
+    logic               mc_rel_push;      // 多播整帧还链 push
+    logic [ADDR_W-1:0]  push_cell;
+    logic [QID_W-1:0]   push_qid;
+
+    assign ext_free_push = lle_free_req & ~rcy_fifo_full & ~build_active;
+    assign mc_rel_push   = mc_rel_active_q & ~ext_free_push & ~rcy_fifo_full & ~build_active;
+
+    assign push_cell = ext_free_push ? lle_free_addr : mc_cells_q[mc_rel_idx_q];
+    assign push_qid  = ext_free_push ? lle_free_queue_id : MC_QID[QID_W-1:0];
+
+    assign do_push = ext_free_push | mc_rel_push;
     assign do_pop  = rcy_grant;
 
     //========================================================================
-    // SRAM 读写口驱动 (两级预取版本)
+    // SRAM 读写口驱动
     //========================================================================
     logic [ADDR_W-1:0]  build_addr;
     logic [ENTRY_W-1:0] build_wdata;
@@ -1344,29 +1331,23 @@ module lle #(
     logic [ADDR_W-1:0] enq_cell;
     assign enq_cell = free_head_q;
 
-    // ---- pend 流水寄存器 ----
+    // pend 流水寄存器
     logic               deq_pend_q;
     logic [QID_W-1:0]   deq_pend_qid_q;
     logic               enq_pend_q;
-    // deq 读的 cell 是否为 tail (其 SRAM entry 尚未 relink, 数据 stale)
-    //   → 用捕获的 q_tail flags 覆盖 SRAM 取回值
     logic               deq_pend_tail_q;
     logic               deq_pend_tail_ph_q;
     logic               deq_pend_tail_pt_q;
 
-    // ---- bypass 条件 ----
     logic deq_pend_same_q;
     logic enq_bypass;
-
-    assign deq_pend_same_q = deq_pend_q & deq_grant &
+    assign deq_pend_same_q = deq_pend_q & deq_grant & ~mc_take_deq &
                              (deq_pend_qid_q == lle_deq_queue_id);
     assign enq_bypass      = enq_pend_q & enq_grant;
 
-    // enq SRAM 读地址: 正常=next2, bypass=npr_r_data.next (刚取回的新 next2)
     logic [ADDR_W-1:0] enq_sram_rd_addr;
     assign enq_sram_rd_addr = enq_bypass ? npr_r_data[2 +: ADDR_W] : free_head_next2_q;
 
-    // deq SRAM 读地址: 正常=next2[qid], bypass=npr_r_data.next (刚取回的新 next2)
     logic [ADDR_W-1:0] deq_sram_rd_addr;
     assign deq_sram_rd_addr = deq_pend_same_q ? npr_r_data[2 +: ADDR_W]
                                               : q_head_next2_q[lle_deq_queue_id];
@@ -1384,20 +1365,14 @@ module lle #(
             npr_w_data = build_wdata;
         end
         else if (deq_grant && deq_need_sram) begin
-            // P0 deq: 读 SRAM[next2] → {next3, next2_ph, next2_pt}
             npr_r_en   = 1'b1;
             npr_r_addr = deq_sram_rd_addr;
         end
         else if (enq_grant) begin
-            // P1 enq: 读 SRAM[free next2](回填 free 预取)
             npr_r_en   = 1'b1;
             npr_r_addr = enq_sram_rd_addr;
-            // ★ 标准链表 relink: 写 OLD tail 的 entry, 使其 .next 指向新 cell,
-            //   保留 old tail 自身的 ph/pt (来自 q_tail_ph/pt 寄存器)。
-            //   这样每个 cell 的 SRAM .next 指向其在该队列中的真实后继,
-            //   即使跨帧 (q0→q1→q0) 交织也正确。
-            //   空队 (cnt==0): 新 cell 即队头=队尾, 无 old tail, 不写 (其 entry
-            //   待后继入队时再写)。
+            // ★ relink: 写 OLD tail.next 指向新 cell。单播链 [0..31] 与多播链 [MC_QID]
+            //   都是真实 SRAM 链, 走同一 relink (chain33 亦存 SRAM, 满足 spec)。
             if (q_cell_cnt_q[lle_alloc_queue_id] != '0) begin
                 npr_w_en   = 1'b1;
                 npr_w_addr = q_tail_q[lle_alloc_queue_id];
@@ -1407,25 +1382,16 @@ module lle #(
             end
         end
         else if (rcy_grant) begin
-            // P2 rcy: 写 SRAM[free_tail].next = rcy_cell
             npr_w_en   = 1'b1;
             npr_w_addr = free_tail_q;
             npr_w_data = {rcy_cell, 1'b0, 1'b0};
         end
     end
 
-    next_ptr_sram_1r1w #(
-        .CELL_NUM(CELL_NUM),
-        .DATA_W  (ENTRY_W)
-    ) u_npr (
-        .clk_core   (clk_core),
-        .rst_core_n (rst_core_n),
-        .r_en       (npr_r_en),
-        .r_addr     (npr_r_addr),
-        .r_data     (npr_r_data),
-        .w_en       (npr_w_en),
-        .w_addr     (npr_w_addr),
-        .w_data     (npr_w_data)
+    next_ptr_sram_1r1w #(.CELL_NUM(CELL_NUM), .DATA_W(ENTRY_W)) u_npr (
+        .clk_core(clk_core), .rst_core_n(rst_core_n),
+        .r_en(npr_r_en), .r_addr(npr_r_addr), .r_data(npr_r_data),
+        .w_en(npr_w_en), .w_addr(npr_w_addr), .w_data(npr_w_data)
     );
 
     //========================================================================
@@ -1436,13 +1402,14 @@ module lle #(
             deq_pend_q     <= 1'b0;
             deq_pend_qid_q <= '0;
             enq_pend_q     <= 1'b0;
+            deq_pend_tail_q    <= 1'b0;
+            deq_pend_tail_ph_q <= 1'b0;
+            deq_pend_tail_pt_q <= 1'b0;
         end
         else begin
             deq_pend_q     <= deq_grant & deq_need_sram;
             deq_pend_qid_q <= lle_deq_queue_id;
             enq_pend_q     <= enq_grant;
-            // 捕获: 本拍 deq 读的 cell (deq_sram_rd_addr) 是否为该队列 tail。
-            //   若是, tail 的 SRAM entry 尚未 relink (stale), 下拍用 q_tail flags 覆盖。
             deq_pend_tail_q    <= (deq_grant & deq_need_sram) &
                                   (deq_sram_rd_addr == q_tail_q[lle_deq_queue_id]);
             deq_pend_tail_ph_q <= q_tail_ph_q[lle_deq_queue_id];
@@ -1451,79 +1418,89 @@ module lle #(
     end
 
     //========================================================================
+    // 多播回收下溢检测 (对已完成端口重复回收)
+    //========================================================================
+    assign mcast_underflow = mc_rcy_vld & mc_valid_q & mc_rcy_done_q[mc_rcy_port];
+
+    // 释放判决: 所有目的端口 rd_done & rcy_done
+    logic all_read, all_recycled, mc_release_start;
+    always_comb begin
+        all_read     = 1'b1;
+        all_recycled = 1'b1;
+        for (int p = 0; p < PORT_NUM; p++) begin
+            if (mc_dst_bitmap_q[p]) begin
+                if (!mc_rd_done_q[p])  all_read     = 1'b0;
+                if (!mc_rcy_done_q[p]) all_recycled = 1'b0;
+            end
+        end
+    end
+    // 启动整帧还链 walk (还未在还链中)
+    assign mc_release_start = mc_valid_q & all_read & all_recycled & ~mc_rel_active_q;
+
+    //========================================================================
     // 主状态更新
     //========================================================================
-    integer q, i;
+    integer q, i, pp;
+    logic uni_pkt_tail_deq;    // 本拍出队的是一个真实单播包尾
+    assign uni_pkt_tail_deq = deq_grant & ~mc_take_deq & q_head_pt_q[lle_deq_queue_id];
+
     always_ff @(posedge clk_core or negedge rst_core_n) begin
         if (!rst_core_n) begin
             for (q = 0; q < QUEUE_NUM; q++) begin
-                q_head_q[q]         <= '0;
-                q_tail_q[q]         <= '0;
-                q_cell_cnt_q[q]     <= '0;
-                q_head_ph_q[q]      <= 1'b0;
-                q_head_pt_q[q]      <= 1'b0;
-                q_head_next_q[q]    <= '0;
-                q_head_next_ph_q[q] <= 1'b0;
-                q_head_next_pt_q[q] <= 1'b0;
-                q_head_next2_q[q]   <= '0;
-                q_tail_ph_q[q]      <= 1'b0;
-                q_tail_pt_q[q]      <= 1'b0;
+                q_head_q[q]<='0; q_tail_q[q]<='0; q_cell_cnt_q[q]<='0;
+                q_head_ph_q[q]<=1'b0; q_head_pt_q[q]<=1'b0;
+                q_head_next_q[q]<='0; q_head_next_ph_q[q]<=1'b0; q_head_next_pt_q[q]<=1'b0;
+                q_head_next2_q[q]<='0; q_tail_ph_q[q]<=1'b0; q_tail_pt_q[q]<=1'b0;
+                q_uni_pkt_backlog_q[q]<='0;
             end
-            free_head_q       <= '0;
-            free_tail_q       <= '0;
-            free_cnt_q        <= '0;
-            free_head_next_q  <= '0;
-            free_head_next2_q <= '0;
-            rcy_fifo_cnt_q    <= '0;
-            rcy_fifo_wptr_q   <= '0;
-            rcy_fifo_rptr_q   <= '0;
-            for (i = 0; i < RCY_FIFO_DEPTH; i++) rcy_fifo_mem[i] <= '0;
+            free_head_q<='0; free_tail_q<='0; free_cnt_q<='0;
+            free_head_next_q<='0; free_head_next2_q<='0;
+            rcy_fifo_cnt_q<='0; rcy_fifo_wptr_q<='0; rcy_fifo_rptr_q<='0;
+            for (i = 0; i < RCY_FIFO_DEPTH; i++) rcy_fifo_mem[i]<='0;
+            // 多播槽复位
+            mc_valid_q<=1'b0; mc_dst_bitmap_q<='0; mc_ncell_q<='0; mc_wr_idx_q<='0;
+            mc_rel_active_q<=1'b0; mc_rel_idx_q<='0;
+            for (pp = 0; pp < PORT_NUM; pp++) begin
+                mc_carry_qid_q[pp]<='0; mc_rd_idx_q[pp]<='0;
+                mc_rd_done_q[pp]<=1'b0; mc_rcy_done_q[pp]<=1'b0; mc_pend_uni_q[pp]<='0;
+            end
+            for (i = 0; i < MAX_MC_CELLS; i++) mc_cells_q[i]<='0;
         end
         else if (build_st_q == ST_DONE) begin
-            //----------------------------------------------------------------
-            // 建链完成: free 链 0→1→2→...→(N-1), 全队列清空
-            //----------------------------------------------------------------
             for (q = 0; q < QUEUE_NUM; q++) begin
-                q_head_q[q]         <= '0;
-                q_tail_q[q]         <= '0;
-                q_cell_cnt_q[q]     <= '0;
-                q_head_ph_q[q]      <= 1'b0;
-                q_head_pt_q[q]      <= 1'b0;
-                q_head_next_q[q]    <= '0;
-                q_head_next_ph_q[q] <= 1'b0;
-                q_head_next_pt_q[q] <= 1'b0;
-                q_head_next2_q[q]   <= '0;
-                q_tail_ph_q[q]      <= 1'b0;
-                q_tail_pt_q[q]      <= 1'b0;
+                q_head_q[q]<='0; q_tail_q[q]<='0; q_cell_cnt_q[q]<='0;
+                q_head_ph_q[q]<=1'b0; q_head_pt_q[q]<=1'b0;
+                q_head_next_q[q]<='0; q_head_next_ph_q[q]<=1'b0; q_head_next_pt_q[q]<=1'b0;
+                q_head_next2_q[q]<='0; q_tail_ph_q[q]<=1'b0; q_tail_pt_q[q]<=1'b0;
+                q_uni_pkt_backlog_q[q]<='0;
             end
-            free_head_q       <= '0;                                     // cell 0
-            free_head_next_q  <= {{(ADDR_W-1){1'b0}}, 1'b1};             // cell 1
-            free_head_next2_q <= {{(ADDR_W-2){1'b0}}, 2'b10};            // cell 2
+            free_head_q       <= '0;
+            free_head_next_q  <= {{(ADDR_W-1){1'b0}}, 1'b1};
+            free_head_next2_q <= {{(ADDR_W-2){1'b0}}, 2'b10};
             free_tail_q       <= CELL_NUM[ADDR_W-1:0] - 1'b1;
             free_cnt_q        <= CELL_NUM[CNT_W-1:0];
-            rcy_fifo_cnt_q    <= '0;
-            rcy_fifo_wptr_q   <= '0;
-            rcy_fifo_rptr_q   <= '0;
+            rcy_fifo_cnt_q<='0; rcy_fifo_wptr_q<='0; rcy_fifo_rptr_q<='0;
+            mc_valid_q<=1'b0; mc_dst_bitmap_q<='0; mc_ncell_q<='0; mc_wr_idx_q<='0;
+            mc_rel_active_q<=1'b0; mc_rel_idx_q<='0;
+            for (pp = 0; pp < PORT_NUM; pp++) begin
+                mc_carry_qid_q[pp]<='0; mc_rd_idx_q[pp]<='0;
+                mc_rd_done_q[pp]<=1'b0; mc_rcy_done_q[pp]<=1'b0; mc_pend_uni_q[pp]<='0;
+            end
         end
         else begin
-
             //================================================================
-            // ────── ENQ 落地 (enq_grant = 1) ──────
+            // ENQ 落地
             //================================================================
             if (enq_grant) begin
-                // ---- free 链两级预取推进 ----
+                // free 链两级预取推进 (单播/多播都消耗 free)
                 free_head_q <= free_head_next_q;
-                if (enq_bypass)
-                    free_head_next_q <= npr_r_data[2 +: ADDR_W]; // bypass
-                else
-                    free_head_next_q <= free_head_next2_q;        // 正常 promote
+                if (enq_bypass) free_head_next_q <= npr_r_data[2 +: ADDR_W];
+                else            free_head_next_q <= free_head_next2_q;
 
-                // ---- 挂尾 ----
+                //-------- 挂链 (单播链 [0..31] 与多播链 [MC_QID] 同构, 都写 SRAM) --------
+                //   ★ B2: chain33 亦为真实 SRAM 链, 走同一挂链/预取逻辑 (满足 spec)。
                 q_tail_q[lle_alloc_queue_id] <= enq_cell;
-
-                // ---- 队列预取寄存器更新 (入队侧) ----
                 if (q_cell_cnt_q[lle_alloc_queue_id] == '0) begin
-                    // 空队: 新 cell 兼任队头
                     q_head_q[lle_alloc_queue_id]         <= enq_cell;
                     q_head_ph_q[lle_alloc_queue_id]      <= lle_set_pkt_head;
                     q_head_pt_q[lle_alloc_queue_id]      <= lle_set_pkt_tail;
@@ -1532,67 +1509,95 @@ module lle #(
                     q_head_next_pt_q[lle_alloc_queue_id] <= 1'b0;
                 end
                 else if (q_cell_cnt_q[lle_alloc_queue_id] == 1) begin
-                    // 单→双: 设置 next 及其 ph/pt
                     q_head_next_q[lle_alloc_queue_id]    <= enq_cell;
                     q_head_next_ph_q[lle_alloc_queue_id] <= lle_set_pkt_head;
                     q_head_next_pt_q[lle_alloc_queue_id] <= lle_set_pkt_tail;
                     q_head_next2_q[lle_alloc_queue_id]   <= free_head_next_q;
                 end
                 else if (q_cell_cnt_q[lle_alloc_queue_id] == 2) begin
-                    // 双→三: 设置 next2 地址
                     q_head_next2_q[lle_alloc_queue_id]   <= enq_cell;
                 end
-                // cnt >= 3: 仅 tail 推进, 预取不变
-
-                // ---- 更新队尾 flags (新 cell 成为新 tail) ----
-                //   注: 上面 comb relink 写 old tail 用的是更新前的 q_tail_ph/pt
                 q_tail_ph_q[lle_alloc_queue_id] <= lle_set_pkt_head;
                 q_tail_pt_q[lle_alloc_queue_id] <= lle_set_pkt_tail;
-            end
 
-            // ---- enq_pend T+1: SRAM 取回 → 回填 free_head_next2 ----
-            if (enq_pend_q) begin
-                free_head_next2_q <= npr_r_data[2 +: ADDR_W];
-            end
-
-            //================================================================
-            // ────── DEQ 落地 (deq_grant = 1) ──────
-            //================================================================
-            if (deq_grant) begin
-                // head 推进到 next
-                q_head_q[lle_deq_queue_id] <= q_head_next_q[lle_deq_queue_id];
-
-                // head_ph/pt ← next_ph/pt (或 bypass)
-                if (deq_pend_same_q) begin
-                    // bypass: SRAM 取回的 ph/pt = old_next2(现为 next) 的属性
-                    //   若上拍读的是 tail (SRAM stale), 用捕获的 q_tail flags 覆盖
-                    if (deq_pend_tail_q) begin
-                        q_head_ph_q[lle_deq_queue_id] <= deq_pend_tail_ph_q;
-                        q_head_pt_q[lle_deq_queue_id] <= deq_pend_tail_pt_q;
+                if (enq_is_uni) begin
+                    // ★ 真实单播完整包在队计数: EOF 入队 +1
+                    //   (若同队同拍还有 pkt_tail 出队, 下面出队分支 -1, 净变化合并)
+                    if (lle_set_pkt_tail && !(uni_pkt_tail_deq && (lle_deq_queue_id == lle_alloc_queue_id)))
+                        q_uni_pkt_backlog_q[lle_alloc_queue_id] <= q_uni_pkt_backlog_q[lle_alloc_queue_id] + 1'b1;
+                end
+                else begin
+                    //-------- 多播: 额外写 cell-list 镜像 (读加速) + 建槽 --------
+                    mc_cells_q[mc_wr_idx_q] <= enq_cell;
+                    if (lle_set_pkt_head) begin
+                        // SOF: 建槽 + 逐端口快照插入位置
+                        mc_valid_q      <= 1'b1;
+                        mc_dst_bitmap_q <= lle_alloc_mcast_bitmap;
+                        mc_wr_idx_q     <= {{(MC_IDX_W-1){1'b0}}, 1'b1};
+                        for (pp = 0; pp < PORT_NUM; pp++) begin
+                            mc_rd_idx_q[pp]   <= '0;
+                            mc_rd_done_q[pp]  <= ~lle_alloc_mcast_bitmap[pp]; // 非目的直接 done
+                            mc_rcy_done_q[pp] <= ~lle_alloc_mcast_bitmap[pp];
+                            // 承载单播队列号 = 端口*TC_NUM + 该端口多播承载 TC
+                            mc_carry_qid_q[pp]<= carry_qid_c[pp];
+                            // 快照: 该承载队列当前在队单播完整包数
+                            mc_pend_uni_q[pp] <= q_uni_pkt_backlog_q[carry_qid_c[pp]];
+                        end
                     end
                     else begin
-                        q_head_ph_q[lle_deq_queue_id] <= npr_r_data[PH_BIT];
-                        q_head_pt_q[lle_deq_queue_id] <= npr_r_data[PT_BIT];
+                        mc_wr_idx_q <= mc_wr_idx_q + 1'b1;
                     end
-                end
-                else begin
-                    q_head_ph_q[lle_deq_queue_id] <= q_head_next_ph_q[lle_deq_queue_id];
-                    q_head_pt_q[lle_deq_queue_id] <= q_head_next_pt_q[lle_deq_queue_id];
-                end
-
-                // next 推进 (level 1 ← level 2)
-                if (deq_pend_same_q) begin
-                    // bypass: next ← SRAM 取回的 .next 字段
-                    q_head_next_q[lle_deq_queue_id] <= npr_r_data[2 +: ADDR_W];
-                end
-                else begin
-                    q_head_next_q[lle_deq_queue_id] <= q_head_next2_q[lle_deq_queue_id];
+                    if (lle_set_pkt_tail) begin
+                        // EOF: 锁定 cell 数
+                        mc_ncell_q <= lle_set_pkt_head ? {{(MC_IDX_W-1){1'b0}}, 1'b1}
+                                                       : (mc_wr_idx_q + 1'b1);
+                    end
                 end
             end
 
-            // ---- deq_pend T+1: SRAM 取回 → 回填 next_ph/pt 和 next2 ----
-            //   若上拍读的是 tail (SRAM stale), 用捕获的 q_tail flags 覆盖 next_ph/pt;
-            //   tail 无后继, next2 不更新 (此时队列已近空, next2 不会被使用)。
+            // enq_pend T+1: 回填 free_head_next2
+            if (enq_pend_q) free_head_next2_q <= npr_r_data[2 +: ADDR_W];
+
+            //================================================================
+            // DEQ 落地
+            //================================================================
+            if (deq_grant) begin
+                if (mc_take_deq) begin
+                    //-------- 多播 take: 推进该端口读索引 --------
+                    if ((mc_rd_idx_q[deq_port] + 1'b1) == mc_ncell_q)
+                        mc_rd_done_q[deq_port] <= 1'b1;   // 读到最后一个 cell
+                    mc_rd_idx_q[deq_port] <= mc_rd_idx_q[deq_port] + 1'b1;
+                end
+                else begin
+                    //-------- 单播走链 (两级预取) --------
+                    q_head_q[lle_deq_queue_id] <= q_head_next_q[lle_deq_queue_id];
+                    if (deq_pend_same_q) begin
+                        if (deq_pend_tail_q) begin
+                            q_head_ph_q[lle_deq_queue_id] <= deq_pend_tail_ph_q;
+                            q_head_pt_q[lle_deq_queue_id] <= deq_pend_tail_pt_q;
+                        end
+                        else begin
+                            q_head_ph_q[lle_deq_queue_id] <= npr_r_data[PH_BIT];
+                            q_head_pt_q[lle_deq_queue_id] <= npr_r_data[PT_BIT];
+                        end
+                        q_head_next_q[lle_deq_queue_id] <= npr_r_data[2 +: ADDR_W];
+                    end
+                    else begin
+                        q_head_ph_q[lle_deq_queue_id] <= q_head_next_ph_q[lle_deq_queue_id];
+                        q_head_pt_q[lle_deq_queue_id] <= q_head_next_pt_q[lle_deq_queue_id];
+                        q_head_next_q[lle_deq_queue_id] <= q_head_next2_q[lle_deq_queue_id];
+                    end
+
+                    // ★ 出到真实单播包尾: backlog--, 若是承载队列 pend_uni--
+                    if (uni_pkt_tail_deq &&
+                        !(enq_grant && enq_is_uni && lle_set_pkt_tail && (lle_alloc_queue_id == lle_deq_queue_id)))
+                        q_uni_pkt_backlog_q[lle_deq_queue_id] <= q_uni_pkt_backlog_q[lle_deq_queue_id] - 1'b1;
+                    if (uni_pkt_tail_deq && is_carry_deq && (mc_pend_uni_q[deq_port] != '0))
+                        mc_pend_uni_q[deq_port] <= mc_pend_uni_q[deq_port] - 1'b1;
+                end
+            end
+
+            // deq_pend T+1: 回填 next_ph/pt 和 next2
             if (deq_pend_q) begin
                 if (deq_pend_tail_q) begin
                     q_head_next_ph_q[deq_pend_qid_q] <= deq_pend_tail_ph_q;
@@ -1606,23 +1611,67 @@ module lle #(
             end
 
             //================================================================
-            // 计数 q_cell_cnt
+            // q_cell_cnt: 入队 (单播链或多播链 MC_QID) +1; 出队 (仅真实单播走链) -1。
+            //   多播出队 (mc_take) 不推进 MC_QID 队头、不减 MC_QID cnt (多端口共享读);
+            //   MC_QID cnt 只在整帧还链完成时清 0 (见下面 release 分支)。
+            //   注: 多播 alloc 到 MC_QID, 与单播 deq 到某单播 qid, 二者 qid 必不同 →
+            //       无 "同 queue 同拍" 冲突; 仅单播自环 (alloc==deq) 需净不变处理。
             //================================================================
-            if (enq_grant && deq_grant && (lle_alloc_queue_id == lle_deq_queue_id)) begin
-                // 同 queue 同拍: 净不变
+            if (enq_grant && enq_is_uni && deq_grant && ~mc_take_deq &&
+                (lle_alloc_queue_id == lle_deq_queue_id)) begin
+                // 同 (单播) queue 同拍入+出: 净不变
             end
             else begin
-                if (enq_grant)
+                if (enq_grant)                                    // 单播链或 MC_QID 均 +1
                     q_cell_cnt_q[lle_alloc_queue_id] <= q_cell_cnt_q[lle_alloc_queue_id] + 1'b1;
-                if (deq_grant)
+                if (deq_grant && ~mc_take_deq)                    // 仅真实单播出队 -1
                     q_cell_cnt_q[lle_deq_queue_id]   <= q_cell_cnt_q[lle_deq_queue_id]   - 1'b1;
+            end
+
+            //================================================================
+            // 多播逐端口回收通知
+            //================================================================
+            if (mc_rcy_vld && mc_valid_q)
+                mc_rcy_done_q[mc_rcy_port] <= 1'b1;
+
+            //================================================================
+            // 多播整帧还链 walk
+            //================================================================
+            if (mc_release_start) begin
+                mc_rel_active_q <= 1'b1;
+                mc_rel_idx_q    <= '0;
+            end
+            else if (mc_rel_active_q) begin
+                if (mc_rel_push) begin
+                    if ((mc_rel_idx_q + 1'b1) == mc_ncell_q) begin
+                        // 最后一个 cell 已 push → 收槽
+                        mc_rel_active_q <= 1'b0;
+                        mc_valid_q      <= 1'b0;
+                        mc_dst_bitmap_q <= '0;
+                        mc_ncell_q      <= '0;
+                        mc_wr_idx_q     <= '0;
+                        // 清空 chain33 的 SRAM 链寄存器 (下条多播帧从空链重建)
+                        q_head_q[MC_QID]    <= '0;
+                        q_tail_q[MC_QID]    <= '0;
+                        q_cell_cnt_q[MC_QID]<= '0;
+                        q_tail_ph_q[MC_QID] <= 1'b0;
+                        q_tail_pt_q[MC_QID] <= 1'b0;
+                        for (pp = 0; pp < PORT_NUM; pp++) begin
+                            mc_rd_done_q[pp]  <= 1'b0;
+                            mc_rcy_done_q[pp] <= 1'b0;
+                            mc_pend_uni_q[pp] <= '0;
+                            mc_rd_idx_q[pp]   <= '0;
+                        end
+                    end
+                    mc_rel_idx_q <= mc_rel_idx_q + 1'b1;
+                end
             end
 
             //================================================================
             // Recycle FIFO push + pop
             //================================================================
             if (do_push) begin
-                rcy_fifo_mem[rcy_fifo_wptr_q] <= lle_free_addr;
+                rcy_fifo_mem[rcy_fifo_wptr_q] <= push_cell;
                 rcy_fifo_wptr_q <= rcy_fifo_wptr_q + 1'b1;
             end
             if (do_pop) begin
@@ -1630,56 +1679,53 @@ module lle #(
                 free_tail_q     <= rcy_cell;
             end
 
-            // FIFO cnt 净变化
             unique case ({do_push, do_pop})
                 2'b10:   rcy_fifo_cnt_q <= rcy_fifo_cnt_q + 1'b1;
                 2'b01:   rcy_fifo_cnt_q <= rcy_fifo_cnt_q - 1'b1;
-                2'b11:   rcy_fifo_cnt_q <= rcy_fifo_cnt_q;
                 default: ;
             endcase
 
-            // free_cnt 净变化 (enq -1, recycle push +1)
+            // free_cnt: enq -1 (含多播 cell), recycle push +1
             unique case ({enq_grant, do_push})
                 2'b10:   free_cnt_q <= free_cnt_q - 1'b1;
                 2'b01:   free_cnt_q <= free_cnt_q + 1'b1;
-                2'b11:   free_cnt_q <= free_cnt_q;
                 default: ;
             endcase
         end
     end
 
     //========================================================================
-    // 对外组合输出
+    // 对外组合输出 (含多播 splice 覆盖)
     //========================================================================
-    assign lle_qhead          = q_head_q[lle_deq_queue_id];
-    assign lle_qhead_pkt_head = q_head_ph_q[lle_deq_queue_id];
-    assign lle_qhead_pkt_tail = q_head_pt_q[lle_deq_queue_id];
-    assign lle_q_empty        = (q_cell_cnt_q[lle_deq_queue_id] == '0);
+    logic [ADDR_W-1:0] mc_cur_cell;
+    logic              mc_cur_ph, mc_cur_pt;
+    assign mc_cur_cell = mc_cells_q[mc_rd_idx_q[deq_port]];
+    assign mc_cur_ph   = (mc_rd_idx_q[deq_port] == '0);
+    assign mc_cur_pt   = ((mc_rd_idx_q[deq_port] + 1'b1) == mc_ncell_q);
+
+    assign lle_qhead          = mc_take_deq ? mc_cur_cell : q_head_q[lle_deq_queue_id];
+    assign lle_qhead_pkt_head = mc_take_deq ? mc_cur_ph   : q_head_ph_q[lle_deq_queue_id];
+    assign lle_qhead_pkt_tail = mc_take_deq ? mc_cur_pt   : q_head_pt_q[lle_deq_queue_id];
+    // 空: 多播 take 时非空; 否则看单播 cnt (承载队列 pend_uni>0 时必有单播 cell, cnt>0)
+    assign lle_q_empty        = mc_take_deq ? 1'b0 : (q_cell_cnt_q[lle_deq_queue_id] == '0);
 
     assign lle_free_grant = lle_free_req & ~build_active & ~rcy_fifo_full;
     assign lle_free_done  = rcy_grant;
 
-    assign mc_set_req  = enq_grant & lle_alloc_is_mcast;
-    assign mc_set_addr = enq_cell;
-    assign mc_set_init = lle_alloc_ref_init;
+    localparam int Q_PP_LOG = $clog2(TC_NUM);
 
-    localparam int Q_PER_PORT_LOG = $clog2(TC_NUM);   // 单播 queue_id = port*TC_NUM+tc
-
-    // alloc 事件: enq 落地那拍, 携带 alloc 队列号/端口 (供 occ per-queue/port ++)
+    // alloc 事件 (单播用 alloc_queue_id; 多播用 MC_QID → occ 只在 MC_QID 计一次/cell)
     assign lle_alloc_evt   = enq_grant;
-    assign evt_queue_id    = lle_alloc_queue_id;
-    assign evt_egress_port = lle_alloc_queue_id >> Q_PER_PORT_LOG;
+    assign evt_queue_id    = lle_alloc_is_mcast ? MC_QID[QID_W-1:0] : lle_alloc_queue_id;
+    assign evt_egress_port = lle_alloc_is_mcast ? '0
+                             : (lle_alloc_queue_id >> Q_PP_LOG);
 
-    // free 事件: recycle 入 FIFO 那拍, 透传被回收 cell 所属队列号/端口
-    //   (供 occ per-queue/port --, 与 free_cnt 入 FIFO 时序一致)
-    assign lle_free_evt          = lle_free_grant;
-    assign evt_free_queue_id     = lle_free_queue_id;
-    assign evt_free_egress_port  = lle_free_queue_id >> Q_PER_PORT_LOG;
+    // free 事件: push 那拍 (单播用其 qid; 多播还链用 MC_QID)
+    assign lle_free_evt          = do_push;
+    assign evt_free_queue_id     = push_qid;
+    assign evt_free_egress_port  = (push_qid < (PORT_NUM*TC_NUM)) ? (push_qid >> Q_PP_LOG) : '0;
 
 `ifdef SIM_BEHAVIOR_SRAM
-    //========================================================================
-    // 仿真断言
-    //========================================================================
     always_ff @(posedge clk_core) begin
         if (rst_core_n && lle_free_req && rcy_fifo_full && !build_active)
             $warning("[lle] recycle FIFO full: free request ignored");
@@ -1689,8 +1735,12 @@ module lle #(
             $error("[lle] free pool underflow: alloc when free_cnt==0");
     end
     always_ff @(posedge clk_core) begin
-        if (rst_core_n && npr_r_en && npr_w_en && (npr_r_addr == npr_w_addr))
-            $warning("[lle] SRAM r/w same addr in same cycle (enq read-first OK)");
+        if (rst_core_n && mcast_underflow)
+            $error("[lle] mcast recycle underflow: port %0d already done", mc_rcy_port);
+    end
+    always_ff @(posedge clk_core) begin
+        if (rst_core_n && enq_grant && lle_alloc_is_mcast && lle_set_pkt_head && mc_valid_q)
+            $error("[lle] mcast enqueue while slot busy (should be gated by mc_busy)");
     end
 `endif
 
@@ -1699,8 +1749,7 @@ endmodule
 
 //============================================================================
 // 1R1W Next-Ptr SRAM 行为模型 (综合时换 vendor 1R1W SRAM)
-//   - 1 读口 + 1 写口, 同拍可并行
-//   - 同拍读写同一地址: read-first (读到旧值)
+//   - 1 读口 + 1 写口, 同拍可并行; 同拍读写同一地址: read-first
 //============================================================================
 module next_ptr_sram_1r1w #(
     parameter int CELL_NUM = 8192,
@@ -1717,18 +1766,16 @@ module next_ptr_sram_1r1w #(
     input  logic [DATA_W-1:0] w_data
 );
     logic [DATA_W-1:0] mem [CELL_NUM];
-
-    // read-first: 读到的是写之前的旧值
     always_ff @(posedge clk_core or negedge rst_core_n) begin
         if (!rst_core_n) r_data <= '0;
         else if (r_en)   r_data <= mem[r_addr];
     end
-
     always_ff @(posedge clk_core) begin
         if (w_en) mem[w_addr] <= w_data;
     end
 endmodule
 ```
+
 
 
 ## enq
@@ -1814,13 +1861,15 @@ module enqueue_ctrl #(
     input  logic [ADDR_W-1:0]     lle_free_head,       // 当前空闲链头(T0 当拍取)
     input  logic                  lle_free_empty,      // 空闲链空
     input  logic                  lle_alloc_ready,     // LLE 本拍可受理 alloc (含 ~deq 抢占 / ~build / ~free 空)
+    input  logic                  mc_busy,             // ★ B2: 多播槽占用中 (LLE 提供), 置1时新多播整帧丢弃
     output logic                  lle_alloc_fire,      // 分配+挂链命令(一拍脉冲)
     output logic [QID_W-1:0]      lle_alloc_queue_id,  // 挂链目标队列
     output logic [ADDR_W-1:0]     lle_alloc_addr,      // 本次分配地址(=lle_free_head)
     output logic                  lle_set_pkt_head,    // 写 pkt_head (= enq_sof)
     output logic                  lle_set_pkt_tail,    // 写 pkt_tail (= enq_eof)
     output logic                  lle_alloc_is_mcast,  // 组播标志
-    output logic [REF_W-1:0]      lle_alloc_ref_init   // 组播 ref_count 初值=popcount
+    output logic [PORT_NUM-1:0]   lle_alloc_mcast_bitmap, // ★ B2: 组播目的端口位图 → LLE
+    output logic                  mcast_busy_drop      // ★ B2: 本拍因多播槽占用而丢弃多播帧
 );
 
     //========================================================================
@@ -1847,15 +1896,12 @@ module enqueue_ctrl #(
     assign enq_predict_drop      = occ_predict_drop;
 
     //========================================================================
-    // 组播 ref_count 初值 = popcount(enq_mcast_bitmap)
+    // ★ B2 单槽门控: 多播帧到达 (SOF) 时若多播槽已占用 (mc_busy) → 整帧丢弃。
+    //   mc_busy 由 LLE 提供 (mc_valid 寄存), T0 当拍可读。
+    //   非 SOF 的多播后续 cell 靠 frame_drop_q 级联丢弃 (无需再看 mc_busy)。
     //========================================================================
-    logic [REF_W-1:0] ref_init_c;
-    integer bi;
-    always_comb begin
-        ref_init_c = '0;
-        for (bi = 0; bi < PORT_NUM; bi++)
-            ref_init_c = ref_init_c + {{(REF_W-1){1'b0}}, enq_mcast_bitmap[bi]};
-    end
+    logic mcast_slot_block_c;
+    assign mcast_slot_block_c = enq_fire & enq_is_mcast & enq_sof & mc_busy;
 
     //========================================================================
     // 整帧丢弃 FSM: 一帧 (sof~eof) 内任一 cell 判丢则置位并保持到 eof,
@@ -1890,7 +1936,8 @@ module enqueue_ctrl #(
             //     cell 整体放不下 → 从 SOF 起就整帧丢弃, 一个 cell 都不挂链 (避免"前几个
             //     cell 已挂链、到中途才丢"造成的部分挂链遗留)。predict 只在 SOF 采样,
             //     后续 cell 靠 frame_drop_q 级联丢弃。
-            else if (occ_drop | occ_no_free | lle_free_empty | (enq_sof & enq_predict_drop)) begin
+            //   - ★ mcast_slot_block_c: 多播槽占用中, 新多播帧从 SOF 整帧丢弃。
+            else if (occ_drop | occ_no_free | lle_free_empty | (enq_sof & enq_predict_drop) | mcast_slot_block_c) begin
                 cell_drop_c       = 1'b1;
                 full_frame_drop_c = 1'b1;
             end
@@ -1930,13 +1977,14 @@ module enqueue_ctrl #(
     //========================================================================
     // LLE 分配+挂链命令 (一拍脉冲): 仅接收时拉高
     //========================================================================
-    assign lle_alloc_fire     = accept_c;
-    assign lle_alloc_queue_id = enq_queue_id;
-    assign lle_alloc_addr     = lle_free_head;       // T0 当拍即取
-    assign lle_set_pkt_head   = enq_sof;
-    assign lle_set_pkt_tail   = enq_eof;
-    assign lle_alloc_is_mcast = enq_is_mcast;
-    assign lle_alloc_ref_init = ref_init_c;
+    assign lle_alloc_fire         = accept_c;
+    assign lle_alloc_queue_id     = enq_queue_id;
+    assign lle_alloc_addr         = lle_free_head;       // T0 当拍即取
+    assign lle_set_pkt_head       = enq_sof;
+    assign lle_set_pkt_tail       = enq_eof;
+    assign lle_alloc_is_mcast     = enq_is_mcast;
+    assign lle_alloc_mcast_bitmap = enq_mcast_bitmap;    // ★ B2: 目的端口位图 → LLE 置 mc_dst_bitmap
+    assign mcast_busy_drop        = mcast_slot_block_c;  // ★ B2: 本拍多播因槽占用被丢
 
     //========================================================================
     // T1 返回 (寄存一拍): 把 T0 的判决/地址/头尾在末沿寄存, 下一拍输出给 QM。
@@ -1964,7 +2012,10 @@ module enqueue_ctrl #(
 
 endmodule
 
+
 ```
+
+
 
 ## deq
 ```
@@ -2078,169 +2129,29 @@ module dequeue_ctrl #(
 
 endmodule
 
+
 ```
 
-## mcast_refcount_mgr
-```
-//============================================================================
-// Module      : mcast_refcount_mgr  (Multicast Ref-Count Manager)
-// Project     : 4-Port 2.5/1G/100M Ethernet Switch - Smart MMU
-//
-// Description :
-//   辅助平面。按 B1 多播模型 (见《MMU_多播处理分析.md》方案 B1) 实现:
-//   每个组播 cell 维护 ref_count (4 端口 → 3bit, 0~4)。
-//     - 入队(置初值): LLE 同拍转发 mc_set_* 把 ref_count[mc_set_addr] = mc_set_init
-//                     ( = popcount(enq_mcast_bitmap), 即该多播 cell 要发往的端口数 )。
-//     - 回收(递减)  : Recycle Ctrl 每收到一个端口的 mcast_recycle_req → 发 mc_dec_*,
-//                     ref_count[mc_dec_addr]-- ; 减到 0 时拉 mc_ref_zero=1, 表示
-//                     "所有目标端口都已发完, 该 cell 可以真正还链 (Recycle Ctrl 据此
-//                     向 LLE 发 lle_free_req)"。
-//   B1 关键语义: 多播 data cell 的回收 **完全由 ref_count 归零驱动**; 被某端口读取
-//   (出队) 不会让 ref_count 变化, 也不会摘链/还链 —— 这是多播相对单播唯一的不同。
-//
-//   防护:
-//     - 下溢检测: 对一个 ref_count 已为 0 的 cell 又收到 mc_dec_req → 视为 double-count
-//       / EPS 重复通知错误, 拉 mc_ref_underflow 给上层汇成 underflow_alarm, 并把该 cell
-//       ref 钳在 0 (不回绕)。
-//     - mc_ref_zero 仅在 "本拍递减后恰好到 0" 时为 1 (脉冲), 供 Recycle Ctrl 当拍判定还链。
-//
-//   时序:
-//     - mc_set / mc_dec 命中同拍写回 ref_count_q (组合算 next, 时序更新), ack 同拍拉高。
-//     - mc_set 与 mc_dec 命中同一 cell 同拍属非法用法 (入队与回收不会同拍碰同一新分配
-//       cell); 仿真断言捕获。若真同拍, set 优先 (按入队语义重置初值)。
-//
-// Clock/Reset : clk_core (300MHz, 单时钟域) / rst_core_n (异步复位低有效)
-//============================================================================
-`timescale 1ns/1ps
 
-module mcast_refcount_mgr #(
-    parameter int ADDR_W    = 13,
-    parameter int CELL_NUM  = 8192,
-    parameter int REF_W     = 3
-)(
-    //------------------------------------------------------------------------
-    // 时钟复位 (公共)
-    //------------------------------------------------------------------------
-    input  logic                  clk_core,
-    input  logic                  rst_core_n,
-
-    //------------------------------------------------------------------------
-    // 与 LLE 的接口 (入队同拍置初值)
-    //------------------------------------------------------------------------
-    input  logic                  mc_set_req,          // 置 ref_count 初值请求
-    input  logic [ADDR_W-1:0]     mc_set_addr,         // 目标组播 cell
-    input  logic [REF_W-1:0]      mc_set_init,         // ref_count 初值=popcount(bitmap)
-    output logic                  mc_set_ack,          // 写完应答
-
-    //------------------------------------------------------------------------
-    // 与 Recycle Ctrl 的接口 (回收递减)
-    //------------------------------------------------------------------------
-    input  logic                  mc_dec_req,          // ref_count-- 请求
-    input  logic [ADDR_W-1:0]     mc_dec_addr,         // 目标组播 cell
-    output logic                  mc_dec_ack,          // 递减完成
-    output logic                  mc_ref_zero,         // 本拍递减后归零(允许真正还链)
-
-    //------------------------------------------------------------------------
-    // 防护输出 (汇入 underflow_alarm)
-    //------------------------------------------------------------------------
-    output logic                  mc_ref_underflow     // 对 ref=0 的 cell 再递减(double-count)
-);
-
-    //========================================================================
-    // ref_count 存储 (全量 cell, 每 cell REF_W bit)。
-    //   说明: 也可只对组播 cell 用小 RegFile/CAM 节面积; 此处用全量寄存器堆,
-    //   8192×3bit ≈ 3KB 触发器, 面积可接受, 实现最简、读写当拍可达。
-    //========================================================================
-    logic [REF_W-1:0] ref_count_q [CELL_NUM];
-
-    //========================================================================
-    // 组合读出与 next 计算
-    //========================================================================
-    logic [REF_W-1:0] dec_cur;       // 递减目标当前值
-    logic [REF_W-1:0] dec_next;      // 递减后值
-    logic             dec_is_zero_in;// 递减前已为 0 (下溢)
-
-    assign dec_cur        = ref_count_q[mc_dec_addr];
-    assign dec_is_zero_in = (dec_cur == '0);
-    // 递减: >0 时 -1; =0 时钳 0 (下溢, 不回绕)
-    assign dec_next       = dec_is_zero_in ? '0 : (dec_cur - 1'b1);
-
-    //========================================================================
-    // 应答 / 归零 / 下溢 (组合, 当拍给)
-    //   - mc_dec_ack : 收到递减请求即应答 (无阻塞)。
-    //   - mc_ref_zero: 本拍递减后恰好到 0 (dec_cur==1 且非下溢) → 允许还链。
-    //   - underflow  : 对 ref 已为 0 的 cell 又来递减。
-    //========================================================================
-    assign mc_set_ack      = mc_set_req;
-    assign mc_dec_ack      = mc_dec_req;
-    assign mc_ref_zero     = mc_dec_req & ~dec_is_zero_in & (dec_next == '0);
-    assign mc_ref_underflow= mc_dec_req &  dec_is_zero_in;
-
-    //========================================================================
-    // 写回 ref_count_q
-    //   - set 命中: ref[set_addr] = set_init   (入队置初值, 优先)
-    //   - dec 命中: ref[dec_addr] = dec_next   (回收递减, 钳 0)
-    //   - set 与 dec 同拍命中同一 cell: set 优先 (非法用法, 仿真断言)。
-    //========================================================================
-    always_ff @(posedge clk_core or negedge rst_core_n) begin
-        if (!rst_core_n) begin
-            for (int i = 0; i < CELL_NUM; i++)
-                ref_count_q[i] <= '0;
-        end
-        else begin
-            // 递减先写 (若与 set 同 cell, 下面 set 覆盖, 实现 set 优先)
-            if (mc_dec_req)
-                ref_count_q[mc_dec_addr] <= dec_next;
-            // 置初值 (优先级高于同拍同 cell 的 dec)
-            if (mc_set_req)
-                ref_count_q[mc_set_addr] <= mc_set_init;
-        end
-    end
-
-`ifdef SIM_BEHAVIOR_SRAM
-    //========================================================================
-    // 仿真断言
-    //========================================================================
-    always_ff @(posedge clk_core) begin
-        if (rst_core_n) begin
-            // 1) double-count: 对 ref=0 的 cell 递减
-            if (mc_ref_underflow)
-                $error("[mcast_refcount_mgr] REF UNDERFLOW: dec on cell %0d whose ref_count==0",
-                       mc_dec_addr);
-            // 2) set/dec 同拍命中同一 cell (非法: 入队与回收不应同拍碰同一 cell)
-            if (mc_set_req && mc_dec_req && (mc_set_addr == mc_dec_addr))
-                $error("[mcast_refcount_mgr] set & dec same cell %0d in same cycle (illegal)",
-                       mc_set_addr);
-        end
-    end
-`endif
-
-endmodule
-```
 
 ## recycle_ctrl
 ```
 //============================================================================
-// Module      : recycle_ctrl  (Recycle Control)
+// Module      : recycle_ctrl  (Recycle Control) —— B2 版
 // Project     : 4-Port 2.5/1G/100M Ethernet Switch - Smart MMU
 //
 // Description :
-//   回收路径控制 (控制平面)。按 B1 多播模型 (见《MMU_多播处理分析.md》方案 B1):
+//   回收路径控制 (控制平面)。B2 多播模型:
 //     - 单播 (recycle_req): 报文发送完成, 该 cell 立即还链 → 直接向 LLE 发
-//                           lle_free_req(接空闲链尾), 并通知 Occupancy 计数--。
-//     - 组播 (mcast_recycle_req): 每收到一个出端口"发完一份"的通知, 向
-//                           Multicast Ref-Count Mgr 发 mc_dec_req 递减 ref_count;
-//                           **只有递减后 ref 归零 (mc_ref_zero=1) 才向 LLE 发还链** ——
-//                           即"多播 data cell 出队不摘链、回收完全由 ref_count 归零驱动"。
-//                           ref 未归零时只递减、不还链、不通知 Occupancy 计数-- (该 cell
-//                           仍被其它端口共享, 占用不变)。
+//                           lle_free_req(接空闲链尾), 并透传 queue_id 供 occ 计数--。
+//     - 组播 (mcast_recycle_req): 每收到一个出端口“发完一份”的通知, 反推该端口号
+//                           (由 mcast_recycle_queue_id >> Q_PER_PORT_LOG), 直接
+//                           转发给 LLE 的 mc_rcy_vld/mc_rcy_port —— LLE 内部记
+//                           mc_rcy_done[port]; 当所有目的端口都读完+还链, LLE 自行
+//                           整帧还链并清多播槽。recycle_ctrl 不再做 ref_count 递减。
 //
-//   仲裁: 单播与组播还链都走同一条 LLE 还链口 (lle_free_req)。本实现用一个轻量 FSM
-//         串行化, 保证同一拍至多发一个 lle_free_req; 单播优先 (低延迟), 组播次之。
-//
-//   时序: Mcast Ref-Count Mgr 的 mc_dec_ack / mc_ref_zero 为同拍组合返回 (见
-//         mcast_refcount_mgr.sv), 故组播递减判零可在收到 mcast_recycle_req 的当拍完成;
-//         若归零, 下一拍发 lle_free_req 还链。
+//   仲裁: 单播还链走 lle_free_req; 组播还链由 LLE 内部 walk 完成 (走 LLE 内部
+//         recycle FIFO), 不占用 recycle_ctrl 的 lle_free_req 口。
 //
 // Clock/Reset : clk_core (300MHz, 单时钟域) / rst_core_n (异步复位低有效)
 //============================================================================
@@ -2251,10 +2162,11 @@ module recycle_ctrl #(
     parameter int PORT_NUM  = 4,
     parameter int TC_NUM    = 8,     // 每端口 TC 数
     // 派生位宽 (与 occupancy_pool_mgr / lle 同源)
-    localparam int QUEUE_NUM = PORT_NUM*TC_NUM + 1,   // 单播 P*T + 多播 (free 链在 LLE 内)
+    localparam int QUEUE_NUM = PORT_NUM*TC_NUM + 1,
     localparam int ADDR_W   = $clog2(CELL_NUM),
     localparam int QID_W    = $clog2(QUEUE_NUM-1)+1,
-    localparam int PORT_W   = $clog2(PORT_NUM-1)+1
+    localparam int PORT_W   = $clog2(PORT_NUM-1)+1,
+    localparam int Q_PER_PORT_LOG = $clog2(TC_NUM)
 )(
     //------------------------------------------------------------------------
     // 时钟复位 (公共)
@@ -2264,127 +2176,53 @@ module recycle_ctrl #(
 
     //------------------------------------------------------------------------
     // 与 QM 的接口 (外部, 经 MMU 顶层)
-    //   ★ recycle_queue_id / mcast_recycle_queue_id: QM 提供被回收 cell 所属队列号
-    //     (QM 有 descriptor, 知道 cell→queue 映射)。recycle_ctrl 将其透传给 LLE,
-    //     由 LLE 随 free 事件 (lle_free_evt) 同拍转发给 occupancy 做 per-queue/port --。
     //------------------------------------------------------------------------
     input  logic                  recycle_req,         // 单播 cell 回收请求
     input  logic [ADDR_W-1:0]     recycle_cell_addr,   // 待回收 cell 地址
     input  logic [QID_W-1:0]      recycle_queue_id,    // 单播回收 cell 所属队列号
     input  logic                  mcast_recycle_req,   // 组播回收通知(某端口发完一份)
-    input  logic [ADDR_W-1:0]     mcast_recycle_addr,  // 组播待回收 cell 地址
-    input  logic [QID_W-1:0]      mcast_recycle_queue_id, // 组播回收 cell 所属队列号
+    input  logic [ADDR_W-1:0]     mcast_recycle_addr,  // 组播待回收 cell 地址 (B2 未用, 保留)
+    input  logic [QID_W-1:0]      mcast_recycle_queue_id, // 组播回收所属承载队列号 (→ 反推端口)
     output logic                  recycle_ack,         // 回收完成应答
 
     //------------------------------------------------------------------------
-    // 与 Multicast Ref-Count Mgr 的接口 (内部)
+    // 与 LLE 的接口 —— 单播还链 + 组播逐端口回收转发
     //------------------------------------------------------------------------
-    output logic                  mc_dec_req,          // 组播 ref_count-- 请求
-    output logic [ADDR_W-1:0]     mc_dec_addr,         // 目标组播 cell
-    input  logic                  mc_dec_ack,          // 递减完成 (同拍组合)
-    input  logic                  mc_ref_zero,         // 递减后归零(允许真正还链)
-
-    //------------------------------------------------------------------------
-    // 与 Link-List Engine (LLE) 的接口 (内部, 还链)
-    //   ★ lle_free_queue_id: 透传被回收 cell 所属队列号给 LLE, LLE 随 free 事件
-    //     转发给 occupancy (occupancy 的回收计数由 LLE 的 lle_free_evt 驱动, 时序
-    //     与 LLE free_cnt 一致, 不再由 recycle_ctrl 直接驱动 occ)。
-    //------------------------------------------------------------------------
-    output logic                  lle_free_req,        // 还链(接空闲链尾)请求
+    output logic                  lle_free_req,        // 单播还链请求
     output logic [ADDR_W-1:0]     lle_free_addr,       // 待还 cell
     output logic [QID_W-1:0]      lle_free_queue_id,   // 待还 cell 所属队列号
     input  logic                  lle_free_grant,      // 仲裁通过
-    input  logic                  lle_free_done        // 还链完成
+    input  logic                  lle_free_done,       // 还链完成
+    // 组播逐端口回收 → LLE
+    output logic                  mc_rcy_vld,          // 组播回收通知有效
+    output logic [PORT_W-1:0]     mc_rcy_port          // 组播回收所属出端口
 );
 
     //========================================================================
-    // 组播递减: 收到 mcast_recycle_req 当拍向 Ref-Count Mgr 发递减。
-    //   mc_dec_ack/mc_ref_zero 同拍返回。
-    //   - 未归零: 只递减, 不还链 (该 cell 仍被其它端口共享)。
-    //   - 归零  : 把该 cell 锁存, 下一拍发起还链 (mc_free_pending)。
+    // 单播还链: 直接透传 (B2 组播不再共用此口)
     //========================================================================
-    assign mc_dec_req  = mcast_recycle_req;
-    assign mc_dec_addr = mcast_recycle_addr;
-
-    // 归零待还链锁存 (组播 ref 归零, 等下一拍发 lle_free_req)
-    logic              mc_free_pending_q;
-    logic [ADDR_W-1:0] mc_free_addr_q;
-    logic [QID_W-1:0]  mc_free_qid_q;       // 锁存组播待还 cell 的队列号
+    assign lle_free_req      = recycle_req;
+    assign lle_free_addr     = recycle_cell_addr;
+    assign lle_free_queue_id = recycle_queue_id;
 
     //========================================================================
-    // 还链口仲裁 (单拍至多一个 lle_free_req):
-    //   优先级: 单播 recycle_req  >  组播归零待还链(mc_free_pending_q)
-    //   - 单播: 直接用 recycle_cell_addr 还链, 当拍即可。
-    //   - 组播: 用上一拍归零锁存的 mc_free_addr_q 还链。
+    // 组播逐端口回收转发: 反推端口号 = 承载队列号 >> Q_PER_PORT_LOG
     //========================================================================
-    logic do_uni_free;     // 本拍发起单播还链
-    logic do_mc_free;      // 本拍发起组播还链
-
-    assign do_uni_free = recycle_req;
-    assign do_mc_free  = mc_free_pending_q & ~recycle_req;   // 单播优先, 组播让一拍
-
-    assign lle_free_req  = do_uni_free | do_mc_free;
-    assign lle_free_addr = do_uni_free ? recycle_cell_addr : mc_free_addr_q;
+    logic [QID_W-1:0] mc_port_full;
+    assign mc_port_full = mcast_recycle_queue_id >> Q_PER_PORT_LOG;
+    assign mc_rcy_vld   = mcast_recycle_req;
+    assign mc_rcy_port  = (mc_port_full < PORT_NUM[QID_W-1:0])
+                          ? mc_port_full[PORT_W-1:0] : '0;
 
     //========================================================================
-    // 透传被回收 cell 所属队列号给 LLE:
-    //   - 单播: 用 recycle_queue_id (QM 当拍提供)
-    //   - 组播: 用上一拍归零锁存的 mc_free_qid_q
-    //   LLE 会随 free 事件 (lle_free_evt) 把该 queue_id (及派生 port) 转发给
-    //   occupancy 做 per-queue/port 占用 --, 时序与 LLE free_cnt 一致。
-    //   (occupancy 回收计数不再由 recycle_ctrl 直接驱动, 改由 LLE free 事件驱动)
-    //========================================================================
-    assign lle_free_queue_id = do_uni_free ? recycle_queue_id : mc_free_qid_q;
-
-    //========================================================================
-    // 回收应答 recycle_ack:
-    //   - 单播: 还链发起当拍应答 (recycle_req)。
-    //   - 组播: 收到通知当拍即应答 (mcast_recycle_req, 无论是否归零, 通知已被接收)。
+    // 回收应答: 单播还链发起当拍应答; 组播收到通知当拍即应答。
     //========================================================================
     assign recycle_ack = recycle_req | mcast_recycle_req;
 
-    //========================================================================
-    // 时序: 锁存组播归零待还链
-    //   - 本拍组播递减且归零 → 置 mc_free_pending_q, 锁存 cell 地址。
-    //   - 组播还链发起 (do_mc_free) → 清 pending。
-    //   - 极端情形: 同拍既有新的组播归零、又在发上一笔组播还链 → 用单拍寄存器队列
-    //     深度 1 简化; 若 QM 回收速率 > 1 归零/拍, 详细设计可加小 FIFO。本设计假设
-    //     回收速率 ≤ 1 cell/拍 (与入队/出队 1 cell/拍对称)。
-    //========================================================================
-    always_ff @(posedge clk_core or negedge rst_core_n) begin
-        if (!rst_core_n) begin
-            mc_free_pending_q <= 1'b0;
-            mc_free_addr_q    <= '0;
-            mc_free_qid_q     <= '0;
-        end
-        else begin
-            // 先处理"本拍发起组播还链"→清 pending
-            if (do_mc_free)
-                mc_free_pending_q <= 1'b0;
-            // 本拍组播递减归零 → 置 pending (锁存待还 cell + queue_id)
-            if (mcast_recycle_req && mc_ref_zero) begin
-                mc_free_pending_q <= 1'b1;
-                mc_free_addr_q    <= mcast_recycle_addr;
-                mc_free_qid_q     <= mcast_recycle_queue_id;
-            end
-        end
-    end
-
-`ifdef SIM_BEHAVIOR_SRAM
-    //========================================================================
-    // 仿真断言: pending 未及时清空又来新的归零 → 还链速率不足 (需加 FIFO)
-    //========================================================================
-    always_ff @(posedge clk_core) begin
-        if (rst_core_n && mcast_recycle_req && mc_ref_zero &&
-            mc_free_pending_q && ~do_mc_free) begin
-            $error("[recycle_ctrl] mcast free backlog: new ref-zero while pending not drained " ,
-                   "(consider a small free FIFO)");
-        end
-    end
-`endif
-
 endmodule
+
 ```
+
 
 ## csr_in
 ```
@@ -2654,7 +2492,9 @@ module csr_stats_init #(
 
 endmodule
 
+
 ```
+
 
 
 ## tb
@@ -3602,5 +3442,6 @@ module smart_mmu_tb;
     end
 
 endmodule
+
 
 ```
