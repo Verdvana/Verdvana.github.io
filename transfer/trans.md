@@ -2881,8 +2881,37 @@ module smart_mmu_tb;
     endtask
 
     //========================================================================
+    // ★ 用【字面 qid】索引 DUT 寄存器计算 splice 判决 (避免读取依赖 deq_queue_id_r 的
+    //   组合网 lle_q_empty/lle_qhead_pkt_tail 时的 delta 竞争: 刚 blocking 赋值
+    //   deq_queue_id_r 后, 连续赋值 lle_deq_queue_id 尚未在本时间步传播, 直接读组合网
+    //   会读到上一次 qid 的旧值)。这里复刻 LLE 的 splice 组合逻辑, 用常量 qid 索引。
+    //========================================================================
+    function automatic bit tb_mc_take(input int qid);
+        int p; bit is_carry;
+        p = qid >> QPP;
+        is_carry = mc_valid && (qid < PORT_NUM*TC_NUM) &&
+                   u_dut.u_lle.mc_dst_bitmap_q[p] &&
+                   !u_dut.u_lle.mc_rd_done_q[p] &&
+                   (qid == u_dut.u_lle.mc_carry_qid_q[p]);
+        tb_mc_take = is_carry && (u_dut.u_lle.mc_pend_uni_q[p] == 0);
+    endfunction
+
+    function automatic bit tb_q_empty(input int qid);
+        tb_q_empty = tb_mc_take(qid) ? 1'b0 : (u_dut.u_lle.q_cell_cnt_q[qid] == 0);
+    endfunction
+
+    function automatic bit tb_qhead_pt(input int qid);
+        int p;
+        p = qid >> QPP;
+        if (tb_mc_take(qid))
+            tb_qhead_pt = ((u_dut.u_lle.mc_rd_idx_q[p] + 1) == u_dut.u_lle.mc_ncell_q);
+        else
+            tb_qhead_pt = u_dut.u_lle.q_head_pt_q[qid];
+    endfunction
+
+    //========================================================================
     // 出队一整包 (背靠背, 直到该 QID 队头 pkt_tail)
-    //   ★ B2: 用组合 lle_qhead_pkt_tail / lle_q_empty (含多播 splice 覆盖) 判停,
+    //   ★ B2: 用 tb_q_empty / tb_qhead_pt (字面 qid 索引, 含多播 splice) 判停,
     //     因为多播 take 时 q_cell_cnt[qid] 可能为 0 但仍有多播 cell 要出。
     //========================================================================
     int                last_deq_n;
@@ -2898,14 +2927,14 @@ module smart_mmu_tb;
         deq_queue_id_r     = qid[QID_W-1:0];
         deq_backpressure_r = bp;
         forever begin
-            // 组合 q_empty (含多播 splice): 空则停
-            if (u_dut.u_lle.lle_q_empty) begin
+            // q_empty (含多播 splice, 字面 qid 索引): 空则停
+            if (tb_q_empty(qid)) begin
                 deq_req_r = 1'b0;
                 break;
             end
             deq_req_r = 1'b1;
-            // 组合队头 pkt_tail (含多播 splice 覆盖), 反映本 posedge 将出的 cell
-            tail_fire = u_dut.u_lle.lle_qhead_pkt_tail;
+            // 队头 pkt_tail (含多播 splice), 反映本 posedge 将出的 cell
+            tail_fire = tb_qhead_pt(qid);
             @(negedge clk);
             if (tail_fire) begin
                 deq_req_r = 1'b0;
@@ -2940,11 +2969,13 @@ module smart_mmu_tb;
     //   queue_id = 该端口承载 qid (MMU 反推端口)。一次即置 mc_rcy_done[port]。
     //========================================================================
     task automatic mcast_recycle_port(input int port);
-        $display("  >>> MCAST RCY port%0d (carry_qid=%0d)", port, carry_qid(port));
+        int cq;
+        cq = carry_qid(port);
+        $display("  >>> MCAST RCY port%0d (carry_qid=%0d)", port, cq);
         @(negedge clk);
         mcast_recycle_req_r      = 1'b1;
         mcast_recycle_addr_r     = '0;                       // B2 未用 addr
-        mcast_recycle_queue_id_r = carry_qid(port)[QID_W-1:0];
+        mcast_recycle_queue_id_r = cq[QID_W-1:0];
         @(negedge clk);
         mcast_recycle_req_r = 1'b0;
         repeat (2) @(negedge clk);
@@ -3390,6 +3421,7 @@ module smart_mmu_tb;
     end
 
 endmodule
+
 
 
 
