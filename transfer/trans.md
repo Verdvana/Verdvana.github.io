@@ -1,4 +1,5 @@
 ## smmu
+
 ```
 //============================================================================
 // Module      : smart_mmu  (Smart MMU Top)
@@ -67,6 +68,7 @@ module smart_mmu #(
     input  logic [PKT_CELL_W-1:0] enq_cell_num,        // ★ 本包 cell 数(SOF 有效, 入队前预判用)
     input  logic                  enq_is_mcast,        // 组播标志
     input  logic [PORT_NUM-1:0]   enq_mcast_bitmap,    // 组播出端口位图
+    input  logic [$clog2(TC_NUM)-1:0] enq_mcast_tc,    // ★ B2: 组播帧 TC (决定各端口承载队列)
     input  logic                  enq_sof,             // 报文首段
     input  logic                  enq_eof,             // 报文尾段
     output logic                  enq_ready,           // MMU 可接收入队请求
@@ -109,6 +111,8 @@ module smart_mmu #(
     //------------------------------------------------------------------------
     // G6 - 满 / 快满反馈接口 (MMU → QM)
     //------------------------------------------------------------------------
+    // ★ B2: 32 条常规队列 empty 位图 (给 QM 调度; 多播计入各目的端口承载队列)
+    output logic [PORT_NUM*TC_NUM-1:0] q_empty,
     output logic [QUEUE_NUM-1:0]  q_near_full,         // 每队列快满
     output logic [PORT_NUM-1:0]   port_near_full,      // 每出端口快满
     output logic                  global_near_full,    // 全局快满
@@ -142,9 +146,7 @@ module smart_mmu #(
     input  logic                                        cfg_in_pfc_en,            // PFC 使能
     input  logic [PORT_NUM-1:0][TC_NUM-1:0][CNT_W-1:0]  cfg_in_pfc_xoff,          // 每 TC PFC XOFF
     input  logic [PORT_NUM-1:0][TC_NUM-1:0][CNT_W-1:0]  cfg_in_pfc_xon,           // 每 TC PFC XON
-    // ★ B2: 每端口多播承载 TC (选“承载单播队列”; 直采, 不走 csr)
-    input  logic [PORT_NUM-1:0][$clog2(TC_NUM)-1:0]     cfg_in_mcast_carry_tc,
-
+    //   ★ B2: 多播承载队列 TC 不再用 cfg (改由入队 enq_mcast_tc 携带), 见 G2。
     //------------------------------------------------------------------------
     // G5 - 统计输出 (MMU → 外部 CSR/CPU, clk_core 域直接输出, 无总线)
     //   注: 新版 occ 暂未产出统计, 以下由 csr_stats_init 置 0 占位。
@@ -181,6 +183,7 @@ module smart_mmu #(
     logic                  lle_set_pkt_head, lle_set_pkt_tail;
     logic                  lle_alloc_is_mcast;
     logic [PORT_NUM-1:0]   lle_alloc_mcast_bitmap;   // ★ B2
+    logic [$clog2(TC_NUM)-1:0] lle_alloc_mcast_tc;   // ★ B2 组播帧 TC → LLE
     logic                  mc_busy;                  // ★ B2
 
     // Dequeue Ctrl ↔ LLE
@@ -266,6 +269,7 @@ module smart_mmu #(
         .enq_cell_num          (enq_cell_num),
         .enq_is_mcast          (enq_is_mcast),
         .enq_mcast_bitmap      (enq_mcast_bitmap),
+        .enq_mcast_tc          (enq_mcast_tc),             // ★ B2
         .enq_sof               (enq_sof),
         .enq_eof               (enq_eof),
         .enq_ready             (enq_ready),
@@ -296,6 +300,7 @@ module smart_mmu #(
         .lle_set_pkt_tail      (lle_set_pkt_tail),
         .lle_alloc_is_mcast    (lle_alloc_is_mcast),
         .lle_alloc_mcast_bitmap(lle_alloc_mcast_bitmap),   // ★ B2
+        .lle_alloc_mcast_tc    (lle_alloc_mcast_tc),       // ★ B2
         .mc_busy               (mc_busy),                  // ★ B2
         .mcast_busy_drop       (mcast_busy_drop)           // ★ B2
     );
@@ -365,14 +370,15 @@ module smart_mmu #(
         .lle_set_pkt_tail   (lle_set_pkt_tail),
         .lle_alloc_is_mcast (lle_alloc_is_mcast),
         .lle_alloc_mcast_bitmap (lle_alloc_mcast_bitmap),  // ★ B2
+        .lle_alloc_mcast_tc (lle_alloc_mcast_tc),           // ★ B2 (定各端口承载队列)
         .mc_busy            (mc_busy),                      // ★ B2
-        .cfg_mcast_carry_tc (cfg_in_mcast_carry_tc),        // ★ B2
         .lle_deq_queue_id   (lle_deq_queue_id),
         .lle_qhead          (lle_qhead),
         .lle_qhead_pkt_head (lle_qhead_pkt_head),
         .lle_qhead_pkt_tail (lle_qhead_pkt_tail),
         .lle_q_empty        (lle_q_empty),
         .lle_deq_fire       (lle_deq_fire),
+        .q_empty_vec        (q_empty),                      // ★ B2: 32 条常规队列 empty → QM
         .lle_free_req       (lle_free_req),
         .lle_free_addr      (lle_free_addr),
         .lle_free_queue_id  (lle_free_queue_id),
@@ -536,499 +542,11 @@ module smart_mmu #(
     //       u_csr 的 clr_ptr_cnt 在详细设计阶段连到各 Ctrl/Occupancy 的初始化清零口。
 
 endmodule
-
 ```
-
-## occ
-```
-`timescale 1ns/1ps
-
-module occupancy_pool_mgr #(
-    parameter int CELL_NUM  = 8192,
-    parameter int PORT_NUM  = 4,
-    parameter int TC_NUM    = 8,     // 每端口 TC 数 (per-port traffic class)
-    parameter int STAT_W    = 32,    // 统计计数器位宽
-    parameter int PKT_CELL_W = 4,    // enq_cell_num 位宽 (本包 cell 数, ≤ 单帧最大 cell)
-    // near_full 端口/全局余量 (距高水位多少 cell 即视为快满); 队列用 cfg 滞回
-    parameter int QUEUE_NF_MARGIN   = 2,
-    parameter int PORT_NF_MARGIN    = 4,
-    parameter int GLOBAL_NF_MARGIN = 8,
-    // ★ 队列数 = 端口数×每端口TC + 1 (仅 1 个多播专用队列; free 链在 LLE 内独立维护)
-    //   索引: [0 .. PORT_NUM*TC_NUM-1] 单播(port,tc); [QUEUE_NUM-1] 多播专用队列
-    localparam int QUEUE_NUM = PORT_NUM*TC_NUM + 1,
-    localparam int ADDR_W    = $clog2(CELL_NUM),
-    localparam int QID_W     = $clog2(QUEUE_NUM-1)+1,
-    localparam int PORT_W    = $clog2(PORT_NUM-1)+1,
-    localparam int CNT_W     = ADDR_W+1     // 占用计数位宽 (0~CELL_NUM)
-)(
-    //------------------------------------------------------------------------
-    // 时钟复位 (公共)
-    //------------------------------------------------------------------------
-    input  logic                       clk_core,
-    input  logic                       rst_core_n,
-
-    //------------------------------------------------------------------------
-    // 与 Enqueue Ctrl 的接口 (占用判决查询, 组合返回支撑 1 拍)
-    //------------------------------------------------------------------------
-    input  logic                       occ_query_vld,        // 占用判决查询
-    input  logic [QID_W-1:0]           occ_query_queue_id,   // 待判决队列号
-    input  logic [PORT_W-1:0]          occ_query_egress_port,// 待判决出端口
-    input  logic [PKT_CELL_W-1:0]      occ_query_cell_num,   // 本包 cell 数(SOF 有效, 入队前预判用)
-    output logic                       occ_accept,           // 判决=接收
-    output logic                       occ_drop,             // 判决=丢弃(高水位兜底)
-    output logic                       occ_use_static,       // 记静态(=1)/动态(=0)
-    output logic                       occ_no_free,          // 空闲池空(强制丢弃)
-    output logic                       occ_predict_drop,     // ★ 入队前预判: 本包 N 个 cell 会否触发丢弃
-
-    //------------------------------------------------------------------------
-    // 与 LLE 的接口 (分配/回收事件, 计数 ++/--)
-    //------------------------------------------------------------------------
-    input  logic                       lle_alloc_evt,        // 分配事件
-    input  logic [QID_W-1:0]           evt_queue_id,         // 事件所属队列(分配有效)
-    input  logic [PORT_W-1:0]          evt_egress_port,      // 事件所属出端口(分配有效)
-
-    //------------------------------------------------------------------------
-    // 与 Recycle Ctrl 的接口 (回收计数 --)
-    //------------------------------------------------------------------------
-    input  logic                       occ_free_vld,         // 回收事件(计数--)
-    input  logic [QID_W-1:0]           occ_free_queue_id,    // 回收所属队列
-    input  logic [PORT_W-1:0]          occ_free_egress_port, // 回收所属出端口
-
-    //------------------------------------------------------------------------
-    // 流控 / 快满反馈输出
-    //------------------------------------------------------------------------
-    output logic [PORT_NUM-1:0]        pause_req,            // 高水位发 IEEE PAUSE
-    output logic [PORT_NUM-1:0][TC_NUM-1:0] pfc_req,            // 802.1Qbb PFC.每端口TC反压位图
-    output logic [QUEUE_NUM-1:0]       q_near_full,          // 每队列快满(QM 门控+WRED 占用输入)
-    output logic [PORT_NUM-1:0]        port_near_full,       // 每出端口快满
-    output logic                       global_near_full,     // 全局快满
-    output logic [QUEUE_NUM-1:0]       q_full,          // 每队列满(QM 门控+WRED 占用输入)
-    output logic [PORT_NUM-1:0]        port_full,       // 每出端口满
-    output logic                       global_full,     // 全局满
-
-    //------------------------------------------------------------------------
-    // 配置下发 (← CSR), 静态预留/水位/快满阈值均按队列(per-queue)
-    //------------------------------------------------------------------------
-    input  logic [QUEUE_NUM-1:0][CNT_W-1:0] cfg_queue_min_cell,  // 每队列静态预留(per-queue)
-    input  logic [QUEUE_NUM-1:0][CNT_W-1:0] cfg_q_max_cell,      // 每队列高水位上限
-    input  logic [PORT_NUM-1:0][CNT_W-1:0]  cfg_port_max,        // 每出端口高水位(端口级聚合)
-    input  logic [CNT_W-1:0]                cfg_global_high_wm,  // 全局高水位
-    input  logic [QUEUE_NUM-1:0][CNT_W-1:0] cfg_q_full,  // 每队列满阈值
-    input  logic                            cfg_pause_en,        // PAUSE 使能
-    input  logic [PORT_NUM-1:0][CNT_W-1:0]  cfg_port_pause_xoff, //每端口：占用>=此值触发PAUSE
-    input  logic [PORT_NUM-1:0][CNT_W-1:0]  cfg_port_pause_xon,  //每端口：占用<此值撤销PAUSE
-    input  logic [CNT_W-1:0]            cfg_global_pause_xoff, //全局：占用>=此值触发PAUSE
-    input  logic [CNT_W-1:0]            cfg_global_pause_xon,  //全局：占用<此值撤销PAUSE
-    input  logic                        cfg_pfc_en,             // PFC使能
-    input  logic [PORT_NUM-1:0][TC_NUM-1:0][CNT_W-1:0]  cfg_pfc_xoff, //每TC：占用>=此值触发PAUSE
-    input  logic [PORT_NUM-1:0][TC_NUM-1:0][CNT_W-1:0]  cfg_pfc_xon,   //每TC：占用>=此值触发PAUSE
-
-
-    //------------------------------------------------------------------------
-    // 统计上报 (→ CSR)
-    //------------------------------------------------------------------------
-    output logic [CNT_W-1:0]                st_global_used,      // 全局占用
-    output logic [CNT_W-1:0]                st_free_count,       // 空闲计数
-    output logic [QUEUE_NUM-1:0][CNT_W-1:0] st_q_static_used,    // 每队列静态池占用
-    output logic [PORT_NUM-1:0][CNT_W-1:0]  st_per_port_used,    // 每端口占用(端口级聚合)
-    output logic [QUEUE_NUM-1:0][CNT_W-1:0] st_per_queue_used,   // 每队列占用
-    output logic [QUEUE_NUM-1:0]            st_q_near_full_status,// 快满状态镜像
-    output logic [QUEUE_NUM-1:0][STAT_W-1:0] st_tail_drop_cnt,   // 高水位无条件丢包计数
-    output logic [QUEUE_NUM-1:0][STAT_W-1:0] st_near_full_assert_cnt,// 快满置位次数
-    output logic [PORT_NUM-1:0][STAT_W-1:0]  st_pause_tx_cnt,    // PAUSE 发送计数
-    output logic                            overflow_alarm,      // cell 池溢出告警
-    output logic                            underflow_alarm      // 守恒/下溢告警
-);
-    //========================================================================
-    // 
-    //========================================================================
-    localparam Q_PER_PORT = $clog2(TC_NUM);
-
-    //========================================================================
-    // 
-    //========================================================================
-    logic [CNT_W-1:0]  free_count_q;                    //空闲数量
-    logic [CNT_W-1:0]  global_used_q;                   //全局使用量 = 总cell数量-free_count_q
-    logic [CNT_W-1:0]  q_cell_cnt_q     [QUEUE_NUM];    //每个队列使用量
-    logic [CNT_W-1:0]  q_static_used_q  [QUEUE_NUM];    //每个队列静态使用量
-    logic [CNT_W-1:0]  per_port_used_q  [PORT_NUM];     //每个port使用量
-
-    logic [QUEUE_NUM-1:0] use_static_vec;
-
-    logic                 alloc_allowed;
-    logic                 free_allowed;
-    logic                 same_queue_evt;
-    logic                 same_port_evt;
-    logic [PORT_W-1:0]    alloc_port;
-    logic [PORT_W-1:0]    free_port;
-    logic [QUEUE_NUM-1:0] q_cell_inc;
-    logic [QUEUE_NUM-1:0] q_cell_dec;
-    logic [QUEUE_NUM-1:0] q_static_inc;
-    logic [QUEUE_NUM-1:0] q_static_dec;
-    logic [PORT_NUM-1:0]  port_inc;
-    logic [PORT_NUM-1:0]  port_dec;
-
-    logic [PORT_NUM-1:0] pause_set;
-    logic [PORT_NUM-1:0] pause_clr;
-    logic                global_pause_xoff;
-    logic                global_pause_xon;
-
-
-    //function automatic logic [PORT_W-1:0] qid2port(input logic [QID_W-1:0] qid);
-    //    qid2port = qid[QID_W-1 -: PORT_W];
-    //endfunction
-
-    always_comb begin
-        alloc_allowed  = 1'b0;
-        free_allowed   = 1'b0;
-        // Fix5: 直接用 LLE 提供的端口号, 不再由 queue_id 重算 (去冗余)
-        alloc_port     = evt_egress_port;
-        free_port      = occ_free_egress_port;
-        same_queue_evt = lle_alloc_evt && occ_free_vld && (evt_queue_id == occ_free_queue_id);
-        same_port_evt  = lle_alloc_evt && occ_free_vld && (alloc_port == free_port);
-
-        // free: 仅做防下溢校验 (该队列占用非 0), 这是 occ 自身记账边界
-        for (int i = 0; i < QUEUE_NUM; i++) begin
-            if (occ_free_vld && (occ_free_queue_id == i) && (q_cell_cnt_q[i] != '0)) begin
-                free_allowed = 1'b1;
-            end
-        end
-
-        // Fix6: alloc 信任 LLE 决策。lle_alloc_evt(=enq_grant) 已保证 free 池可用,
-        //   occ 不再二次校验 free_count (避免与 LLE.free_cnt 时序失配导致计数发散),
-        //   occ 仅做纯计数。
-        alloc_allowed = lle_alloc_evt;
-
-        q_cell_inc   = '0;
-        q_cell_dec   = '0;
-        q_static_inc = '0;
-        q_static_dec = '0;
-        for (int i = 0; i < QUEUE_NUM; i++) begin
-            q_cell_inc[i]   = alloc_allowed && (evt_queue_id == i) &&
-                              !(same_queue_evt && free_allowed);
-            q_cell_dec[i]   = free_allowed && (occ_free_queue_id == i) &&
-                              !(same_queue_evt && alloc_allowed);
-            q_static_inc[i] = q_cell_inc[i] && use_static_vec[i];
-            q_static_dec[i] = q_cell_dec[i] && (q_static_used_q[i] != '0);
-        end
-
-        port_inc = '0;
-        port_dec = '0;
-        for (int i = 0; i < PORT_NUM; i++) begin
-            port_inc[i] = alloc_allowed && (alloc_port == i) &&
-                          !(same_port_evt && free_allowed);
-            port_dec[i] = free_allowed && (free_port == i) &&
-                          (per_port_used_q[i] != '0) &&
-                          !(same_port_evt && alloc_allowed);
-        end
-    end
-
-
-
-    always_ff @(posedge clk_core or negedge rst_core_n) begin
-        if (!rst_core_n) begin
-            for (int i = 0; i < QUEUE_NUM; i++) begin
-                q_cell_cnt_q[i] <= '0;
-            end
-        end
-        else begin
-            for (int i = 0; i < QUEUE_NUM; i++) begin
-                if (q_cell_inc[i] && !q_cell_dec[i])
-                    q_cell_cnt_q[i] <= q_cell_cnt_q[i] + 1'b1;
-                else if (!q_cell_inc[i] && q_cell_dec[i])
-                    q_cell_cnt_q[i] <= q_cell_cnt_q[i] - 1'b1;
-            end
-        end
-    end
-
-    always_ff @(posedge clk_core or negedge rst_core_n) begin
-        if (!rst_core_n) begin
-            for (int i = 0; i < QUEUE_NUM; i++) begin
-                q_static_used_q[i] <= '0;
-            end
-        end
-        else begin
-            for (int i = 0; i < QUEUE_NUM; i++) begin
-                if (q_static_inc[i] && !q_static_dec[i])
-                    q_static_used_q[i] <= q_static_used_q[i] + 1'b1;
-                else if (!q_static_inc[i] && q_static_dec[i])
-                    q_static_used_q[i] <= q_static_used_q[i] - 1'b1;
-            end
-        end
-    end
-
-    always_ff @(posedge clk_core or negedge rst_core_n) begin
-        if (!rst_core_n) begin
-            for (int i = 0; i < PORT_NUM; i++) begin
-                per_port_used_q[i] <= '0;
-            end
-        end
-        else begin
-            for (int i = 0; i < PORT_NUM; i++) begin
-                if (port_inc[i] && !port_dec[i])
-                    per_port_used_q[i] <= per_port_used_q[i] + 1'b1;
-                else if (!port_inc[i] && port_dec[i])
-                    per_port_used_q[i] <= per_port_used_q[i] - 1'b1;
-            end
-        end
-    end
-
-            
-
-
-    always_ff @(posedge clk_core or negedge rst_core_n) begin
-        if (!rst_core_n) begin
-            free_count_q  <= CELL_NUM[CNT_W-1:0];
-            global_used_q <= '0;
-        end
-        else begin
-            case ({alloc_allowed, free_allowed})
-                2'b10: if (free_count_q != '0) begin   // 仅分配
-                    free_count_q  <= free_count_q  - 1'b1;
-                    global_used_q <= global_used_q + 1'b1;
-                end
-                2'b01: if (global_used_q != '0) begin  // 仅回收
-                    free_count_q  <= free_count_q  + 1'b1;
-                    global_used_q <= global_used_q - 1'b1;
-                end
-                2'b11: begin // 同拍分配+回收: 净不变
-                    free_count_q  <= free_count_q;
-                    global_used_q <= global_used_q;
-                end
-                default: ; // 无事件
-            endcase
-        end
-    end
-    
-    logic hi_wm_drop;
-    logic [QUEUE_NUM-1:0] q_hi_wm_vec;     // >= cfg_q_max_cell (tail-drop 阈值)
-    logic [PORT_NUM-1:0] port_hi_wm_vec; // per-port 高水位向量
-
-    always_comb begin
-        occ_no_free   = (free_count_q == '0);
-        global_full     = (global_used_q >= cfg_global_high_wm);
-
-        // 高水位无条件丢弃 (兜底) 或 空闲池空
-        occ_drop      = occ_query_vld & (occ_no_free | (~occ_use_static & hi_wm_drop));
-        occ_accept    = occ_query_vld & ~occ_drop;
-        // ★ 判决基于【查询的队列/端口】(occ_query_*), 而非 alloc 事件 (evt_*)。
-        //   occ_query 在 enqueue_ctrl 的 T0 组合发起, evt_* 是 LLE 在落地拍才有效,
-        //   二者不同拍; 判决必须用当拍查询的 queue/port。
-        // 双池: 该队列静态额度未用满 → 记静态账
-        occ_use_static = use_static_vec[occ_query_queue_id];
-        hi_wm_drop     = q_hi_wm_vec[occ_query_queue_id]
-                       | port_hi_wm_vec[occ_query_egress_port]   // 端口向量按 port 索引
-                       | global_full;
-    end
-
-    //========================================================================
-    // ★ 入队前预判 (advisory, 纯组合): QM 在包首给本包 cell 数 occ_query_cell_num,
-    //   根据 occ_query_queue_id/egress_port 判断这 N 个 cell 顺序放入后是否会触发
-    //   alloc_drop (等价于逐 cell drop 的整包预判)。
-    //   规则 (与逐 cell occ_drop 语义一致):
-    //     - free 池必须 ≥ N (无条件, 不足则必丢);
-    //     - 落在该队列静态额度内的 cell 绕过 q/port/global 高水位;
-    //     - 超出静态额度的动态 cell 需整体不越 q/port/global 高水位。
-    //   计数单调增、阈值固定, 故只需校验"最后一个 cell", 即比较总量 +N ≤ 阈值。
-    //   前提: QM 单队列入队, 发包期间无其它队列消耗 global/free → 当拍快照即准确。
-    //========================================================================
-    logic [CNT_W-1:0] pred_cell_num;
-    logic [CNT_W-1:0] pred_s_rem;      // 该队列静态额度剩余
-    logic             pred_fit;
-    always_comb begin
-        pred_cell_num = {{(CNT_W-PKT_CELL_W){1'b0}}, occ_query_cell_num};  // 零扩展到 CNT_W
-        if (q_static_used_q[occ_query_queue_id] < cfg_queue_min_cell[occ_query_queue_id])
-            pred_s_rem = cfg_queue_min_cell[occ_query_queue_id] - q_static_used_q[occ_query_queue_id];
-        else
-            pred_s_rem = '0;
-        pred_fit = (free_count_q >= pred_cell_num)
-                && ( (pred_cell_num <= pred_s_rem)                                    // 全落静态额度 → 绕过高水位
-                     || ( (q_cell_cnt_q[occ_query_queue_id]       + pred_cell_num <= cfg_q_max_cell[occ_query_queue_id])
-                       && (per_port_used_q[occ_query_egress_port] + pred_cell_num <= cfg_port_max[occ_query_egress_port])
-                       && (global_used_q                          + pred_cell_num <= cfg_global_high_wm) ) );
-        occ_predict_drop = ~pred_fit;
-    end
-
-    always_comb begin
-        for (int i = 0; i < QUEUE_NUM; i++) begin
-            use_static_vec[i] = q_static_used_q[i] < cfg_queue_min_cell[i];
-            q_full[i]         = q_cell_cnt_q[i]    >= cfg_q_full[i];
-            q_hi_wm_vec[i]    = q_cell_cnt_q[i]    >= cfg_q_max_cell[i];
-        end
-    end
-    always_comb begin
-        for (int i = 0; i < PORT_NUM; i++) begin
-            port_full[i]  = per_port_used_q[i]    >= cfg_port_max[i];
-            port_hi_wm_vec[i] = per_port_used_q[i]    >= cfg_port_max[i];
-        end
-    end
-    
-    //============================================
-    // near_full
-    logic [QUEUE_NUM-1:0] q_near_full_set;
-    always_comb begin
-        for(int i=0;i<QUEUE_NUM;i++) begin
-            q_near_full_set[i] = (q_cell_cnt_q[i] >= (cfg_q_max_cell[i]-QUEUE_NF_MARGIN)); 
-        end
-    end
-    always_ff@(posedge clk_core, negedge rst_core_n) begin
-        if(!rst_core_n) begin
-            q_near_full <= '0;
-        end
-        else begin
-            // Fix4: 按位赋值 (原写法 q_near_full<=1'b1 会把整个向量赋成最后一个 i 的结果)
-            for(int i=0;i<QUEUE_NUM;i++)begin
-                q_near_full[i] <= q_near_full_set[i];
-            end
-        end
-    end
-    // per-port near_full: 占用 >= (cfg_port_max - PORT_NF_MARGIN)
-    logic [PORT_NUM-1:0] port_near_full_set;
-    always_comb begin
-        for(int i=0;i<PORT_NUM;i++) begin
-            port_near_full_set[i] = (per_port_used_q[i] >= (cfg_port_max[i]-PORT_NF_MARGIN));
-        end
-    end
-    always_ff@(posedge clk_core, negedge rst_core_n) begin
-        if(!rst_core_n) begin
-            port_near_full <= '0;
-        end
-        else begin
-            for(int i=0;i<PORT_NUM;i++) begin
-                port_near_full[i] <= port_near_full_set[i];
-            end
-        end
-    end
-
-    logic global_near_full_set;
-    always_comb begin
-        global_near_full_set = (global_used_q >= (cfg_global_high_wm-GLOBAL_NF_MARGIN));
-    end
-    always_ff@(posedge clk_core, negedge rst_core_n) begin
-        if(!rst_core_n)
-            global_near_full <= 1'b0;
-        else if (global_near_full_set)
-            global_near_full <= 1'b1;
-        else
-            global_near_full <= 1'b0;
-    end
-
-
-
-    //============================================
-    //PAUSE
-    assign  global_pause_xoff = (global_used_q >= cfg_global_pause_xoff);
-    assign  global_pause_xon  = (global_used_q <  cfg_global_pause_xon);
-    always_comb begin
-        for(int i=0;i<PORT_NUM;i++) begin
-            pause_set[i] = (per_port_used_q[i] >= cfg_port_pause_xoff[i] | global_pause_xoff); //端口或全局达到xoff
-            pause_clr[i] = (per_port_used_q[i] <  cfg_port_pause_xon[i]  & global_pause_xon);  //端口且全局回落xon
-        end
-    end
-    //寄存器迟滞
-    always_ff@(posedge clk_core, negedge rst_core_n) begin
-        if(!rst_core_n)
-            pause_req    <= 1'b0;
-        else begin
-            for(int i=0;i<PORT_NUM;i++)begin
-                if(!cfg_pause_en)
-                    pause_req[i]    <= 1'b0;
-                else if(pause_set[i])
-                    pause_req[i]    <= 1'b1;
-                else if(pause_clr[i])
-                    pause_req[i]    <= 1'b0;
-                // 中间区 保持原值，迟滞
-            end
-        end
-    end
-
-    //============================================
-    //PFC
-    logic [PORT_NUM-1:0][TC_NUM-1:0][CNT_W-1:0] per_tc_used;
-    always_comb begin
-        for(int i=0;i<PORT_NUM;i++) begin
-            for(int j=0;j<TC_NUM;j++)begin
-                per_tc_used[i][j] = q_cell_cnt_q[i*TC_NUM+j];
-            end
-        end
-    end
-
-    logic [PORT_NUM-1:0][TC_NUM-1:0] pfc_set;
-    logic [PORT_NUM-1:0][TC_NUM-1:0] pfc_clr;
-    always_comb begin
-        for(int i=0;i<PORT_NUM;i++)begin
-            for(int j=0;j<TC_NUM;j++)begin
-                pfc_set[i][j] = per_tc_used[i][j] >= cfg_pfc_xoff[i][j];
-                pfc_clr[i][j] = per_tc_used[i][j] <  cfg_pfc_xon[i][j];
-            end
-        end
-    end
-
-    //寄存器迟滞
-    always_ff@(posedge clk_core, negedge rst_core_n) begin
-        if(!rst_core_n)
-            pfc_req    <= 1'b0;
-        else begin
-            for(int i=0;i<PORT_NUM;i++)begin
-                for(int j=0;j<TC_NUM;j++)begin
-                    if(!cfg_pfc_en)
-                        pfc_req[i][j]    <= 1'b0;
-                    else if(pfc_set[i][j])
-                        pfc_req[i][j]    <= 1'b1;
-                    else if(pfc_clr[i][j])
-                        pfc_req[i][j]    <= 1'b0;
-                // 中间区 保持原值，迟滞
-                end
-            end
-        end
-    end
-    //========================================================================
-    // 统计输出
-    //========================================================================
-    assign st_global_used        = global_used_q;
-    assign st_free_count         = free_count_q;
-    //assign st_q_near_full_status = q_near_full_q;
-    //assign st_tail_drop_cnt      = tail_drop_cnt_q;
-    //assign st_near_full_assert_cnt = near_full_assert_cnt_q;
-    //assign st_pause_tx_cnt       = pause_tx_cnt_q;
-    assign st_q_near_full_status = '0;
-    assign st_tail_drop_cnt      = '0;
-    assign st_near_full_assert_cnt = '0;
-    assign st_pause_tx_cnt       = '0;
-    always_comb begin
-        for (int i = 0; i < QUEUE_NUM; i++) begin
-            st_q_static_used[i]  = q_static_used_q[i];
-            st_per_queue_used[i] = q_cell_cnt_q[i];
-        end
-        for (int i = 0; i < PORT_NUM; i++) begin 
-            st_per_port_used[i]  = per_port_used_q[i];
-        end
-    end
-    //========================================================================
-    // 守恒 / 溢出 / 下溢 告警
-    //========================================================================
-    logic conserve_ok;
-    assign conserve_ok = ((free_count_q + global_used_q) == CELL_NUM[CNT_W-1:0]);
-    always_ff @(posedge clk_core or negedge rst_core_n) begin
-        if (!rst_core_n) begin
-            overflow_alarm  <= 1'b0;
-            underflow_alarm <= 1'b0;
-        end
-        else begin
-            overflow_alarm  <= (global_used_q > CELL_NUM[CNT_W-1:0]);
-            underflow_alarm <= ~conserve_ok
-                               | (alloc_allowed & (free_count_q  == '0))
-                               | (free_allowed  & (global_used_q == '0));
-        end
-    end
-
-
-endmodule
-```
-
 
 
 ## lle
+
 ```
 //============================================================================
 // Module      : lle  (Link-List Engine) —— B2 多播逻辑拼接版
@@ -1092,9 +610,6 @@ module lle #(
     input  logic                  init_build_req,
     output logic                  init_build_done,
 
-    // 多播承载队列 TC 配置 (每端口)
-    input  logic [PORT_NUM-1:0][Q_PER_PORT_LOG-1:0] cfg_mcast_carry_tc,
-
     // Enqueue Ctrl
     output logic [ADDR_W-1:0]     lle_free_head,
     output logic                  lle_free_empty,
@@ -1106,6 +621,7 @@ module lle #(
     input  logic                  lle_set_pkt_tail,
     input  logic                  lle_alloc_is_mcast,
     input  logic [PORT_NUM-1:0]   lle_alloc_mcast_bitmap,
+    input  logic [Q_PER_PORT_LOG-1:0] lle_alloc_mcast_tc,   // ★ 多播帧 TC (决定各端口承载队列)
     output logic                  mc_busy,
 
     // Dequeue Ctrl (含多播 splice)
@@ -1115,6 +631,9 @@ module lle #(
     output logic                  lle_qhead_pkt_tail,
     output logic                  lle_q_empty,
     input  logic                  lle_deq_fire,
+
+    // ★ B2: 给 QM 的 32 条常规队列 empty 向量 (多播计入各目的端口承载队列)
+    output logic [PORT_NUM*TC_NUM-1:0] q_empty_vec,
 
     // Recycle Ctrl (单播还链 + 多播逐端口回收)
     input  logic                  lle_free_req,
@@ -1185,13 +704,15 @@ module lle #(
 
     assign mc_busy = mc_valid_q;
 
-    // 各端口承载单播队列号 (组合): carry_qid[p] = p*TC_NUM + cfg_mcast_carry_tc[p]
+    // 各端口承载单播队列号 (组合): carry_qid[p] = p*TC_NUM + 多播帧TC
+    //   ★ 多播帧只有一个 TC/优先级, 在每个目的端口都落到该 TC 的队列上 → 与 QM 调度一致。
+    //     (QM 出队某端口的 该TC队列 → MMU 在此队列上 splice 出多播报文)
     logic [QID_W-1:0] carry_qid_c [PORT_NUM];
     genvar gp;
     generate
         for (gp = 0; gp < PORT_NUM; gp++) begin : g_carry_qid
             assign carry_qid_c[gp] = QID_W'(gp*TC_NUM) +
-                                     QID_W'(cfg_mcast_carry_tc[gp]);
+                                     QID_W'(lle_alloc_mcast_tc);
         end
     endgenerate
 
@@ -1709,6 +1230,21 @@ module lle #(
     // 空: 多播 take 时非空; 否则看单播 cnt (承载队列 pend_uni>0 时必有单播 cell, cnt>0)
     assign lle_q_empty        = mc_take_deq ? 1'b0 : (q_cell_cnt_q[lle_deq_queue_id] == '0);
 
+    //========================================================================
+    // ★ B2: 32 条常规队列 empty 向量 (给 QM 调度用)
+    //   q_empty[q] = ~( 实际单播 cnt[q]!=0  |  该 q 是某目的端口承载队列且多播未被该端口读完 )
+    //   多播只计入【各目的端口的承载队列】(每端口 1 条), 不计入全部 32 条。
+    //========================================================================
+    always_comb begin
+        for (int qq = 0; qq < PORT_NUM*TC_NUM; qq++) begin
+            automatic int pq = qq >> Q_PER_PORT_LOG;
+            automatic logic mc_here = mc_valid_q & mc_dst_bitmap_q[pq] &
+                                      ~mc_rd_done_q[pq] &
+                                      (QID_W'(qq) == mc_carry_qid_q[pq]);
+            q_empty_vec[qq] = ~((q_cell_cnt_q[qq] != '0) | mc_here);
+        end
+    end
+
     assign lle_free_grant = lle_free_req & ~build_active & ~rcy_fifo_full;
     assign lle_free_done  = rcy_grant;
 
@@ -1777,8 +1313,8 @@ endmodule
 ```
 
 
-
 ## enq
+
 ```
 //============================================================================
 // Module      : enqueue_ctrl  (Enqueue Control)
@@ -1825,6 +1361,7 @@ module enqueue_ctrl #(
     input  logic [PKT_CELL_W-1:0] enq_cell_num,        // ★ 本包 cell 数(SOF 有效, 入队前预判用)
     input  logic                  enq_is_mcast,        // 组播标志
     input  logic [PORT_NUM-1:0]   enq_mcast_bitmap,    // 组播出端口位图
+    input  logic [$clog2(TC_NUM)-1:0] enq_mcast_tc,    // ★ B2: 组播帧 TC (决定各端口承载队列)
     input  logic                  enq_sof,             // 报文首段
     input  logic                  enq_eof,             // 报文尾段
     output logic                  enq_ready,           // 可接请求(init_done 后恒高)
@@ -1869,6 +1406,7 @@ module enqueue_ctrl #(
     output logic                  lle_set_pkt_tail,    // 写 pkt_tail (= enq_eof)
     output logic                  lle_alloc_is_mcast,  // 组播标志
     output logic [PORT_NUM-1:0]   lle_alloc_mcast_bitmap, // ★ B2: 组播目的端口位图 → LLE
+    output logic [$clog2(TC_NUM)-1:0] lle_alloc_mcast_tc, // ★ B2: 组播帧 TC → LLE (定承载队列)
     output logic                  mcast_busy_drop      // ★ B2: 本拍因多播槽占用而丢弃多播帧
 );
 
@@ -2012,12 +1550,11 @@ module enqueue_ctrl #(
 
 endmodule
 
-
 ```
 
 
-
 ## deq
+
 ```
 //============================================================================
 // Module      : dequeue_ctrl  (Dequeue Control)
@@ -2129,102 +1666,11 @@ module dequeue_ctrl #(
 
 endmodule
 
-
 ```
 
 
+## csr_stats_init
 
-## recycle_ctrl
-```
-//============================================================================
-// Module      : recycle_ctrl  (Recycle Control) —— B2 版
-// Project     : 4-Port 2.5/1G/100M Ethernet Switch - Smart MMU
-//
-// Description :
-//   回收路径控制 (控制平面)。B2 多播模型:
-//     - 单播 (recycle_req): 报文发送完成, 该 cell 立即还链 → 直接向 LLE 发
-//                           lle_free_req(接空闲链尾), 并透传 queue_id 供 occ 计数--。
-//     - 组播 (mcast_recycle_req): 每收到一个出端口“发完一份”的通知, 反推该端口号
-//                           (由 mcast_recycle_queue_id >> Q_PER_PORT_LOG), 直接
-//                           转发给 LLE 的 mc_rcy_vld/mc_rcy_port —— LLE 内部记
-//                           mc_rcy_done[port]; 当所有目的端口都读完+还链, LLE 自行
-//                           整帧还链并清多播槽。recycle_ctrl 不再做 ref_count 递减。
-//
-//   仲裁: 单播还链走 lle_free_req; 组播还链由 LLE 内部 walk 完成 (走 LLE 内部
-//         recycle FIFO), 不占用 recycle_ctrl 的 lle_free_req 口。
-//
-// Clock/Reset : clk_core (300MHz, 单时钟域) / rst_core_n (异步复位低有效)
-//============================================================================
-`timescale 1ns/1ps
-
-module recycle_ctrl #(
-    parameter int CELL_NUM  = 8192,
-    parameter int PORT_NUM  = 4,
-    parameter int TC_NUM    = 8,     // 每端口 TC 数
-    // 派生位宽 (与 occupancy_pool_mgr / lle 同源)
-    localparam int QUEUE_NUM = PORT_NUM*TC_NUM + 1,
-    localparam int ADDR_W   = $clog2(CELL_NUM),
-    localparam int QID_W    = $clog2(QUEUE_NUM-1)+1,
-    localparam int PORT_W   = $clog2(PORT_NUM-1)+1,
-    localparam int Q_PER_PORT_LOG = $clog2(TC_NUM)
-)(
-    //------------------------------------------------------------------------
-    // 时钟复位 (公共)
-    //------------------------------------------------------------------------
-    input  logic                  clk_core,
-    input  logic                  rst_core_n,
-
-    //------------------------------------------------------------------------
-    // 与 QM 的接口 (外部, 经 MMU 顶层)
-    //------------------------------------------------------------------------
-    input  logic                  recycle_req,         // 单播 cell 回收请求
-    input  logic [ADDR_W-1:0]     recycle_cell_addr,   // 待回收 cell 地址
-    input  logic [QID_W-1:0]      recycle_queue_id,    // 单播回收 cell 所属队列号
-    input  logic                  mcast_recycle_req,   // 组播回收通知(某端口发完一份)
-    input  logic [ADDR_W-1:0]     mcast_recycle_addr,  // 组播待回收 cell 地址 (B2 未用, 保留)
-    input  logic [QID_W-1:0]      mcast_recycle_queue_id, // 组播回收所属承载队列号 (→ 反推端口)
-    output logic                  recycle_ack,         // 回收完成应答
-
-    //------------------------------------------------------------------------
-    // 与 LLE 的接口 —— 单播还链 + 组播逐端口回收转发
-    //------------------------------------------------------------------------
-    output logic                  lle_free_req,        // 单播还链请求
-    output logic [ADDR_W-1:0]     lle_free_addr,       // 待还 cell
-    output logic [QID_W-1:0]      lle_free_queue_id,   // 待还 cell 所属队列号
-    input  logic                  lle_free_grant,      // 仲裁通过
-    input  logic                  lle_free_done,       // 还链完成
-    // 组播逐端口回收 → LLE
-    output logic                  mc_rcy_vld,          // 组播回收通知有效
-    output logic [PORT_W-1:0]     mc_rcy_port          // 组播回收所属出端口
-);
-
-    //========================================================================
-    // 单播还链: 直接透传 (B2 组播不再共用此口)
-    //========================================================================
-    assign lle_free_req      = recycle_req;
-    assign lle_free_addr     = recycle_cell_addr;
-    assign lle_free_queue_id = recycle_queue_id;
-
-    //========================================================================
-    // 组播逐端口回收转发: 反推端口号 = 承载队列号 >> Q_PER_PORT_LOG
-    //========================================================================
-    logic [QID_W-1:0] mc_port_full;
-    assign mc_port_full = mcast_recycle_queue_id >> Q_PER_PORT_LOG;
-    assign mc_rcy_vld   = mcast_recycle_req;
-    assign mc_rcy_port  = (mc_port_full < PORT_NUM[QID_W-1:0])
-                          ? mc_port_full[PORT_W-1:0] : '0;
-
-    //========================================================================
-    // 回收应答: 单播还链发起当拍应答; 组播收到通知当拍即应答。
-    //========================================================================
-    assign recycle_ack = recycle_req | mcast_recycle_req;
-
-endmodule
-
-```
-
-
-## csr_in
 ```
 //============================================================================
 // Module      : csr_stats_init  (CSR Sample / Stats + Init FSM)
@@ -2492,9 +1938,592 @@ module csr_stats_init #(
 
 endmodule
 
+```
+
+
+## occupancy_pool_mgr
+
+```
+`timescale 1ns/1ps
+
+module occupancy_pool_mgr #(
+    parameter int CELL_NUM  = 8192,
+    parameter int PORT_NUM  = 4,
+    parameter int TC_NUM    = 8,     // 每端口 TC 数 (per-port traffic class)
+    parameter int STAT_W    = 32,    // 统计计数器位宽
+    parameter int PKT_CELL_W = 4,    // enq_cell_num 位宽 (本包 cell 数, ≤ 单帧最大 cell)
+    // near_full 端口/全局余量 (距高水位多少 cell 即视为快满); 队列用 cfg 滞回
+    parameter int QUEUE_NF_MARGIN   = 2,
+    parameter int PORT_NF_MARGIN    = 4,
+    parameter int GLOBAL_NF_MARGIN = 8,
+    // ★ 队列数 = 端口数×每端口TC + 1 (仅 1 个多播专用队列; free 链在 LLE 内独立维护)
+    //   索引: [0 .. PORT_NUM*TC_NUM-1] 单播(port,tc); [QUEUE_NUM-1] 多播专用队列
+    localparam int QUEUE_NUM = PORT_NUM*TC_NUM + 1,
+    localparam int ADDR_W    = $clog2(CELL_NUM),
+    localparam int QID_W     = $clog2(QUEUE_NUM-1)+1,
+    localparam int PORT_W    = $clog2(PORT_NUM-1)+1,
+    localparam int CNT_W     = ADDR_W+1     // 占用计数位宽 (0~CELL_NUM)
+)(
+    //------------------------------------------------------------------------
+    // 时钟复位 (公共)
+    //------------------------------------------------------------------------
+    input  logic                       clk_core,
+    input  logic                       rst_core_n,
+
+    //------------------------------------------------------------------------
+    // 与 Enqueue Ctrl 的接口 (占用判决查询, 组合返回支撑 1 拍)
+    //------------------------------------------------------------------------
+    input  logic                       occ_query_vld,        // 占用判决查询
+    input  logic [QID_W-1:0]           occ_query_queue_id,   // 待判决队列号
+    input  logic [PORT_W-1:0]          occ_query_egress_port,// 待判决出端口
+    input  logic [PKT_CELL_W-1:0]      occ_query_cell_num,   // 本包 cell 数(SOF 有效, 入队前预判用)
+    output logic                       occ_accept,           // 判决=接收
+    output logic                       occ_drop,             // 判决=丢弃(高水位兜底)
+    output logic                       occ_use_static,       // 记静态(=1)/动态(=0)
+    output logic                       occ_no_free,          // 空闲池空(强制丢弃)
+    output logic                       occ_predict_drop,     // ★ 入队前预判: 本包 N 个 cell 会否触发丢弃
+
+    //------------------------------------------------------------------------
+    // 与 LLE 的接口 (分配/回收事件, 计数 ++/--)
+    //------------------------------------------------------------------------
+    input  logic                       lle_alloc_evt,        // 分配事件
+    input  logic [QID_W-1:0]           evt_queue_id,         // 事件所属队列(分配有效)
+    input  logic [PORT_W-1:0]          evt_egress_port,      // 事件所属出端口(分配有效)
+
+    //------------------------------------------------------------------------
+    // 与 Recycle Ctrl 的接口 (回收计数 --)
+    //------------------------------------------------------------------------
+    input  logic                       occ_free_vld,         // 回收事件(计数--)
+    input  logic [QID_W-1:0]           occ_free_queue_id,    // 回收所属队列
+    input  logic [PORT_W-1:0]          occ_free_egress_port, // 回收所属出端口
+
+    //------------------------------------------------------------------------
+    // 流控 / 快满反馈输出
+    //------------------------------------------------------------------------
+    output logic [PORT_NUM-1:0]        pause_req,            // 高水位发 IEEE PAUSE
+    output logic [PORT_NUM-1:0][TC_NUM-1:0] pfc_req,            // 802.1Qbb PFC.每端口TC反压位图
+    output logic [QUEUE_NUM-1:0]       q_near_full,          // 每队列快满(QM 门控+WRED 占用输入)
+    output logic [PORT_NUM-1:0]        port_near_full,       // 每出端口快满
+    output logic                       global_near_full,     // 全局快满
+    output logic [QUEUE_NUM-1:0]       q_full,          // 每队列满(QM 门控+WRED 占用输入)
+    output logic [PORT_NUM-1:0]        port_full,       // 每出端口满
+    output logic                       global_full,     // 全局满
+
+    //------------------------------------------------------------------------
+    // 配置下发 (← CSR), 静态预留/水位/快满阈值均按队列(per-queue)
+    //------------------------------------------------------------------------
+    input  logic [QUEUE_NUM-1:0][CNT_W-1:0] cfg_queue_min_cell,  // 每队列静态预留(per-queue)
+    input  logic [QUEUE_NUM-1:0][CNT_W-1:0] cfg_q_max_cell,      // 每队列高水位上限
+    input  logic [PORT_NUM-1:0][CNT_W-1:0]  cfg_port_max,        // 每出端口高水位(端口级聚合)
+    input  logic [CNT_W-1:0]                cfg_global_high_wm,  // 全局高水位
+    input  logic [QUEUE_NUM-1:0][CNT_W-1:0] cfg_q_full,  // 每队列满阈值
+    input  logic                            cfg_pause_en,        // PAUSE 使能
+    input  logic [PORT_NUM-1:0][CNT_W-1:0]  cfg_port_pause_xoff, //每端口：占用>=此值触发PAUSE
+    input  logic [PORT_NUM-1:0][CNT_W-1:0]  cfg_port_pause_xon,  //每端口：占用<此值撤销PAUSE
+    input  logic [CNT_W-1:0]            cfg_global_pause_xoff, //全局：占用>=此值触发PAUSE
+    input  logic [CNT_W-1:0]            cfg_global_pause_xon,  //全局：占用<此值撤销PAUSE
+    input  logic                        cfg_pfc_en,             // PFC使能
+    input  logic [PORT_NUM-1:0][TC_NUM-1:0][CNT_W-1:0]  cfg_pfc_xoff, //每TC：占用>=此值触发PAUSE
+    input  logic [PORT_NUM-1:0][TC_NUM-1:0][CNT_W-1:0]  cfg_pfc_xon,   //每TC：占用>=此值触发PAUSE
+
+
+    //------------------------------------------------------------------------
+    // 统计上报 (→ CSR)
+    //------------------------------------------------------------------------
+    output logic [CNT_W-1:0]                st_global_used,      // 全局占用
+    output logic [CNT_W-1:0]                st_free_count,       // 空闲计数
+    output logic [QUEUE_NUM-1:0][CNT_W-1:0] st_q_static_used,    // 每队列静态池占用
+    output logic [PORT_NUM-1:0][CNT_W-1:0]  st_per_port_used,    // 每端口占用(端口级聚合)
+    output logic [QUEUE_NUM-1:0][CNT_W-1:0] st_per_queue_used,   // 每队列占用
+    output logic [QUEUE_NUM-1:0]            st_q_near_full_status,// 快满状态镜像
+    output logic [QUEUE_NUM-1:0][STAT_W-1:0] st_tail_drop_cnt,   // 高水位无条件丢包计数
+    output logic [QUEUE_NUM-1:0][STAT_W-1:0] st_near_full_assert_cnt,// 快满置位次数
+    output logic [PORT_NUM-1:0][STAT_W-1:0]  st_pause_tx_cnt,    // PAUSE 发送计数
+    output logic                            overflow_alarm,      // cell 池溢出告警
+    output logic                            underflow_alarm      // 守恒/下溢告警
+);
+    //========================================================================
+    // 
+    //========================================================================
+    localparam Q_PER_PORT = $clog2(TC_NUM);
+
+    //========================================================================
+    // 
+    //========================================================================
+    logic [CNT_W-1:0]  free_count_q;                    //空闲数量
+    logic [CNT_W-1:0]  global_used_q;                   //全局使用量 = 总cell数量-free_count_q
+    logic [CNT_W-1:0]  q_cell_cnt_q     [QUEUE_NUM];    //每个队列使用量
+    logic [CNT_W-1:0]  q_static_used_q  [QUEUE_NUM];    //每个队列静态使用量
+    logic [CNT_W-1:0]  per_port_used_q  [PORT_NUM];     //每个port使用量
+
+    logic [QUEUE_NUM-1:0] use_static_vec;
+
+    logic                 alloc_allowed;
+    logic                 free_allowed;
+    logic                 same_queue_evt;
+    logic                 same_port_evt;
+    logic [PORT_W-1:0]    alloc_port;
+    logic [PORT_W-1:0]    free_port;
+    logic [QUEUE_NUM-1:0] q_cell_inc;
+    logic [QUEUE_NUM-1:0] q_cell_dec;
+    logic [QUEUE_NUM-1:0] q_static_inc;
+    logic [QUEUE_NUM-1:0] q_static_dec;
+    logic [PORT_NUM-1:0]  port_inc;
+    logic [PORT_NUM-1:0]  port_dec;
+
+    logic [PORT_NUM-1:0] pause_set;
+    logic [PORT_NUM-1:0] pause_clr;
+    logic                global_pause_xoff;
+    logic                global_pause_xon;
+
+
+    //function automatic logic [PORT_W-1:0] qid2port(input logic [QID_W-1:0] qid);
+    //    qid2port = qid[QID_W-1 -: PORT_W];
+    //endfunction
+
+    always_comb begin
+        alloc_allowed  = 1'b0;
+        free_allowed   = 1'b0;
+        // Fix5: 直接用 LLE 提供的端口号, 不再由 queue_id 重算 (去冗余)
+        alloc_port     = evt_egress_port;
+        free_port      = occ_free_egress_port;
+        same_queue_evt = lle_alloc_evt && occ_free_vld && (evt_queue_id == occ_free_queue_id);
+        same_port_evt  = lle_alloc_evt && occ_free_vld && (alloc_port == free_port);
+
+        // free: 仅做防下溢校验 (该队列占用非 0), 这是 occ 自身记账边界
+        for (int i = 0; i < QUEUE_NUM; i++) begin
+            if (occ_free_vld && (occ_free_queue_id == i) && (q_cell_cnt_q[i] != '0)) begin
+                free_allowed = 1'b1;
+            end
+        end
+
+        // Fix6: alloc 信任 LLE 决策。lle_alloc_evt(=enq_grant) 已保证 free 池可用,
+        //   occ 不再二次校验 free_count (避免与 LLE.free_cnt 时序失配导致计数发散),
+        //   occ 仅做纯计数。
+        alloc_allowed = lle_alloc_evt;
+
+        q_cell_inc   = '0;
+        q_cell_dec   = '0;
+        q_static_inc = '0;
+        q_static_dec = '0;
+        for (int i = 0; i < QUEUE_NUM; i++) begin
+            q_cell_inc[i]   = alloc_allowed && (evt_queue_id == i) &&
+                              !(same_queue_evt && free_allowed);
+            q_cell_dec[i]   = free_allowed && (occ_free_queue_id == i) &&
+                              !(same_queue_evt && alloc_allowed);
+            q_static_inc[i] = q_cell_inc[i] && use_static_vec[i];
+            q_static_dec[i] = q_cell_dec[i] && (q_static_used_q[i] != '0);
+        end
+
+        port_inc = '0;
+        port_dec = '0;
+        for (int i = 0; i < PORT_NUM; i++) begin
+            // ★ B2 (方案 b): 多播 cell 一份共享, 不归属任何物理端口 →
+            //   evt_queue_id / occ_free_queue_id == MC_QID (>= PORT_NUM*TC_NUM) 时
+            //   跳过 per-port 计数 (多播 buffer 压力仅体现在 global + MC_QID per-queue)。
+            port_inc[i] = alloc_allowed && (evt_queue_id < QID_W'(PORT_NUM*TC_NUM)) &&
+                          (alloc_port == i) &&
+                          !(same_port_evt && free_allowed);
+            port_dec[i] = free_allowed && (occ_free_queue_id < QID_W'(PORT_NUM*TC_NUM)) &&
+                          (free_port == i) &&
+                          (per_port_used_q[i] != '0) &&
+                          !(same_port_evt && alloc_allowed);
+        end
+    end
+
+
+
+    always_ff @(posedge clk_core or negedge rst_core_n) begin
+        if (!rst_core_n) begin
+            for (int i = 0; i < QUEUE_NUM; i++) begin
+                q_cell_cnt_q[i] <= '0;
+            end
+        end
+        else begin
+            for (int i = 0; i < QUEUE_NUM; i++) begin
+                if (q_cell_inc[i] && !q_cell_dec[i])
+                    q_cell_cnt_q[i] <= q_cell_cnt_q[i] + 1'b1;
+                else if (!q_cell_inc[i] && q_cell_dec[i])
+                    q_cell_cnt_q[i] <= q_cell_cnt_q[i] - 1'b1;
+            end
+        end
+    end
+
+    always_ff @(posedge clk_core or negedge rst_core_n) begin
+        if (!rst_core_n) begin
+            for (int i = 0; i < QUEUE_NUM; i++) begin
+                q_static_used_q[i] <= '0;
+            end
+        end
+        else begin
+            for (int i = 0; i < QUEUE_NUM; i++) begin
+                if (q_static_inc[i] && !q_static_dec[i])
+                    q_static_used_q[i] <= q_static_used_q[i] + 1'b1;
+                else if (!q_static_inc[i] && q_static_dec[i])
+                    q_static_used_q[i] <= q_static_used_q[i] - 1'b1;
+            end
+        end
+    end
+
+    always_ff @(posedge clk_core or negedge rst_core_n) begin
+        if (!rst_core_n) begin
+            for (int i = 0; i < PORT_NUM; i++) begin
+                per_port_used_q[i] <= '0;
+            end
+        end
+        else begin
+            for (int i = 0; i < PORT_NUM; i++) begin
+                if (port_inc[i] && !port_dec[i])
+                    per_port_used_q[i] <= per_port_used_q[i] + 1'b1;
+                else if (!port_inc[i] && port_dec[i])
+                    per_port_used_q[i] <= per_port_used_q[i] - 1'b1;
+            end
+        end
+    end
+
+            
+
+
+    always_ff @(posedge clk_core or negedge rst_core_n) begin
+        if (!rst_core_n) begin
+            free_count_q  <= CELL_NUM[CNT_W-1:0];
+            global_used_q <= '0;
+        end
+        else begin
+            case ({alloc_allowed, free_allowed})
+                2'b10: if (free_count_q != '0) begin   // 仅分配
+                    free_count_q  <= free_count_q  - 1'b1;
+                    global_used_q <= global_used_q + 1'b1;
+                end
+                2'b01: if (global_used_q != '0) begin  // 仅回收
+                    free_count_q  <= free_count_q  + 1'b1;
+                    global_used_q <= global_used_q - 1'b1;
+                end
+                2'b11: begin // 同拍分配+回收: 净不变
+                    free_count_q  <= free_count_q;
+                    global_used_q <= global_used_q;
+                end
+                default: ; // 无事件
+            endcase
+        end
+    end
+    
+    logic hi_wm_drop;
+    logic [QUEUE_NUM-1:0] q_hi_wm_vec;     // >= cfg_q_max_cell (tail-drop 阈值)
+    logic [PORT_NUM-1:0] port_hi_wm_vec; // per-port 高水位向量
+
+    always_comb begin
+        occ_no_free   = (free_count_q == '0);
+        global_full     = (global_used_q >= cfg_global_high_wm);
+
+        // 高水位无条件丢弃 (兜底) 或 空闲池空
+        occ_drop      = occ_query_vld & (occ_no_free | (~occ_use_static & hi_wm_drop));
+        occ_accept    = occ_query_vld & ~occ_drop;
+        // ★ 判决基于【查询的队列/端口】(occ_query_*), 而非 alloc 事件 (evt_*)。
+        //   occ_query 在 enqueue_ctrl 的 T0 组合发起, evt_* 是 LLE 在落地拍才有效,
+        //   二者不同拍; 判决必须用当拍查询的 queue/port。
+        // 双池: 该队列静态额度未用满 → 记静态账
+        occ_use_static = use_static_vec[occ_query_queue_id];
+        hi_wm_drop     = q_hi_wm_vec[occ_query_queue_id]
+                       | port_hi_wm_vec[occ_query_egress_port]   // 端口向量按 port 索引
+                       | global_full;
+    end
+
+    //========================================================================
+    // ★ 入队前预判 (advisory, 纯组合): QM 在包首给本包 cell 数 occ_query_cell_num,
+    //   根据 occ_query_queue_id/egress_port 判断这 N 个 cell 顺序放入后是否会触发
+    //   alloc_drop (等价于逐 cell drop 的整包预判)。
+    //   规则 (与逐 cell occ_drop 语义一致):
+    //     - free 池必须 ≥ N (无条件, 不足则必丢);
+    //     - 落在该队列静态额度内的 cell 绕过 q/port/global 高水位;
+    //     - 超出静态额度的动态 cell 需整体不越 q/port/global 高水位。
+    //   计数单调增、阈值固定, 故只需校验"最后一个 cell", 即比较总量 +N ≤ 阈值。
+    //   前提: QM 单队列入队, 发包期间无其它队列消耗 global/free → 当拍快照即准确。
+    //========================================================================
+    logic [CNT_W-1:0] pred_cell_num;
+    logic [CNT_W-1:0] pred_s_rem;      // 该队列静态额度剩余
+    logic             pred_fit;
+    always_comb begin
+        pred_cell_num = {{(CNT_W-PKT_CELL_W){1'b0}}, occ_query_cell_num};  // 零扩展到 CNT_W
+        if (q_static_used_q[occ_query_queue_id] < cfg_queue_min_cell[occ_query_queue_id])
+            pred_s_rem = cfg_queue_min_cell[occ_query_queue_id] - q_static_used_q[occ_query_queue_id];
+        else
+            pred_s_rem = '0;
+        pred_fit = (free_count_q >= pred_cell_num)
+                && ( (pred_cell_num <= pred_s_rem)                                    // 全落静态额度 → 绕过高水位
+                     || ( (q_cell_cnt_q[occ_query_queue_id]       + pred_cell_num <= cfg_q_max_cell[occ_query_queue_id])
+                       && (per_port_used_q[occ_query_egress_port] + pred_cell_num <= cfg_port_max[occ_query_egress_port])
+                       && (global_used_q                          + pred_cell_num <= cfg_global_high_wm) ) );
+        occ_predict_drop = ~pred_fit;
+    end
+
+    always_comb begin
+        for (int i = 0; i < QUEUE_NUM; i++) begin
+            use_static_vec[i] = q_static_used_q[i] < cfg_queue_min_cell[i];
+            q_full[i]         = q_cell_cnt_q[i]    >= cfg_q_full[i];
+            q_hi_wm_vec[i]    = q_cell_cnt_q[i]    >= cfg_q_max_cell[i];
+        end
+    end
+    always_comb begin
+        for (int i = 0; i < PORT_NUM; i++) begin
+            port_full[i]  = per_port_used_q[i]    >= cfg_port_max[i];
+            port_hi_wm_vec[i] = per_port_used_q[i]    >= cfg_port_max[i];
+        end
+    end
+    
+    //============================================
+    // near_full
+    logic [QUEUE_NUM-1:0] q_near_full_set;
+    always_comb begin
+        for(int i=0;i<QUEUE_NUM;i++) begin
+            q_near_full_set[i] = (q_cell_cnt_q[i] >= (cfg_q_max_cell[i]-QUEUE_NF_MARGIN)); 
+        end
+    end
+    always_ff@(posedge clk_core, negedge rst_core_n) begin
+        if(!rst_core_n) begin
+            q_near_full <= '0;
+        end
+        else begin
+            // Fix4: 按位赋值 (原写法 q_near_full<=1'b1 会把整个向量赋成最后一个 i 的结果)
+            for(int i=0;i<QUEUE_NUM;i++)begin
+                q_near_full[i] <= q_near_full_set[i];
+            end
+        end
+    end
+    // per-port near_full: 占用 >= (cfg_port_max - PORT_NF_MARGIN)
+    logic [PORT_NUM-1:0] port_near_full_set;
+    always_comb begin
+        for(int i=0;i<PORT_NUM;i++) begin
+            port_near_full_set[i] = (per_port_used_q[i] >= (cfg_port_max[i]-PORT_NF_MARGIN));
+        end
+    end
+    always_ff@(posedge clk_core, negedge rst_core_n) begin
+        if(!rst_core_n) begin
+            port_near_full <= '0;
+        end
+        else begin
+            for(int i=0;i<PORT_NUM;i++) begin
+                port_near_full[i] <= port_near_full_set[i];
+            end
+        end
+    end
+
+    logic global_near_full_set;
+    always_comb begin
+        global_near_full_set = (global_used_q >= (cfg_global_high_wm-GLOBAL_NF_MARGIN));
+    end
+    always_ff@(posedge clk_core, negedge rst_core_n) begin
+        if(!rst_core_n)
+            global_near_full <= 1'b0;
+        else if (global_near_full_set)
+            global_near_full <= 1'b1;
+        else
+            global_near_full <= 1'b0;
+    end
+
+
+
+    //============================================
+    //PAUSE
+    assign  global_pause_xoff = (global_used_q >= cfg_global_pause_xoff);
+    assign  global_pause_xon  = (global_used_q <  cfg_global_pause_xon);
+    always_comb begin
+        for(int i=0;i<PORT_NUM;i++) begin
+            pause_set[i] = (per_port_used_q[i] >= cfg_port_pause_xoff[i] | global_pause_xoff); //端口或全局达到xoff
+            pause_clr[i] = (per_port_used_q[i] <  cfg_port_pause_xon[i]  & global_pause_xon);  //端口且全局回落xon
+        end
+    end
+    //寄存器迟滞
+    always_ff@(posedge clk_core, negedge rst_core_n) begin
+        if(!rst_core_n)
+            pause_req    <= 1'b0;
+        else begin
+            for(int i=0;i<PORT_NUM;i++)begin
+                if(!cfg_pause_en)
+                    pause_req[i]    <= 1'b0;
+                else if(pause_set[i])
+                    pause_req[i]    <= 1'b1;
+                else if(pause_clr[i])
+                    pause_req[i]    <= 1'b0;
+                // 中间区 保持原值，迟滞
+            end
+        end
+    end
+
+    //============================================
+    //PFC
+    logic [PORT_NUM-1:0][TC_NUM-1:0][CNT_W-1:0] per_tc_used;
+    always_comb begin
+        for(int i=0;i<PORT_NUM;i++) begin
+            for(int j=0;j<TC_NUM;j++)begin
+                per_tc_used[i][j] = q_cell_cnt_q[i*TC_NUM+j];
+            end
+        end
+    end
+
+    logic [PORT_NUM-1:0][TC_NUM-1:0] pfc_set;
+    logic [PORT_NUM-1:0][TC_NUM-1:0] pfc_clr;
+    always_comb begin
+        for(int i=0;i<PORT_NUM;i++)begin
+            for(int j=0;j<TC_NUM;j++)begin
+                pfc_set[i][j] = per_tc_used[i][j] >= cfg_pfc_xoff[i][j];
+                pfc_clr[i][j] = per_tc_used[i][j] <  cfg_pfc_xon[i][j];
+            end
+        end
+    end
+
+    //寄存器迟滞
+    always_ff@(posedge clk_core, negedge rst_core_n) begin
+        if(!rst_core_n)
+            pfc_req    <= 1'b0;
+        else begin
+            for(int i=0;i<PORT_NUM;i++)begin
+                for(int j=0;j<TC_NUM;j++)begin
+                    if(!cfg_pfc_en)
+                        pfc_req[i][j]    <= 1'b0;
+                    else if(pfc_set[i][j])
+                        pfc_req[i][j]    <= 1'b1;
+                    else if(pfc_clr[i][j])
+                        pfc_req[i][j]    <= 1'b0;
+                // 中间区 保持原值，迟滞
+                end
+            end
+        end
+    end
+    //========================================================================
+    // 统计输出
+    //========================================================================
+    assign st_global_used        = global_used_q;
+    assign st_free_count         = free_count_q;
+    //assign st_q_near_full_status = q_near_full_q;
+    //assign st_tail_drop_cnt      = tail_drop_cnt_q;
+    //assign st_near_full_assert_cnt = near_full_assert_cnt_q;
+    //assign st_pause_tx_cnt       = pause_tx_cnt_q;
+    assign st_q_near_full_status = '0;
+    assign st_tail_drop_cnt      = '0;
+    assign st_near_full_assert_cnt = '0;
+    assign st_pause_tx_cnt       = '0;
+    always_comb begin
+        for (int i = 0; i < QUEUE_NUM; i++) begin
+            st_q_static_used[i]  = q_static_used_q[i];
+            st_per_queue_used[i] = q_cell_cnt_q[i];
+        end
+        for (int i = 0; i < PORT_NUM; i++) begin 
+            st_per_port_used[i]  = per_port_used_q[i];
+        end
+    end
+    //========================================================================
+    // 守恒 / 溢出 / 下溢 告警
+    //========================================================================
+    logic conserve_ok;
+    assign conserve_ok = ((free_count_q + global_used_q) == CELL_NUM[CNT_W-1:0]);
+    always_ff @(posedge clk_core or negedge rst_core_n) begin
+        if (!rst_core_n) begin
+            overflow_alarm  <= 1'b0;
+            underflow_alarm <= 1'b0;
+        end
+        else begin
+            overflow_alarm  <= (global_used_q > CELL_NUM[CNT_W-1:0]);
+            underflow_alarm <= ~conserve_ok
+                               | (alloc_allowed & (free_count_q  == '0))
+                               | (free_allowed  & (global_used_q == '0));
+        end
+    end
+
+
+endmodule
 
 ```
 
+
+## recycle_ctrl
+
+```
+//============================================================================
+// Module      : recycle_ctrl  (Recycle Control) —— B2 版
+// Project     : 4-Port 2.5/1G/100M Ethernet Switch - Smart MMU
+//
+// Description :
+//   回收路径控制 (控制平面)。B2 多播模型:
+//     - 单播 (recycle_req): 报文发送完成, 该 cell 立即还链 → 直接向 LLE 发
+//                           lle_free_req(接空闲链尾), 并透传 queue_id 供 occ 计数--。
+//     - 组播 (mcast_recycle_req): 每收到一个出端口“发完一份”的通知, 反推该端口号
+//                           (由 mcast_recycle_queue_id >> Q_PER_PORT_LOG), 直接
+//                           转发给 LLE 的 mc_rcy_vld/mc_rcy_port —— LLE 内部记
+//                           mc_rcy_done[port]; 当所有目的端口都读完+还链, LLE 自行
+//                           整帧还链并清多播槽。recycle_ctrl 不再做 ref_count 递减。
+//
+//   仲裁: 单播还链走 lle_free_req; 组播还链由 LLE 内部 walk 完成 (走 LLE 内部
+//         recycle FIFO), 不占用 recycle_ctrl 的 lle_free_req 口。
+//
+// Clock/Reset : clk_core (300MHz, 单时钟域) / rst_core_n (异步复位低有效)
+//============================================================================
+`timescale 1ns/1ps
+
+module recycle_ctrl #(
+    parameter int CELL_NUM  = 8192,
+    parameter int PORT_NUM  = 4,
+    parameter int TC_NUM    = 8,     // 每端口 TC 数
+    // 派生位宽 (与 occupancy_pool_mgr / lle 同源)
+    localparam int QUEUE_NUM = PORT_NUM*TC_NUM + 1,
+    localparam int ADDR_W   = $clog2(CELL_NUM),
+    localparam int QID_W    = $clog2(QUEUE_NUM-1)+1,
+    localparam int PORT_W   = $clog2(PORT_NUM-1)+1,
+    localparam int Q_PER_PORT_LOG = $clog2(TC_NUM)
+)(
+    //------------------------------------------------------------------------
+    // 时钟复位 (公共)
+    //------------------------------------------------------------------------
+    input  logic                  clk_core,
+    input  logic                  rst_core_n,
+
+    //------------------------------------------------------------------------
+    // 与 QM 的接口 (外部, 经 MMU 顶层)
+    //------------------------------------------------------------------------
+    input  logic                  recycle_req,         // 单播 cell 回收请求
+    input  logic [ADDR_W-1:0]     recycle_cell_addr,   // 待回收 cell 地址
+    input  logic [QID_W-1:0]      recycle_queue_id,    // 单播回收 cell 所属队列号
+    input  logic                  mcast_recycle_req,   // 组播回收通知(某端口发完一份)
+    input  logic [ADDR_W-1:0]     mcast_recycle_addr,  // 组播待回收 cell 地址 (B2 未用, 保留)
+    input  logic [QID_W-1:0]      mcast_recycle_queue_id, // 组播回收所属承载队列号 (→ 反推端口)
+    output logic                  recycle_ack,         // 回收完成应答
+
+    //------------------------------------------------------------------------
+    // 与 LLE 的接口 —— 单播还链 + 组播逐端口回收转发
+    //------------------------------------------------------------------------
+    output logic                  lle_free_req,        // 单播还链请求
+    output logic [ADDR_W-1:0]     lle_free_addr,       // 待还 cell
+    output logic [QID_W-1:0]      lle_free_queue_id,   // 待还 cell 所属队列号
+    input  logic                  lle_free_grant,      // 仲裁通过
+    input  logic                  lle_free_done,       // 还链完成
+    // 组播逐端口回收 → LLE
+    output logic                  mc_rcy_vld,          // 组播回收通知有效
+    output logic [PORT_W-1:0]     mc_rcy_port          // 组播回收所属出端口
+);
+
+    //========================================================================
+    // 单播还链: 直接透传 (B2 组播不再共用此口)
+    //========================================================================
+    assign lle_free_req      = recycle_req;
+    assign lle_free_addr     = recycle_cell_addr;
+    assign lle_free_queue_id = recycle_queue_id;
+
+    //========================================================================
+    // 组播逐端口回收转发: 反推端口号 = 承载队列号 >> Q_PER_PORT_LOG
+    //========================================================================
+    logic [QID_W-1:0] mc_port_full;
+    assign mc_port_full = mcast_recycle_queue_id >> Q_PER_PORT_LOG;
+    assign mc_rcy_vld   = mcast_recycle_req;
+    assign mc_rcy_port  = (mc_port_full < PORT_NUM[QID_W-1:0])
+                          ? mc_port_full[PORT_W-1:0] : '0;
+
+    //========================================================================
+    // 回收应答: 单播还链发起当拍应答; 组播收到通知当拍即应答。
+    //========================================================================
+    assign recycle_ack = recycle_req | mcast_recycle_req;
+
+endmodule
+```
 
 
 ## tb
@@ -2570,6 +2599,7 @@ module smart_mmu_tb;
     logic [PKT_CELL_W-1:0] enq_cell_num_r;
     logic                  enq_is_mcast_r;
     logic [PORT_NUM-1:0]   enq_mcast_bitmap_r;
+    logic [$clog2(TC_NUM)-1:0] enq_mcast_tc_r;   // ★ B2 组播帧 TC
     logic                  enq_sof_r, enq_eof_r;
     logic                  deq_req_r;
     logic [QID_W-1:0]      deq_queue_id_r;
@@ -2597,6 +2627,7 @@ module smart_mmu_tb;
     logic [ADDR_W-1:0]     deq_cell_addr;
     logic                  deq_pkt_head, deq_pkt_tail;
     logic                  recycle_ack;
+    logic [PORT_NUM*TC_NUM-1:0] q_empty;             // ★ B2 32 条常规队列 empty
     logic [QUEUE_NUM-1:0]  q_near_full;
     logic [PORT_NUM-1:0]   port_near_full;
     logic                  global_near_full;
@@ -2647,7 +2678,8 @@ module smart_mmu_tb;
         .enq_req (enq_req_r), .enq_queue_id (enq_queue_id_r),
         .enq_egress_port (enq_egress_port_r), .enq_cell_num (enq_cell_num_r),
         .enq_is_mcast (enq_is_mcast_r),
-        .enq_mcast_bitmap (enq_mcast_bitmap_r), .enq_sof (enq_sof_r), .enq_eof (enq_eof_r),
+        .enq_mcast_bitmap (enq_mcast_bitmap_r), .enq_mcast_tc (enq_mcast_tc_r),   // ★ B2
+        .enq_sof (enq_sof_r), .enq_eof (enq_eof_r),
         .enq_ready (enq_ready), .enq_predict_drop (enq_predict_drop),
         .alloc_valid (alloc_valid),
         .alloc_cell_addr (alloc_cell_addr), .alloc_drop_ind (alloc_drop_ind),
@@ -2665,6 +2697,7 @@ module smart_mmu_tb;
         .mcast_recycle_req (mcast_recycle_req_r), .mcast_recycle_addr (mcast_recycle_addr_r),
         .mcast_recycle_queue_id (mcast_recycle_queue_id_r), .recycle_ack (recycle_ack),
         // full / near-full
+        .q_empty (q_empty),                          // ★ B2
         .q_near_full (q_near_full), .port_near_full (port_near_full),
         .global_near_full (global_near_full), .q_full (q_full),
         .port_full (port_full), .global_full (global_full),
@@ -2686,7 +2719,6 @@ module smart_mmu_tb;
         .cfg_in_pfc_en (cfg_pfc_en),
         .cfg_in_pfc_xoff (cfg_pfc_xoff),
         .cfg_in_pfc_xon (cfg_pfc_xon),
-        .cfg_in_mcast_carry_tc (cfg_mcast_carry_tc),  // ★ B2
         // stats
         .st_out_global_used (st_out_global_used),
         .st_out_free_count (st_out_free_count),
@@ -3114,6 +3146,10 @@ module smart_mmu_tb;
         chk("C4 free_after_enq",  lle_free_cnt, CELL_NUM-5);      // A(2)+M(3)
         chk("C4 pend_uni_port0",  mc_pend_uni(0), 1);             // 排在 A 之后
         chk("C4 pend_uni_port1",  mc_pend_uni(1), 0);             // 排头
+        // ★ empty 向量: q0(port0 承载) 有单播A → 非空; q4(port1 承载) 无单播但多播排头 → 非空
+        chk_b("C4 q_empty_q0_uni",  q_empty[0], 1'b0);           // A 在, 非空
+        chk_b("C4 q_empty_q4_mc",   q_empty[4], 1'b0);           // 多播排头 → mc_here 非空
+        chk_b("C4 q_empty_q1_idle", q_empty[1], 1'b1);           // 无单播无多播 → 空
         // port1 承载队列 q4 之后再入单播包 C (2 cell: 5,6) → 多播对 q4 排头, C 在其后
         enqueue_pkt(4, q2port(4), 2, 0, '0);         // C: cells 5,6
         chk("C4 pend_uni_port1_still0", mc_pend_uni(1), 0);       // C 排在多播之后, 不改 pend
@@ -3421,8 +3457,4 @@ module smart_mmu_tb;
     end
 
 endmodule
-
-
-
-
 ```
