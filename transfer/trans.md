@@ -63,12 +63,11 @@ module smart_mmu #(
     // G2 - 入队 / 地址分配接口 (QM ↔ MMU, 1 拍)
     //------------------------------------------------------------------------
     input  logic                  enq_req,             // 入队/分配请求有效
-    input  logic [QID_W-1:0]      enq_queue_id,        // 目标队列号
+    input  logic [$clog2(TC_NUM)-1:0] enq_queue_id,    // ★ 目标 TC (0..TC_NUM-1); 完整队列={egress_port,queue_id}
     input  logic [PORT_W-1:0]     enq_egress_port,     // 出端口 ID
     input  logic [PKT_CELL_W-1:0] enq_cell_num,        // ★ 本包 cell 数(SOF 有效, 入队前预判用)
     input  logic                  enq_is_mcast,        // 组播标志
-    input  logic [PORT_NUM-1:0]   enq_mcast_bitmap,    // 组播出端口位图
-    input  logic [$clog2(TC_NUM)-1:0] enq_mcast_tc,    // ★ B2: 组播帧 TC (决定各端口承载队列)
+    input  logic [PORT_NUM-1:0]   enq_mcast_bitmap,    // 组播出端口位图 (多播承载 TC = enq_queue_id)
     input  logic                  enq_sof,             // 报文首段
     input  logic                  enq_eof,             // 报文尾段
     output logic                  enq_ready,           // MMU 可接收入队请求
@@ -269,7 +268,6 @@ module smart_mmu #(
         .enq_cell_num          (enq_cell_num),
         .enq_is_mcast          (enq_is_mcast),
         .enq_mcast_bitmap      (enq_mcast_bitmap),
-        .enq_mcast_tc          (enq_mcast_tc),             // ★ B2
         .enq_sof               (enq_sof),
         .enq_eof               (enq_eof),
         .enq_ready             (enq_ready),
@@ -1341,9 +1339,11 @@ module enqueue_ctrl #(
     parameter int PKT_CELL_W = 4,    // enq_cell_num 位宽 (本包 cell 数)
     // 派生位宽 (与 occupancy_pool_mgr / lle 同源)
     localparam int QUEUE_NUM = PORT_NUM*TC_NUM + 1,   // 单播 P*T + 多播 (free 链在 LLE 内)
+    localparam int MC_QID    = QUEUE_NUM-1,           // 多播队列号 (=P*T)
     localparam int ADDR_W   = $clog2(CELL_NUM),
     localparam int QID_W    = $clog2(QUEUE_NUM-1)+1,
-    localparam int PORT_W   = $clog2(PORT_NUM-1)+1
+    localparam int PORT_W   = $clog2(PORT_NUM-1)+1,
+    localparam int TC_W     = $clog2(TC_NUM)          // enq_queue_id 位宽 (仅 TC)
 )(
     //------------------------------------------------------------------------
     // 时钟复位 / 初始化 (公共)
@@ -1356,12 +1356,11 @@ module enqueue_ctrl #(
     // 与 QM 的接口 (外部, 经 MMU 顶层)
     //------------------------------------------------------------------------
     input  logic                  enq_req,             // 入队请求有效
-    input  logic [QID_W-1:0]      enq_queue_id,        // 目标队列号
-    input  logic [PORT_W-1:0]     enq_egress_port,     // 出端口 ID (=queue_id/8)
+    input  logic [TC_W-1:0]       enq_queue_id,        // ★ 目标 TC (0..TC_NUM-1); 完整队列={egress_port,queue_id}
+    input  logic [PORT_W-1:0]     enq_egress_port,     // 出端口 ID
     input  logic [PKT_CELL_W-1:0] enq_cell_num,        // ★ 本包 cell 数(SOF 有效, 入队前预判用)
     input  logic                  enq_is_mcast,        // 组播标志
     input  logic [PORT_NUM-1:0]   enq_mcast_bitmap,    // 组播出端口位图
-    input  logic [$clog2(TC_NUM)-1:0] enq_mcast_tc,    // ★ B2: 组播帧 TC (决定各端口承载队列)
     input  logic                  enq_sof,             // 报文首段
     input  logic                  enq_eof,             // 报文尾段
     output logic                  enq_ready,           // 可接请求(init_done 后恒高)
@@ -1422,11 +1421,21 @@ module enqueue_ctrl #(
     assign enq_fire = enq_req & enq_ready;
 
     //========================================================================
+    // ★ 完整队列号合成:
+    //   - 单播: 完整队列 = {enq_egress_port, enq_queue_id} = egress_port*TC_NUM + TC
+    //   - 多播: 物理挂 MC_QID (q[32]); 承载 TC = enq_queue_id, 目的端口 = enq_mcast_bitmap
+    //           (LLE 用 mcast_tc + bitmap 算各端口承载队列, 反映到 QM 的 32 位 empty)
+    //========================================================================
+    logic [QID_W-1:0] uni_qid_c, full_qid_c;
+    assign uni_qid_c  = (QID_W'(enq_egress_port) << TC_W) | QID_W'(enq_queue_id);
+    assign full_qid_c = enq_is_mcast ? MC_QID[QID_W-1:0] : uni_qid_c;
+
+    //========================================================================
     // 占用判决查询 (组合, 当拍返回): 透传 vld + 当前队列/端口给 Occupancy,
     //   occ_accept/occ_drop/occ_use_static/occ_no_free 组合返回。
     //========================================================================
     assign occ_query_vld         = enq_fire;
-    assign occ_query_queue_id    = enq_queue_id;
+    assign occ_query_queue_id    = full_qid_c;           // ★ 完整队列号 (单播={port,tc}; 多播=MC_QID)
     assign occ_query_egress_port = enq_egress_port;
     // ★ 入队前预判: 透传本包 cell 数给 occ, occ 组合返回预判结果直出给 QM。
     //   纯组合、与 enq_query 同拍, 不依赖 enq_fire (QM 在包首 presenting queue_id+cell_num 即可读)。
@@ -1516,12 +1525,13 @@ module enqueue_ctrl #(
     // LLE 分配+挂链命令 (一拍脉冲): 仅接收时拉高
     //========================================================================
     assign lle_alloc_fire         = accept_c;
-    assign lle_alloc_queue_id     = enq_queue_id;
+    assign lle_alloc_queue_id     = full_qid_c;          // ★ 完整队列号 (单播={port,tc}; 多播=MC_QID)
     assign lle_alloc_addr         = lle_free_head;       // T0 当拍即取
     assign lle_set_pkt_head       = enq_sof;
     assign lle_set_pkt_tail       = enq_eof;
     assign lle_alloc_is_mcast     = enq_is_mcast;
     assign lle_alloc_mcast_bitmap = enq_mcast_bitmap;    // ★ B2: 目的端口位图 → LLE 置 mc_dst_bitmap
+    assign lle_alloc_mcast_tc     = enq_queue_id;        // ★ B2: 多播承载 TC = enq_queue_id
     assign mcast_busy_drop        = mcast_slot_block_c;  // ★ B2: 本拍多播因槽占用被丢
 
     //========================================================================
@@ -2527,6 +2537,7 @@ endmodule
 
 
 ## tb
+
 ```
 //============================================================================
 // Testbench : smart_mmu_tb  —— B2 多播逻辑拼接版
@@ -2594,12 +2605,11 @@ module smart_mmu_tb;
     //========================================================================
     logic                  init_start_r;
     logic                  enq_req_r;
-    logic [QID_W-1:0]      enq_queue_id_r;
+    logic [QPP-1:0]        enq_queue_id_r;      // ★ 仅 TC (完整队列={egress_port,queue_id})
     logic [PORT_W-1:0]     enq_egress_port_r;
     logic [PKT_CELL_W-1:0] enq_cell_num_r;
     logic                  enq_is_mcast_r;
     logic [PORT_NUM-1:0]   enq_mcast_bitmap_r;
-    logic [$clog2(TC_NUM)-1:0] enq_mcast_tc_r;   // ★ B2 组播帧 TC
     logic                  enq_sof_r, enq_eof_r;
     logic                  deq_req_r;
     logic [QID_W-1:0]      deq_queue_id_r;
@@ -2678,7 +2688,7 @@ module smart_mmu_tb;
         .enq_req (enq_req_r), .enq_queue_id (enq_queue_id_r),
         .enq_egress_port (enq_egress_port_r), .enq_cell_num (enq_cell_num_r),
         .enq_is_mcast (enq_is_mcast_r),
-        .enq_mcast_bitmap (enq_mcast_bitmap_r), .enq_mcast_tc (enq_mcast_tc_r),   // ★ B2
+        .enq_mcast_bitmap (enq_mcast_bitmap_r),
         .enq_sof (enq_sof_r), .enq_eof (enq_eof_r),
         .enq_ready (enq_ready), .enq_predict_drop (enq_predict_drop),
         .alloc_valid (alloc_valid),
@@ -2895,7 +2905,7 @@ module smart_mmu_tb;
             @(negedge clk);
             if (enq_ready) begin
                 enq_req_r          = 1'b1;
-                enq_queue_id_r     = qid[QID_W-1:0];
+                enq_queue_id_r     = qid[QPP-1:0];   // ★ 仅 TC (完整队列={port,tc})
                 enq_egress_port_r  = port[PORT_W-1:0];
                 enq_cell_num_r     = ncells[PKT_CELL_W-1:0];
                 enq_is_mcast_r     = is_mcast;
@@ -3019,7 +3029,7 @@ module smart_mmu_tb;
     task automatic probe_predict(input int qid, input int port, input int n, output bit pd);
         @(negedge clk);
         enq_req_r         = 1'b0;
-        enq_queue_id_r    = qid[QID_W-1:0];
+        enq_queue_id_r    = qid[QPP-1:0];      // ★ 仅 TC
         enq_egress_port_r = port[PORT_W-1:0];
         enq_cell_num_r    = n[PKT_CELL_W-1:0];
         @(negedge clk);
@@ -3251,7 +3261,7 @@ module smart_mmu_tb;
             ei = enq_fire_cnt - fire_base;
             deq_req_r = (lle_qcnt(3) > 0);
             if (ei < 3) begin
-                enq_req_r=1'b1; enq_queue_id_r=4; enq_egress_port_r=q2port(4);
+                enq_req_r=1'b1; enq_queue_id_r=0; enq_egress_port_r=q2port(4); // 完整=q4 (port1,tc0)
                 enq_is_mcast_r=1'b0; enq_mcast_bitmap_r='0;
                 enq_sof_r=(ei==0); enq_eof_r=(ei==2);
             end else enq_req_r = 1'b0;
@@ -3320,7 +3330,7 @@ module smart_mmu_tb;
             ei = enq_fire_cnt - fire_base;
             deq_req_r = (lle_qcnt(3) > 0);
             if (ei < 2) begin
-                enq_req_r=1'b1; enq_queue_id_r=5; enq_egress_port_r=q2port(5);
+                enq_req_r=1'b1; enq_queue_id_r=1; enq_egress_port_r=q2port(5); // 完整=q5 (port1,tc1)
                 enq_is_mcast_r=1'b0; enq_mcast_bitmap_r='0;
                 enq_sof_r=(ei==0); enq_eof_r=(ei==1);
             end else enq_req_r=1'b0;
@@ -3457,4 +3467,5 @@ module smart_mmu_tb;
     end
 
 endmodule
+
 ```
