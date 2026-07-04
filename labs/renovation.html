@@ -665,7 +665,7 @@ window._defaultProjectData = {
                     section.appendChild(empty);
                 } else {
                     group.todos.forEach(({ todo, index }) => {
-                        section.appendChild(createTodoElement(todo, index, iters));
+                        section.appendChild(createTodoElement(todo, index));
                     });
                 }
                 list.appendChild(section);
@@ -676,26 +676,19 @@ window._defaultProjectData = {
                 section.className = 'card req-round-card req-round-card-loose';
                 section.innerHTML = '<div class="req-round-title"><span>未关联</span></div>';
                 looseTodos.forEach(({ todo, index }) => {
-                    section.appendChild(createTodoElement(todo, index, iters));
+                    section.appendChild(createTodoElement(todo, index));
                 });
                 list.appendChild(section);
             }
         }
 
-        function createTodoElement(todo, index, iters) {
+        function createTodoElement(todo, index) {
                 const item = document.createElement('div');
                 item.className = `todo-item ${todo.completed ? 'completed' : ''}`;
-
-                let roundSelector = "";
-                if (todo.completed) {
-                    const options = iters.map((it, i) => `<option value="${i}" ${todo.roundIndex == i ? 'selected' : ''}>V${i + 1}</option>`).join('');
-                    roundSelector = `<select class="round-selector" onchange="updateTodoRound(${index}, this.value)"><option value="-1">未关联</option>${options}</select>`;
-                }
 
                 item.innerHTML = `
                     <input type="checkbox" class="todo-checkbox" ${todo.completed ? 'checked' : ''} onchange="toggleTodo(${index})">
                     <div class="todo-text" contenteditable="true" oninput="updateTodo(${index}, this.innerText)">${todo.text}</div>
-                    ${roundSelector}
                     <i class="fas fa-times" style="color:var(--secondary-text); cursor:pointer; opacity:0.3; font-size:12px;" onclick="removeTodo(${index})"></i>
                 `;
                 return item;
@@ -771,11 +764,6 @@ window._defaultProjectData = {
         }
 
         function updateTodo(index, text) { renovationData[currentRoom].requirements[index].text = text; persistData(); }
-        function updateTodoRound(index, roundIdx) {
-            renovationData[currentRoom].requirements[index].roundIndex = roundIdx == -1 ? undefined : parseInt(roundIdx);
-            persistData();
-            loadRoom(currentRoom);
-        }
         function removeTodo(index) {
             renovationData[currentRoom].requirements.splice(index, 1);
             persistData();
