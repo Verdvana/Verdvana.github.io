@@ -358,23 +358,6 @@
             flex-shrink: 0;
         }
 
-        .badge-list {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 8px;
-            margin-top: 16px;
-        }
-
-        .badge {
-            background: rgba(0, 113, 227, 0.1);
-            color: var(--accent-color);
-            padding: 4px 12px;
-            border-radius: 6px;
-            font-size: 12px;
-            font-weight: 500;
-            border: 1px solid rgba(0, 113, 227, 0.2);
-        }
-
         /* Todo List */
         .todo-list {
             display: flex;

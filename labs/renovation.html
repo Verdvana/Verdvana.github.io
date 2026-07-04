@@ -601,18 +601,17 @@ window._defaultProjectData = {
             if (!data.iterations) data.iterations = [];
             if (!data.items) data.items = [];
             document.getElementById('roomTitle').innerText = data.name;
-            renderIterations(data.iterations, data.requirements);
+            renderIterations(data.iterations);
             renderTodos(data.requirements);
             renderItems(data.items);
             renderImages('cadGallery', data.cad);
             requestAnimationFrame(syncRequirementRounds);
         }
 
-        function renderIterations(iterations, allRequirements) {
+        function renderIterations(iterations) {
             const container = document.getElementById('iterationsContainer');
             container.innerHTML = '';
             iterations.forEach((iter, idx) => {
-                const solved = allRequirements.filter(r => r.completed && r.roundIndex === idx);
                 const card = document.createElement('div');
                 card.className = 'card iteration-card';
                 card.dataset.roundIndex = idx;
@@ -627,13 +626,6 @@ window._defaultProjectData = {
                                 <img class="renovation-gallery-image" src="${src}" onload="syncRequirementRounds()" onerror="this.parentElement.innerHTML='<div class=no-image>图片路径错误</div>'; syncRequirementRounds();">
                             </div>
                         `).join('')}
-                        <button class="btn btn-outline" onclick="addImageToIter(${idx})" style="aspect-ratio:16/9; font-size:10px;">添加图片路径</button>
-                    </div>
-                    <div style="margin-top:20px;">
-                        <div class="badge-list">
-                            ${solved.length > 0 ? solved.map(s => `<span class="badge"><i class="fas fa-check"></i> ${s.text}</span>`).join('') : '<span style="color:var(--secondary-text); font-size:12px;">暂未关联需求</span>'}
-                        </div>
-                        <div contenteditable="true" oninput="updateIterNote(${idx}, this.innerText)" style="margin-top:16px; font-size:13px; color:var(--secondary-text); outline:none;" placeholder="添加本轮修改说明...">${iter.note || ''}</div>
                     </div>
                     <button style="margin-top:20px; background:transparent; border:none; color:#ff453a; cursor:pointer; font-size:11px; opacity:0.6" onclick="removeIteration(${idx})">删除此版本</button>
                 `;
@@ -752,17 +744,7 @@ window._defaultProjectData = {
             loadRoom(currentRoom);
         }
 
-        function addImageToIter(idx) {
-            const path = prompt("请输入图片路径 (例如: /labs/renovation/assets/LivingRoom-TVWall/new.jpg):");
-            if (path) {
-                renovationData[currentRoom].iterations[idx].images.push(path);
-                persistData();
-                loadRoom(currentRoom);
-            }
-        }
-
         function updateIterTitle(idx, val) { renovationData[currentRoom].iterations[idx].title = val; persistData(); }
-        function updateIterNote(idx, val) { renovationData[currentRoom].iterations[idx].note = val; persistData(); }
         function removeIteration(idx) {
             if (confirm("确定删除此版本吗？")) {
                 renovationData[currentRoom].iterations.splice(idx, 1);
