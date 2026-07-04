@@ -1,6 +1,7 @@
 # Ignore docs files
 _gh_pages
 _site
+.bundle
 .ruby-version
 .jekyll-metadata
 
@@ -42,3 +43,6 @@ validation-report.json
 # Folders to ignore
 node_modules
 bower_components
+dist
+tmp
+vendor/bundle
