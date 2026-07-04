@@ -535,7 +535,7 @@ window._defaultProjectData = {
                     </div>
                     <div class="image-gallery">
                         ${iter.images.map(src => `
-                            <div class="image-container renovation-image-container" onclick="openViewer('${src}')">
+                            <div class="image-container renovation-image-container" data-viewer-src="${src}" role="button" tabindex="0" aria-label="查看大图">
                                 <img class="renovation-gallery-image" src="${src}" onload="syncRequirementRounds()" onerror="this.parentElement.innerHTML='<div class=no-image>图片路径错误</div>'; syncRequirementRounds();">
                             </div>
                         `).join('')}
@@ -738,7 +738,10 @@ window._defaultProjectData = {
             images.forEach(src => {
                 const div = document.createElement('div');
                 div.className = 'image-container renovation-image-container';
-                div.onclick = () => openViewer(src);
+                div.dataset.viewerSrc = src;
+                div.setAttribute('role', 'button');
+                div.setAttribute('tabindex', '0');
+                div.setAttribute('aria-label', '查看大图');
                 div.innerHTML = `<img class="renovation-gallery-image" src="${src}" onload="syncRequirementRounds()" onerror="this.parentElement.innerHTML='<div class=no-image>图片缺失</div>'; syncRequirementRounds();">`;
                 container.appendChild(div);
             });
@@ -754,16 +757,64 @@ window._defaultProjectData = {
             modal.setAttribute('aria-modal', 'true');
             modal.setAttribute('aria-label', '图片预览');
             modal.className = 'renovation-image-viewer';
+            modal.style.cssText = [
+                'position:fixed',
+                'inset:0',
+                'width:100dvw',
+                'height:100dvh',
+                'z-index:2147483647',
+                'display:flex',
+                'align-items:center',
+                'justify-content:center',
+                'padding:clamp(12px,3vw,48px)',
+                'box-sizing:border-box',
+                'background:rgba(0,0,0,.9)',
+                'cursor:zoom-out',
+                'overscroll-behavior:contain',
+                'touch-action:none'
+            ].join(';');
 
             const img = document.createElement('img');
             img.src = src;
             img.alt = 'Full view';
+            img.style.cssText = [
+                'display:block',
+                'width:auto',
+                'height:auto',
+                'max-width:calc(100dvw - clamp(24px,6vw,96px))',
+                'max-height:calc(100dvh - clamp(24px,6vw,96px))',
+                'object-fit:contain',
+                'border-radius:14px',
+                'box-shadow:0 24px 80px rgba(0,0,0,.72)',
+                'background:rgba(0,0,0,.35)',
+                'cursor:default',
+                'user-select:none'
+            ].join(';');
 
             const closeButton = document.createElement('button');
             closeButton.type = 'button';
             closeButton.className = 'renovation-image-viewer-close';
             closeButton.setAttribute('aria-label', '关闭图片预览');
             closeButton.innerHTML = '&times;';
+            closeButton.style.cssText = [
+                'position:fixed',
+                'top:clamp(14px,3vw,28px)',
+                'right:clamp(14px,3vw,28px)',
+                'width:48px',
+                'height:48px',
+                'border:1px solid rgba(255,255,255,.28)',
+                'border-radius:999px',
+                'background:rgba(20,20,24,.72)',
+                'color:#fff',
+                'font:34px/1 Arial,sans-serif',
+                'display:grid',
+                'place-items:center',
+                'cursor:pointer',
+                'z-index:2147483647',
+                'box-shadow:0 14px 40px rgba(0,0,0,.38)',
+                'padding:0',
+                'appearance:none'
+            ].join(';');
 
             modal.addEventListener('click', closeViewer);
             img.addEventListener('click', function (event) { event.stopPropagation(); });
@@ -775,6 +826,7 @@ window._defaultProjectData = {
             modal.appendChild(img);
             modal.appendChild(closeButton);
             document.body.appendChild(modal);
+            document.body.classList.remove('post-image-lightbox-open');
             document.body.classList.add('viewer-open');
         }
 
@@ -788,7 +840,23 @@ window._defaultProjectData = {
             if (event.key === 'Escape' && document.getElementById('renovationImageViewer')) {
                 closeViewer();
             }
+
+            const target = event.target.closest && event.target.closest('.renovation-image-container');
+            if ((event.key === 'Enter' || event.key === ' ') && target) {
+                event.preventDefault();
+                openViewer(target.dataset.viewerSrc || target.querySelector('img')?.getAttribute('src'));
+            }
         });
+
+        document.addEventListener('click', function (event) {
+            const target = event.target.closest && event.target.closest('.renovation-image-container');
+            if (!target) return;
+
+            event.preventDefault();
+            event.stopPropagation();
+            event.stopImmediatePropagation();
+            openViewer(target.dataset.viewerSrc || target.querySelector('img')?.getAttribute('src'));
+        }, true);
 
         function showSaveModal() {
             const output = `window._defaultProjectData = ${JSON.stringify(renovationData, null, 4)};`;
