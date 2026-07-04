@@ -74,7 +74,7 @@
   }
 
   function isPostContentImage(image) {
-    if (!image || image.closest('.post-image-lightbox,a.no-lightbox')) {
+    if (!image || image.closest('.post-image-lightbox,.renovation-image-viewer,.renovation-image-container,.renovation-gallery-image,a.no-lightbox')) {
       return false;
     }
 

@@ -4,7 +4,7 @@ title: "装修进度管理中心 | VERDVANA Labs"
 back_button: true
 permalink: /labs/renovation.html
 extra_css:
-  - /assets/css/labs/renovation.css?v=20260628-dynamic-viewer
+  - /assets/css/labs/renovation.css?v=20260704-responsive-viewer
 ---
 
 <div class="lab-page">
@@ -535,8 +535,8 @@ window._defaultProjectData = {
                     </div>
                     <div class="image-gallery">
                         ${iter.images.map(src => `
-                            <div class="image-container" onclick="openViewer('${src}')">
-                                <img src="${src}" onload="syncRequirementRounds()" onerror="this.parentElement.innerHTML='<div class=no-image>图片路径错误</div>'; syncRequirementRounds();">
+                            <div class="image-container renovation-image-container" onclick="openViewer('${src}')">
+                                <img class="renovation-gallery-image" src="${src}" onload="syncRequirementRounds()" onerror="this.parentElement.innerHTML='<div class=no-image>图片路径错误</div>'; syncRequirementRounds();">
                             </div>
                         `).join('')}
                         <button class="btn btn-outline" onclick="addImageToIter(${idx})" style="aspect-ratio:16/9; font-size:10px;">添加图片路径</button>
@@ -737,9 +737,9 @@ window._defaultProjectData = {
             if (!images || images.length === 0) { container.innerHTML = '<div class="no-image">暂无平面图图纸</div>'; return; }
             images.forEach(src => {
                 const div = document.createElement('div');
-                div.className = 'image-container';
+                div.className = 'image-container renovation-image-container';
                 div.onclick = () => openViewer(src);
-                div.innerHTML = `<img src="${src}" onload="syncRequirementRounds()" onerror="this.parentElement.innerHTML='<div class=no-image>图片缺失</div>'; syncRequirementRounds();">`;
+                div.innerHTML = `<img class="renovation-gallery-image" src="${src}" onload="syncRequirementRounds()" onerror="this.parentElement.innerHTML='<div class=no-image>图片缺失</div>'; syncRequirementRounds();">`;
                 container.appendChild(div);
             });
         }
@@ -754,59 +754,16 @@ window._defaultProjectData = {
             modal.setAttribute('aria-modal', 'true');
             modal.setAttribute('aria-label', '图片预览');
             modal.className = 'renovation-image-viewer';
-            modal.style.cssText = [
-                'position:fixed',
-                'inset:0',
-                'z-index:2147483647',
-                'display:flex',
-                'align-items:center',
-                'justify-content:center',
-                'padding:clamp(18px,4vw,56px)',
-                'box-sizing:border-box',
-                'background:rgba(0,0,0,.9)',
-                'cursor:zoom-out'
-            ].join(';');
 
             const img = document.createElement('img');
             img.src = src;
             img.alt = 'Full view';
-            img.style.cssText = [
-                'display:block',
-                'width:auto',
-                'height:auto',
-                'max-width:calc(100vw - clamp(36px,8vw,112px))',
-                'max-height:calc(100vh - clamp(36px,8vw,112px))',
-                'object-fit:contain',
-                'border-radius:14px',
-                'box-shadow:0 24px 80px rgba(0,0,0,.72)',
-                'background:rgba(0,0,0,.35)',
-                'cursor:default'
-            ].join(';');
 
             const closeButton = document.createElement('button');
             closeButton.type = 'button';
             closeButton.className = 'renovation-image-viewer-close';
             closeButton.setAttribute('aria-label', '关闭图片预览');
             closeButton.innerHTML = '&times;';
-            closeButton.style.cssText = [
-                'position:fixed',
-                'top:clamp(14px,3vw,28px)',
-                'right:clamp(14px,3vw,28px)',
-                'width:48px',
-                'height:48px',
-                'border:1px solid rgba(255,255,255,.28)',
-                'border-radius:999px',
-                'background:rgba(20,20,24,.72)',
-                'color:#fff',
-                'font:34px/1 Arial,sans-serif',
-                'display:grid',
-                'place-items:center',
-                'cursor:pointer',
-                'z-index:2147483647',
-                'box-shadow:0 14px 40px rgba(0,0,0,.38)',
-                'padding:0',
-                'appearance:none'
-            ].join(';');
 
             modal.addEventListener('click', closeViewer);
             img.addEventListener('click', function (event) { event.stopPropagation(); });

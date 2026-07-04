@@ -98,7 +98,7 @@
 
     document.addEventListener('click', function (event) {
       var image = event.target.closest && event.target.closest('img');
-      if (!image || image.closest('a.no-lightbox,.post-image-lightbox,nav,footer,.site-logo-area,.site-modal-content,.page-loader,#wechat-modal')) {
+      if (!image || image.closest('a.no-lightbox,.post-image-lightbox,.renovation-image-viewer,.renovation-image-container,.renovation-gallery-image,nav,footer,.site-logo-area,.site-modal-content,.page-loader,#wechat-modal')) {
         return;
       }
 

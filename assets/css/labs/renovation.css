@@ -528,28 +528,37 @@
         .renovation-image-viewer {
             position: fixed;
             inset: 0;
+            width: 100vw;
+            width: 100dvw;
+            height: 100vh;
+            height: 100dvh;
             background: rgba(0, 0, 0, 0.9);
             z-index: 2147483647;
             cursor: zoom-out;
             display: flex;
             align-items: center;
             justify-content: center;
-            padding: clamp(18px, 4vw, 56px);
+            padding: clamp(12px, 3vw, 48px);
             box-sizing: border-box;
             backdrop-filter: blur(10px);
+            overscroll-behavior: contain;
+            touch-action: none;
         }
 
         .renovation-image-viewer img {
             display: block !important;
             width: auto !important;
             height: auto !important;
-            max-width: calc(100vw - clamp(36px, 8vw, 112px)) !important;
-            max-height: calc(100vh - clamp(36px, 8vw, 112px)) !important;
+            max-width: calc(100vw - clamp(24px, 6vw, 96px)) !important;
+            max-width: calc(100dvw - clamp(24px, 6vw, 96px)) !important;
+            max-height: calc(100vh - clamp(24px, 6vw, 96px)) !important;
+            max-height: calc(100dvh - clamp(24px, 6vw, 96px)) !important;
             border-radius: 14px;
             box-shadow: 0 24px 80px rgba(0, 0, 0, 0.72);
             object-fit: contain !important;
             background: rgba(0, 0, 0, 0.35);
             cursor: default;
+            user-select: none;
         }
 
         .renovation-image-viewer-close {
