@@ -1,8 +1,7 @@
 ## smmu
-
 ```
 //============================================================================
-// Module      : smart_mmu  (Smart MMU Top)
+// Module      : smmu  (Smart MMU Top)
 // Project     : 4-Port 2.5/1G/100M Ethernet Switch - Smart MMU
 // Description : Flexible Shared SRAM Address Management Module 顶层。
 //               以 256B cell 为粒度统一管理 2MB 共享数据 SRAM 的地址与链表,
@@ -35,7 +34,7 @@
 //============================================================================
 `timescale 1ns/1ps
 
-module smart_mmu #(
+module smmu #(
     parameter int CELL_NUM   = 8192,  // 总 cell 数 (2MB/256B)
     parameter int PORT_NUM   = 4,     // 物理出端口数
     parameter int TC_NUM     = 8,     // 每端口 TC 数 (per-port traffic class)
@@ -112,6 +111,9 @@ module smart_mmu #(
     //------------------------------------------------------------------------
     // ★ B2: 32 条常规队列 empty 位图 (给 QM 调度; 多播计入各目的端口承载队列)
     output logic [PORT_NUM*TC_NUM-1:0] q_empty,
+    // ★ 32 条常规队列 "pkt 数为 0" 位图 (完整包粒度; 与 q_empty 位宽/索引一致)
+    //   告诉 QM 每个队列此时在队完整包数是否为 0; 多播包数计入各目的端口所 map 的承载队列。
+    output logic [PORT_NUM*TC_NUM-1:0] q_pkt_empty,
     output logic [QUEUE_NUM-1:0]  q_near_full,         // 每队列快满
     output logic [PORT_NUM-1:0]   port_near_full,      // 每出端口快满
     output logic                  global_near_full,    // 全局快满
@@ -178,7 +180,6 @@ module smart_mmu #(
     logic                  lle_alloc_ready;
     logic                  lle_alloc_fire;
     logic [QID_W-1:0]      lle_alloc_queue_id;
-    logic [ADDR_W-1:0]     lle_alloc_addr;
     logic                  lle_set_pkt_head, lle_set_pkt_tail;
     logic                  lle_alloc_is_mcast;
     logic [PORT_NUM-1:0]   lle_alloc_mcast_bitmap;   // ★ B2
@@ -293,7 +294,6 @@ module smart_mmu #(
         .lle_alloc_ready       (lle_alloc_ready),
         .lle_alloc_fire        (lle_alloc_fire),
         .lle_alloc_queue_id    (lle_alloc_queue_id),
-        .lle_alloc_addr        (lle_alloc_addr),
         .lle_set_pkt_head      (lle_set_pkt_head),
         .lle_set_pkt_tail      (lle_set_pkt_tail),
         .lle_alloc_is_mcast    (lle_alloc_is_mcast),
@@ -363,7 +363,6 @@ module smart_mmu #(
         .lle_alloc_ready    (lle_alloc_ready),
         .lle_alloc_fire     (lle_alloc_fire),
         .lle_alloc_queue_id (lle_alloc_queue_id),
-        .lle_alloc_addr     (lle_alloc_addr),
         .lle_set_pkt_head   (lle_set_pkt_head),
         .lle_set_pkt_tail   (lle_set_pkt_tail),
         .lle_alloc_is_mcast (lle_alloc_is_mcast),
@@ -377,6 +376,7 @@ module smart_mmu #(
         .lle_q_empty        (lle_q_empty),
         .lle_deq_fire       (lle_deq_fire),
         .q_empty_vec        (q_empty),                      // ★ B2: 32 条常规队列 empty → QM
+        .q_pkt_empty_vec    (q_pkt_empty),                  // ★ 32 条常规队列 pkt 数为 0 → QM
         .lle_free_req       (lle_free_req),
         .lle_free_addr      (lle_free_addr),
         .lle_free_queue_id  (lle_free_queue_id),
@@ -540,11 +540,9 @@ module smart_mmu #(
     //       u_csr 的 clr_ptr_cnt 在详细设计阶段连到各 Ctrl/Occupancy 的初始化清零口。
 
 endmodule
+
 ```
-
-
 ## lle
-
 ```
 //============================================================================
 // Module      : lle  (Link-List Engine) —— B2 多播逻辑拼接版
@@ -614,7 +612,6 @@ module lle #(
     output logic                  lle_alloc_ready,
     input  logic                  lle_alloc_fire,
     input  logic [QID_W-1:0]      lle_alloc_queue_id,
-    input  logic [ADDR_W-1:0]     lle_alloc_addr,
     input  logic                  lle_set_pkt_head,
     input  logic                  lle_set_pkt_tail,
     input  logic                  lle_alloc_is_mcast,
@@ -632,6 +629,10 @@ module lle #(
 
     // ★ B2: 给 QM 的 32 条常规队列 empty 向量 (多播计入各目的端口承载队列)
     output logic [PORT_NUM*TC_NUM-1:0] q_empty_vec,
+
+    // ★ 给 QM 的 32 条常规队列 "pkt 数为 0" 向量 (完整包粒度; 多播计入各目的端口承载队列)
+    //   与 q_empty_vec 位宽/索引一致, 但以 "在队真实完整包数" 而非 cell 数判空。
+    output logic [PORT_NUM*TC_NUM-1:0] q_pkt_empty_vec,
 
     // Recycle Ctrl (单播还链 + 多播逐端口回收)
     input  logic                  lle_free_req,
@@ -750,28 +751,28 @@ module lle #(
 
     always_ff @(posedge clk_core or negedge rst_core_n) begin
         if (!rst_core_n) begin
-            build_st_q      <= ST_IDLE;
-            build_idx_q     <= '0;
-            init_build_done <= 1'b0;
+            build_st_q      <= #1 ST_IDLE;
+            build_idx_q     <= #1 '0;
+            init_build_done <= #1 1'b0;
         end
         else begin
             case (build_st_q)
                 ST_IDLE: begin
-                    init_build_done <= 1'b0;
+                    init_build_done <= #1 1'b0;
                     if (init_build_req) begin
-                        build_st_q  <= ST_BUILD;
-                        build_idx_q <= '0;
+                        build_st_q  <= #1 ST_BUILD;
+                        build_idx_q <= #1 '0;
                     end
                 end
                 ST_BUILD: begin
-                    if (build_idx_q == CELL_NUM-1) build_st_q <= ST_DONE;
-                    build_idx_q <= build_idx_q + 1'b1;
+                    if (build_idx_q == CELL_NUM-1) build_st_q <= #1 ST_DONE;
+                    build_idx_q <= #1 build_idx_q + 1'b1;
                 end
                 ST_DONE: begin
-                    init_build_done <= 1'b1;
-                    build_st_q      <= ST_IDLE;
+                    init_build_done <= #1 1'b1;
+                    build_st_q      <= #1 ST_IDLE;
                 end
-                default: build_st_q <= ST_IDLE;
+                default: build_st_q <= #1 ST_IDLE;
             endcase
         end
     end
@@ -918,21 +919,21 @@ module lle #(
     //========================================================================
     always_ff @(posedge clk_core or negedge rst_core_n) begin
         if (!rst_core_n) begin
-            deq_pend_q     <= 1'b0;
-            deq_pend_qid_q <= '0;
-            enq_pend_q     <= 1'b0;
-            deq_pend_tail_q    <= 1'b0;
-            deq_pend_tail_ph_q <= 1'b0;
-            deq_pend_tail_pt_q <= 1'b0;
+            deq_pend_q     <= #1 1'b0;
+            deq_pend_qid_q <= #1 '0;
+            enq_pend_q     <= #1 1'b0;
+            deq_pend_tail_q    <= #1 1'b0;
+            deq_pend_tail_ph_q <= #1 1'b0;
+            deq_pend_tail_pt_q <= #1 1'b0;
         end
         else begin
-            deq_pend_q     <= deq_grant & deq_need_sram;
-            deq_pend_qid_q <= lle_deq_queue_id;
-            enq_pend_q     <= enq_grant;
-            deq_pend_tail_q    <= (deq_grant & deq_need_sram) &
+            deq_pend_q     <= #1 deq_grant & deq_need_sram;
+            deq_pend_qid_q <= #1 lle_deq_queue_id;
+            enq_pend_q     <= #1 enq_grant;
+            deq_pend_tail_q    <= #1 (deq_grant & deq_need_sram) &
                                   (deq_sram_rd_addr == q_tail_q[lle_deq_queue_id]);
-            deq_pend_tail_ph_q <= q_tail_ph_q[lle_deq_queue_id];
-            deq_pend_tail_pt_q <= q_tail_pt_q[lle_deq_queue_id];
+            deq_pend_tail_ph_q <= #1 q_tail_ph_q[lle_deq_queue_id];
+            deq_pend_tail_pt_q <= #1 q_tail_pt_q[lle_deq_queue_id];
         end
     end
 
@@ -966,44 +967,44 @@ module lle #(
     always_ff @(posedge clk_core or negedge rst_core_n) begin
         if (!rst_core_n) begin
             for (q = 0; q < QUEUE_NUM; q++) begin
-                q_head_q[q]<='0; q_tail_q[q]<='0; q_cell_cnt_q[q]<='0;
-                q_head_ph_q[q]<=1'b0; q_head_pt_q[q]<=1'b0;
-                q_head_next_q[q]<='0; q_head_next_ph_q[q]<=1'b0; q_head_next_pt_q[q]<=1'b0;
-                q_head_next2_q[q]<='0; q_tail_ph_q[q]<=1'b0; q_tail_pt_q[q]<=1'b0;
-                q_uni_pkt_backlog_q[q]<='0;
+                q_head_q[q]<= #1'0; q_tail_q[q]<= #1'0; q_cell_cnt_q[q]<= #1'0;
+                q_head_ph_q[q]<= #11'b0; q_head_pt_q[q]<= #11'b0;
+                q_head_next_q[q]<= #1'0; q_head_next_ph_q[q]<= #11'b0; q_head_next_pt_q[q]<= #11'b0;
+                q_head_next2_q[q]<= #1'0; q_tail_ph_q[q]<= #11'b0; q_tail_pt_q[q]<= #11'b0;
+                q_uni_pkt_backlog_q[q]<= #1'0;
             end
-            free_head_q<='0; free_tail_q<='0; free_cnt_q<='0;
-            free_head_next_q<='0; free_head_next2_q<='0;
-            rcy_fifo_cnt_q<='0; rcy_fifo_wptr_q<='0; rcy_fifo_rptr_q<='0;
-            for (i = 0; i < RCY_FIFO_DEPTH; i++) rcy_fifo_mem[i]<='0;
+            free_head_q<= #1'0; free_tail_q<= #1'0; free_cnt_q<= #1'0;
+            free_head_next_q<= #1'0; free_head_next2_q<= #1'0;
+            rcy_fifo_cnt_q<= #1'0; rcy_fifo_wptr_q<= #1'0; rcy_fifo_rptr_q<= #1'0;
+            for (i = 0; i < RCY_FIFO_DEPTH; i++) rcy_fifo_mem[i]<= #1'0;
             // 多播槽复位
-            mc_valid_q<=1'b0; mc_dst_bitmap_q<='0; mc_ncell_q<='0; mc_wr_idx_q<='0;
-            mc_rel_active_q<=1'b0; mc_rel_idx_q<='0;
+            mc_valid_q<= #11'b0; mc_dst_bitmap_q<= #1'0; mc_ncell_q<= #1'0; mc_wr_idx_q<= #1'0;
+            mc_rel_active_q<= #11'b0; mc_rel_idx_q<= #1'0;
             for (pp = 0; pp < PORT_NUM; pp++) begin
-                mc_carry_qid_q[pp]<='0; mc_rd_idx_q[pp]<='0;
-                mc_rd_done_q[pp]<=1'b0; mc_rcy_done_q[pp]<=1'b0; mc_pend_uni_q[pp]<='0;
+                mc_carry_qid_q[pp]<= #1'0; mc_rd_idx_q[pp]<= #1'0;
+                mc_rd_done_q[pp]<= #11'b0; mc_rcy_done_q[pp]<= #11'b0; mc_pend_uni_q[pp]<= #1'0;
             end
-            for (i = 0; i < MAX_MC_CELLS; i++) mc_cells_q[i]<='0;
+            for (i = 0; i < MAX_MC_CELLS; i++) mc_cells_q[i]<= #1'0;
         end
         else if (build_st_q == ST_DONE) begin
             for (q = 0; q < QUEUE_NUM; q++) begin
-                q_head_q[q]<='0; q_tail_q[q]<='0; q_cell_cnt_q[q]<='0;
-                q_head_ph_q[q]<=1'b0; q_head_pt_q[q]<=1'b0;
-                q_head_next_q[q]<='0; q_head_next_ph_q[q]<=1'b0; q_head_next_pt_q[q]<=1'b0;
-                q_head_next2_q[q]<='0; q_tail_ph_q[q]<=1'b0; q_tail_pt_q[q]<=1'b0;
-                q_uni_pkt_backlog_q[q]<='0;
+                q_head_q[q]<= #1'0; q_tail_q[q]<= #1'0; q_cell_cnt_q[q]<= #1'0;
+                q_head_ph_q[q]<= #11'b0; q_head_pt_q[q]<= #11'b0;
+                q_head_next_q[q]<= #1'0; q_head_next_ph_q[q]<= #11'b0; q_head_next_pt_q[q]<= #11'b0;
+                q_head_next2_q[q]<= #1'0; q_tail_ph_q[q]<= #11'b0; q_tail_pt_q[q]<= #11'b0;
+                q_uni_pkt_backlog_q[q]<= #1'0;
             end
-            free_head_q       <= '0;
-            free_head_next_q  <= {{(ADDR_W-1){1'b0}}, 1'b1};
-            free_head_next2_q <= {{(ADDR_W-2){1'b0}}, 2'b10};
-            free_tail_q       <= CELL_NUM[ADDR_W-1:0] - 1'b1;
-            free_cnt_q        <= CELL_NUM[CNT_W-1:0];
-            rcy_fifo_cnt_q<='0; rcy_fifo_wptr_q<='0; rcy_fifo_rptr_q<='0;
-            mc_valid_q<=1'b0; mc_dst_bitmap_q<='0; mc_ncell_q<='0; mc_wr_idx_q<='0;
-            mc_rel_active_q<=1'b0; mc_rel_idx_q<='0;
+            free_head_q       <= #1 '0;
+            free_head_next_q  <= #1 {{(ADDR_W-1){1'b0}}, 1'b1};
+            free_head_next2_q <= #1 {{(ADDR_W-2){1'b0}}, 2'b10};
+            free_tail_q       <= #1 CELL_NUM[ADDR_W-1:0] - 1'b1;
+            free_cnt_q        <= #1 CELL_NUM[CNT_W-1:0];
+            rcy_fifo_cnt_q<= #1'0; rcy_fifo_wptr_q<= #1'0; rcy_fifo_rptr_q<= #1'0;
+            mc_valid_q<= #11'b0; mc_dst_bitmap_q<= #1'0; mc_ncell_q<= #1'0; mc_wr_idx_q<= #1'0;
+            mc_rel_active_q<= #11'b0; mc_rel_idx_q<= #1'0;
             for (pp = 0; pp < PORT_NUM; pp++) begin
-                mc_carry_qid_q[pp]<='0; mc_rd_idx_q[pp]<='0;
-                mc_rd_done_q[pp]<=1'b0; mc_rcy_done_q[pp]<=1'b0; mc_pend_uni_q[pp]<='0;
+                mc_carry_qid_q[pp]<= #1'0; mc_rd_idx_q[pp]<= #1'0;
+                mc_rd_done_q[pp]<= #11'b0; mc_rcy_done_q[pp]<= #11'b0; mc_pend_uni_q[pp]<= #1'0;
             end
         end
         else begin
@@ -1012,70 +1013,70 @@ module lle #(
             //================================================================
             if (enq_grant) begin
                 // free 链两级预取推进 (单播/多播都消耗 free)
-                free_head_q <= free_head_next_q;
-                if (enq_bypass) free_head_next_q <= npr_r_data[2 +: ADDR_W];
-                else            free_head_next_q <= free_head_next2_q;
+                free_head_q <= #1 free_head_next_q;
+                if (enq_bypass) free_head_next_q <= #1 npr_r_data[2 +: ADDR_W];
+                else            free_head_next_q <= #1 free_head_next2_q;
 
                 //-------- 挂链 (单播链 [0..31] 与多播链 [MC_QID] 同构, 都写 SRAM) --------
                 //   ★ B2: chain33 亦为真实 SRAM 链, 走同一挂链/预取逻辑 (满足 spec)。
-                q_tail_q[lle_alloc_queue_id] <= enq_cell;
+                q_tail_q[lle_alloc_queue_id] <= #1 enq_cell;
                 if (q_cell_cnt_q[lle_alloc_queue_id] == '0) begin
-                    q_head_q[lle_alloc_queue_id]         <= enq_cell;
-                    q_head_ph_q[lle_alloc_queue_id]      <= lle_set_pkt_head;
-                    q_head_pt_q[lle_alloc_queue_id]      <= lle_set_pkt_tail;
-                    q_head_next_q[lle_alloc_queue_id]    <= free_head_next_q;
-                    q_head_next_ph_q[lle_alloc_queue_id] <= 1'b0;
-                    q_head_next_pt_q[lle_alloc_queue_id] <= 1'b0;
+                    q_head_q[lle_alloc_queue_id]         <= #1 enq_cell;
+                    q_head_ph_q[lle_alloc_queue_id]      <= #1 lle_set_pkt_head;
+                    q_head_pt_q[lle_alloc_queue_id]      <= #1 lle_set_pkt_tail;
+                    q_head_next_q[lle_alloc_queue_id]    <= #1 free_head_next_q;
+                    q_head_next_ph_q[lle_alloc_queue_id] <= #1 1'b0;
+                    q_head_next_pt_q[lle_alloc_queue_id] <= #1 1'b0;
                 end
                 else if (q_cell_cnt_q[lle_alloc_queue_id] == 1) begin
-                    q_head_next_q[lle_alloc_queue_id]    <= enq_cell;
-                    q_head_next_ph_q[lle_alloc_queue_id] <= lle_set_pkt_head;
-                    q_head_next_pt_q[lle_alloc_queue_id] <= lle_set_pkt_tail;
-                    q_head_next2_q[lle_alloc_queue_id]   <= free_head_next_q;
+                    q_head_next_q[lle_alloc_queue_id]    <= #1 enq_cell;
+                    q_head_next_ph_q[lle_alloc_queue_id] <= #1 lle_set_pkt_head;
+                    q_head_next_pt_q[lle_alloc_queue_id] <= #1 lle_set_pkt_tail;
+                    q_head_next2_q[lle_alloc_queue_id]   <= #1 free_head_next_q;
                 end
                 else if (q_cell_cnt_q[lle_alloc_queue_id] == 2) begin
-                    q_head_next2_q[lle_alloc_queue_id]   <= enq_cell;
+                    q_head_next2_q[lle_alloc_queue_id]   <= #1 enq_cell;
                 end
-                q_tail_ph_q[lle_alloc_queue_id] <= lle_set_pkt_head;
-                q_tail_pt_q[lle_alloc_queue_id] <= lle_set_pkt_tail;
+                q_tail_ph_q[lle_alloc_queue_id] <= #1 lle_set_pkt_head;
+                q_tail_pt_q[lle_alloc_queue_id] <= #1 lle_set_pkt_tail;
 
                 if (enq_is_uni) begin
                     // ★ 真实单播完整包在队计数: EOF 入队 +1
                     //   (若同队同拍还有 pkt_tail 出队, 下面出队分支 -1, 净变化合并)
                     if (lle_set_pkt_tail && !(uni_pkt_tail_deq && (lle_deq_queue_id == lle_alloc_queue_id)))
-                        q_uni_pkt_backlog_q[lle_alloc_queue_id] <= q_uni_pkt_backlog_q[lle_alloc_queue_id] + 1'b1;
+                        q_uni_pkt_backlog_q[lle_alloc_queue_id] <= #1 q_uni_pkt_backlog_q[lle_alloc_queue_id] + 1'b1;
                 end
                 else begin
                     //-------- 多播: 额外写 cell-list 镜像 (读加速) + 建槽 --------
-                    mc_cells_q[mc_wr_idx_q] <= enq_cell;
+                    mc_cells_q[mc_wr_idx_q] <= #1 enq_cell;
                     if (lle_set_pkt_head) begin
                         // SOF: 建槽 + 逐端口快照插入位置
-                        mc_valid_q      <= 1'b1;
-                        mc_dst_bitmap_q <= lle_alloc_mcast_bitmap;
-                        mc_wr_idx_q     <= {{(MC_IDX_W-1){1'b0}}, 1'b1};
+                        mc_valid_q      <= #1 1'b1;
+                        mc_dst_bitmap_q <= #1 lle_alloc_mcast_bitmap;
+                        mc_wr_idx_q     <= #1 {{(MC_IDX_W-1){1'b0}}, 1'b1};
                         for (pp = 0; pp < PORT_NUM; pp++) begin
-                            mc_rd_idx_q[pp]   <= '0;
-                            mc_rd_done_q[pp]  <= ~lle_alloc_mcast_bitmap[pp]; // 非目的直接 done
-                            mc_rcy_done_q[pp] <= ~lle_alloc_mcast_bitmap[pp];
+                            mc_rd_idx_q[pp]   <= #1 '0;
+                            mc_rd_done_q[pp]  <= #1 ~lle_alloc_mcast_bitmap[pp]; // 非目的直接 done
+                            mc_rcy_done_q[pp] <= #1 ~lle_alloc_mcast_bitmap[pp];
                             // 承载单播队列号 = 端口*TC_NUM + 该端口多播承载 TC
-                            mc_carry_qid_q[pp]<= carry_qid_c[pp];
+                            mc_carry_qid_q[pp]<= #1 carry_qid_c[pp];
                             // 快照: 该承载队列当前在队单播完整包数
-                            mc_pend_uni_q[pp] <= q_uni_pkt_backlog_q[carry_qid_c[pp]];
+                            mc_pend_uni_q[pp] <= #1 q_uni_pkt_backlog_q[carry_qid_c[pp]];
                         end
                     end
                     else begin
-                        mc_wr_idx_q <= mc_wr_idx_q + 1'b1;
+                        mc_wr_idx_q <= #1 mc_wr_idx_q + 1'b1;
                     end
                     if (lle_set_pkt_tail) begin
                         // EOF: 锁定 cell 数
-                        mc_ncell_q <= lle_set_pkt_head ? {{(MC_IDX_W-1){1'b0}}, 1'b1}
+                        mc_ncell_q <= #1 lle_set_pkt_head ? {{(MC_IDX_W-1){1'b0}}, 1'b1}
                                                        : (mc_wr_idx_q + 1'b1);
                     end
                 end
             end
 
             // enq_pend T+1: 回填 free_head_next2
-            if (enq_pend_q) free_head_next2_q <= npr_r_data[2 +: ADDR_W];
+            if (enq_pend_q) free_head_next2_q <= #1 npr_r_data[2 +: ADDR_W];
 
             //================================================================
             // DEQ 落地
@@ -1084,48 +1085,48 @@ module lle #(
                 if (mc_take_deq) begin
                     //-------- 多播 take: 推进该端口读索引 --------
                     if ((mc_rd_idx_q[deq_port] + 1'b1) == mc_ncell_q)
-                        mc_rd_done_q[deq_port] <= 1'b1;   // 读到最后一个 cell
-                    mc_rd_idx_q[deq_port] <= mc_rd_idx_q[deq_port] + 1'b1;
+                        mc_rd_done_q[deq_port] <= #1 1'b1;   // 读到最后一个 cell
+                    mc_rd_idx_q[deq_port] <= #1 mc_rd_idx_q[deq_port] + 1'b1;
                 end
                 else begin
                     //-------- 单播走链 (两级预取) --------
-                    q_head_q[lle_deq_queue_id] <= q_head_next_q[lle_deq_queue_id];
+                    q_head_q[lle_deq_queue_id] <= #1 q_head_next_q[lle_deq_queue_id];
                     if (deq_pend_same_q) begin
                         if (deq_pend_tail_q) begin
-                            q_head_ph_q[lle_deq_queue_id] <= deq_pend_tail_ph_q;
-                            q_head_pt_q[lle_deq_queue_id] <= deq_pend_tail_pt_q;
+                            q_head_ph_q[lle_deq_queue_id] <= #1 deq_pend_tail_ph_q;
+                            q_head_pt_q[lle_deq_queue_id] <= #1 deq_pend_tail_pt_q;
                         end
                         else begin
-                            q_head_ph_q[lle_deq_queue_id] <= npr_r_data[PH_BIT];
-                            q_head_pt_q[lle_deq_queue_id] <= npr_r_data[PT_BIT];
+                            q_head_ph_q[lle_deq_queue_id] <= #1 npr_r_data[PH_BIT];
+                            q_head_pt_q[lle_deq_queue_id] <= #1 npr_r_data[PT_BIT];
                         end
-                        q_head_next_q[lle_deq_queue_id] <= npr_r_data[2 +: ADDR_W];
+                        q_head_next_q[lle_deq_queue_id] <= #1 npr_r_data[2 +: ADDR_W];
                     end
                     else begin
-                        q_head_ph_q[lle_deq_queue_id] <= q_head_next_ph_q[lle_deq_queue_id];
-                        q_head_pt_q[lle_deq_queue_id] <= q_head_next_pt_q[lle_deq_queue_id];
-                        q_head_next_q[lle_deq_queue_id] <= q_head_next2_q[lle_deq_queue_id];
+                        q_head_ph_q[lle_deq_queue_id] <= #1 q_head_next_ph_q[lle_deq_queue_id];
+                        q_head_pt_q[lle_deq_queue_id] <= #1 q_head_next_pt_q[lle_deq_queue_id];
+                        q_head_next_q[lle_deq_queue_id] <= #1 q_head_next2_q[lle_deq_queue_id];
                     end
 
                     // ★ 出到真实单播包尾: backlog--, 若是承载队列 pend_uni--
                     if (uni_pkt_tail_deq &&
                         !(enq_grant && enq_is_uni && lle_set_pkt_tail && (lle_alloc_queue_id == lle_deq_queue_id)))
-                        q_uni_pkt_backlog_q[lle_deq_queue_id] <= q_uni_pkt_backlog_q[lle_deq_queue_id] - 1'b1;
+                        q_uni_pkt_backlog_q[lle_deq_queue_id] <= #1 q_uni_pkt_backlog_q[lle_deq_queue_id] - 1'b1;
                     if (uni_pkt_tail_deq && is_carry_deq && (mc_pend_uni_q[deq_port] != '0))
-                        mc_pend_uni_q[deq_port] <= mc_pend_uni_q[deq_port] - 1'b1;
+                        mc_pend_uni_q[deq_port] <= #1 mc_pend_uni_q[deq_port] - 1'b1;
                 end
             end
 
             // deq_pend T+1: 回填 next_ph/pt 和 next2
             if (deq_pend_q) begin
                 if (deq_pend_tail_q) begin
-                    q_head_next_ph_q[deq_pend_qid_q] <= deq_pend_tail_ph_q;
-                    q_head_next_pt_q[deq_pend_qid_q] <= deq_pend_tail_pt_q;
+                    q_head_next_ph_q[deq_pend_qid_q] <= #1 deq_pend_tail_ph_q;
+                    q_head_next_pt_q[deq_pend_qid_q] <= #1 deq_pend_tail_pt_q;
                 end
                 else begin
-                    q_head_next_ph_q[deq_pend_qid_q] <= npr_r_data[PH_BIT];
-                    q_head_next_pt_q[deq_pend_qid_q] <= npr_r_data[PT_BIT];
-                    q_head_next2_q[deq_pend_qid_q]   <= npr_r_data[2 +: ADDR_W];
+                    q_head_next_ph_q[deq_pend_qid_q] <= #1 npr_r_data[PH_BIT];
+                    q_head_next_pt_q[deq_pend_qid_q] <= #1 npr_r_data[PT_BIT];
+                    q_head_next2_q[deq_pend_qid_q]   <= #1 npr_r_data[2 +: ADDR_W];
                 end
             end
 
@@ -1142,47 +1143,47 @@ module lle #(
             end
             else begin
                 if (enq_grant)                                    // 单播链或 MC_QID 均 +1
-                    q_cell_cnt_q[lle_alloc_queue_id] <= q_cell_cnt_q[lle_alloc_queue_id] + 1'b1;
+                    q_cell_cnt_q[lle_alloc_queue_id] <= #1 q_cell_cnt_q[lle_alloc_queue_id] + 1'b1;
                 if (deq_grant && ~mc_take_deq)                    // 仅真实单播出队 -1
-                    q_cell_cnt_q[lle_deq_queue_id]   <= q_cell_cnt_q[lle_deq_queue_id]   - 1'b1;
+                    q_cell_cnt_q[lle_deq_queue_id]   <= #1 q_cell_cnt_q[lle_deq_queue_id]   - 1'b1;
             end
 
             //================================================================
             // 多播逐端口回收通知
             //================================================================
             if (mc_rcy_vld && mc_valid_q)
-                mc_rcy_done_q[mc_rcy_port] <= 1'b1;
+                mc_rcy_done_q[mc_rcy_port] <= #1 1'b1;
 
             //================================================================
             // 多播整帧还链 walk
             //================================================================
             if (mc_release_start) begin
-                mc_rel_active_q <= 1'b1;
-                mc_rel_idx_q    <= '0;
+                mc_rel_active_q <= #1 1'b1;
+                mc_rel_idx_q    <= #1 '0;
             end
             else if (mc_rel_active_q) begin
                 if (mc_rel_push) begin
                     if ((mc_rel_idx_q + 1'b1) == mc_ncell_q) begin
                         // 最后一个 cell 已 push → 收槽
-                        mc_rel_active_q <= 1'b0;
-                        mc_valid_q      <= 1'b0;
-                        mc_dst_bitmap_q <= '0;
-                        mc_ncell_q      <= '0;
-                        mc_wr_idx_q     <= '0;
+                        mc_rel_active_q <= #1 1'b0;
+                        mc_valid_q      <= #1 1'b0;
+                        mc_dst_bitmap_q <= #1 '0;
+                        mc_ncell_q      <= #1 '0;
+                        mc_wr_idx_q     <= #1 '0;
                         // 清空 chain33 的 SRAM 链寄存器 (下条多播帧从空链重建)
-                        q_head_q[MC_QID]    <= '0;
-                        q_tail_q[MC_QID]    <= '0;
-                        q_cell_cnt_q[MC_QID]<= '0;
-                        q_tail_ph_q[MC_QID] <= 1'b0;
-                        q_tail_pt_q[MC_QID] <= 1'b0;
+                        q_head_q[MC_QID]    <= #1 '0;
+                        q_tail_q[MC_QID]    <= #1 '0;
+                        q_cell_cnt_q[MC_QID]<= #1 '0;
+                        q_tail_ph_q[MC_QID] <= #1 1'b0;
+                        q_tail_pt_q[MC_QID] <= #1 1'b0;
                         for (pp = 0; pp < PORT_NUM; pp++) begin
-                            mc_rd_done_q[pp]  <= 1'b0;
-                            mc_rcy_done_q[pp] <= 1'b0;
-                            mc_pend_uni_q[pp] <= '0;
-                            mc_rd_idx_q[pp]   <= '0;
+                            mc_rd_done_q[pp]  <= #1 1'b0;
+                            mc_rcy_done_q[pp] <= #1 1'b0;
+                            mc_pend_uni_q[pp] <= #1 '0;
+                            mc_rd_idx_q[pp]   <= #1 '0;
                         end
                     end
-                    mc_rel_idx_q <= mc_rel_idx_q + 1'b1;
+                    mc_rel_idx_q <= #1 mc_rel_idx_q + 1'b1;
                 end
             end
 
@@ -1190,24 +1191,24 @@ module lle #(
             // Recycle FIFO push + pop
             //================================================================
             if (do_push) begin
-                rcy_fifo_mem[rcy_fifo_wptr_q] <= push_cell;
-                rcy_fifo_wptr_q <= rcy_fifo_wptr_q + 1'b1;
+                rcy_fifo_mem[rcy_fifo_wptr_q] <= #1 push_cell;
+                rcy_fifo_wptr_q <= #1 rcy_fifo_wptr_q + 1'b1;
             end
             if (do_pop) begin
-                rcy_fifo_rptr_q <= rcy_fifo_rptr_q + 1'b1;
-                free_tail_q     <= rcy_cell;
+                rcy_fifo_rptr_q <= #1 rcy_fifo_rptr_q + 1'b1;
+                free_tail_q     <= #1 rcy_cell;
             end
 
             unique case ({do_push, do_pop})
-                2'b10:   rcy_fifo_cnt_q <= rcy_fifo_cnt_q + 1'b1;
-                2'b01:   rcy_fifo_cnt_q <= rcy_fifo_cnt_q - 1'b1;
+                2'b10:   rcy_fifo_cnt_q <= #1 rcy_fifo_cnt_q + 1'b1;
+                2'b01:   rcy_fifo_cnt_q <= #1 rcy_fifo_cnt_q - 1'b1;
                 default: ;
             endcase
 
             // free_cnt: enq -1 (含多播 cell), recycle push +1
             unique case ({enq_grant, do_push})
-                2'b10:   free_cnt_q <= free_cnt_q - 1'b1;
-                2'b01:   free_cnt_q <= free_cnt_q + 1'b1;
+                2'b10:   free_cnt_q <= #1 free_cnt_q - 1'b1;
+                2'b01:   free_cnt_q <= #1 free_cnt_q + 1'b1;
                 default: ;
             endcase
         end
@@ -1240,6 +1241,24 @@ module lle #(
                                       ~mc_rd_done_q[pq] &
                                       (QID_W'(qq) == mc_carry_qid_q[pq]);
             q_empty_vec[qq] = ~((q_cell_cnt_q[qq] != '0) | mc_here);
+        end
+    end
+
+    //========================================================================
+    // ★ 32 条常规队列 "pkt 数为 0" 向量 (给 QM 调度用; 完整包粒度)
+    //   q_pkt_empty[q] = ~( 该队列在队真实单播完整包数!=0  |  该 q 是某目的端口承载
+    //                       队列且该端口尚未读完多播帧 )
+    //   多播是一份帧被多端口共享读, 对每个目的端口而言逻辑上是【1 个完整包】,
+    //   故多播的 pkt 数只计入【各目的端口的承载队列】(每端口 1 条), 与 q_empty_vec
+    //   的多播计入口径一致。多播未被某端口读完 → 该端口承载队列 pkt 数 +1 → 非空。
+    //========================================================================
+    always_comb begin
+        for (int qq = 0; qq < PORT_NUM*TC_NUM; qq++) begin
+            automatic int pq = qq >> Q_PER_PORT_LOG;
+            automatic logic mc_pkt_here = mc_valid_q & mc_dst_bitmap_q[pq] &
+                                          ~mc_rd_done_q[pq] &
+                                          (QID_W'(qq) == mc_carry_qid_q[pq]);
+            q_pkt_empty_vec[qq] = ~((q_uni_pkt_backlog_q[qq] != '0) | mc_pkt_here);
         end
     end
 
@@ -1301,18 +1320,16 @@ module next_ptr_sram_1r1w #(
 );
     logic [DATA_W-1:0] mem [CELL_NUM];
     always_ff @(posedge clk_core or negedge rst_core_n) begin
-        if (!rst_core_n) r_data <= '0;
-        else if (r_en)   r_data <= mem[r_addr];
+        if (!rst_core_n) r_data <= #1 '0;
+        else if (r_en)   r_data <= #1 mem[r_addr];
     end
     always_ff @(posedge clk_core) begin
-        if (w_en) mem[w_addr] <= w_data;
+        if (w_en) mem[w_addr] <= #1 w_data;
     end
 endmodule
+
 ```
-
-
 ## enq
-
 ```
 //============================================================================
 // Module      : enqueue_ctrl  (Enqueue Control)
@@ -1400,7 +1417,6 @@ module enqueue_ctrl #(
     input  logic                  mc_busy,             // ★ B2: 多播槽占用中 (LLE 提供), 置1时新多播整帧丢弃
     output logic                  lle_alloc_fire,      // 分配+挂链命令(一拍脉冲)
     output logic [QID_W-1:0]      lle_alloc_queue_id,  // 挂链目标队列
-    output logic [ADDR_W-1:0]     lle_alloc_addr,      // 本次分配地址(=lle_free_head)
     output logic                  lle_set_pkt_head,    // 写 pkt_head (= enq_sof)
     output logic                  lle_set_pkt_tail,    // 写 pkt_tail (= enq_eof)
     output logic                  lle_alloc_is_mcast,  // 组播标志
@@ -1503,19 +1519,19 @@ module enqueue_ctrl #(
     // 整帧丢弃状态更新: 帧首 (sof) 判丢则置位; 帧尾 (eof) 帧结束则清除。
     always_ff @(posedge clk_core or negedge rst_core_n) begin
         if (!rst_core_n) begin
-            frame_drop_q <= 1'b0;
+            frame_drop_q <= #1 1'b0;
         end
         else if (!init_done) begin
-            frame_drop_q <= 1'b0;
+            frame_drop_q <= #1 1'b0;
         end
         else if (enq_fire) begin
             if (frame_drop_q) begin
                 // 整帧丢弃保持中, 到 eof 清除 (本帧结束)
-                if (enq_eof) frame_drop_q <= 1'b0;
+                if (enq_eof) frame_drop_q <= #1 1'b0;
             end
             else if (cell_drop_c && !enq_eof) begin
                 // 本 cell 判丢且帧未结束 → 进入整帧丢弃保持
-                frame_drop_q <= 1'b1;
+                frame_drop_q <= #1 1'b1;
             end
             // 单 cell 帧 (sof&eof 同拍) 判丢: 不需保持, frame_drop_q 维持 0
         end
@@ -1526,7 +1542,6 @@ module enqueue_ctrl #(
     //========================================================================
     assign lle_alloc_fire         = accept_c;
     assign lle_alloc_queue_id     = full_qid_c;          // ★ 完整队列号 (单播={port,tc}; 多播=MC_QID)
-    assign lle_alloc_addr         = lle_free_head;       // T0 当拍即取
     assign lle_set_pkt_head       = enq_sof;
     assign lle_set_pkt_tail       = enq_eof;
     assign lle_alloc_is_mcast     = enq_is_mcast;
@@ -1539,32 +1554,29 @@ module enqueue_ctrl #(
     //========================================================================
     always_ff @(posedge clk_core or negedge rst_core_n) begin
         if (!rst_core_n) begin
-            alloc_valid           <= 1'b0;
-            alloc_cell_addr       <= '0;
-            alloc_drop_ind        <= 1'b0;
-            alloc_sram_flag       <= 1'b0;
-            alloc_pkt_head        <= 1'b0;
-            alloc_pkt_tail        <= 1'b0;
-            alloc_full_frame_drop <= 1'b0;
+            alloc_valid           <= #1 1'b0;
+            alloc_cell_addr       <= #1 '0;
+            alloc_drop_ind        <= #1 1'b0;
+            alloc_sram_flag       <= #1 1'b0;
+            alloc_pkt_head        <= #1 1'b0;
+            alloc_pkt_tail        <= #1 1'b0;
+            alloc_full_frame_drop <= #1 1'b0;
         end
         else begin
-            alloc_valid           <= enq_fire;            // 本拍有有效请求 → 下一拍结果有效
-            alloc_cell_addr       <= lle_free_head;       // 接收时为分配地址; 丢弃时该字段无意义
-            alloc_drop_ind        <= cell_drop_c;
-            alloc_sram_flag       <= accept_c;            // 接收且写内部 SRAM
-            alloc_pkt_head        <= enq_sof;
-            alloc_pkt_tail        <= enq_eof;
-            alloc_full_frame_drop <= full_frame_drop_c;
+            alloc_valid           <= #1 enq_fire;            // 本拍有有效请求 → 下一拍结果有效
+            alloc_cell_addr       <= #1 lle_free_head;       // 接收时为分配地址; 丢弃时该字段无意义
+            alloc_drop_ind        <= #1 cell_drop_c;
+            alloc_sram_flag       <= #1 accept_c;            // 接收且写内部 SRAM
+            alloc_pkt_head        <= #1 enq_sof;
+            alloc_pkt_tail        <= #1 enq_eof;
+            alloc_full_frame_drop <= #1 full_frame_drop_c;
         end
     end
 
 endmodule
 
 ```
-
-
 ## deq
-
 ```
 //============================================================================
 // Module      : dequeue_ctrl  (Dequeue Control)
@@ -1661,26 +1673,23 @@ module dequeue_ctrl #(
     //========================================================================
     always_ff @(posedge clk_core or negedge rst_core_n) begin
         if (!rst_core_n) begin
-            deq_cell_valid <= 1'b0;
-            deq_cell_addr  <= '0;
-            deq_pkt_head   <= 1'b0;
-            deq_pkt_tail   <= 1'b0;
+            deq_cell_valid <= #1 1'b0;
+            deq_cell_addr  <= #1 '0;
+            deq_pkt_head   <= #1 1'b0;
+            deq_pkt_tail   <= #1 1'b0;
         end
         else begin
-            deq_cell_valid <= deq_fire;
-            deq_cell_addr  <= lle_qhead;            // 队头地址 (当拍即给)
-            deq_pkt_head   <= lle_qhead_pkt_head;   // 队头描述符 (预取, 当拍可给)
-            deq_pkt_tail   <= lle_qhead_pkt_tail;
+            deq_cell_valid <= #1 deq_fire;
+            deq_cell_addr  <= #1 lle_qhead;            // 队头地址 (当拍即给)
+            deq_pkt_head   <= #1 lle_qhead_pkt_head;   // 队头描述符 (预取, 当拍可给)
+            deq_pkt_tail   <= #1 lle_qhead_pkt_tail;
         end
     end
 
 endmodule
 
 ```
-
-
 ## csr_stats_init
-
 ```
 //============================================================================
 // Module      : csr_stats_init  (CSR Sample / Stats + Init FSM)
@@ -1817,34 +1826,34 @@ module csr_stats_init #(
     //========================================================================
     always_ff @(posedge clk_core or negedge rst_core_n) begin
         if (!rst_core_n) begin
-            cfg_queue_min_cell    <= '0;
-            cfg_q_max_cell        <= '0;
-            cfg_q_full            <= '0;
-            cfg_port_max          <= '0;
-            cfg_global_high_wm    <= '0;
-            cfg_pause_en          <= 1'b0;
-            cfg_port_pause_xoff   <= '0;
-            cfg_port_pause_xon    <= '0;
-            cfg_global_pause_xoff <= '0;
-            cfg_global_pause_xon  <= '0;
-            cfg_pfc_en            <= 1'b0;
-            cfg_pfc_xoff          <= '0;
-            cfg_pfc_xon           <= '0;
+            cfg_queue_min_cell    <= #1 '0;
+            cfg_q_max_cell        <= #1 '0;
+            cfg_q_full            <= #1 '0;
+            cfg_port_max          <= #1 '0;
+            cfg_global_high_wm    <= #1 '0;
+            cfg_pause_en          <= #1 1'b0;
+            cfg_port_pause_xoff   <= #1 '0;
+            cfg_port_pause_xon    <= #1 '0;
+            cfg_global_pause_xoff <= #1 '0;
+            cfg_global_pause_xon  <= #1 '0;
+            cfg_pfc_en            <= #1 1'b0;
+            cfg_pfc_xoff          <= #1 '0;
+            cfg_pfc_xon           <= #1 '0;
         end
         else begin
-            cfg_queue_min_cell    <= cfg_in_queue_min_cell;
-            cfg_q_max_cell        <= cfg_in_q_max_cell;
-            cfg_q_full            <= cfg_in_q_full;
-            cfg_port_max          <= cfg_in_port_max;
-            cfg_global_high_wm    <= cfg_in_global_high_wm;
-            cfg_pause_en          <= cfg_in_pause_en;
-            cfg_port_pause_xoff   <= cfg_in_port_pause_xoff;
-            cfg_port_pause_xon    <= cfg_in_port_pause_xon;
-            cfg_global_pause_xoff <= cfg_in_global_pause_xoff;
-            cfg_global_pause_xon  <= cfg_in_global_pause_xon;
-            cfg_pfc_en            <= cfg_in_pfc_en;
-            cfg_pfc_xoff          <= cfg_in_pfc_xoff;
-            cfg_pfc_xon           <= cfg_in_pfc_xon;
+            cfg_queue_min_cell    <= #1 cfg_in_queue_min_cell;
+            cfg_q_max_cell        <= #1 cfg_in_q_max_cell;
+            cfg_q_full            <= #1 cfg_in_q_full;
+            cfg_port_max          <= #1 cfg_in_port_max;
+            cfg_global_high_wm    <= #1 cfg_in_global_high_wm;
+            cfg_pause_en          <= #1 cfg_in_pause_en;
+            cfg_port_pause_xoff   <= #1 cfg_in_port_pause_xoff;
+            cfg_port_pause_xon    <= #1 cfg_in_port_pause_xon;
+            cfg_global_pause_xoff <= #1 cfg_in_global_pause_xoff;
+            cfg_global_pause_xon  <= #1 cfg_in_global_pause_xon;
+            cfg_pfc_en            <= #1 cfg_in_pfc_en;
+            cfg_pfc_xoff          <= #1 cfg_in_pfc_xoff;
+            cfg_pfc_xon           <= #1 cfg_in_pfc_xon;
         end
     end
 
@@ -1853,26 +1862,26 @@ module csr_stats_init #(
     //========================================================================
     always_ff @(posedge clk_core or negedge rst_core_n) begin
         if (!rst_core_n) begin
-            st_out_global_used          <= '0;
-            st_out_free_count           <= '0;
-            st_out_q_static_used        <= '0;
-            st_out_per_port_used        <= '0;
-            st_out_per_queue_used       <= '0;
-            st_out_q_near_full_status   <= '0;
-            st_out_tail_drop_cnt        <= '0;
-            st_out_near_full_assert_cnt <= '0;
-            st_out_pause_tx_cnt         <= '0;
+            st_out_global_used          <= #1 '0;
+            st_out_free_count           <= #1 '0;
+            st_out_q_static_used        <= #1 '0;
+            st_out_per_port_used        <= #1 '0;
+            st_out_per_queue_used       <= #1 '0;
+            st_out_q_near_full_status   <= #1 '0;
+            st_out_tail_drop_cnt        <= #1 '0;
+            st_out_near_full_assert_cnt <= #1 '0;
+            st_out_pause_tx_cnt         <= #1 '0;
         end
         else begin
-            st_out_global_used          <= st_global_used;
-            st_out_free_count           <= st_free_count;
-            st_out_q_static_used        <= st_q_static_used;
-            st_out_per_port_used        <= st_per_port_used;
-            st_out_per_queue_used       <= st_per_queue_used;
-            st_out_q_near_full_status   <= st_q_near_full_status;
-            st_out_tail_drop_cnt        <= st_tail_drop_cnt;
-            st_out_near_full_assert_cnt <= st_near_full_assert_cnt;
-            st_out_pause_tx_cnt         <= st_pause_tx_cnt;
+            st_out_global_used          <= #1 st_global_used;
+            st_out_free_count           <= #1 st_free_count;
+            st_out_q_static_used        <= #1 st_q_static_used;
+            st_out_per_port_used        <= #1 st_per_port_used;
+            st_out_per_queue_used       <= #1 st_per_queue_used;
+            st_out_q_near_full_status   <= #1 st_q_near_full_status;
+            st_out_tail_drop_cnt        <= #1 st_tail_drop_cnt;
+            st_out_near_full_assert_cnt <= #1 st_near_full_assert_cnt;
+            st_out_pause_tx_cnt         <= #1 st_pause_tx_cnt;
         end
     end
 
@@ -1881,12 +1890,12 @@ module csr_stats_init #(
     //========================================================================
     always_ff @(posedge clk_core or negedge rst_core_n) begin
         if (!rst_core_n) begin
-            irq_alarm <= 1'b0;
-            irq_aging <= 1'b0;
+            irq_alarm <= #1 1'b0;
+            irq_aging <= #1 1'b0;
         end
         else begin
-            irq_alarm <= overflow_alarm | underflow_alarm;
-            irq_aging <= 1'b0;   // 队列老化未启用时恒 0
+            irq_alarm <= #1 overflow_alarm | underflow_alarm;
+            irq_aging <= #1 1'b0;   // 队列老化未启用时恒 0
         end
     end
 
@@ -1905,43 +1914,43 @@ module csr_stats_init #(
 
     always_ff @(posedge clk_core or negedge rst_core_n) begin
         if (!rst_core_n) begin
-            init_st_q      <= IS_IDLE;
-            init_build_req <= 1'b0;
-            clr_ptr_cnt    <= 1'b0;
-            init_done      <= 1'b0;
+            init_st_q      <= #1 IS_IDLE;
+            init_build_req <= #1 1'b0;
+            clr_ptr_cnt    <= #1 1'b0;
+            init_done      <= #1 1'b0;
         end
         else begin
             // 默认拉低脉冲
-            init_build_req <= 1'b0;
+            init_build_req <= #1 1'b0;
             case (init_st_q)
                 IS_IDLE: begin
-                    init_done   <= 1'b0;
-                    clr_ptr_cnt <= 1'b0;
+                    init_done   <= #1 1'b0;
+                    clr_ptr_cnt <= #1 1'b0;
                     if (init_start) begin
-                        init_build_req <= 1'b1;   // 命 LLE 建空闲链 (脉冲 1 拍)
-                        clr_ptr_cnt    <= 1'b1;    // 初始化期清指针/计数
-                        init_st_q      <= IS_BUILD;
+                        init_build_req <= #1 1'b1;   // 命 LLE 建空闲链 (脉冲 1 拍)
+                        clr_ptr_cnt    <= #1 1'b1;    // 初始化期清指针/计数
+                        init_st_q      <= #1 IS_BUILD;
                     end
                 end
                 IS_BUILD: begin
                     // 等 LLE 建链完成
                     if (init_build_done) begin
-                        clr_ptr_cnt <= 1'b0;
-                        init_done   <= 1'b1;       // 初始化完成 (保持)
-                        init_st_q   <= IS_DONE;
+                        clr_ptr_cnt <= #1 1'b0;
+                        init_done   <= #1 1'b1;       // 初始化完成 (保持)
+                        init_st_q   <= #1 IS_DONE;
                     end
                 end
                 IS_DONE: begin
-                    init_done <= 1'b1;             // 保持完成态
+                    init_done <= #1 1'b1;             // 保持完成态
                     // 允许再次 init_start 重新初始化
                     if (init_start) begin
-                        init_done      <= 1'b0;
-                        init_build_req <= 1'b1;
-                        clr_ptr_cnt    <= 1'b1;
-                        init_st_q      <= IS_BUILD;
+                        init_done      <= #1 1'b0;
+                        init_build_req <= #1 1'b1;
+                        clr_ptr_cnt    <= #1 1'b1;
+                        init_st_q      <= #1 IS_BUILD;
                     end
                 end
-                default: init_st_q <= IS_IDLE;
+                default: init_st_q <= #1 IS_IDLE;
             endcase
         end
     end
@@ -1949,10 +1958,7 @@ module csr_stats_init #(
 endmodule
 
 ```
-
-
 ## occupancy_pool_mgr
-
 ```
 `timescale 1ns/1ps
 
@@ -2146,15 +2152,15 @@ module occupancy_pool_mgr #(
     always_ff @(posedge clk_core or negedge rst_core_n) begin
         if (!rst_core_n) begin
             for (int i = 0; i < QUEUE_NUM; i++) begin
-                q_cell_cnt_q[i] <= '0;
+                q_cell_cnt_q[i] <= #1 '0;
             end
         end
         else begin
             for (int i = 0; i < QUEUE_NUM; i++) begin
                 if (q_cell_inc[i] && !q_cell_dec[i])
-                    q_cell_cnt_q[i] <= q_cell_cnt_q[i] + 1'b1;
+                    q_cell_cnt_q[i] <= #1 q_cell_cnt_q[i] + 1'b1;
                 else if (!q_cell_inc[i] && q_cell_dec[i])
-                    q_cell_cnt_q[i] <= q_cell_cnt_q[i] - 1'b1;
+                    q_cell_cnt_q[i] <= #1 q_cell_cnt_q[i] - 1'b1;
             end
         end
     end
@@ -2162,15 +2168,15 @@ module occupancy_pool_mgr #(
     always_ff @(posedge clk_core or negedge rst_core_n) begin
         if (!rst_core_n) begin
             for (int i = 0; i < QUEUE_NUM; i++) begin
-                q_static_used_q[i] <= '0;
+                q_static_used_q[i] <= #1 '0;
             end
         end
         else begin
             for (int i = 0; i < QUEUE_NUM; i++) begin
                 if (q_static_inc[i] && !q_static_dec[i])
-                    q_static_used_q[i] <= q_static_used_q[i] + 1'b1;
+                    q_static_used_q[i] <= #1 q_static_used_q[i] + 1'b1;
                 else if (!q_static_inc[i] && q_static_dec[i])
-                    q_static_used_q[i] <= q_static_used_q[i] - 1'b1;
+                    q_static_used_q[i] <= #1 q_static_used_q[i] - 1'b1;
             end
         end
     end
@@ -2178,15 +2184,15 @@ module occupancy_pool_mgr #(
     always_ff @(posedge clk_core or negedge rst_core_n) begin
         if (!rst_core_n) begin
             for (int i = 0; i < PORT_NUM; i++) begin
-                per_port_used_q[i] <= '0;
+                per_port_used_q[i] <= #1 '0;
             end
         end
         else begin
             for (int i = 0; i < PORT_NUM; i++) begin
                 if (port_inc[i] && !port_dec[i])
-                    per_port_used_q[i] <= per_port_used_q[i] + 1'b1;
+                    per_port_used_q[i] <= #1 per_port_used_q[i] + 1'b1;
                 else if (!port_inc[i] && port_dec[i])
-                    per_port_used_q[i] <= per_port_used_q[i] - 1'b1;
+                    per_port_used_q[i] <= #1 per_port_used_q[i] - 1'b1;
             end
         end
     end
@@ -2196,22 +2202,22 @@ module occupancy_pool_mgr #(
 
     always_ff @(posedge clk_core or negedge rst_core_n) begin
         if (!rst_core_n) begin
-            free_count_q  <= CELL_NUM[CNT_W-1:0];
-            global_used_q <= '0;
+            free_count_q  <= #1 CELL_NUM[CNT_W-1:0];
+            global_used_q <= #1 '0;
         end
         else begin
             case ({alloc_allowed, free_allowed})
                 2'b10: if (free_count_q != '0) begin   // 仅分配
-                    free_count_q  <= free_count_q  - 1'b1;
-                    global_used_q <= global_used_q + 1'b1;
+                    free_count_q  <= #1 free_count_q  - 1'b1;
+                    global_used_q <= #1 global_used_q + 1'b1;
                 end
                 2'b01: if (global_used_q != '0) begin  // 仅回收
-                    free_count_q  <= free_count_q  + 1'b1;
-                    global_used_q <= global_used_q - 1'b1;
+                    free_count_q  <= #1 free_count_q  + 1'b1;
+                    global_used_q <= #1 global_used_q - 1'b1;
                 end
                 2'b11: begin // 同拍分配+回收: 净不变
-                    free_count_q  <= free_count_q;
-                    global_used_q <= global_used_q;
+                    free_count_q  <= #1 free_count_q;
+                    global_used_q <= #1 global_used_q;
                 end
                 default: ; // 无事件
             endcase
@@ -2260,7 +2266,7 @@ module occupancy_pool_mgr #(
         else
             pred_s_rem = '0;
         pred_fit = (free_count_q >= pred_cell_num)
-                && ( (pred_cell_num <= pred_s_rem)                                    // 全落静态额度 → 绕过高水位
+                && ( (pred_cell_num <=  pred_s_rem)                                    // 全落静态额度 → 绕过高水位
                      || ( (q_cell_cnt_q[occ_query_queue_id]       + pred_cell_num <= cfg_q_max_cell[occ_query_queue_id])
                        && (per_port_used_q[occ_query_egress_port] + pred_cell_num <= cfg_port_max[occ_query_egress_port])
                        && (global_used_q                          + pred_cell_num <= cfg_global_high_wm) ) );
@@ -2291,12 +2297,12 @@ module occupancy_pool_mgr #(
     end
     always_ff@(posedge clk_core, negedge rst_core_n) begin
         if(!rst_core_n) begin
-            q_near_full <= '0;
+            q_near_full <= #1 '0;
         end
         else begin
-            // Fix4: 按位赋值 (原写法 q_near_full<=1'b1 会把整个向量赋成最后一个 i 的结果)
+            // Fix4: 按位赋值 (原写法 q_near_full<= #11'b1 会把整个向量赋成最后一个 i 的结果)
             for(int i=0;i<QUEUE_NUM;i++)begin
-                q_near_full[i] <= q_near_full_set[i];
+                q_near_full[i] <= #1 q_near_full_set[i];
             end
         end
     end
@@ -2309,11 +2315,11 @@ module occupancy_pool_mgr #(
     end
     always_ff@(posedge clk_core, negedge rst_core_n) begin
         if(!rst_core_n) begin
-            port_near_full <= '0;
+            port_near_full <= #1 '0;
         end
         else begin
             for(int i=0;i<PORT_NUM;i++) begin
-                port_near_full[i] <= port_near_full_set[i];
+                port_near_full[i] <= #1 port_near_full_set[i];
             end
         end
     end
@@ -2324,11 +2330,11 @@ module occupancy_pool_mgr #(
     end
     always_ff@(posedge clk_core, negedge rst_core_n) begin
         if(!rst_core_n)
-            global_near_full <= 1'b0;
+            global_near_full <= #1 1'b0;
         else if (global_near_full_set)
-            global_near_full <= 1'b1;
+            global_near_full <= #1 1'b1;
         else
-            global_near_full <= 1'b0;
+            global_near_full <= #1 1'b0;
     end
 
 
@@ -2346,15 +2352,15 @@ module occupancy_pool_mgr #(
     //寄存器迟滞
     always_ff@(posedge clk_core, negedge rst_core_n) begin
         if(!rst_core_n)
-            pause_req    <= 1'b0;
+            pause_req    <= #1 1'b0;
         else begin
             for(int i=0;i<PORT_NUM;i++)begin
                 if(!cfg_pause_en)
-                    pause_req[i]    <= 1'b0;
+                    pause_req[i]    <= #1 1'b0;
                 else if(pause_set[i])
-                    pause_req[i]    <= 1'b1;
+                    pause_req[i]    <= #1 1'b1;
                 else if(pause_clr[i])
-                    pause_req[i]    <= 1'b0;
+                    pause_req[i]    <= #1 1'b0;
                 // 中间区 保持原值，迟滞
             end
         end
@@ -2385,16 +2391,16 @@ module occupancy_pool_mgr #(
     //寄存器迟滞
     always_ff@(posedge clk_core, negedge rst_core_n) begin
         if(!rst_core_n)
-            pfc_req    <= 1'b0;
+            pfc_req    <= #1 1'b0;
         else begin
             for(int i=0;i<PORT_NUM;i++)begin
                 for(int j=0;j<TC_NUM;j++)begin
                     if(!cfg_pfc_en)
-                        pfc_req[i][j]    <= 1'b0;
+                        pfc_req[i][j]    <= #1 1'b0;
                     else if(pfc_set[i][j])
-                        pfc_req[i][j]    <= 1'b1;
+                        pfc_req[i][j]    <= #1 1'b1;
                     else if(pfc_clr[i][j])
-                        pfc_req[i][j]    <= 1'b0;
+                        pfc_req[i][j]    <= #1 1'b0;
                 // 中间区 保持原值，迟滞
                 end
             end
@@ -2429,12 +2435,12 @@ module occupancy_pool_mgr #(
     assign conserve_ok = ((free_count_q + global_used_q) == CELL_NUM[CNT_W-1:0]);
     always_ff @(posedge clk_core or negedge rst_core_n) begin
         if (!rst_core_n) begin
-            overflow_alarm  <= 1'b0;
-            underflow_alarm <= 1'b0;
+            overflow_alarm  <= #1 1'b0;
+            underflow_alarm <= #1 1'b0;
         end
         else begin
-            overflow_alarm  <= (global_used_q > CELL_NUM[CNT_W-1:0]);
-            underflow_alarm <= ~conserve_ok
+            overflow_alarm  <= #1 (global_used_q > CELL_NUM[CNT_W-1:0]);
+            underflow_alarm <= #1 ~conserve_ok
                                | (alloc_allowed & (free_count_q  == '0))
                                | (free_allowed  & (global_used_q == '0));
         end
@@ -2443,11 +2449,9 @@ module occupancy_pool_mgr #(
 
 endmodule
 
+
 ```
-
-
 ## recycle_ctrl
-
 ```
 //============================================================================
 // Module      : recycle_ctrl  (Recycle Control) —— B2 版
@@ -2533,42 +2537,42 @@ module recycle_ctrl #(
     assign recycle_ack = recycle_req | mcast_recycle_req;
 
 endmodule
+
 ```
-
-
 ## tb
-
 ```
 //============================================================================
-// Testbench : smart_mmu_tb  —— B2 多播逻辑拼接版
+// Testbench : smmu_tb  ÄÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂÄÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ B2 ĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂ¤ĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ­ÄÂĂÂĂĹĄĂÂ ĂÂĂÂÄÂĂÂÄÂÄšÄÄÂĂÂĂÂĂÂÄÂĂÂÄÂÄšÄĂĹĄÄšĹžĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂÄÂÄšÄĂĹĄĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂÄÂĂÂÄÂĂÂ§ĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ
 // Project   : 4-Port 2.5/1G/100M Ethernet Switch - Smart MMU
 //
-// 目标:
-//   仿照 QM 行为, 通过寄存器输出激励 smart_mmu 的 input、读取 output (clk/rst 除外),
-//   自检式 (self-checking) 覆盖:
-//     C1  单队列挂链/走链/还链, free 链计数校验
-//     C2  跨队列交叉挂链/走链, free 链/占用计数校验
-//     C3  还链后 free 链恢复校验 (free_cnt / 守恒)
-//     C4  ★ B2 多播: 单槽入队(建 chain33 SRAM 链) / 逐端口逻辑拼接出队(排头/排尾) /
-//           逐端口回收(done 位图) / 全端口读完+还链后整帧释放 / 满槽 drop
-//     C5  enq + deq 同拍仲裁 + 反压 (deq 占 SRAM → enq 等)
-//     C6  deq + rcy 同拍仲裁与处理
-//     C7  enq + deq + rcy 三者同拍仲裁与处理
-//     C8  水线/满/快满 (q/port/global near_full + full) 触发与释放
-//     C9  PAUSE 触发/释放
-//     C10 压力测试 (混合 enq/deq/rcy, 守恒 + 无下溢/溢出)
-//     C11 入队前预判 (predict-drop)
+// ÄÂĂÂÄÂĂÂ§ĂÂĂÂÄÂĂÂÄÂÄšÄÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ ĂÂĂÂÄÂĂÂ:
+//   ÄÂĂÂÄÂĂÂ¤ÄÂÄšÄÄÂĂÂÄÂÄšÄĂĹĄÄšÂÄÂĂÂÄÂĂÂ§ĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ§ QM ĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂÄÂĂÂÄÂĂÂ¤ĂÂĂÂÄÂĂÂ¸ÄÂÄšÄÄÂĂÂ, ÄÂĂÂĂĹĄĂÂ ĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂÄÂÄšÄĂĹĄÄšÂĂÂĂÂÄÂĂÂĂÂĂÂĂĹĄĂÂÄÂÄšÄĂĹĄĂËĂÂĂÂÄÂĂÂĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂ­ĂÂĂÂÄÂĂÂĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ¨ĂÂĂÂÄÂĂÂÄÂÄšÄĂĹĄÄšĹžĂÂĂÂÄÂĂÂĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂÄÂÄšÄÄÂĂÂĂÂĂÂÄÂĂÂÄÂÄšÄĂĹĄÄšÂĂÂĂÂÄÂĂÂĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ smmu ÄÂĂÂÄÂĂÂ§ĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ inputĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂÄÂÄšÄĂĹĄĂËÄÂÄšÄÄÂĂÂĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ output (clk/rst ÄÂĂÂĂĹĄĂÂ ĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ¤ĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂ¤ĂÂĂÂÄÂĂÂ),
+//   ĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂÄÂÄšÄÄÂĂÂĂÂĂÂÄÂĂÂÄÂÄšÄÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂĂĹĄĂÂÄÂÄšÄĂĹĄĂÂĂÂĂÂÄÂĂÂ (self-checking) ĂÂĂÂÄÂĂÂÄÂÄšÄÄÂĂÂĂÂĂÂÄÂĂÂÄÂĂÂÄÂĂÂ§ĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ:
+//     C1  ĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂÄÂĂÂĂĹĄĂÂ ĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂÄÂĂÂĂĹĄĂÂ ĂÂĂÂÄÂĂÂÄÂÄšÄĂĹĄÄšĹž/ĂÂĂÂÄÂĂÂĂÂĂÂĂĹĄÄšĹžĂÂĂÂÄÂĂÂ°ÄÂĂÂĂĹĄĂÂ ĂÂĂÂÄÂĂÂÄÂÄšÄĂĹĄÄšĹž/ĂÂĂÂÄÂĂÂÄÂÄšÄĂĹĄÄšÂĂÂĂÂÄÂĂÂÄÂĂÂĂĹĄĂÂ ĂÂĂÂÄÂĂÂÄÂÄšÄĂĹĄÄšĹž, free ÄÂĂÂĂĹĄĂÂ ĂÂĂÂÄÂĂÂÄÂÄšÄĂĹĄÄšĹžĂÂĂÂÄÂĂÂÄÂÄšÄÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ°ĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ ĂÂĂÂÄÂĂÂÄÂĂÂĂĹĄĂÂ ÄÂÄšÄÄÂĂÂĂÂĂÂÄÂĂÂ
+//     C2  ĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ¨ÄÂĂÂĂĹĄĂÂ ĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂÄÂĂÂÄÂĂÂ¤ÄÂÄšÄÄÂĂÂĂÂĂÂÄÂĂÂ¤ĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂÄÂĂÂĂĹĄĂÂ ĂÂĂÂÄÂĂÂÄÂÄšÄĂĹĄÄšĹž/ĂÂĂÂÄÂĂÂĂÂĂÂĂĹĄÄšĹžĂÂĂÂÄÂĂÂ°ÄÂĂÂĂĹĄĂÂ ĂÂĂÂÄÂĂÂÄÂÄšÄĂĹĄÄšĹž, free ÄÂĂÂĂĹĄĂÂ ĂÂĂÂÄÂĂÂÄÂÄšÄĂĹĄÄšĹž/ĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ ÄÂĂÂÄÂĂÂ§ĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ¨ĂÂĂÂÄÂĂÂÄÂÄšÄÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ°ĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ ĂÂĂÂÄÂĂÂÄÂĂÂĂĹĄĂÂ ÄÂÄšÄÄÂĂÂĂÂĂÂÄÂĂÂ
+//     C3  ĂÂĂÂÄÂĂÂÄÂÄšÄĂĹĄÄšÂĂÂĂÂÄÂĂÂÄÂĂÂĂĹĄĂÂ ĂÂĂÂÄÂĂÂÄÂÄšÄĂĹĄÄšĹžĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ free ÄÂĂÂĂĹĄĂÂ ĂÂĂÂÄÂĂÂÄÂÄšÄĂĹĄÄšĹžĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂ¤ĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ ĂÂĂÂÄÂĂÂÄÂĂÂĂĹĄĂÂ ÄÂÄšÄÄÂĂÂĂÂĂÂÄÂĂÂ (free_cnt / ĂÂĂÂĂĹĄĂÂÄÂÄšÄÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ)
+//     C4  ÄÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ B2 ĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂ¤ĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ­: ĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ§ĂÂĂÂÄÂĂÂĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂÄÂĂÂĂĹĄĂÂ ĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ(ĂÂĂÂĂĹĄĂÂÄÂÄšÄÄÂĂÂÄÂÄšÄÄÂĂÂ chain33 SRAM ÄÂĂÂĂĹĄĂÂ ĂÂĂÂÄÂĂÂÄÂÄšÄĂĹĄÄšĹž) / ÄÂĂÂĂĹĄĂÂ ĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂÄÂĂÂÄÂĂÂ§ÄÂÄšÄÄÂĂÂ¤ÄÂÄšÄĂĹĄĂËĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂÄÂÄšÄÄÂĂÂÄÂĂÂĂĹĄĂÂ ĂÂĂÂÄÂĂÂÄÂÄšÄÄÂĂÂĂÂĂÂÄÂĂÂÄÂÄšÄĂĹĄÄšĹžĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂÄÂÄšÄĂĹĄĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂÄÂÄšÄÄÂĂÂÄÂĂÂĂĹĄĂÂ ĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ(ĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂ¤ĂÂĂÂÄÂĂÂ´/ĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂ°ÄÂÄšÄĂĹĄÄšĹž) /
+//           ÄÂĂÂĂĹĄĂÂ ĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂÄÂĂÂÄÂĂÂ§ÄÂÄšÄÄÂĂÂ¤ÄÂÄšÄĂĹĄĂËĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂÄÂÄšÄÄÂĂÂĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂÄÂÄšÄÄÂĂÂ(done ÄÂĂÂÄÂĂÂ¤ĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂÄÂÄšÄĂĹĄÄšĹž) / ĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ¨ÄÂĂÂÄÂĂÂ§ÄÂÄšÄÄÂĂÂ¤ÄÂÄšÄĂĹĄĂËĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂÄÂÄšÄÄÂĂÂĂÂĂÂÄÂĂÂÄÂÄšÄĂĹĄĂËÄÂÄšÄÄÂĂÂĂÂĂÂĂĹĄĂÂÄÂÄšÄÄÂĂÂĂÂĂÂÄÂĂÂ+ĂÂĂÂÄÂĂÂÄÂÄšÄĂĹĄÄšÂĂÂĂÂÄÂĂÂÄÂĂÂĂĹĄĂÂ ĂÂĂÂÄÂĂÂÄÂÄšÄĂĹĄÄšĹžĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ´ĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂ¸ĂÂĂÂÄÂĂÂ§ÄÂĂÂĂĹĄĂÂ ĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂÄÂÄšÄĂĹĄÄšĹž / ĂÂĂÂÄÂĂÂÄÂÄšÄÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ§ĂÂĂÂÄÂĂÂ drop
+//     C5  enq + deq ĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂÄÂĂÂÄÂĂÂ¤ÄÂÄšÄÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂÄÂÄšÄÄÂĂÂĂÂĂÂÄÂĂÂ + ĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ (deq ĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ  SRAM ÄÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ enq ÄÂĂÂÄÂĂÂ§ĂÂĂÂÄÂĂÂ­ĂÂĂÂÄÂĂÂ)
+//     C6  deq + rcy ĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂÄÂĂÂÄÂĂÂ¤ÄÂÄšÄÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂÄÂÄšÄÄÂĂÂĂÂĂÂÄÂĂÂÄÂĂÂÄÂĂÂ¤ĂÂĂÂÄÂĂÂ¸ĂÂĂÂÄÂĂÂĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂ¤ĂÂĂÂÄÂĂÂÄÂĂÂÄÂĂÂ§ĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ
+//     C7  enq + deq + rcy ÄÂĂÂÄÂĂÂ¤ĂÂĂÂÄÂĂÂ¸ĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂÄÂĂÂÄÂĂÂ¤ÄÂÄšÄÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂÄÂÄšÄÄÂĂÂĂÂĂÂÄÂĂÂÄÂĂÂÄÂĂÂ¤ĂÂĂÂÄÂĂÂ¸ĂÂĂÂÄÂĂÂĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂ¤ĂÂĂÂÄÂĂÂÄÂĂÂÄÂĂÂ§ĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ
+//     C8  ĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ°ĂÂĂÂÄÂĂÂ´ÄÂĂÂÄÂĂÂ§ÄÂÄšÄÄÂĂÂÄÂÄšÄĂĹĄÄšÂ/ĂÂĂÂÄÂĂÂÄÂÄšÄÄÂĂÂĂÂĂÂÄÂĂÂ/ĂÂĂÂĂĹĄĂÂÄÂÄšÄĂĹĄÄšÂÄÂÄšÄÄÂĂÂ¤ĂÂĂÂÄÂĂÂÄÂÄšÄÄÂĂÂĂÂĂÂÄÂĂÂ (q/port/global near_full + full) ĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ§ÄÂÄšÄÄÂĂÂĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂÄÂĂÂÄÂĂÂ¤ĂÂĂÂÄÂĂÂ¸ĂÂĂÂÄÂĂÂÄÂĂÂĂĹĄĂÂ ĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂÄÂÄšÄĂĹĄÄšĹž
+//     C9  PAUSE ĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ§ÄÂÄšÄÄÂĂÂĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ/ÄÂĂÂĂĹĄĂÂ ĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂÄÂÄšÄĂĹĄÄšĹž
+//     C10 ĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂĂĹĄÄšĹžĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂÄÂÄšÄĂĹĄĂËĂÂĂÂÄÂĂÂ (ĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ enq/deq/rcy, ĂÂĂÂĂĹĄĂÂÄÂÄšÄÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ + ĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ ÄÂĂÂÄÂĂÂ¤ĂÂĂÂÄÂĂÂ¸ĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂÄÂÄšÄÄÂĂÂĂÂĂÂÄÂĂÂ/ĂÂĂÂÄÂĂÂÄÂÄšÄÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂÄÂÄšÄÄÂĂÂ)
+//     C11 ĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂÄÂĂÂĂĹĄĂÂ ĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂÄÂĂÂĂĹĄĂÂ ĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ¤ (predict-drop)
+//     C12 ĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂÄÂÄšÄÄÂĂÂ  1 cell ÄÂĂÂÄÂĂÂ§ÄÂÄšÄÄÂĂÂ ÄÂÄšÄÄÂĂÂÄÂĂÂĂĹĄĂÂ ĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ´ĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂÄÂÄšÄÄÂĂÂÄÂĂÂÄÂĂÂ§ĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ predict/drop ĂÂĂÂÄÂĂÂÄÂÄšÄĂĹĄÄšĹžÄÂÄšÄÄÂĂÂÄÂĂÂÄÂĂÂ§ĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ
+//     C13 ĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂÄÂÄšÄÄÂĂÂ  7 cells ÄÂĂÂÄÂĂÂ§ÄÂÄšÄÄÂĂÂ ÄÂÄšÄÄÂĂÂÄÂĂÂĂĹĄĂÂ ĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ´ĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂÄÂÄšÄÄÂĂÂÄÂĂÂÄÂĂÂ¤ĂÂĂÂÄÂĂÂ¸ĂÂĂÂÄÂĂÂ¤ÄÂĂÂÄÂĂÂ¤ĂÂĂÂÄÂĂÂ¸ÄÂÄšÄÄÂĂÂ 5-cell pkt ÄÂĂÂÄÂĂÂ§ĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ predict/drop ĂÂĂÂÄÂĂÂÄÂÄšÄĂĹĄÄšĹžÄÂÄšÄÄÂĂÂÄÂĂÂÄÂĂÂ§ĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ
 //
-//   规模: CELL_NUM=64, QUEUE_NUM=9, PORT_NUM=2 (TC_NUM=4; q>>2 → port)
-//         多播承载 TC = 0 (cfg_mcast_carry_tc[p]=0) → 承载 qid = p*4+0 = {0(port0), 4(port1)}
+//   ĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ§ĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ¨ĂÂĂÂÄÂĂÂ: CELL_NUM=64, QUEUE_NUM=9, PORT_NUM=2 (TC_NUM=4; q>>2 ÄÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ port)
+//         ĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂ¤ĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ­ĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂÄÂÄšÄĂĹĄÄšÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ TC = 0 (cfg_mcast_carry_tc[p]=0) ÄÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ ĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂÄÂÄšÄĂĹĄÄšÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ qid = p*4+0 = {0(port0), 4(port1)}
 //============================================================================
 `timescale 1ns/1ps
 
-module smart_mmu_tb;
+module smmu_tb;
 
     //========================================================================
-    // 参数
-    //   PORT=2, TC=4 → QUEUE_NUM=9: 单播[0..7] (q0-3→port0, q4-7→port1), [8]=多播 MCAST_QID
+    // ĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ°
+    //   PORT=2, TC=4 ÄÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ QUEUE_NUM=9: ĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ­[0..7] (q0-3ÄÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂport0, q4-7ÄÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂport1), [8]=ĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂ¤ĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ­ MCAST_QID
     //========================================================================
     localparam int CELL_NUM  = 64;
     localparam int PORT_NUM  = 2;
@@ -2585,7 +2589,7 @@ module smart_mmu_tb;
     localparam int CNT_W  = ADDR_W + 1;                // 7
     localparam int QPP    = $clog2(TC_NUM);            // 2
 
-    // ★ B2: 多播承载 TC = 0 → 承载 qid[port] = port*TC_NUM
+    // ÄÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ B2: ĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂ¤ĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ­ĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂÄÂÄšÄĂĹĄÄšÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ TC = 0 ÄÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ ĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂÄÂÄšÄĂĹĄÄšÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ qid[port] = port*TC_NUM
     localparam int MC_CARRY_TC = 0;
     function automatic int carry_qid(input int port); carry_qid = port*TC_NUM + MC_CARRY_TC; endfunction
 
@@ -2594,18 +2598,18 @@ module smart_mmu_tb;
     endfunction
 
     //========================================================================
-    // 时钟复位
+    // ĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂÄÂÄšÄÄÂĂÂÄÂĂÂĂĹĄĂÂ ĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂ¤ĂÂĂÂÄÂĂÂÄÂĂÂÄÂĂÂ¤ĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ
     //========================================================================
     logic clk, rst_n;
     initial clk = 0;
     always #1.667 clk = ~clk;   // ~300MHz
 
     //========================================================================
-    // DUT 输入寄存器
+    // DUT ĂÂĂÂÄÂĂÂÄÂÄšÄĂĹĄÄšĹžĂÂĂÂÄÂĂÂĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂĂĹĄĂÂÄÂÄšÄĂĹĄĂËĂÂĂÂÄÂĂÂĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂ­ĂÂĂÂÄÂĂÂĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ¨
     //========================================================================
     logic                  init_start_r;
     logic                  enq_req_r;
-    logic [QPP-1:0]        enq_queue_id_r;      // ★ 仅 TC (完整队列={egress_port,queue_id})
+    logic [QPP-1:0]        enq_queue_id_r;      // ÄÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ ÄÂĂÂÄÂĂÂ¤ÄÂÄšÄÄÂĂÂĂÂĂÂÄÂĂÂ TC (ĂÂĂÂĂĹĄĂÂÄÂÄšÄÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ´ÄÂĂÂĂĹĄĂÂ ĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ={egress_port,queue_id})
     logic [PORT_W-1:0]     enq_egress_port_r;
     logic [PKT_CELL_W-1:0] enq_cell_num_r;
     logic                  enq_is_mcast_r;
@@ -2622,7 +2626,7 @@ module smart_mmu_tb;
     logic [QID_W-1:0]      mcast_recycle_queue_id_r;
 
     //========================================================================
-    // DUT 输出
+    // DUT ĂÂĂÂÄÂĂÂÄÂÄšÄĂĹĄÄšĹžĂÂĂÂÄÂĂÂĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂÄÂÄšÄÄÂĂÂ
     //========================================================================
     logic                  init_done;
     logic                  enq_ready;
@@ -2631,13 +2635,14 @@ module smart_mmu_tb;
     logic [ADDR_W-1:0]     alloc_cell_addr;
     logic                  alloc_drop_ind, alloc_sram_flag, alloc_pkt_head, alloc_pkt_tail;
     logic                  alloc_full_frame_drop;
-    logic                  mcast_busy_drop;         // ★ B2
+    logic                  mcast_busy_drop;         // ÄÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ B2
     logic                  deq_ready;
     logic                  deq_cell_valid;
     logic [ADDR_W-1:0]     deq_cell_addr;
     logic                  deq_pkt_head, deq_pkt_tail;
     logic                  recycle_ack;
-    logic [PORT_NUM*TC_NUM-1:0] q_empty;             // ★ B2 32 条常规队列 empty
+    logic [PORT_NUM*TC_NUM-1:0] q_empty;             // ÄÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ B2 32 ĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂ¸ĂÂĂÂÄÂĂÂ¸ĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ§ĂÂĂÂÄÂĂÂÄÂĂÂĂĹĄĂÂ ĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ empty
+    logic [PORT_NUM*TC_NUM-1:0] q_pkt_empty;         // 32 regular queue pkt-count==0 bitmap
     logic [QUEUE_NUM-1:0]  q_near_full;
     logic [PORT_NUM-1:0]   port_near_full;
     logic                  global_near_full;
@@ -2649,7 +2654,7 @@ module smart_mmu_tb;
     logic                  irq_alarm, irq_aging, overflow_alarm, underflow_alarm;
 
     //========================================================================
-    // 配置寄存器
+    // ÄÂĂÂĂĹĄĂÂ ĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂÄÂĂÂÄÂĂÂ§ĂÂĂÂÄÂĂÂÄÂÄšÄÄÂĂÂĂÂĂÂĂĹĄĂÂÄÂÄšÄĂĹĄĂËĂÂĂÂÄÂĂÂĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂ­ĂÂĂÂÄÂĂÂĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ¨
     //========================================================================
     logic [QUEUE_NUM-1:0][CNT_W-1:0]             cfg_queue_min_cell;
     logic [QUEUE_NUM-1:0][CNT_W-1:0]             cfg_q_max_cell;
@@ -2664,7 +2669,7 @@ module smart_mmu_tb;
     logic                                        cfg_pfc_en;
     logic [PORT_NUM-1:0][TC_NUM-1:0][CNT_W-1:0]  cfg_pfc_xoff;
     logic [PORT_NUM-1:0][TC_NUM-1:0][CNT_W-1:0]  cfg_pfc_xon;
-    // ★ B2: 每端口多播承载 TC
+    // ÄÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ B2: ĂÂĂÂÄÂĂÂÄÂÄšÄĂĹĄĂËĂÂĂÂÄÂĂÂÄÂĂÂÄÂĂÂ§ÄÂÄšÄÄÂĂÂ¤ÄÂÄšÄĂĹĄĂËĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂÄÂÄšÄÄÂĂÂĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂ¤ĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ­ĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂÄÂÄšÄĂĹĄÄšÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ TC
     logic [PORT_NUM-1:0][$clog2(TC_NUM)-1:0]     cfg_mcast_carry_tc;
 
     // stats out
@@ -2676,9 +2681,9 @@ module smart_mmu_tb;
     logic [PORT_NUM-1:0][STAT_W-1:0]  st_out_pause_tx_cnt;
 
     //========================================================================
-    // DUT 例化
+    // DUT ÄÂĂÂÄÂĂÂ¤ÄÂÄšÄĂĹĄÄšĹžĂÂĂÂÄÂĂÂĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ
     //========================================================================
-    smart_mmu #(
+    smmu #(
         .CELL_NUM (CELL_NUM), .PORT_NUM (PORT_NUM),
         .TC_NUM (TC_NUM), .REF_W (REF_W), .STAT_W (STAT_W), .PKT_CELL_W (PKT_CELL_W)
     ) u_dut (
@@ -2695,7 +2700,7 @@ module smart_mmu_tb;
         .alloc_cell_addr (alloc_cell_addr), .alloc_drop_ind (alloc_drop_ind),
         .alloc_sram_flag (alloc_sram_flag), .alloc_pkt_head (alloc_pkt_head),
         .alloc_pkt_tail (alloc_pkt_tail), .alloc_full_frame_drop (alloc_full_frame_drop),
-        .mcast_busy_drop (mcast_busy_drop),          // ★ B2
+        .mcast_busy_drop (mcast_busy_drop),          // ÄÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ B2
         // deq
         .deq_req (deq_req_r), .deq_queue_id (deq_queue_id_r),
         .deq_backpressure (deq_backpressure_r), .deq_ready (deq_ready),
@@ -2707,7 +2712,8 @@ module smart_mmu_tb;
         .mcast_recycle_req (mcast_recycle_req_r), .mcast_recycle_addr (mcast_recycle_addr_r),
         .mcast_recycle_queue_id (mcast_recycle_queue_id_r), .recycle_ack (recycle_ack),
         // full / near-full
-        .q_empty (q_empty),                          // ★ B2
+        .q_empty (q_empty),                          // ÄÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ B2
+        .q_pkt_empty (q_pkt_empty),                  // pkt-empty bitmap (whole-packet granularity)
         .q_near_full (q_near_full), .port_near_full (port_near_full),
         .global_near_full (global_near_full), .q_full (q_full),
         .port_full (port_full), .global_full (global_full),
@@ -2742,14 +2748,14 @@ module smart_mmu_tb;
     );
 
     //========================================================================
-    // 内部 DUT 信号引用
+    // ĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂÄÂĂÂĂĹĄĂÂ ĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ¨ DUT ÄÂĂÂÄÂĂÂ¤ÄÂÄšÄĂĹĄÄšÂĂÂĂÂÄÂĂÂĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂĂĹĄĂÂÄÂÄšÄĂĹĄĂÂĂÂĂÂÄÂĂÂÄÂĂÂÄÂĂÂ§ĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ¨
     //========================================================================
     wire [CNT_W-1:0]  lle_free_cnt   = u_dut.u_lle.free_cnt_q;
     wire [ADDR_W-1:0] lle_free_head  = u_dut.u_lle.free_head_q;
     wire [ADDR_W-1:0] lle_free_tail  = u_dut.u_lle.free_tail_q;
     wire [CNT_W-1:0]  occ_free_cnt   = u_dut.u_occ.free_count_q;
     wire [CNT_W-1:0]  occ_glob_used  = u_dut.u_occ.global_used_q;
-    // ★ B2 多播槽状态
+    // ÄÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ B2 ĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂ¤ĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ­ĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ§ĂÂĂÂÄÂĂÂÄÂĂÂÄÂĂÂ§ĂÂĂÂÄÂĂÂÄÂÄšÄÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ
     wire              mc_valid       = u_dut.u_lle.mc_valid_q;
     wire [PORT_NUM-1:0] mc_bitmap    = u_dut.u_lle.mc_dst_bitmap_q;
 
@@ -2759,7 +2765,7 @@ module smart_mmu_tb;
     function automatic int unsigned occ_qcnt (input int qi); occ_qcnt = u_dut.u_occ.q_cell_cnt_q[qi]; endfunction
     function automatic int unsigned occ_qstat(input int qi); occ_qstat= u_dut.u_occ.q_static_used_q[qi]; endfunction
     function automatic int unsigned occ_pused(input int pi); occ_pused= u_dut.u_occ.per_port_used_q[pi]; endfunction
-    // ★ B2 多播读/回收完成位图 + 待出单播包计数
+    // ÄÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ B2 ĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂ¤ĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ­ĂÂĂÂÄÂĂÂÄÂÄšÄĂĹĄĂËÄÂÄšÄÄÂĂÂ/ĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂÄÂÄšÄÄÂĂÂĂÂĂÂĂĹĄĂÂÄÂÄšÄÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂÄÂĂÂÄÂĂÂ¤ĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂÄÂÄšÄĂĹĄÄšĹž + ĂÂĂÂĂĹĄĂÂÄÂÄšÄĂĹĄÄšĹžĂÂĂÂÄÂĂÂĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂÄÂÄšÄÄÂĂÂĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ­ĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂÄÂÄšÄÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ°
     function automatic bit mc_rd_done (input int pi); mc_rd_done  = u_dut.u_lle.mc_rd_done_q[pi];  endfunction
     function automatic bit mc_rcy_done(input int pi); mc_rcy_done = u_dut.u_lle.mc_rcy_done_q[pi]; endfunction
     function automatic int unsigned mc_pend_uni(input int pi); mc_pend_uni = u_dut.u_lle.mc_pend_uni_q[pi]; endfunction
@@ -2798,7 +2804,7 @@ module smart_mmu_tb;
     end
 
     //========================================================================
-    // 自检与计数
+    // ĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂÄÂÄšÄÄÂĂÂĂÂĂÂÄÂĂÂÄÂÄšÄÄÂĂÂĂÂĂÂÄÂĂÂÄÂĂÂÄÂĂÂ¤ĂÂĂÂÄÂĂÂ¸ĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂÄÂÄšÄÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ°
     //========================================================================
     int errors  = 0;
     int checks  = 0;
@@ -2822,7 +2828,7 @@ module smart_mmu_tb;
     endtask
 
     //========================================================================
-    // 打印状态
+    // ĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ°ÄÂĂÂÄÂĂÂ§ĂÂĂÂÄÂĂÂÄÂÄšÄÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ
     //========================================================================
     task automatic dump_state(string tag);
         int qi, pi;
@@ -2840,7 +2846,7 @@ module smart_mmu_tb;
     endtask
 
     //========================================================================
-    // 配置
+    // ÄÂĂÂĂĹĄĂÂ ĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂÄÂĂÂÄÂĂÂ§ĂÂĂÂÄÂĂÂÄÂÄšÄÄÂĂÂ
     //========================================================================
     task automatic cfg_setup();
         int qi, pi, tj;
@@ -2853,7 +2859,7 @@ module smart_mmu_tb;
             cfg_port_max[pi]        = 24;
             cfg_port_pause_xoff[pi] = 28;
             cfg_port_pause_xon[pi]  = 16;
-            cfg_mcast_carry_tc[pi]  = MC_CARRY_TC[$clog2(TC_NUM)-1:0];   // ★ B2
+            cfg_mcast_carry_tc[pi]  = MC_CARRY_TC[$clog2(TC_NUM)-1:0];   // ÄÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ B2
             for (tj=0; tj<TC_NUM; tj++) begin
                 cfg_pfc_xoff[pi][tj] = 9;
                 cfg_pfc_xon[pi][tj]  = 4;
@@ -2867,7 +2873,7 @@ module smart_mmu_tb;
     endtask
 
     //========================================================================
-    // 复位 + 初始化
+    // ĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂ¤ĂÂĂÂÄÂĂÂÄÂĂÂÄÂĂÂ¤ĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ + ĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂ§ĂÂĂÂÄÂĂÂĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ
     //========================================================================
     task automatic do_reset_init();
         rst_n = 0;
@@ -2889,7 +2895,7 @@ module smart_mmu_tb;
     endtask
 
     //========================================================================
-    // 入队一整包
+    // ĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂÄÂĂÂĂĹĄĂÂ ĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂÄÂĂÂÄÂĂÂ¤ĂÂĂÂÄÂĂÂ¸ĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ´ĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ
     //========================================================================
     int                last_alloc_n;
 
@@ -2905,7 +2911,7 @@ module smart_mmu_tb;
             @(negedge clk);
             if (enq_ready) begin
                 enq_req_r          = 1'b1;
-                enq_queue_id_r     = qid[QPP-1:0];   // ★ 仅 TC (完整队列={port,tc})
+                enq_queue_id_r     = qid[QPP-1:0];   // ÄÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ ÄÂĂÂÄÂĂÂ¤ÄÂÄšÄÄÂĂÂĂÂĂÂÄÂĂÂ TC (ĂÂĂÂĂĹĄĂÂÄÂÄšÄÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ´ÄÂĂÂĂĹĄĂÂ ĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ={port,tc})
                 enq_egress_port_r  = port[PORT_W-1:0];
                 enq_cell_num_r     = ncells[PKT_CELL_W-1:0];
                 enq_is_mcast_r     = is_mcast;
@@ -2923,10 +2929,10 @@ module smart_mmu_tb;
     endtask
 
     //========================================================================
-    // ★ 用【字面 qid】索引 DUT 寄存器计算 splice 判决 (避免读取依赖 deq_queue_id_r 的
-    //   组合网 lle_q_empty/lle_qhead_pkt_tail 时的 delta 竞争: 刚 blocking 赋值
-    //   deq_queue_id_r 后, 连续赋值 lle_deq_queue_id 尚未在本时间步传播, 直接读组合网
-    //   会读到上一次 qid 的旧值)。这里复刻 LLE 的 splice 组合逻辑, 用常量 qid 索引。
+    // ÄÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ ÄÂĂÂÄÂĂÂ§ĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ¨ĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂ­ĂÂĂÂÄÂĂÂÄÂĂÂĂĹĄĂÂ ĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ qidĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂÄÂĂÂÄÂĂÂ§ĂÂĂÂÄÂĂÂ´ĂÂĂÂÄÂĂÂĂÂĂÂĂĹĄĂÂÄÂÄšÄĂĹĄĂÂĂÂĂÂÄÂĂÂ DUT ĂÂĂÂĂĹĄĂÂÄÂÄšÄĂĹĄĂËĂÂĂÂÄÂĂÂĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂ­ĂÂĂÂÄÂĂÂĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ¨ĂÂĂÂÄÂĂÂÄÂÄšÄÄÂĂÂĂÂĂÂÄÂĂÂÄÂĂÂÄÂĂÂ§ÄÂÄšÄÄÂĂÂĂÂĂÂÄÂĂÂ splice ĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ¤ĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂÄÂÄšÄÄÂĂÂ (ÄÂĂÂĂĹĄĂÂ ĂÂĂÂÄÂĂÂÄÂÄšÄĂĹĄÄšÂĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂÄÂÄšÄĂĹĄĂËÄÂÄšÄÄÂĂÂĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂÄÂĂÂÄÂĂÂ¤ÄÂÄšÄĂĹĄÄšĹžĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂĂĹĄÄšĹžĂÂĂÂÄÂĂÂ deq_queue_id_r ÄÂĂÂÄÂĂÂ§ĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ
+    //   ÄÂĂÂÄÂĂÂ§ÄÂÄšÄÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂÄÂĂÂÄÂĂÂ§ĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ lle_q_empty/lle_qhead_pkt_tail ĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂÄÂÄšÄÄÂĂÂÄÂĂÂÄÂĂÂ§ĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ delta ÄÂĂÂÄÂĂÂ§ÄÂÄšÄÄÂĂÂ¤ĂÂĂÂÄÂĂÂÄÂĂÂÄÂĂÂ¤ÄÂÄšÄÄÂĂÂĂÂĂÂÄÂĂÂ: ĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ blocking ĂÂĂÂÄÂĂÂĂÂĂÂĂĹĄÄšĹžĂÂĂÂÄÂĂÂĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂÄÂÄšÄĂĹĄĂÂ
+    //   deq_queue_id_r ĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ, ĂÂĂÂÄÂĂÂÄÂÄšÄĂĹĄÄšÂĂÂĂÂÄÂĂÂÄÂĂÂÄÂĂÂ§ÄÂÄšÄÄÂĂÂĂÂĂÂÄÂĂÂ­ĂÂĂÂÄÂĂÂĂÂĂÂĂĹĄÄšĹžĂÂĂÂÄÂĂÂĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂÄÂÄšÄĂĹĄĂÂ lle_deq_queue_id ĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂ°ĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂÄÂÄšÄÄÂĂÂĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ¨ĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂÄÂÄšÄĂĹĄĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂÄÂÄšÄÄÂĂÂÄÂĂÂĂĹĄĂÂ ĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ´ĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ­ĂÂĂÂÄÂĂÂÄÂĂÂÄÂĂÂ¤ÄÂÄšÄĂĹĄĂÂĂÂĂÂÄÂĂÂ ĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ­, ÄÂĂÂÄÂĂÂ§ĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ´ĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂÄÂÄšÄĂĹĄĂËÄÂÄšÄÄÂĂÂÄÂĂÂÄÂĂÂ§ÄÂÄšÄÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂÄÂĂÂÄÂĂÂ§ĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ
+    //   ÄÂĂÂÄÂĂÂ¤ÄÂÄšÄĂĹĄĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂÄÂÄšÄĂĹĄĂËÄÂÄšÄÄÂĂÂĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ°ÄÂĂÂÄÂĂÂ¤ĂÂĂÂÄÂĂÂ¸ĂÂĂÂÄÂĂÂÄÂĂÂÄÂĂÂ¤ĂÂĂÂÄÂĂÂ¸ĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂÄÂÄšÄĂĹĄĂÂĂÂĂÂÄÂĂÂ qid ÄÂĂÂÄÂĂÂ§ĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ§ĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂÄÂÄšÄĂĹĄĂÂ)ĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂÄÂÄšÄĂĹĄÄšÂĂÂĂÂÄÂĂÂÄÂĂÂĂĹĄĂÂ ĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂ¤ĂÂĂÂÄÂĂÂĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂÄÂÄšÄÄÂĂÂ LLE ÄÂĂÂÄÂĂÂ§ĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ splice ÄÂĂÂÄÂĂÂ§ÄÂÄšÄÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂÄÂĂÂĂĹĄĂÂ ĂÂĂÂÄÂĂÂÄÂÄšÄÄÂĂÂĂÂĂÂÄÂĂÂÄÂÄšÄĂĹĄÄšĹžĂÂĂÂÄÂĂÂ, ÄÂĂÂÄÂĂÂ§ĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ¨ĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂ¸ĂÂĂÂÄÂĂÂ¸ÄÂĂÂĂĹĄĂÂ ĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ qid ÄÂĂÂÄÂĂÂ§ĂÂĂÂÄÂĂÂ´ĂÂĂÂÄÂĂÂĂÂĂÂĂĹĄĂÂÄÂÄšÄĂĹĄĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ
     //========================================================================
     function automatic bit tb_mc_take(input int qid);
         int p; bit is_carry;
@@ -2952,9 +2958,9 @@ module smart_mmu_tb;
     endfunction
 
     //========================================================================
-    // 出队一整包 (背靠背, 直到该 QID 队头 pkt_tail)
-    //   ★ B2: 用 tb_q_empty / tb_qhead_pt (字面 qid 索引, 含多播 splice) 判停,
-    //     因为多播 take 时 q_cell_cnt[qid] 可能为 0 但仍有多播 cell 要出。
+    // ĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂÄÂÄšÄÄÂĂÂÄÂĂÂĂĹĄĂÂ ĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂÄÂĂÂÄÂĂÂ¤ĂÂĂÂÄÂĂÂ¸ĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ´ĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ (ĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂÄÂĂÂĂĹĄĂÂ ĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ ĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ, ÄÂĂÂÄÂĂÂ§ĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ´ĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ°ĂÂĂÂÄÂĂÂÄÂÄšÄĂĹĄĂËĂÂĂÂÄÂĂÂ QID ÄÂĂÂĂĹĄĂÂ ĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂ¤ĂÂĂÂÄÂĂÂ´ pkt_tail)
+    //   ÄÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ B2: ÄÂĂÂÄÂĂÂ§ĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ¨ tb_q_empty / tb_qhead_pt (ĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂ­ĂÂĂÂÄÂĂÂÄÂĂÂĂĹĄĂÂ ĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ qid ÄÂĂÂÄÂĂÂ§ĂÂĂÂÄÂĂÂ´ĂÂĂÂÄÂĂÂĂÂĂÂĂĹĄĂÂÄÂÄšÄĂĹĄĂÂĂÂĂÂÄÂĂÂ, ĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂÄÂÄšÄÄÂĂÂ¤ĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂ¤ĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ­ splice) ĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ¤ĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ,
+    //     ĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ ÄÂĂÂÄÂĂÂ¤ĂÂĂÂÄÂĂÂ¸ÄÂÄšÄÄÂĂÂĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂ¤ĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ­ take ĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂÄÂÄšÄÄÂĂÂ q_cell_cnt[qid] ĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂÄÂÄšÄĂĹĄĂËĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂÄÂĂÂÄÂĂÂ¤ĂÂĂÂÄÂĂÂ¸ÄÂÄšÄÄÂĂÂ 0 ÄÂĂÂÄÂĂÂ¤ĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂÄÂĂÂÄÂĂÂ¤ÄÂÄšÄÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂ¤ĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ­ cell ĂÂĂÂÄÂĂÂÄÂÄšÄÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂÄÂÄšÄÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ
     //========================================================================
     int                last_deq_n;
 
@@ -2969,13 +2975,13 @@ module smart_mmu_tb;
         deq_queue_id_r     = qid[QID_W-1:0];
         deq_backpressure_r = bp;
         forever begin
-            // q_empty (含多播 splice, 字面 qid 索引): 空则停
+            // q_empty (ĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂÄÂÄšÄÄÂĂÂ¤ĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂ¤ĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ­ splice, ĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂ­ĂÂĂÂÄÂĂÂÄÂĂÂĂĹĄĂÂ ĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ qid ÄÂĂÂÄÂĂÂ§ĂÂĂÂÄÂĂÂ´ĂÂĂÂÄÂĂÂĂÂĂÂĂĹĄĂÂÄÂÄšÄĂĹĄĂÂĂÂĂÂÄÂĂÂ): ÄÂĂÂÄÂĂÂ§ÄÂÄšÄÄÂĂÂ ÄÂÄšÄÄÂĂÂĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ
             if (tb_q_empty(qid)) begin
                 deq_req_r = 1'b0;
                 break;
             end
             deq_req_r = 1'b1;
-            // 队头 pkt_tail (含多播 splice), 反映本 posedge 将出的 cell
+            // ÄÂĂÂĂĹĄĂÂ ĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂ¤ĂÂĂÂÄÂĂÂ´ pkt_tail (ĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂÄÂÄšÄÄÂĂÂ¤ĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂ¤ĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ­ splice), ĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ ĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂÄÂÄšÄĂĹĄĂÂ posedge ĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂ°ĂÂĂÂÄÂĂÂĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂÄÂÄšÄÄÂĂÂÄÂĂÂÄÂĂÂ§ĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ cell
             tail_fire = tb_qhead_pt(qid);
             @(negedge clk);
             if (tail_fire) begin
@@ -2990,7 +2996,7 @@ module smart_mmu_tb;
     endtask
 
     //========================================================================
-    // 单播还链
+    // ĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ­ĂÂĂÂÄÂĂÂÄÂÄšÄĂĹĄÄšÂĂÂĂÂÄÂĂÂÄÂĂÂĂĹĄĂÂ ĂÂĂÂÄÂĂÂÄÂÄšÄĂĹĄÄšĹž
     //========================================================================
     task automatic recycle_cells(input int qid, input int cells[$]);
         int i;
@@ -3007,8 +3013,8 @@ module smart_mmu_tb;
     endtask
 
     //========================================================================
-    // ★ B2 组播逐端口回收: EPS 某端口发完一份 → 发一次 mcast_recycle_req,
-    //   queue_id = 该端口承载 qid (MMU 反推端口)。一次即置 mc_rcy_done[port]。
+    // ÄÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ B2 ÄÂĂÂÄÂĂÂ§ÄÂÄšÄÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ­ÄÂĂÂĂĹĄĂÂ ĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂÄÂĂÂÄÂĂÂ§ÄÂÄšÄÄÂĂÂ¤ÄÂÄšÄĂĹĄĂËĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂÄÂÄšÄÄÂĂÂĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂÄÂÄšÄÄÂĂÂ: EPS ĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂÄÂĂÂÄÂĂÂ§ÄÂÄšÄÄÂĂÂ¤ÄÂÄšÄĂĹĄĂËĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂÄÂÄšÄÄÂĂÂĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂĂĹĄĂÂÄÂÄšÄÄÂĂÂĂÂĂÂÄÂĂÂÄÂĂÂÄÂĂÂ¤ĂÂĂÂÄÂĂÂ¸ĂÂĂÂÄÂĂÂÄÂĂÂÄÂĂÂ¤ÄÂÄšÄÄÂĂÂĂÂĂÂÄÂĂÂ ÄÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ ĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂÄÂĂÂÄÂĂÂ¤ĂÂĂÂÄÂĂÂ¸ĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂÄÂÄšÄĂĹĄĂÂĂÂĂÂÄÂĂÂ mcast_recycle_req,
+    //   queue_id = ĂÂĂÂÄÂĂÂÄÂÄšÄĂĹĄĂËĂÂĂÂÄÂĂÂÄÂĂÂÄÂĂÂ§ÄÂÄšÄÄÂĂÂ¤ÄÂÄšÄĂĹĄĂËĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂÄÂÄšÄÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂÄÂÄšÄĂĹĄÄšÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ qid (MMU ĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ¨ÄÂĂÂÄÂĂÂ§ÄÂÄšÄÄÂĂÂ¤ÄÂÄšÄĂĹĄĂËĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂÄÂÄšÄÄÂĂÂ)ĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂÄÂĂÂÄÂĂÂ¤ĂÂĂÂÄÂĂÂ¸ĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂÄÂÄšÄĂĹĄĂÂĂÂĂÂÄÂĂÂĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂÄÂÄšÄÄÂĂÂÄÂĂÂÄÂĂÂ§ĂÂĂÂÄÂĂÂÄÂÄšÄÄÂĂÂ mc_rcy_done[port]ĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ
     //========================================================================
     task automatic mcast_recycle_port(input int port);
         int cq;
@@ -3016,7 +3022,7 @@ module smart_mmu_tb;
         $display("  >>> MCAST RCY port%0d (carry_qid=%0d)", port, cq);
         @(negedge clk);
         mcast_recycle_req_r      = 1'b1;
-        mcast_recycle_addr_r     = '0;                       // B2 未用 addr
+        mcast_recycle_addr_r     = '0;                       // B2 ĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂÄÂÄšÄÄÂĂÂÄÂĂÂÄÂĂÂ§ĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ¨ addr
         mcast_recycle_queue_id_r = cq[QID_W-1:0];
         @(negedge clk);
         mcast_recycle_req_r = 1'b0;
@@ -3024,12 +3030,12 @@ module smart_mmu_tb;
     endtask
 
     //========================================================================
-    // 入队前预判探测
+    // ĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂÄÂĂÂĂĹĄĂÂ ĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂÄÂĂÂĂĹĄĂÂ ĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ¤ĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂĂĹĄÄšĹžĂÂĂÂÄÂĂÂ
     //========================================================================
     task automatic probe_predict(input int qid, input int port, input int n, output bit pd);
         @(negedge clk);
         enq_req_r         = 1'b0;
-        enq_queue_id_r    = qid[QPP-1:0];      // ★ 仅 TC
+        enq_queue_id_r    = qid[QPP-1:0];      // ÄÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ ÄÂĂÂÄÂĂÂ¤ÄÂÄšÄÄÂĂÂĂÂĂÂÄÂĂÂ TC
         enq_egress_port_r = port[PORT_W-1:0];
         enq_cell_num_r    = n[PKT_CELL_W-1:0];
         @(negedge clk);
@@ -3038,14 +3044,14 @@ module smart_mmu_tb;
     endtask
 
     //========================================================================
-    // 主测试序列
+    // ÄÂĂÂÄÂĂÂ¤ĂÂĂÂÄÂĂÂ¸ÄÂÄšÄÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂĂĹĄÄšĹžĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂÄÂÄšÄĂĹĄĂËĂÂĂÂÄÂĂÂĂÂĂÂĂĹĄĂÂÄÂÄšÄÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ
     //========================================================================
     int base;
     initial begin
         do_reset_init();
 
         //====================================================================
-        // C1: 单队列
+        // C1: ĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂÄÂĂÂĂĹĄĂÂ ĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ
         //====================================================================
         case_begin("C1 single-queue enq/deq/rcy + free_cnt");
         base = alloc_q.size();
@@ -3071,7 +3077,7 @@ module smart_mmu_tb;
         chk("C1 conserve", (lle_free_cnt==CELL_NUM)&&(occ_free_cnt==CELL_NUM), 1);
 
         //====================================================================
-        // C2: 跨队列交叉
+        // C2: ĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ¨ÄÂĂÂĂĹĄĂÂ ĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂÄÂĂÂÄÂĂÂ¤ÄÂÄšÄÄÂĂÂĂÂĂÂÄÂĂÂ¤ĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ
         //====================================================================
         case_begin("C2 cross-queue interleaved enq + deq");
         do_reset_init();
@@ -3106,7 +3112,7 @@ module smart_mmu_tb;
         chk("C2 occ_q1_clear",   occ_qcnt(1), 0);
 
         //====================================================================
-        // C3: 还链恢复 + 守恒
+        // C3: ĂÂĂÂÄÂĂÂÄÂÄšÄĂĹĄÄšÂĂÂĂÂÄÂĂÂÄÂĂÂĂĹĄĂÂ ĂÂĂÂÄÂĂÂÄÂÄšÄĂĹĄÄšĹžĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂ¤ĂÂĂÂÄÂĂÂ + ĂÂĂÂĂĹĄĂÂÄÂÄšÄÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ
         //====================================================================
         case_begin("C3 free-list restore + conservation");
         do_reset_init();
@@ -3136,87 +3142,87 @@ module smart_mmu_tb;
         chk_b("C3 no_underflow",underflow_alarm, 1'b0);
 
         //====================================================================
-        // C4: ★ B2 多播 —— 单槽 / 逻辑拼接 / 逐端口回收 / 释放 / 满槽 drop
-        //   规模: PORT=2, 承载 qid: port0→q0, port1→q4。
+        // C4: ÄÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ B2 ĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂ¤ĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ­ ÄÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂÄÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ ĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ§ĂÂĂÂÄÂĂÂ / ÄÂĂÂĂĹĄĂÂ ĂÂĂÂÄÂĂÂÄÂÄšÄÄÂĂÂĂÂĂÂÄÂĂÂÄÂÄšÄĂĹĄÄšĹžĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂÄÂÄšÄĂĹĄĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ / ÄÂĂÂĂĹĄĂÂ ĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂÄÂĂÂÄÂĂÂ§ÄÂÄšÄÄÂĂÂ¤ÄÂÄšÄĂĹĄĂËĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂÄÂÄšÄÄÂĂÂĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂÄÂÄšÄÄÂĂÂ / ÄÂĂÂĂĹĄĂÂ ĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂÄÂÄšÄĂĹĄÄšĹž / ĂÂĂÂÄÂĂÂÄÂÄšÄÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ§ĂÂĂÂÄÂĂÂ drop
+        //   ĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ§ĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ¨ĂÂĂÂÄÂĂÂ: PORT=2, ĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂÄÂÄšÄĂĹĄÄšÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ qid: port0ÄÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂq0, port1ÄÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂq4ĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ
         //====================================================================
         case_begin("C4 B2 multicast: single-slot / splice deq / port recycle / release");
         do_reset_init();
 
-        // ---- 场景铺垫: 让多播在 port0 排尾、port1 排头 ----
-        // port0 承载队列 q0 先入 1 个单播包 A (2 cell: 0,1) → 多播对 q0 排在 A 之后
+        // ---- ĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂÄÂÄšÄÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂÄÂÄšÄĂĹĄĂËÄÂĂÂĂĹĄĂÂ ĂÂĂÂÄÂĂÂÄÂÄšÄÄÂĂÂĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂÄÂÄšÄÄÂĂÂ¤: ĂÂĂÂÄÂĂÂÄÂÄšÄÄÂĂÂÄÂÄšÄÄÂĂÂ ĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂ¤ĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ­ĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ¨ port0 ĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂ°ÄÂÄšÄĂĹĄÄšĹžĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂport1 ĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂ¤ĂÂĂÂÄÂĂÂ´ ----
+        // port0 ĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂÄÂÄšÄĂĹĄÄšÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂÄÂĂÂĂĹĄĂÂ ĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ q0 ĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ 1 ÄÂĂÂÄÂĂÂ¤ĂÂĂÂÄÂĂÂ¸ÄÂÄšÄÄÂĂÂĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ­ĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ A (2 cell: 0,1) ÄÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ ĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂ¤ĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ­ĂÂĂÂĂĹĄĂÂÄÂÄšÄĂĹĄĂËÄÂÄšÄÄÂĂÂ q0 ĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ¨ A ÄÂĂÂÄÂĂÂ¤ÄÂÄšÄÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ
         enqueue_pkt(0, q2port(0), 2, 0, '0);         // A: cells 0,1
         chk("C4 q0_uni_backlog1", u_dut.u_lle.q_uni_pkt_backlog_q[0], 1);
-        // 多播帧 3 cell 到 MCAST_QID, bitmap=2'b11 (port0+port1) → cells 2,3,4
+        // ĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂ¤ĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ­ĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂ¸ĂÂĂÂÄÂĂÂ§ 3 cell ĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ° MCAST_QID, bitmap=2'b11 (port0+port1) ÄÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ cells 2,3,4
         enqueue_pkt(MCAST_QID, 0, 3, 1, 2'b11);
         dump_state("C4 after mcast enq");
         chk("C4 mc_valid",        mc_valid, 1'b1);
         chk("C4 mcast_alloc_cnt", last_alloc_n, 3);
         chk("C4 mcast_ncell",     mc_ncell(), 3);
-        chk("C4 mcastq_sram_cnt", lle_qcnt(MCAST_QID), 3);        // chain33 在 SRAM, cnt=3
+        chk("C4 mcastq_sram_cnt", lle_qcnt(MCAST_QID), 3);        // chain33 ĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ¨ SRAM, cnt=3
         chk("C4 free_after_enq",  lle_free_cnt, CELL_NUM-5);      // A(2)+M(3)
-        chk("C4 pend_uni_port0",  mc_pend_uni(0), 1);             // 排在 A 之后
-        chk("C4 pend_uni_port1",  mc_pend_uni(1), 0);             // 排头
-        // ★ empty 向量: q0(port0 承载) 有单播A → 非空; q4(port1 承载) 无单播但多播排头 → 非空
-        chk_b("C4 q_empty_q0_uni",  q_empty[0], 1'b0);           // A 在, 非空
-        chk_b("C4 q_empty_q4_mc",   q_empty[4], 1'b0);           // 多播排头 → mc_here 非空
-        chk_b("C4 q_empty_q1_idle", q_empty[1], 1'b1);           // 无单播无多播 → 空
-        // port1 承载队列 q4 之后再入单播包 C (2 cell: 5,6) → 多播对 q4 排头, C 在其后
+        chk("C4 pend_uni_port0",  mc_pend_uni(0), 1);             // ĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ¨ A ÄÂĂÂÄÂĂÂ¤ÄÂÄšÄÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ
+        chk("C4 pend_uni_port1",  mc_pend_uni(1), 0);             // ĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂ¤ĂÂĂÂÄÂĂÂ´
+        // ÄÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ empty ĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂÄÂĂÂĂĹĄĂÂ ĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ: q0(port0 ĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂÄÂÄšÄĂĹĄÄšÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ) ĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ­A ÄÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ ÄÂĂÂĂĹĄĂÂ ĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂÄÂĂÂÄÂĂÂ§ÄÂÄšÄÄÂĂÂ ÄÂÄšÄÄÂĂÂ; q4(port1 ĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂÄÂÄšÄĂĹĄÄšÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ) ĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ ĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ­ÄÂĂÂÄÂĂÂ¤ĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂ¤ĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ­ĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂ¤ĂÂĂÂÄÂĂÂ´ ÄÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ ÄÂĂÂĂĹĄĂÂ ĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂÄÂĂÂÄÂĂÂ§ÄÂÄšÄÄÂĂÂ ÄÂÄšÄÄÂĂÂ
+        chk_b("C4 q_empty_q0_uni",  q_empty[0], 1'b0);           // A ĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ¨, ÄÂĂÂĂĹĄĂÂ ĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂÄÂĂÂÄÂĂÂ§ÄÂÄšÄÄÂĂÂ ÄÂÄšÄÄÂĂÂ
+        chk_b("C4 q_empty_q4_mc",   q_empty[4], 1'b0);           // ĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂ¤ĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ­ĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂ¤ĂÂĂÂÄÂĂÂ´ ÄÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ mc_here ÄÂĂÂĂĹĄĂÂ ĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂÄÂĂÂÄÂĂÂ§ÄÂÄšÄÄÂĂÂ ÄÂÄšÄÄÂĂÂ
+        chk_b("C4 q_empty_q1_idle", q_empty[1], 1'b1);           // ĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ ĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ­ĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ ĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂ¤ĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ­ ÄÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ ÄÂĂÂÄÂĂÂ§ÄÂÄšÄÄÂĂÂ ÄÂÄšÄÄÂĂÂ
+        // port1 ĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂÄÂÄšÄĂĹĄÄšÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂÄÂĂÂĂĹĄĂÂ ĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ q4 ÄÂĂÂÄÂĂÂ¤ÄÂÄšÄÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ­ĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ C (2 cell: 5,6) ÄÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ ĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂ¤ĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ­ĂÂĂÂĂĹĄĂÂÄÂÄšÄĂĹĄĂËÄÂÄšÄÄÂĂÂ q4 ĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂ¤ĂÂĂÂÄÂĂÂ´, C ĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ¨ĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂÄÂÄšÄÄÂĂÂĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ
         enqueue_pkt(4, q2port(4), 2, 0, '0);         // C: cells 5,6
-        chk("C4 pend_uni_port1_still0", mc_pend_uni(1), 0);       // C 排在多播之后, 不改 pend
+        chk("C4 pend_uni_port1_still0", mc_pend_uni(1), 0);       // C ĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ¨ĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂ¤ĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ­ÄÂĂÂÄÂĂÂ¤ÄÂÄšÄÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ, ÄÂĂÂÄÂĂÂ¤ĂÂĂÂÄÂĂÂ¸ĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂÄÂÄšÄÄÂĂÂ pend
 
-        // ---- port0 出队 (承载 q0): 应先出 A(2 cell) 再出多播(3 cell) ----
+        // ---- port0 ĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂÄÂÄšÄÄÂĂÂÄÂĂÂĂĹĄĂÂ ĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ (ĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂÄÂÄšÄĂĹĄÄšÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ q0): ĂÂĂÂĂĹĄĂÂÄÂÄšÄÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂÄÂÄšÄÄÂĂÂ A(2 cell) ĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂÄÂÄšÄÄÂĂÂĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂ¤ĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ­(3 cell) ----
         base = deq_q.size();
-        dequeue_pkt(0, '0);                          // 先 A
+        dequeue_pkt(0, '0);                          // ĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ A
         chk("C4 p0_deqA_count", last_deq_n, 2);
-        chk("C4 p0_pend_uni_0",  mc_pend_uni(0), 0);              // A 出完 → pend 归 0
+        chk("C4 p0_pend_uni_0",  mc_pend_uni(0), 0);              // A ĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂÄÂÄšÄÄÂĂÂĂÂĂÂĂĹĄĂÂÄÂÄšÄÄÂĂÂĂÂĂÂÄÂĂÂ ÄÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ pend ĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ 0
         base = deq_q.size();
-        dequeue_pkt(0, '0);                          // 再多播 M (splice)
+        dequeue_pkt(0, '0);                          // ĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂ¤ĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ­ M (splice)
         chk("C4 p0_deqM_count", last_deq_n, 3);
-        chk("C4 p0_mc_rd_done", mc_rd_done(0), 1'b1);            // port0 读完多播
-        chk("C4 free_after_p0",  lle_free_cnt, CELL_NUM-5);      // 出队不还链
-        chk("C4 mc_valid_still",  mc_valid, 1'b1);               // 端口1 还没读, 槽不释放
+        chk("C4 p0_mc_rd_done", mc_rd_done(0), 1'b1);            // port0 ĂÂĂÂÄÂĂÂÄÂÄšÄĂĹĄĂËÄÂÄšÄÄÂĂÂĂÂĂÂĂĹĄĂÂÄÂÄšÄÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂ¤ĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ­
+        chk("C4 free_after_p0",  lle_free_cnt, CELL_NUM-7);      // A(2)+M(3)+C(2), ĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂÄÂÄšÄÄÂĂÂÄÂĂÂĂĹĄĂÂ ĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂÄÂĂÂÄÂĂÂ¤ĂÂĂÂÄÂĂÂ¸ĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂÄÂÄšÄĂĹĄÄšÂĂÂĂÂÄÂĂÂÄÂĂÂĂĹĄĂÂ ĂÂĂÂÄÂĂÂÄÂÄšÄĂĹĄÄšĹž
+        chk("C4 mc_valid_still",  mc_valid, 1'b1);               // ÄÂĂÂÄÂĂÂ§ÄÂÄšÄÄÂĂÂ¤ÄÂÄšÄĂĹĄĂËĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂÄÂÄšÄÄÂĂÂ1 ĂÂĂÂÄÂĂÂÄÂÄšÄĂĹĄÄšÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂÄÂÄšÄĂĹĄĂËÄÂÄšÄÄÂĂÂ, ĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ§ĂÂĂÂÄÂĂÂÄÂĂÂÄÂĂÂ¤ĂÂĂÂÄÂĂÂ¸ĂÂĂÂÄÂĂÂÄÂĂÂĂĹĄĂÂ ĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂÄÂÄšÄĂĹĄÄšĹž
 
-        // ---- port1 出队 (承载 q4): 应先出多播(3 cell) 再出 C(2 cell) ----
+        // ---- port1 ĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂÄÂÄšÄÄÂĂÂÄÂĂÂĂĹĄĂÂ ĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ (ĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂÄÂÄšÄĂĹĄÄšÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ q4): ĂÂĂÂĂĹĄĂÂÄÂÄšÄÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂÄÂÄšÄÄÂĂÂĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂ¤ĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ­(3 cell) ĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂÄÂÄšÄÄÂĂÂ C(2 cell) ----
         base = deq_q.size();
-        dequeue_pkt(4, '0);                          // 先多播 M
+        dequeue_pkt(4, '0);                          // ĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂ¤ĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ­ M
         chk("C4 p1_deqM_count", last_deq_n, 3);
         chk("C4 p1_mc_rd_done", mc_rd_done(1), 1'b1);
         base = deq_q.size();
-        dequeue_pkt(4, '0);                          // 再 C
+        dequeue_pkt(4, '0);                          // ĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ C
         chk("C4 p1_deqC_count", last_deq_n, 2);
 
-        // ---- 满槽 drop: 此时 mc_valid 仍为 1 (未回收完), 新多播应被 drop ----
+        // ---- ĂÂĂÂÄÂĂÂÄÂÄšÄÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ§ĂÂĂÂÄÂĂÂ drop: ĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ­ĂÂĂÂÄÂĂÂ¤ĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂÄÂÄšÄÄÂĂÂ mc_valid ÄÂĂÂÄÂĂÂ¤ÄÂÄšÄÄÂĂÂĂÂĂÂÄÂĂÂÄÂĂÂÄÂĂÂ¤ĂÂĂÂÄÂĂÂ¸ÄÂÄšÄÄÂĂÂ 1 (ĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂÄÂÄšÄÄÂĂÂĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂÄÂÄšÄÄÂĂÂĂÂĂÂĂĹĄĂÂÄÂÄšÄÄÂĂÂĂÂĂÂÄÂĂÂ), ĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ°ĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂ¤ĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ­ĂÂĂÂĂĹĄĂÂÄÂÄšÄÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂÄÂÄšÄÄÂĂÂ¤ drop ----
         begin int ab; int dn; ab = alloc_q.size();
-            enqueue_pkt(MCAST_QID, 0, 2, 1, 2'b01);  // 尝试入第 2 条多播
+            enqueue_pkt(MCAST_QID, 0, 2, 1, 2'b01);  // ĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂ°ĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂÄÂÄšÄĂĹĄĂËĂÂĂÂÄÂĂÂĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂÄÂĂÂÄÂĂÂ§ÄÂÄšÄĂĹĄĂÂÄÂÄšÄĂĹĄĂÂ 2 ĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂ¤ĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ­
             dn = 0; for (int k=ab;k<alloc_q.size();k++) if (alloc_q[k].drop) dn++;
-            chk("C4 mcast_busy_drop_all", dn, 2);    // 整帧被丢 (2 cell 全 drop)
+            chk("C4 mcast_busy_drop_all", dn, 2);    // ĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ´ĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂ¸ĂÂĂÂÄÂĂÂ§ĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂÄÂÄšÄÄÂĂÂ¤ÄÂĂÂÄÂĂÂ¤ĂÂĂÂÄÂĂÂ¸ĂÂĂÂÄÂĂÂ (2 cell ĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ¨ drop)
         end
-        chk("C4 mc_valid_after_drop", mc_valid, 1'b1);           // 槽未变 (仍是第一条)
+        chk("C4 mc_valid_after_drop", mc_valid, 1'b1);           // ĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ§ĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂÄÂÄšÄÄÂĂÂĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ (ÄÂĂÂÄÂĂÂ¤ÄÂÄšÄÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂÄÂÄšÄĂĹĄĂËÄÂĂÂÄÂĂÂ§ÄÂÄšÄĂĹĄĂÂÄÂÄšÄĂĹĄĂÂÄÂĂÂÄÂĂÂ¤ĂÂĂÂÄÂĂÂ¸ĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ)
 
-        // ---- 逐端口回收: port0 发完 + port1 发完 → 全端口 rd&rcy done → 整帧释放 ----
-        chk("C4 free_before_release", lle_free_cnt, CELL_NUM-5); // A+M 仍占 (A 单播还没回收, M 待释放)
+        // ---- ÄÂĂÂĂĹĄĂÂ ĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂÄÂĂÂÄÂĂÂ§ÄÂÄšÄÄÂĂÂ¤ÄÂÄšÄĂĹĄĂËĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂÄÂÄšÄÄÂĂÂĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂÄÂÄšÄÄÂĂÂ: port0 ĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂĂĹĄĂÂÄÂÄšÄÄÂĂÂĂÂĂÂÄÂĂÂ + port1 ĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂĂĹĄĂÂÄÂÄšÄÄÂĂÂĂÂĂÂÄÂĂÂ ÄÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ ĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ¨ÄÂĂÂÄÂĂÂ§ÄÂÄšÄÄÂĂÂ¤ÄÂÄšÄĂĹĄĂËĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂÄÂÄšÄÄÂĂÂ rd&rcy done ÄÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ ĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ´ĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂ¸ĂÂĂÂÄÂĂÂ§ÄÂĂÂĂĹĄĂÂ ĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂÄÂÄšÄĂĹĄÄšĹž ----
+        chk("C4 free_before_release", lle_free_cnt, CELL_NUM-7); // A+M+C ÄÂĂÂÄÂĂÂ¤ÄÂÄšÄÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ  (A/C ĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ­ĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂÄÂÄšÄÄÂĂÂĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂÄÂÄšÄÄÂĂÂ, M ĂÂĂÂĂĹĄĂÂÄÂÄšÄĂĹĄÄšĹžĂÂĂÂÄÂĂÂÄÂĂÂĂĹĄĂÂ ĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂÄÂÄšÄĂĹĄÄšĹž)
         mcast_recycle_port(0);
-        chk("C4 mc_valid_after_p0rcy", mc_valid, 1'b1);          // 只 port0 完成, 未释放
+        chk("C4 mc_valid_after_p0rcy", mc_valid, 1'b1);          // ĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂÄÂÄšÄÄÂĂÂ port0 ĂÂĂÂĂĹĄĂÂÄÂÄšÄÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ, ĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂÄÂÄšÄÄÂĂÂÄÂĂÂĂĹĄĂÂ ĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂÄÂÄšÄĂĹĄÄšĹž
         mcast_recycle_port(1);
-        repeat (8) @(negedge clk);                               // 等整帧 walk 还链落地
+        repeat (8) @(negedge clk);                               // ÄÂĂÂÄÂĂÂ§ĂÂĂÂÄÂĂÂ­ĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ´ĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂ¸ĂÂĂÂÄÂĂÂ§ walk ĂÂĂÂÄÂĂÂÄÂÄšÄĂĹĄÄšÂĂÂĂÂÄÂĂÂÄÂĂÂĂĹĄĂÂ ĂÂĂÂÄÂĂÂÄÂÄšÄĂĹĄÄšĹžĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ°
         dump_state("C4 after both port recycle");
-        chk("C4 mc_valid_released", mc_valid, 1'b0);             // 全端口完成 → 释放
-        // M 的 3 个 cell (2,3,4) 已还回 free; A(0,1)/C(5,6) 仍是单播未回收
-        chk("C4 free_after_release", lle_free_cnt, CELL_NUM-4);  // 5 占用 - 3(M还链) = ... A(2)+C(2)=4 占用
+        chk("C4 mc_valid_released", mc_valid, 1'b0);             // ĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ¨ÄÂĂÂÄÂĂÂ§ÄÂÄšÄÄÂĂÂ¤ÄÂÄšÄĂĹĄĂËĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂÄÂÄšÄÄÂĂÂĂÂĂÂĂĹĄĂÂÄÂÄšÄÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ ÄÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ ÄÂĂÂĂĹĄĂÂ ĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂÄÂÄšÄĂĹĄÄšĹž
+        // M ÄÂĂÂÄÂĂÂ§ĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ 3 ÄÂĂÂÄÂĂÂ¤ĂÂĂÂÄÂĂÂ¸ÄÂÄšÄÄÂĂÂ cell (2,3,4) ĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂÄÂÄšÄĂĹĄÄšÂĂÂĂÂÄÂĂÂĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ free; A(0,1)/C(5,6) ÄÂĂÂÄÂĂÂ¤ÄÂÄšÄÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂÄÂÄšÄĂĹĄĂËĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ­ĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂÄÂÄšÄÄÂĂÂĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂÄÂÄšÄÄÂĂÂ
+        chk("C4 free_after_release", lle_free_cnt, CELL_NUM-4);  // 7 ĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ ÄÂĂÂÄÂĂÂ§ĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ¨ - 3(MĂÂĂÂÄÂĂÂÄÂÄšÄĂĹĄÄšÂĂÂĂÂÄÂĂÂÄÂĂÂĂĹĄĂÂ ĂÂĂÂÄÂĂÂÄÂÄšÄĂĹĄÄšĹž) = A(2)+C(2)=4 ĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ ÄÂĂÂÄÂĂÂ§ĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ¨
         chk_b("C4 no_underflow", underflow_alarm, 1'b0);
 
-        // ---- 清理单播 A(0,1) 与 C(5,6) ----
+        // ---- ĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ¸ĂÂĂÂÄÂĂÂÄÂĂÂÄÂĂÂ§ĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ­ A(0,1) ÄÂĂÂÄÂĂÂ¤ĂÂĂÂÄÂĂÂ¸ĂÂĂÂÄÂĂÂ C(5,6) ----
         begin int rA[$]; int rC[$]; rA='{0,1}; rC='{5,6};
               recycle_cells(0, rA); recycle_cells(4, rC); end
         dump_state("C4 after cleanup uni");
         chk("C4 free_full",  lle_free_cnt, CELL_NUM);
         chk("C4 glob_zero",  occ_glob_used, 0);
 
-        // ---- 释放后可收新多播 ----
+        // ---- ÄÂĂÂĂĹĄĂÂ ĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂÄÂÄšÄĂĹĄÄšĹžĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂÄÂÄšÄĂĹĄĂËĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂÄÂÄšÄÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ°ĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂ¤ĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ­ ----
         enqueue_pkt(MCAST_QID, 0, 2, 1, 2'b11);
         chk("C4 new_mcast_accepted", mc_valid, 1'b1);
         chk("C4 new_mcast_ncell",    mc_ncell(), 2);
-        // 收尾: 两端口读完+回收释放
+        // ĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂÄÂÄšÄÄÂĂÂĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂ°ÄÂÄšÄĂĹĄÄšĹž: ÄÂĂÂÄÂĂÂ¤ĂÂĂÂÄÂĂÂ¸ĂÂĂÂÄÂĂÂ¤ÄÂĂÂÄÂĂÂ§ÄÂÄšÄÄÂĂÂ¤ÄÂÄšÄĂĹĄĂËĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂÄÂÄšÄÄÂĂÂĂÂĂÂÄÂĂÂÄÂÄšÄĂĹĄĂËÄÂÄšÄÄÂĂÂĂÂĂÂĂĹĄĂÂÄÂÄšÄÄÂĂÂĂÂĂÂÄÂĂÂ+ĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂÄÂÄšÄÄÂĂÂÄÂĂÂĂĹĄĂÂ ĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂÄÂÄšÄĂĹĄÄšĹž
         dequeue_pkt(0, '0);
         dequeue_pkt(4, '0);
         mcast_recycle_port(0);
@@ -3226,7 +3232,7 @@ module smart_mmu_tb;
         chk("C4 final_free_full",    lle_free_cnt, CELL_NUM);
 
         //====================================================================
-        // C5~C11
+        // C5~C13
         //====================================================================
         run_remaining_cases();
 
@@ -3239,14 +3245,14 @@ module smart_mmu_tb;
     end
 
     //========================================================================
-    // C5~C11
+    // C5~C13
     //========================================================================
     task automatic run_remaining_cases();
         int fire_base, ei, guard, dropn, i;
         int deq3_base;
 
         //--------------------------------------------------------------------
-        // C5: enq + deq 同拍 + 反压
+        // C5: enq + deq ĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ + ĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ
         //--------------------------------------------------------------------
         case_begin("C5 enq+deq concurrent + back-pressure");
         do_reset_init();
@@ -3261,7 +3267,7 @@ module smart_mmu_tb;
             ei = enq_fire_cnt - fire_base;
             deq_req_r = (lle_qcnt(3) > 0);
             if (ei < 3) begin
-                enq_req_r=1'b1; enq_queue_id_r=0; enq_egress_port_r=q2port(4); // 完整=q4 (port1,tc0)
+                enq_req_r=1'b1; enq_queue_id_r=0; enq_egress_port_r=q2port(4); // ĂÂĂÂĂĹĄĂÂÄÂÄšÄÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ´=q4 (port1,tc0)
                 enq_is_mcast_r=1'b0; enq_mcast_bitmap_r='0;
                 enq_sof_r=(ei==0); enq_eof_r=(ei==2);
             end else enq_req_r = 1'b0;
@@ -3281,7 +3287,7 @@ module smart_mmu_tb;
         chk("C5 free_restored", lle_free_cnt, CELL_NUM);
 
         //--------------------------------------------------------------------
-        // C6: deq + rcy 同拍
+        // C6: deq + rcy ĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ
         //--------------------------------------------------------------------
         case_begin("C6 deq + rcy concurrent");
         do_reset_init();
@@ -3313,7 +3319,7 @@ module smart_mmu_tb;
         chk("C6 free_restored", lle_free_cnt, CELL_NUM);
 
         //--------------------------------------------------------------------
-        // C7: enq + deq + rcy 三者同拍 (deq>enq>rcy)
+        // C7: enq + deq + rcy ÄÂĂÂÄÂĂÂ¤ĂÂĂÂÄÂĂÂ¸ĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ (deq>enq>rcy)
         //--------------------------------------------------------------------
         case_begin("C7 enq+deq+rcy triple concurrent");
         do_reset_init();
@@ -3330,7 +3336,7 @@ module smart_mmu_tb;
             ei = enq_fire_cnt - fire_base;
             deq_req_r = (lle_qcnt(3) > 0);
             if (ei < 2) begin
-                enq_req_r=1'b1; enq_queue_id_r=1; enq_egress_port_r=q2port(5); // 完整=q5 (port1,tc1)
+                enq_req_r=1'b1; enq_queue_id_r=1; enq_egress_port_r=q2port(5); // ĂÂĂÂĂĹĄĂÂÄÂÄšÄÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ´=q5 (port1,tc1)
                 enq_is_mcast_r=1'b0; enq_mcast_bitmap_r='0;
                 enq_sof_r=(ei==0); enq_eof_r=(ei==1);
             end else enq_req_r=1'b0;
@@ -3356,7 +3362,7 @@ module smart_mmu_tb;
         chk("C7 free_restored", lle_free_cnt, CELL_NUM);
 
         //--------------------------------------------------------------------
-        // C8: 水线/快满/满 + 高水位丢弃
+        // C8: ĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ°ĂÂĂÂÄÂĂÂ´ÄÂĂÂÄÂĂÂ§ÄÂÄšÄÄÂĂÂÄÂÄšÄĂĹĄÄšÂ/ĂÂĂÂĂĹĄĂÂÄÂÄšÄĂĹĄÄšÂÄÂÄšÄÄÂĂÂ¤ĂÂĂÂÄÂĂÂÄÂÄšÄÄÂĂÂĂÂĂÂÄÂĂÂ/ĂÂĂÂÄÂĂÂÄÂÄšÄÄÂĂÂĂÂĂÂÄÂĂÂ + ÄÂĂÂĂĹĄĂÂ ÄÂÄšÄÄÂĂÂ¤ĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ°ĂÂĂÂÄÂĂÂ´ÄÂĂÂÄÂĂÂ¤ĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂÄÂĂÂÄÂĂÂ¤ĂÂĂÂÄÂĂÂ¸ĂÂĂÂÄÂĂÂĂÂĂÂĂĹĄĂÂÄÂÄšÄĂĹĄĂÂĂÂĂÂÄÂĂÂ
         //--------------------------------------------------------------------
         case_begin("C8 watermark / near_full / hi-wm drop / release");
         do_reset_init();
@@ -3377,10 +3383,11 @@ module smart_mmu_tb;
         chk_b("C8 q0_near_full_clr", q_near_full[0], 1'b0);
 
         //--------------------------------------------------------------------
-        // C9: PAUSE 触发与释放
+        // C9: PAUSE ĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ§ÄÂÄšÄÄÂĂÂĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂÄÂĂÂÄÂĂÂ¤ĂÂĂÂÄÂĂÂ¸ĂÂĂÂÄÂĂÂÄÂĂÂĂĹĄĂÂ ĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂÄÂÄšÄĂĹĄÄšĹž
         //--------------------------------------------------------------------
         case_begin("C9 PAUSE assert / release (port aggregate)");
         do_reset_init();
+        cfg_port_max[0] = 32; // C9 ĂÂĂÂÄÂĂÂĂÂĂÂĂĹĄÄšĹžĂÂĂÂÄÂĂÂ PAUSE: port drop ÄÂĂÂĂĹĄĂÂ ÄÂÄšÄÄÂĂÂ¤ĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ°ĂÂĂÂÄÂĂÂ´ÄÂĂÂÄÂĂÂ¤ĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂÄÂĂÂĂĹĄĂÂ ĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂÄÂĂÂĂĹĄĂÂ ÄÂÄšÄÄÂĂÂ¤ĂÂĂÂÄÂĂÂÄÂĂÂÄÂĂÂ¤ÄÂÄšÄÄÂĂÂĂÂĂÂÄÂĂÂ pause xoff(28)
         for (i=0;i<12;i++) enqueue_pkt(0, q2port(0), 1, 0, '0);
         for (i=0;i<12;i++) enqueue_pkt(1, q2port(1), 1, 0, '0);
         for (i=0;i<12;i++) enqueue_pkt(2, q2port(2), 1, 0, '0);
@@ -3396,7 +3403,7 @@ module smart_mmu_tb;
         chk_b("C9 pause_clr",    pause_req[0], 1'b0);
 
         //--------------------------------------------------------------------
-        // C10: 压力测试
+        // C10: ĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂĂĹĄÄšĹžĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂÄÂÄšÄĂĹĄĂËĂÂĂÂÄÂĂÂ
         //--------------------------------------------------------------------
         case_begin("C10 stress: fill / drain / recycle conservation");
         do_reset_init();
@@ -3421,7 +3428,7 @@ module smart_mmu_tb;
         chk_b("C10 no_underflow", underflow_alarm, 1'b0);
 
         //--------------------------------------------------------------------
-        // C11: 入队前预判
+        // C11: ĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂÄÂĂÂĂĹĄĂÂ ĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂÄÂĂÂĂĹĄĂÂ ĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ¤
         //--------------------------------------------------------------------
         case_begin("C11 pre-enq predict-drop (combinational)");
         do_reset_init();
@@ -3455,10 +3462,229 @@ module smart_mmu_tb;
             probe_predict(5, q2port(5), 2, pd);
             chk_b("C11 q5_n2_global_fit",  pd, 1'b0);
         end
-    endtask
 
+        //--------------------------------------------------------------------
+        // C12: q0 ĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂÄÂÄšÄÄÂĂÂ  1 ÄÂĂÂÄÂĂÂ¤ĂÂĂÂÄÂĂÂ¸ÄÂÄšÄÄÂĂÂ cell ÄÂĂÂÄÂĂÂ§ÄÂÄšÄÄÂĂÂ ÄÂÄšÄÄÂĂÂÄÂĂÂĂĹĄĂÂ ĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ´, 1-cell pkt ĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂÄÂÄšÄĂĹĄĂËĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ; ĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ 1-cell pkt ĂÂĂÂĂĹĄĂÂÄÂÄšÄÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ´ĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂÄÂĂÂÄÂĂÂ¤ĂÂĂÂÄÂĂÂ¸ĂÂĂÂÄÂĂÂ
+        //--------------------------------------------------------------------
+        case_begin("C12 predict-drop q has one slot left");
+        do_reset_init();
+        begin
+            bit pd;
+            int ab;
+            int dn;
+
+            enqueue_pkt(0, q2port(0), 9, 0, '0);
+            chk("C12 q0_prefill9", lle_qcnt(0), 9);
+            chk("C12 free_prefill9", lle_free_cnt, CELL_NUM-9);
+
+            probe_predict(0, q2port(0), 1, pd);
+            chk_b("C12 q0_n1_fit", pd, 1'b0);
+            ab = alloc_q.size();
+            enqueue_pkt(0, q2port(0), 1, 0, '0);
+            dn = 0; for (int k=ab; k<alloc_q.size(); k++) if (alloc_q[k].drop) dn++;
+            chk("C12 first_n1_drop_cnt", dn, 0);
+            chk("C12 q0_after_first_n1", lle_qcnt(0), 10);
+            chk("C12 free_after_first_n1", lle_free_cnt, CELL_NUM-10);
+
+            probe_predict(0, q2port(0), 1, pd);
+            chk_b("C12 q0_n1_drop", pd, 1'b1);
+            ab = alloc_q.size();
+            enqueue_pkt(0, q2port(0), 1, 0, '0);
+            dn = 0; for (int k=ab; k<alloc_q.size(); k++) if (alloc_q[k].drop) dn++;
+            chk("C12 second_n1_drop_cnt", dn, 1);
+            chk("C12 q0_after_second_n1", lle_qcnt(0), 10);
+            chk("C12 free_after_second_n1", lle_free_cnt, CELL_NUM-10);
+        end
+
+        //--------------------------------------------------------------------
+        // C13: q0 ĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂÄÂÄšÄÄÂĂÂ  7 ÄÂĂÂÄÂĂÂ¤ĂÂĂÂÄÂĂÂ¸ÄÂÄšÄÄÂĂÂ cell ÄÂĂÂÄÂĂÂ§ÄÂÄšÄÄÂĂÂ ÄÂÄšÄÄÂĂÂÄÂĂÂĂĹĄĂÂ ĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ´, ÄÂĂÂÄÂĂÂ§ÄÂÄšÄĂĹĄĂÂÄÂÄšÄĂĹĄĂÂÄÂĂÂÄÂĂÂ¤ĂÂĂÂÄÂĂÂ¸ĂÂĂÂÄÂĂÂÄÂĂÂÄÂĂÂ¤ĂÂĂÂÄÂĂÂ¸ÄÂÄšÄÄÂĂÂ 5-cell pkt ĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂÄÂÄšÄĂĹĄĂËĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ; ÄÂĂÂÄÂĂÂ§ÄÂÄšÄĂĹĄĂÂÄÂÄšÄĂĹĄĂÂÄÂĂÂÄÂĂÂ¤ÄÂÄšÄÄÂĂÂĂÂĂÂÄÂĂÂÄÂĂÂÄÂĂÂ¤ĂÂĂÂÄÂĂÂ¸ÄÂÄšÄÄÂĂÂ 5-cell pkt ĂÂĂÂĂĹĄĂÂÄÂÄšÄÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ´ĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂÄÂĂÂÄÂĂÂ¤ĂÂĂÂÄÂĂÂ¸ĂÂĂÂÄÂĂÂ
+        //--------------------------------------------------------------------
+        case_begin("C13 predict-drop q has seven slots left");
+        do_reset_init();
+        begin
+            bit pd;
+            int ab;
+            int dn;
+
+            enqueue_pkt(0, q2port(0), 3, 0, '0);
+            chk("C13 q0_prefill3", lle_qcnt(0), 3);
+            chk("C13 free_prefill3", lle_free_cnt, CELL_NUM-3);
+
+            probe_predict(0, q2port(0), 5, pd);
+            chk_b("C13 first_n5_fit", pd, 1'b0);
+            ab = alloc_q.size();
+            enqueue_pkt(0, q2port(0), 5, 0, '0);
+            dn = 0; for (int k=ab; k<alloc_q.size(); k++) if (alloc_q[k].drop) dn++;
+            chk("C13 first_n5_drop_cnt", dn, 0);
+            chk("C13 q0_after_first_n5", lle_qcnt(0), 8);
+            chk("C13 free_after_first_n5", lle_free_cnt, CELL_NUM-8);
+
+            probe_predict(0, q2port(0), 5, pd);
+            chk_b("C13 second_n5_drop", pd, 1'b1);
+            ab = alloc_q.size();
+            enqueue_pkt(0, q2port(0), 5, 0, '0);
+            dn = 0; for (int k=ab; k<alloc_q.size(); k++) if (alloc_q[k].drop) dn++;
+            chk("C13 second_n5_drop_cnt", dn, 5);
+            chk("C13 q0_after_second_n5", lle_qcnt(0), 8);
+            chk("C13 free_after_second_n5", lle_free_cnt, CELL_NUM-8);
+        end
+
+        //--------------------------------------------------------------------
+        // C14: q_pkt_empty vs q_empty (packet-count vs cell-count granularity)
+        //   Enqueue a 3-cell single unicast packet. During enqueue (before EOF
+        //   lands), q_empty (cell) already de-asserts, but q_pkt_empty (packet)
+        //   stays asserted until the whole packet (EOF) is committed. After a
+        //   full packet is in queue both are non-empty. Drain the packet: both
+        //   return to empty.
+        //--------------------------------------------------------------------
+        case_begin("C14 q_pkt_empty vs q_empty granularity (unicast)");
+        do_reset_init();
+        // idle: both empty
+        chk_b("C14 q0_empty_idle",     q_empty[0],     1'b1);
+        chk_b("C14 q0_pkt_empty_idle", q_pkt_empty[0], 1'b1);
+        // one full 3-cell packet into q0
+        enqueue_pkt(0, q2port(0), 3, 0, '0);
+        dump_state("C14 after 3-cell pkt");
+        chk("C14 q0_cell_cnt",         lle_qcnt(0), 3);
+        chk("C14 q0_uni_pkt_backlog",  u_dut.u_lle.q_uni_pkt_backlog_q[0], 1);
+        chk_b("C14 q0_empty_after",     q_empty[0],     1'b0);   // has cells
+        chk_b("C14 q0_pkt_empty_after", q_pkt_empty[0], 1'b0);   // has 1 whole pkt
+        // drain
+        dequeue_pkt(0, '0);
+        repeat (2) @(negedge clk);
+        chk("C14 q0_cnt_drained",       lle_qcnt(0), 0);
+        chk("C14 q0_pktcnt_drained",    u_dut.u_lle.q_uni_pkt_backlog_q[0], 0);
+        chk_b("C14 q0_empty_final",      q_empty[0],     1'b1);
+        chk_b("C14 q0_pkt_empty_final",  q_pkt_empty[0], 1'b1);
+        begin int r[$]; r='{0,1,2}; recycle_cells(0, r); end
+        chk("C14 free_restored", lle_free_cnt, CELL_NUM);
+
+        //--------------------------------------------------------------------
+        // C15: q_pkt_empty multi-packet counting on one queue.
+        //   Two packets (2-cell + 1-cell) into q1 => pkt backlog=2 => pkt_empty=0.
+        //   Deq first packet => backlog=1 => still pkt_empty=0.
+        //   Deq second packet => backlog=0 => pkt_empty=1.
+        //--------------------------------------------------------------------
+        case_begin("C15 q_pkt_empty multi-packet drain");
+        do_reset_init();
+        enqueue_pkt(1, q2port(1), 2, 0, '0);       // pkt#1 (2 cell)
+        enqueue_pkt(1, q2port(1), 1, 0, '0);       // pkt#2 (1 cell)
+        dump_state("C15 after 2 pkts on q1");
+        chk("C15 q1_cell_cnt",     lle_qcnt(1), 3);
+        chk("C15 q1_pkt_backlog2", u_dut.u_lle.q_uni_pkt_backlog_q[1], 2);
+        chk_b("C15 q1_pkt_empty0",  q_pkt_empty[1], 1'b0);
+        // deq first packet (2 cells)
+        base = deq_q.size();
+        dequeue_pkt(1, '0);
+        repeat (2) @(negedge clk);
+        chk("C15 q1_pkt_backlog1", u_dut.u_lle.q_uni_pkt_backlog_q[1], 1);
+        chk_b("C15 q1_pkt_empty_still0", q_pkt_empty[1], 1'b0);
+        chk_b("C15 q1_cell_empty_still0", q_empty[1], 1'b0);
+        // deq second packet (1 cell)
+        dequeue_pkt(1, '0);
+        repeat (2) @(negedge clk);
+        chk("C15 q1_pkt_backlog0", u_dut.u_lle.q_uni_pkt_backlog_q[1], 0);
+        chk_b("C15 q1_pkt_empty1",  q_pkt_empty[1], 1'b1);
+        chk_b("C15 q1_cell_empty1", q_empty[1], 1'b1);
+        begin int r[$]; r='{0,1,2}; recycle_cells(1, r); end
+        chk("C15 free_restored", lle_free_cnt, CELL_NUM);
+
+        //--------------------------------------------------------------------
+        // C16: q_pkt_empty multicast mapping (extreme). A multicast frame maps
+        //   1 logical packet into EACH destination port's carry queue. So both
+        //   q0 (port0 carry) and q4 (port1 carry) must show pkt_empty=0 while the
+        //   frame is un-read by that port, even though there is no unicast pkt.
+        //   Non-destination carry queues stay pkt_empty=1.
+        //--------------------------------------------------------------------
+        case_begin("C16 q_pkt_empty multicast carry-queue mapping");
+        do_reset_init();
+        // multicast frame 2-cell, dst bitmap 2'b11 (port0+port1), carry tc=0 => q0,q4
+        enqueue_pkt(MCAST_QID, 0, 2, 1, 2'b11);
+        dump_state("C16 after mcast enq");
+        chk("C16 mc_valid", mc_valid, 1'b1);
+        // both carry queues report a pending pkt (mapped), non-empty
+        chk_b("C16 q0_pkt_empty_mc",  q_pkt_empty[0], 1'b0);   // port0 carry has mc pkt
+        chk_b("C16 q4_pkt_empty_mc",  q_pkt_empty[4], 1'b0);   // port1 carry has mc pkt
+        // a non-destination carry queue on some other tc stays empty
+        chk_b("C16 q1_pkt_empty_idle", q_pkt_empty[1], 1'b1);
+        chk_b("C16 q5_pkt_empty_idle", q_pkt_empty[5], 1'b1);
+        // port0 reads out the multicast -> its carry queue pkt_empty back to 1;
+        // port1 not yet read -> still non-empty.
+        dequeue_pkt(0, '0);
+        repeat (2) @(negedge clk);
+        chk_b("C16 p0_rd_done",        mc_rd_done(0), 1'b1);
+        chk_b("C16 q0_pkt_empty_after_p0", q_pkt_empty[0], 1'b1);  // port0 done
+        chk_b("C16 q4_pkt_empty_still0",   q_pkt_empty[4], 1'b0);  // port1 pending
+        // port1 reads out -> its carry queue empty too
+        dequeue_pkt(4, '0);
+        repeat (2) @(negedge clk);
+        chk_b("C16 q4_pkt_empty_after_p1", q_pkt_empty[4], 1'b1);
+        // release the frame
+        mcast_recycle_port(0);
+        mcast_recycle_port(1);
+        repeat (8) @(negedge clk);
+        chk("C16 mc_released", mc_valid, 1'b0);
+        chk("C16 free_restored", lle_free_cnt, CELL_NUM);
+
+        //--------------------------------------------------------------------
+        // C17: extreme - fill free pool almost empty, single-cell alloc at the
+        //   very last free cell, then next alloc must drop (no_free). Verifies
+        //   boundary where free_cnt hits 0.
+        //--------------------------------------------------------------------
+        case_begin("C17 free-pool exhaustion boundary");
+        do_reset_init();
+        begin
+            int ab; int dn; int total;
+            // widen per-queue / global limits so free-pool (CELL_NUM=64) is the binding constraint
+            for (int qq=0; qq<QUEUE_NUM; qq++) begin
+                cfg_q_max_cell[qq] = CNT_W'(CELL_NUM);
+                cfg_q_full[qq]     = CNT_W'(CELL_NUM);
+            end
+            for (int pp=0; pp<PORT_NUM; pp++) cfg_port_max[pp] = CNT_W'(CELL_NUM);
+            cfg_global_high_wm = CNT_W'(CELL_NUM);
+            repeat (2) @(negedge clk);
+            // spread single-cell packets across 8 unicast queues to avoid per-q cap,
+            // draining the free pool toward 0.
+            ab = alloc_q.size();
+            for (int n=0; n<CELL_NUM+4; n++)
+                enqueue_pkt(n % (PORT_NUM*TC_NUM), q2port(n % (PORT_NUM*TC_NUM)), 1, 0, '0);
+            dn = 0; total = 0;
+            for (int k=ab; k<alloc_q.size(); k++) begin
+                total++;
+                if (alloc_q[k].drop) dn++;
+            end
+            dump_state("C17 after free-pool exhaustion attempt");
+            chk("C17 free_pool_zero", lle_free_cnt, 0);
+            chk("C17 some_dropped_at_boundary", (dn >= 4), 1);
+            chk_b("C17 no_underflow", underflow_alarm, 1'b0);
+            chk_b("C17 no_overflow",  overflow_alarm,  1'b0);
+        end
+    endtask
+   //========================================
+    //VCS Simulation
+    `ifdef VCS_SIM
+        //VCSÄÂĂÂÄÂĂÂ§ÄÂÄšÄÄÂĂÂÄÂÄšÄÄÂĂÂÄÂĂÂÄÂĂÂ§ÄÂÄšÄÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ°
+        initial begin
+            $vcdpluson(); //ĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂĂĹĄĂÂÄÂÄšÄĂĹĄĂÂĂÂĂÂÄÂĂÂVCD+ĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂÄÂĂÂÄÂĂÂ¤ÄÂÄšÄÄÂĂÂÄÂÄšÄÄÂĂÂĂÂĂÂÄÂĂÂÄÂÄšÄÄÂĂÂĂÂĂÂÄÂĂÂ°ĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ
+            $fsdbDumpfile("/home/verdvana/Project/IC/project/cores/smmu/simulation/sim/smmu.fsdb"); //ÄÂĂÂÄÂĂÂ§ĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂfsdb
+            $fsdbDumpvars("+all");
+            $vcdplusmemon(); //ĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂÄÂĂÂÄÂĂÂ§ĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂ¤ĂÂĂÂÄÂĂÂÄÂĂÂÄÂĂÂ§ÄÂÄšÄÄÂĂÂĂÂĂÂÄÂĂÂ´ĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ°ÄÂĂÂÄÂĂÂ§ÄÂÄšÄÄÂĂÂĂÂĂÂÄÂĂÂ
+        end
+        //ĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂÄÂĂÂÄÂĂÂ¤ÄÂÄšÄÄÂĂÂÄÂÄšÄĂĹĄÄšÂÄÂĂÂÄÂĂÂ§ĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ
+        `ifdef POST_SIM
+        //back annotate the SDF file
+        initial begin
+            $sdf_annotate("/home/verdvana/Project/IC/project/cores/smmu/synthesis/mapped/smmu.sdf",
+                          smmu_tb.u_smmu,,,
+                          "TYPICAL",
+                          "1:1:1",
+                          "FROM_MTM");
+            $display("\033[31;5m back annotate [0m",`__FILE__,`__LINE__);
+        end
+        `endif
+    `endif
     //========================================================================
-    // 超时保护
+    // ĂÂĂÂÄÂĂÂÄÂÄšÄÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂÄÂÄšÄÄÂĂÂÄÂĂÂÄÂĂÂ¤ÄÂÄšÄĂĹĄÄšÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ¤
     //========================================================================
     initial begin
         #2000000;
@@ -3467,5 +3693,6 @@ module smart_mmu_tb;
     end
 
 endmodule
+
 
 ```
