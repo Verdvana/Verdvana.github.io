@@ -84,7 +84,6 @@ module enqueue_ctrl #(
     input  logic                  mc_busy,             // ★ B2: 多播槽占用中 (LLE 提供), 置1时新多播整帧丢弃
     output logic                  lle_alloc_fire,      // 分配+挂链命令(一拍脉冲)
     output logic [QID_W-1:0]      lle_alloc_queue_id,  // 挂链目标队列
-    output logic [ADDR_W-1:0]     lle_alloc_addr,      // 本次分配地址(=lle_free_head)
     output logic                  lle_set_pkt_head,    // 写 pkt_head (= enq_sof)
     output logic                  lle_set_pkt_tail,    // 写 pkt_tail (= enq_eof)
     output logic                  lle_alloc_is_mcast,  // 组播标志
@@ -210,7 +209,6 @@ module enqueue_ctrl #(
     //========================================================================
     assign lle_alloc_fire         = accept_c;
     assign lle_alloc_queue_id     = full_qid_c;          // ★ 完整队列号 (单播={port,tc}; 多播=MC_QID)
-    assign lle_alloc_addr         = lle_free_head;       // T0 当拍即取
     assign lle_set_pkt_head       = enq_sof;
     assign lle_set_pkt_tail       = enq_eof;
     assign lle_alloc_is_mcast     = enq_is_mcast;

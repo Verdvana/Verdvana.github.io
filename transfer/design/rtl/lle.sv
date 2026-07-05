@@ -66,7 +66,6 @@ module lle #(
     output logic                  lle_alloc_ready,
     input  logic                  lle_alloc_fire,
     input  logic [QID_W-1:0]      lle_alloc_queue_id,
-    input  logic [ADDR_W-1:0]     lle_alloc_addr,
     input  logic                  lle_set_pkt_head,
     input  logic                  lle_set_pkt_tail,
     input  logic                  lle_alloc_is_mcast,
@@ -84,6 +83,10 @@ module lle #(
 
     // ★ B2: 给 QM 的 32 条常规队列 empty 向量 (多播计入各目的端口承载队列)
     output logic [PORT_NUM*TC_NUM-1:0] q_empty_vec,
+
+    // ★ 给 QM 的 32 条常规队列 "pkt 数为 0" 向量 (完整包粒度; 多播计入各目的端口承载队列)
+    //   与 q_empty_vec 位宽/索引一致, 但以 "在队真实完整包数" 而非 cell 数判空。
+    output logic [PORT_NUM*TC_NUM-1:0] q_pkt_empty_vec,
 
     // Recycle Ctrl (单播还链 + 多播逐端口回收)
     input  logic                  lle_free_req,
@@ -692,6 +695,24 @@ module lle #(
                                       ~mc_rd_done_q[pq] &
                                       (QID_W'(qq) == mc_carry_qid_q[pq]);
             q_empty_vec[qq] = ~((q_cell_cnt_q[qq] != '0) | mc_here);
+        end
+    end
+
+    //========================================================================
+    // ★ 32 条常规队列 "pkt 数为 0" 向量 (给 QM 调度用; 完整包粒度)
+    //   q_pkt_empty[q] = ~( 该队列在队真实单播完整包数!=0  |  该 q 是某目的端口承载
+    //                       队列且该端口尚未读完多播帧 )
+    //   多播是一份帧被多端口共享读, 对每个目的端口而言逻辑上是【1 个完整包】,
+    //   故多播的 pkt 数只计入【各目的端口的承载队列】(每端口 1 条), 与 q_empty_vec
+    //   的多播计入口径一致。多播未被某端口读完 → 该端口承载队列 pkt 数 +1 → 非空。
+    //========================================================================
+    always_comb begin
+        for (int qq = 0; qq < PORT_NUM*TC_NUM; qq++) begin
+            automatic int pq = qq >> Q_PER_PORT_LOG;
+            automatic logic mc_pkt_here = mc_valid_q & mc_dst_bitmap_q[pq] &
+                                          ~mc_rd_done_q[pq] &
+                                          (QID_W'(qq) == mc_carry_qid_q[pq]);
+            q_pkt_empty_vec[qq] = ~((q_uni_pkt_backlog_q[qq] != '0) | mc_pkt_here);
         end
     end
 

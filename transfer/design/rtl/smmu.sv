@@ -109,6 +109,7 @@ module smmu #(
     //------------------------------------------------------------------------
     // ★ B2: 32 条常规队列 empty 位图 (给 QM 调度; 多播计入各目的端口承载队列)
     output logic [PORT_NUM*TC_NUM-1:0] q_empty,
+    output logic [PORT_NUM*TC_NUM-1:0] q_pkt_empty,     // 完整包粒度 empty 位图
     output logic [QUEUE_NUM-1:0]  q_near_full,         // 每队列快满
     output logic [PORT_NUM-1:0]   port_near_full,      // 每出端口快满
     output logic                  global_near_full,    // 全局快满
@@ -175,7 +176,6 @@ module smmu #(
     logic                  lle_alloc_ready;
     logic                  lle_alloc_fire;
     logic [QID_W-1:0]      lle_alloc_queue_id;
-    logic [ADDR_W-1:0]     lle_alloc_addr;
     logic                  lle_set_pkt_head, lle_set_pkt_tail;
     logic                  lle_alloc_is_mcast;
     logic [PORT_NUM-1:0]   lle_alloc_mcast_bitmap;   // ★ B2
@@ -290,7 +290,6 @@ module smmu #(
         .lle_alloc_ready       (lle_alloc_ready),
         .lle_alloc_fire        (lle_alloc_fire),
         .lle_alloc_queue_id    (lle_alloc_queue_id),
-        .lle_alloc_addr        (lle_alloc_addr),
         .lle_set_pkt_head      (lle_set_pkt_head),
         .lle_set_pkt_tail      (lle_set_pkt_tail),
         .lle_alloc_is_mcast    (lle_alloc_is_mcast),
@@ -360,7 +359,6 @@ module smmu #(
         .lle_alloc_ready    (lle_alloc_ready),
         .lle_alloc_fire     (lle_alloc_fire),
         .lle_alloc_queue_id (lle_alloc_queue_id),
-        .lle_alloc_addr     (lle_alloc_addr),
         .lle_set_pkt_head   (lle_set_pkt_head),
         .lle_set_pkt_tail   (lle_set_pkt_tail),
         .lle_alloc_is_mcast (lle_alloc_is_mcast),
@@ -374,6 +372,7 @@ module smmu #(
         .lle_q_empty        (lle_q_empty),
         .lle_deq_fire       (lle_deq_fire),
         .q_empty_vec        (q_empty),                      // ★ B2: 32 条常规队列 empty → QM
+        .q_pkt_empty_vec    (q_pkt_empty),                  // 完整包粒度 empty → QM
         .lle_free_req       (lle_free_req),
         .lle_free_addr      (lle_free_addr),
         .lle_free_queue_id  (lle_free_queue_id),
