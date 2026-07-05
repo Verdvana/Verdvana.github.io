@@ -422,6 +422,11 @@
             background: rgba(255, 255, 255, 0.045);
         }
 
+        .todo-item.completed {
+            background: rgba(48, 209, 88, 0.08);
+            border-color: rgba(48, 209, 88, 0.24);
+        }
+
         .todo-checkbox {
             appearance: none;
             width: 20px;
@@ -432,11 +437,23 @@
             margin-top: 2px;
             flex-shrink: 0;
             transition: all 0.2s;
+            display: grid;
+            place-items: center;
         }
 
         .todo-checkbox:checked {
-            background: var(--accent-color);
-            border-color: var(--accent-color);
+            background: #30d158;
+            border-color: #30d158;
+            box-shadow: 0 0 0 3px rgba(48, 209, 88, 0.14);
+        }
+
+        .todo-checkbox:checked::after {
+            content: "";
+            width: 5px;
+            height: 9px;
+            border: solid #07130a;
+            border-width: 0 2px 2px 0;
+            transform: rotate(45deg) translateY(-1px);
         }
 
         .todo-text {
@@ -446,8 +463,8 @@
         }
 
         .completed .todo-text {
-            color: var(--secondary-text);
-            text-decoration: line-through;
+            color: rgba(255, 255, 255, 0.88);
+            text-decoration: none;
         }
 
         /* Scrollbar */
