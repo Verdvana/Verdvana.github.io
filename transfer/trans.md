@@ -1,5 +1,7 @@
-## smmu
-```
+# SMMU RTL + Testbench 汇总
+
+## smmu.sv
+`systemverilog
 //============================================================================
 // Module      : smmu  (Smart MMU Top)
 // Project     : 4-Port 2.5/1G/100M Ethernet Switch - Smart MMU
@@ -111,9 +113,7 @@ module smmu #(
     //------------------------------------------------------------------------
     // ★ B2: 32 条常规队列 empty 位图 (给 QM 调度; 多播计入各目的端口承载队列)
     output logic [PORT_NUM*TC_NUM-1:0] q_empty,
-    // ★ 32 条常规队列 "pkt 数为 0" 位图 (完整包粒度; 与 q_empty 位宽/索引一致)
-    //   告诉 QM 每个队列此时在队完整包数是否为 0; 多播包数计入各目的端口所 map 的承载队列。
-    output logic [PORT_NUM*TC_NUM-1:0] q_pkt_empty,
+    output logic [PORT_NUM*TC_NUM-1:0] q_pkt_empty,     // 完整包粒度 empty 位图
     output logic [QUEUE_NUM-1:0]  q_near_full,         // 每队列快满
     output logic [PORT_NUM-1:0]   port_near_full,      // 每出端口快满
     output logic                  global_near_full,    // 全局快满
@@ -147,6 +147,9 @@ module smmu #(
     input  logic                                        cfg_in_pfc_en,            // PFC 使能
     input  logic [PORT_NUM-1:0][TC_NUM-1:0][CNT_W-1:0]  cfg_in_pfc_xoff,          // 每 TC PFC XOFF
     input  logic [PORT_NUM-1:0][TC_NUM-1:0][CNT_W-1:0]  cfg_in_pfc_xon,           // 每 TC PFC XON
+    input  logic                                        cfg_in_aging_en,          // ★ 老化总使能
+    input  logic [23:0]                                 cfg_in_aging_timeout,     // ★ 老化超时阈值(cycle)
+    input  logic [QUEUE_NUM-1:0]                        cfg_in_age_force,         // ★ 软件强制某队列老化
     //   ★ B2: 多播承载队列 TC 不再用 cfg (改由入队 enq_mcast_tc 携带), 见 G2。
     //------------------------------------------------------------------------
     // G5 - 统计输出 (MMU → 外部 CSR/CPU, clk_core 域直接输出, 无总线)
@@ -246,6 +249,23 @@ module smmu #(
     // Init FSM ↔ LLE / 各模块
     logic                  init_build_req, init_build_done;
     logic                  clr_ptr_cnt;
+
+    // ★ 老化 (aging_ctrl ↔ LLE / CSR)
+    logic                  age_flush_req;
+    logic [QID_W-1:0]      age_flush_qid;
+    logic                  age_flush_busy;
+    logic                  age_flush_done;
+    logic [PORT_NUM*TC_NUM-1:0] q_occupied_vec;
+    logic                  deq_fire_evt;
+    logic [QID_W-1:0]      deq_fire_qid;
+    logic                  cfg_aging_en;
+    logic [23:0]           cfg_aging_timeout;
+    logic [QUEUE_NUM-1:0]  cfg_age_force;
+    logic                  aging_irq;
+    logic                  aging_notify;
+    logic [QID_W-1:0]      aging_notify_qid;
+    logic [QUEUE_NUM-1:0]  age_trig;
+    logic [PORT_NUM-1:0]   port_age_trig;
 
     // 顶层告警: occ 溢出/下溢 + 组播回收下溢, 一并汇入 (csr 内再聚成 irq)。
     assign overflow_alarm  = occ_overflow_alarm;
@@ -376,7 +396,7 @@ module smmu #(
         .lle_q_empty        (lle_q_empty),
         .lle_deq_fire       (lle_deq_fire),
         .q_empty_vec        (q_empty),                      // ★ B2: 32 条常规队列 empty → QM
-        .q_pkt_empty_vec    (q_pkt_empty),                  // ★ 32 条常规队列 pkt 数为 0 → QM
+        .q_pkt_empty_vec    (q_pkt_empty),                  // 完整包粒度 empty → QM
         .lle_free_req       (lle_free_req),
         .lle_free_addr      (lle_free_addr),
         .lle_free_queue_id  (lle_free_queue_id),
@@ -393,7 +413,39 @@ module smmu #(
         // free 事件 → occ (per-queue/port --, 携带回收 cell 的 queue_id/port)
         .lle_free_evt          (lle_free_evt),
         .evt_free_queue_id     (evt_free_queue_id),
-        .evt_free_egress_port  (evt_free_egress_port)
+        .evt_free_egress_port  (evt_free_egress_port),
+        // ★ 老化冲刷 ↔ aging_ctrl
+        .age_flush_req         (age_flush_req),
+        .age_flush_qid         (age_flush_qid),
+        .age_flush_busy        (age_flush_busy),
+        .age_flush_done        (age_flush_done),
+        .q_occupied_vec        (q_occupied_vec),
+        .deq_fire_evt          (deq_fire_evt),
+        .deq_fire_qid          (deq_fire_qid)
+    );
+
+    // ---- Aging Controller (候选一: MMU 自主老化) ----
+    aging_ctrl #(
+        .PORT_NUM (PORT_NUM), .TC_NUM (TC_NUM), .AGE_TMR_W (24)
+    ) u_aging (
+        .clk_core          (clk_core),
+        .rst_core_n        (rst_core_n),
+        .init_done         (init_done),
+        .cfg_aging_en      (cfg_aging_en),
+        .cfg_aging_timeout (cfg_aging_timeout),
+        .cfg_age_force     (cfg_age_force),
+        .q_occupied        (q_occupied_vec),
+        .deq_fire          (deq_fire_evt),
+        .deq_fire_qid      (deq_fire_qid),
+        .age_flush_req     (age_flush_req),
+        .age_flush_qid     (age_flush_qid),
+        .age_flush_busy    (age_flush_busy),
+        .age_flush_done    (age_flush_done),
+        .aging_notify      (aging_notify),
+        .aging_notify_qid  (aging_notify_qid),
+        .age_trig          (age_trig),
+        .port_age_trig     (port_age_trig),
+        .irq_aging         (aging_irq)
     );
 
     // ---- Occupancy & Pool Mgr (派生位宽; per-queue 判决+静态穿透; q/port/global
@@ -484,6 +536,9 @@ module smmu #(
         .cfg_in_pfc_en            (cfg_in_pfc_en),
         .cfg_in_pfc_xoff          (cfg_in_pfc_xoff),
         .cfg_in_pfc_xon           (cfg_in_pfc_xon),
+        .cfg_in_aging_en          (cfg_in_aging_en),
+        .cfg_in_aging_timeout     (cfg_in_aging_timeout),
+        .cfg_in_age_force         (cfg_in_age_force),
         // 统计汇聚 ← Occupancy + 告警 ← Occupancy
         .st_global_used           (occ_st_global_used),
         .st_free_count            (occ_st_free_count),
@@ -496,6 +551,7 @@ module smmu #(
         .st_pause_tx_cnt          (occ_st_pause_tx_cnt),
         .overflow_alarm           (occ_overflow_alarm),
         .underflow_alarm          (occ_underflow_alarm),
+        .aging_irq_in             (aging_irq),
         // 初始化
         .init_start               (init_start),
         .init_done                (init_done),
@@ -516,6 +572,9 @@ module smmu #(
         .cfg_pfc_en               (cfg_pfc_en),
         .cfg_pfc_xoff             (cfg_pfc_xoff),
         .cfg_pfc_xon              (cfg_pfc_xon),
+        .cfg_aging_en             (cfg_aging_en),
+        .cfg_aging_timeout        (cfg_aging_timeout),
+        .cfg_age_force            (cfg_age_force),
         // 统计输出 → 顶层 st_out_* (置 0 占位)
         .st_out_global_used          (st_out_global_used),
         .st_out_free_count           (st_out_free_count),
@@ -541,9 +600,458 @@ module smmu #(
 
 endmodule
 
-```
-## lle
-```
+`
+
+## enqueue_ctrl.sv
+`systemverilog
+//============================================================================
+// Module      : enqueue_ctrl  (Enqueue Control)
+// Project     : 4-Port 2.5/1G/100M Ethernet Switch - Smart MMU
+// Description : 入队路径控制 (控制平面)。单拍命令式, 不直接访问指针存储。
+//               T0: 收 QM 入队请求 → 组合查 Occupancy 占用判决(当拍返回) →
+//                   接收则取 lle_free_head 作分配地址、发一拍 lle_alloc_fire 命令
+//                   (挂链/计数/ref 由 LLE 流水) → 判决/地址/sof/eof 在末沿寄存。
+//               T1: 输出 alloc_* 结果给 QM。
+//               含整帧丢弃 FSM: 本帧某 cell 判丢即置 alloc_full_frame_drop,
+//               本帧后续 cell 全丢。组播 ref_count 初值随命令下发, 单/组播同 1 拍。
+//               不做 WRED (WRED 在 QM, QM 发请求前已完成)。
+//               静态预留池按队列(queue_id)记账, egress_port 仅供端口级判决聚合。
+//
+// Clock/Reset : clk_core (300MHz, 单时钟域) / rst_core_n (异步复位低有效)
+//============================================================================
+`timescale 1ns/1ps
+
+module enqueue_ctrl #(
+    parameter int CELL_NUM  = 8192,
+    parameter int PORT_NUM  = 4,
+    parameter int TC_NUM    = 8,     // 每端口 TC 数
+    parameter int REF_W     = 3,
+    parameter int PKT_CELL_W = 4,    // enq_cell_num 位宽 (本包 cell 数)
+    // 派生位宽 (与 occupancy_pool_mgr / lle 同源)
+    localparam int QUEUE_NUM = PORT_NUM*TC_NUM + 1,   // 单播 P*T + 多播 (free 链在 LLE 内)
+    localparam int MC_QID    = QUEUE_NUM-1,           // 多播队列号 (=P*T)
+    localparam int ADDR_W   = $clog2(CELL_NUM),
+    localparam int QID_W    = $clog2(QUEUE_NUM-1)+1,
+    localparam int PORT_W   = $clog2(PORT_NUM-1)+1,
+    localparam int TC_W     = $clog2(TC_NUM)          // enq_queue_id 位宽 (仅 TC)
+)(
+    //------------------------------------------------------------------------
+    // 时钟复位 / 初始化 (公共)
+    //------------------------------------------------------------------------
+    input  logic                  clk_core,
+    input  logic                  rst_core_n,
+    input  logic                  init_done,           // =0 拒收 enq_req
+
+    //------------------------------------------------------------------------
+    // 与 QM 的接口 (外部, 经 MMU 顶层)
+    //------------------------------------------------------------------------
+    input  logic                  enq_req,             // 入队请求有效
+    input  logic [TC_W-1:0]       enq_queue_id,        // ★ 目标 TC (0..TC_NUM-1); 完整队列={egress_port,queue_id}
+    input  logic [PORT_W-1:0]     enq_egress_port,     // 出端口 ID
+    input  logic [PKT_CELL_W-1:0] enq_cell_num,        // ★ 本包 cell 数(SOF 有效, 入队前预判用)
+    input  logic                  enq_is_mcast,        // 组播标志
+    input  logic [PORT_NUM-1:0]   enq_mcast_bitmap,    // 组播出端口位图
+    input  logic                  enq_sof,             // 报文首段
+    input  logic                  enq_eof,             // 报文尾段
+    output logic                  enq_ready,           // 可接请求(init_done 后恒高)
+    output logic                  enq_predict_drop,    // ★ 入队前预判: 本包会否触发 alloc_drop(组合当拍返回)
+    output logic                  alloc_valid,         // 结果有效
+    output logic [ADDR_W-1:0]     alloc_cell_addr,     // 分配地址
+    output logic                  alloc_drop_ind,      // 丢包指示(高水位/空闲池空兜底)
+    output logic                  alloc_sram_flag,     // 内部 SRAM 存储标志
+    output logic                  alloc_pkt_head,      // 报文头 (= enq_sof)
+    output logic                  alloc_pkt_tail,      // 报文尾 (= enq_eof)
+    output logic                  alloc_full_frame_drop, // 整帧丢弃指示
+
+    //------------------------------------------------------------------------
+    // 与 Occupancy & Pool Mgr 的接口 (内部, 组合返回支撑 1 拍)
+    //   按【当前入队队列/端口】精确判决: 透传 queue_id/egress_port 给 occ,
+    //   occ 据此判 该队列/端口 高水位 + 静态穿透, 组合返回。
+    //------------------------------------------------------------------------
+    output logic                  occ_query_vld,       // 发起占用判决查询
+    output logic [QID_W-1:0]      occ_query_queue_id,  // 待判决队列号
+    output logic [PORT_W-1:0]     occ_query_egress_port, // 待判决出端口
+    output logic [PKT_CELL_W-1:0] occ_query_cell_num,  // 待预判本包 cell 数(透传 enq_cell_num)
+    input  logic                  occ_accept,          // 判决=接收
+    input  logic                  occ_drop,            // 判决=丢弃(高水位兜底)
+    input  logic                  occ_use_static,      // 记静态池(=1)/动态池(=0)
+    input  logic                  occ_no_free,         // 空闲池已空(强制丢弃)
+    input  logic                  occ_predict_drop,    // occ 组合返回的入队前预判结果
+
+    //------------------------------------------------------------------------
+    // 与 Link-List Engine (LLE) 的接口 (内部, 单拍命令式分配+挂链)
+    //   ★ lle_alloc_ready: LLE 本拍可受理 alloc。
+    //     - LLE 仲裁中 deq 占 SRAM 时 = 0, 本模块当拍不发 fire, QM 自动等下拍;
+    //     - build 期间 / free 池空时也 = 0。
+    //------------------------------------------------------------------------
+    input  logic [ADDR_W-1:0]     lle_free_head,       // 当前空闲链头(T0 当拍取)
+    input  logic                  lle_free_empty,      // 空闲链空
+    input  logic                  lle_alloc_ready,     // LLE 本拍可受理 alloc (含 ~deq 抢占 / ~build / ~free 空)
+    input  logic                  mc_busy,             // ★ B2: 多播槽占用中 (LLE 提供), 置1时新多播整帧丢弃
+    output logic                  lle_alloc_fire,      // 分配+挂链命令(一拍脉冲)
+    output logic [QID_W-1:0]      lle_alloc_queue_id,  // 挂链目标队列
+    output logic                  lle_set_pkt_head,    // 写 pkt_head (= enq_sof)
+    output logic                  lle_set_pkt_tail,    // 写 pkt_tail (= enq_eof)
+    output logic                  lle_alloc_is_mcast,  // 组播标志
+    output logic [PORT_NUM-1:0]   lle_alloc_mcast_bitmap, // ★ B2: 组播目的端口位图 → LLE
+    output logic [$clog2(TC_NUM)-1:0] lle_alloc_mcast_tc, // ★ B2: 组播帧 TC → LLE (定承载队列)
+    output logic                  mcast_busy_drop      // ★ B2: 本拍因多播槽占用而丢弃多播帧
+);
+
+    //========================================================================
+    // 握手: init_done 后, 还要看 LLE 本拍是否能受理 alloc (deq 抢占时 ready=0)
+    //   - enq_ready 反馈给 QM: 0 时 QM 当拍不发 enq_req, 自动重试;
+    //   - enq_fire 内部判: enq_req 且 init_done 且 lle 可受理。
+    //========================================================================
+    assign enq_ready = init_done & lle_alloc_ready;
+
+    // 本拍是否有有效入队请求 (握手成立)
+    logic enq_fire;
+    assign enq_fire = enq_req & enq_ready;
+
+    //========================================================================
+    // ★ 完整队列号合成:
+    //   - 单播: 完整队列 = {enq_egress_port, enq_queue_id} = egress_port*TC_NUM + TC
+    //   - 多播: 物理挂 MC_QID (q[32]); 承载 TC = enq_queue_id, 目的端口 = enq_mcast_bitmap
+    //           (LLE 用 mcast_tc + bitmap 算各端口承载队列, 反映到 QM 的 32 位 empty)
+    //========================================================================
+    logic [QID_W-1:0] uni_qid_c, full_qid_c;
+    assign uni_qid_c  = (QID_W'(enq_egress_port) << TC_W) | QID_W'(enq_queue_id);
+    assign full_qid_c = enq_is_mcast ? MC_QID[QID_W-1:0] : uni_qid_c;
+
+    //========================================================================
+    // 占用判决查询 (组合, 当拍返回): 透传 vld + 当前队列/端口给 Occupancy,
+    //   occ_accept/occ_drop/occ_use_static/occ_no_free 组合返回。
+    //========================================================================
+    assign occ_query_vld         = enq_fire;
+    assign occ_query_queue_id    = full_qid_c;           // ★ 完整队列号 (单播={port,tc}; 多播=MC_QID)
+    assign occ_query_egress_port = enq_egress_port;
+    // ★ 入队前预判: 透传本包 cell 数给 occ, occ 组合返回预判结果直出给 QM。
+    //   纯组合、与 enq_query 同拍, 不依赖 enq_fire (QM 在包首 presenting queue_id+cell_num 即可读)。
+    assign occ_query_cell_num    = enq_cell_num;
+    assign enq_predict_drop      = occ_predict_drop;
+
+    //========================================================================
+    // ★ B2 单槽门控: 多播帧到达 (SOF) 时若多播槽已占用 (mc_busy) → 整帧丢弃。
+    //   mc_busy 由 LLE 提供 (mc_valid 寄存), T0 当拍可读。
+    //   非 SOF 的多播后续 cell 靠 frame_drop_q 级联丢弃 (无需再看 mc_busy)。
+    //========================================================================
+    logic mcast_slot_block_c;
+    assign mcast_slot_block_c = enq_fire & enq_is_mcast & enq_sof & mc_busy;
+
+    //========================================================================
+    // 整帧丢弃 FSM: 一帧 (sof~eof) 内任一 cell 判丢则置位并保持到 eof,
+    //   本帧后续 cell 在 T0 直接判丢、不取地址、不发 fire。
+    //   frame_drop_q: 当前帧已进入"整帧丢弃"状态 (sof 拍判丢后保持到 eof)。
+    //========================================================================
+    logic frame_drop_q;
+
+    // 本 cell 的丢弃来源:
+    //   - occ_drop / occ_no_free / lle_free_empty: 占用水位高水位无条件丢弃 + 空闲池空兜底
+    //   - (enq_sof & enq_predict_drop): ★ 入队前预判命中 → 整包放不下, 从包首就整帧丢弃
+    //   - frame_drop_q: 本帧此前已判丢 (整帧丢弃保持)
+    logic cell_drop_c;       // 本 cell 是否丢弃
+    logic full_frame_drop_c; // 本 cell 是否标整帧丢弃 (本 cell 起始的帧整帧丢)
+    logic accept_c;          // 本 cell 是否真正接收(分配+挂链)
+
+    always_comb begin
+        // 默认
+        cell_drop_c       = 1'b0;
+        full_frame_drop_c = 1'b0;
+        accept_c          = 1'b0;
+
+        if (enq_fire) begin
+            // 已处于整帧丢弃状态 (本帧前序 cell 判丢): 后续 cell 全丢
+            if (frame_drop_q) begin
+                cell_drop_c       = 1'b1;
+                full_frame_drop_c = 1'b1;
+            end
+            // 本 cell 触发丢弃:
+            //   - 逐 cell 高水位无条件丢弃 / 空闲池空;
+            //   - ★ 入队前预判命中 (enq_predict_drop) 且为包首(SOF): occ 组合判定本包 N 个
+            //     cell 整体放不下 → 从 SOF 起就整帧丢弃, 一个 cell 都不挂链 (避免"前几个
+            //     cell 已挂链、到中途才丢"造成的部分挂链遗留)。predict 只在 SOF 采样,
+            //     后续 cell 靠 frame_drop_q 级联丢弃。
+            //   - ★ mcast_slot_block_c: 多播槽占用中, 新多播帧从 SOF 整帧丢弃。
+            else if (occ_drop | occ_no_free | lle_free_empty | (enq_sof & enq_predict_drop) | mcast_slot_block_c) begin
+                cell_drop_c       = 1'b1;
+                full_frame_drop_c = 1'b1;
+            end
+            // 占用判决接收
+            else if (occ_accept) begin
+                accept_c = 1'b1;
+            end
+            // 兜底: 无 accept 也无明确 drop 视为丢弃 (保守)
+            else begin
+                cell_drop_c       = 1'b1;
+                full_frame_drop_c = 1'b1;
+            end
+        end
+    end
+
+    // 整帧丢弃状态更新: 帧首 (sof) 判丢则置位; 帧尾 (eof) 帧结束则清除。
+    always_ff @(posedge clk_core or negedge rst_core_n) begin
+        if (!rst_core_n) begin
+            frame_drop_q <= #1 1'b0;
+        end
+        else if (!init_done) begin
+            frame_drop_q <= #1 1'b0;
+        end
+        else if (enq_fire) begin
+            if (frame_drop_q) begin
+                // 整帧丢弃保持中, 到 eof 清除 (本帧结束)
+                if (enq_eof) frame_drop_q <= #1 1'b0;
+            end
+            else if (cell_drop_c && !enq_eof) begin
+                // 本 cell 判丢且帧未结束 → 进入整帧丢弃保持
+                frame_drop_q <= #1 1'b1;
+            end
+            // 单 cell 帧 (sof&eof 同拍) 判丢: 不需保持, frame_drop_q 维持 0
+        end
+    end
+
+    //========================================================================
+    // LLE 分配+挂链命令 (一拍脉冲): 仅接收时拉高
+    //========================================================================
+    assign lle_alloc_fire         = accept_c;
+    assign lle_alloc_queue_id     = full_qid_c;          // ★ 完整队列号 (单播={port,tc}; 多播=MC_QID)
+    assign lle_set_pkt_head       = enq_sof;
+    assign lle_set_pkt_tail       = enq_eof;
+    assign lle_alloc_is_mcast     = enq_is_mcast;
+    assign lle_alloc_mcast_bitmap = enq_mcast_bitmap;    // ★ B2: 目的端口位图 → LLE 置 mc_dst_bitmap
+    assign lle_alloc_mcast_tc     = enq_queue_id;        // ★ B2: 多播承载 TC = enq_queue_id
+    assign mcast_busy_drop        = mcast_slot_block_c;  // ★ B2: 本拍多播因槽占用被丢
+
+    //========================================================================
+    // T1 返回 (寄存一拍): 把 T0 的判决/地址/头尾在末沿寄存, 下一拍输出给 QM。
+    //========================================================================
+    always_ff @(posedge clk_core or negedge rst_core_n) begin
+        if (!rst_core_n) begin
+            alloc_valid           <= #1 1'b0;
+            alloc_cell_addr       <= #1 '0;
+            alloc_drop_ind        <= #1 1'b0;
+            alloc_sram_flag       <= #1 1'b0;
+            alloc_pkt_head        <= #1 1'b0;
+            alloc_pkt_tail        <= #1 1'b0;
+            alloc_full_frame_drop <= #1 1'b0;
+        end
+        else begin
+            alloc_valid           <= #1 enq_fire;            // 本拍有有效请求 → 下一拍结果有效
+            alloc_cell_addr       <= #1 lle_free_head;       // 接收时为分配地址; 丢弃时该字段无意义
+            alloc_drop_ind        <= #1 cell_drop_c;
+            alloc_sram_flag       <= #1 accept_c;            // 接收且写内部 SRAM
+            alloc_pkt_head        <= #1 enq_sof;
+            alloc_pkt_tail        <= #1 enq_eof;
+            alloc_full_frame_drop <= #1 full_frame_drop_c;
+        end
+    end
+
+endmodule
+`
+
+## dequeue_ctrl.sv
+`systemverilog
+//============================================================================
+// Module      : dequeue_ctrl  (Dequeue Control)
+// Project     : 4-Port 2.5/1G/100M Ethernet Switch - Smart MMU
+// Description : 出队路径控制 (控制平面)。单拍命令式, 不直接访问指针存储。
+//               T0: 收 QM 出队请求、检查背压 → 取 lle_qhead(队头寄存器组合可读)
+//                   作出队地址、发一拍 lle_deq_fire(队头推进+预取由 LLE 流水) →
+//                   地址/头尾标志在末沿寄存。
+//               T1: 输出 deq_cell_* 给 QM。背靠背 1 cell/cycle, 逐 cell 直到 pkt_tail。
+//               deq_backpressure[port]=1 时暂停该端口对应队列出队。
+//
+// Clock/Reset : clk_core (300MHz, 单时钟域) / rst_core_n (异步复位低有效)
+//============================================================================
+`timescale 1ns/1ps
+
+module dequeue_ctrl #(
+    parameter int CELL_NUM  = 8192,
+    parameter int PORT_NUM  = 4,
+    parameter int TC_NUM    = 8,     // 每端口 TC 数
+    // 派生位宽 (与 occupancy_pool_mgr / lle 同源)
+    localparam int QUEUE_NUM = PORT_NUM*TC_NUM + 1,   // 单播 P*T + 多播 (free 链在 LLE 内)
+    localparam int ADDR_W   = $clog2(CELL_NUM),
+    localparam int QID_W    = $clog2(QUEUE_NUM-1)+1
+)(
+    //------------------------------------------------------------------------
+    // 时钟复位 / 初始化 (公共)
+    //------------------------------------------------------------------------
+    input  logic                  clk_core,
+    input  logic                  rst_core_n,
+    input  logic                  init_done,           // =0 拒收 deq_req
+
+    //------------------------------------------------------------------------
+    // 与 QM 的接口 (外部, 经 MMU 顶层)
+    //------------------------------------------------------------------------
+    input  logic                  deq_req,             // 出队请求有效
+    input  logic [QID_W-1:0]      deq_queue_id,        // 出队队列号
+    input  logic [PORT_NUM-1:0]   deq_backpressure,    // 每端口背压(EPS 经 QM)
+    output logic                  deq_ready,           // 可接出队请求(init_done 后恒高)
+    output logic                  deq_cell_valid,      // 出队地址有效
+    output logic [ADDR_W-1:0]     deq_cell_addr,       // 出队 cell 地址
+    output logic                  deq_pkt_head,        // 报文头标志
+    output logic                  deq_pkt_tail,        // 报文尾标志
+
+    //------------------------------------------------------------------------
+    // 与 Link-List Engine (LLE) 的接口 (内部, 单拍命令式出队)
+    //------------------------------------------------------------------------
+    input  logic [ADDR_W-1:0]     lle_qhead,           // 出队地址(按 queue_id 选, 组合可读)
+    input  logic                  lle_qhead_pkt_head,  // 队头 cell 头标志
+    input  logic                  lle_qhead_pkt_tail,  // 队头 cell 尾标志
+    input  logic                  lle_q_empty,         // 该队列空
+    output logic                  lle_deq_fire,        // 出队命令(一拍脉冲, 推进队头+取新队头)
+    output logic [QID_W-1:0]      lle_deq_queue_id     // 出队队列号
+);
+
+    //========================================================================
+    // 握手: init_done 后恒高, 支持背靠背 1 cell/cycle
+    //========================================================================
+    assign deq_ready = init_done;
+
+    //========================================================================
+    // 出队队列 → 出端口映射: egress_port = queue_id >> $clog2(TC_NUM)。
+    //   单播 queue_id = port*TC_NUM + tc; 截到 PORT_NUM 范围内 (越界视为 0,
+    //   多播专用队列的出端口不参与此端口背压映射)。
+    //========================================================================
+    localparam int    Q_PER_PORT_LOG = $clog2(TC_NUM);
+    logic [QID_W-1:0] egress_port_full;
+    logic [QID_W-1:0] egress_port_idx;
+    assign egress_port_full = deq_queue_id >> Q_PER_PORT_LOG;
+    assign egress_port_idx  = (egress_port_full < PORT_NUM[QID_W-1:0])
+                              ? egress_port_full : '0;
+
+    // 该端口是否被背压
+    logic port_bp;
+    assign port_bp = deq_backpressure[egress_port_idx];
+
+    //========================================================================
+    // 本拍是否真正出队:
+    //   - 握手成立 (deq_req & deq_ready)
+    //   - 队列非空 (lle_q_empty=0)
+    //   - 对应端口未被背压 (port_bp=0)
+    //========================================================================
+    logic deq_fire;
+    assign deq_fire = deq_req & deq_ready & ~lle_q_empty & ~port_bp;
+
+    //========================================================================
+    // LLE 出队命令 (一拍脉冲): 推进队头 + 取新队头 entry 由 LLE 流水完成。
+    //========================================================================
+    assign lle_deq_fire     = deq_fire;
+    assign lle_deq_queue_id = deq_queue_id;
+
+    //========================================================================
+    // T1 返回 (寄存一拍): 出队地址 = lle_qhead (T0 当拍组合可读),
+    //   头尾标志取 lle_qhead_pkt_head/tail (队头描述符预取), 末沿寄存后下一拍输出。
+    //========================================================================
+    always_ff @(posedge clk_core or negedge rst_core_n) begin
+        if (!rst_core_n) begin
+            deq_cell_valid <= #1 1'b0;
+            deq_cell_addr  <= #1 '0;
+            deq_pkt_head   <= #1 1'b0;
+            deq_pkt_tail   <= #1 1'b0;
+        end
+        else begin
+            deq_cell_valid <= #1 deq_fire;
+            deq_cell_addr  <= #1 lle_qhead;            // 队头地址 (当拍即给)
+            deq_pkt_head   <= #1 lle_qhead_pkt_head;   // 队头描述符 (预取, 当拍可给)
+            deq_pkt_tail   <= #1 lle_qhead_pkt_tail;
+        end
+    end
+
+endmodule
+`
+
+## recycle_ctrl.sv
+`systemverilog
+//============================================================================
+// Module      : recycle_ctrl  (Recycle Control) —— B2 版
+// Project     : 4-Port 2.5/1G/100M Ethernet Switch - Smart MMU
+//
+// Description :
+//   回收路径控制 (控制平面)。B2 多播模型:
+//     - 单播 (recycle_req): 报文发送完成, 该 cell 立即还链 → 直接向 LLE 发
+//                           lle_free_req(接空闲链尾), 并透传 queue_id 供 occ 计数--。
+//     - 组播 (mcast_recycle_req): 每收到一个出端口“发完一份”的通知, 反推该端口号
+//                           (由 mcast_recycle_queue_id >> Q_PER_PORT_LOG), 直接
+//                           转发给 LLE 的 mc_rcy_vld/mc_rcy_port —— LLE 内部记
+//                           mc_rcy_done[port]; 当所有目的端口都读完+还链, LLE 自行
+//                           整帧还链并清多播槽。recycle_ctrl 不再做 ref_count 递减。
+//
+//   仲裁: 单播还链走 lle_free_req; 组播还链由 LLE 内部 walk 完成 (走 LLE 内部
+//         recycle FIFO), 不占用 recycle_ctrl 的 lle_free_req 口。
+//
+// Clock/Reset : clk_core (300MHz, 单时钟域) / rst_core_n (异步复位低有效)
+//============================================================================
+`timescale 1ns/1ps
+
+module recycle_ctrl #(
+    parameter int CELL_NUM  = 8192,
+    parameter int PORT_NUM  = 4,
+    parameter int TC_NUM    = 8,     // 每端口 TC 数
+    // 派生位宽 (与 occupancy_pool_mgr / lle 同源)
+    localparam int QUEUE_NUM = PORT_NUM*TC_NUM + 1,
+    localparam int ADDR_W   = $clog2(CELL_NUM),
+    localparam int QID_W    = $clog2(QUEUE_NUM-1)+1,
+    localparam int PORT_W   = $clog2(PORT_NUM-1)+1,
+    localparam int Q_PER_PORT_LOG = $clog2(TC_NUM)
+)(
+    //------------------------------------------------------------------------
+    // 时钟复位 (公共)
+    //------------------------------------------------------------------------
+    input  logic                  clk_core,
+    input  logic                  rst_core_n,
+
+    //------------------------------------------------------------------------
+    // 与 QM 的接口 (外部, 经 MMU 顶层)
+    //------------------------------------------------------------------------
+    input  logic                  recycle_req,         // 单播 cell 回收请求
+    input  logic [ADDR_W-1:0]     recycle_cell_addr,   // 待回收 cell 地址
+    input  logic [QID_W-1:0]      recycle_queue_id,    // 单播回收 cell 所属队列号
+    input  logic                  mcast_recycle_req,   // 组播回收通知(某端口发完一份)
+    input  logic [ADDR_W-1:0]     mcast_recycle_addr,  // 组播待回收 cell 地址 (B2 未用, 保留)
+    input  logic [QID_W-1:0]      mcast_recycle_queue_id, // 组播回收所属承载队列号 (→ 反推端口)
+    output logic                  recycle_ack,         // 回收完成应答
+
+    //------------------------------------------------------------------------
+    // 与 LLE 的接口 —— 单播还链 + 组播逐端口回收转发
+    //------------------------------------------------------------------------
+    output logic                  lle_free_req,        // 单播还链请求
+    output logic [ADDR_W-1:0]     lle_free_addr,       // 待还 cell
+    output logic [QID_W-1:0]      lle_free_queue_id,   // 待还 cell 所属队列号
+    input  logic                  lle_free_grant,      // 仲裁通过
+    input  logic                  lle_free_done,       // 还链完成
+    // 组播逐端口回收 → LLE
+    output logic                  mc_rcy_vld,          // 组播回收通知有效
+    output logic [PORT_W-1:0]     mc_rcy_port          // 组播回收所属出端口
+);
+
+    //========================================================================
+    // 单播还链: 直接透传 (B2 组播不再共用此口)
+    //========================================================================
+    assign lle_free_req      = recycle_req;
+    assign lle_free_addr     = recycle_cell_addr;
+    assign lle_free_queue_id = recycle_queue_id;
+
+    //========================================================================
+    // 组播逐端口回收转发: 反推端口号 = 承载队列号 >> Q_PER_PORT_LOG
+    //========================================================================
+    logic [QID_W-1:0] mc_port_full;
+    assign mc_port_full = mcast_recycle_queue_id >> Q_PER_PORT_LOG;
+    assign mc_rcy_vld   = mcast_recycle_req;
+    assign mc_rcy_port  = (mc_port_full < PORT_NUM[QID_W-1:0])
+                          ? mc_port_full[PORT_W-1:0] : '0;
+
+    //========================================================================
+    // 回收应答: 单播还链发起当拍应答; 组播收到通知当拍即应答。
+    //========================================================================
+    assign recycle_ack = recycle_req | mcast_recycle_req;
+
+endmodule
+`
+
+## lle.sv
+`systemverilog
 //============================================================================
 // Module      : lle  (Link-List Engine) —— B2 多播逻辑拼接版
 // Project     : 4-Port 2.5/1G/100M Ethernet Switch - Smart MMU
@@ -643,6 +1151,16 @@ module lle #(
     input  logic                  mc_rcy_vld,
     input  logic [PORT_W-1:0]     mc_rcy_port,
     output logic                  mcast_underflow,
+
+    // ★ 老化冲刷 (aging_ctrl ↔ LLE): 把某队列链逐 cell 还回 free 链
+    input  logic                  age_flush_req,      // 请求冲刷某队列
+    input  logic [QID_W-1:0]      age_flush_qid,      // 待冲刷队列号
+    output logic                  age_flush_busy,     // 正在冲刷
+    output logic                  age_flush_done,     // 冲刷完成 (队列已空)
+    // ★ 老化用: 队列非空位图 + 出队 fire 喂狗信号 (→ aging_ctrl)
+    output logic [PORT_NUM*TC_NUM-1:0] q_occupied_vec,
+    output logic                  deq_fire_evt,
+    output logic [QID_W-1:0]      deq_fire_qid,
 
     // Occupancy
     output logic                  lle_alloc_evt,
@@ -823,20 +1341,49 @@ module lle #(
     assign lle_alloc_ready = ~build_active & ~lle_free_empty & ~deq_need_sram;
 
     //========================================================================
-    // 还链 push 源仲裁: 外部单播回收 优先; 多播整帧还链(walk) 让位
+    // ★ 老化冲刷 (age flush) walk: 把 age_flush_qid 队列链逐 cell 还回 free 链。
+    //   - 独立读 SRAM 拿 next 指针 (最低优先级, 仅在正常 deq/enq 不占读口的空拍推进);
+    //   - 每步 push 当前队头 cell 进 recycle FIFO (走现有 free 事件通路, occ 自动 --);
+    //   - 队列 cnt 减到 0 → age_flush_done, 收尾清 head/tail/cnt。
+    //   - MC_QID 冲刷: 额外清多播槽状态。
+    //========================================================================
+    typedef enum logic [1:0] {AGF_IDLE, AGF_RD, AGF_PUSH, AGF_DONE} agf_st_e;
+    agf_st_e            agf_st_q;
+    logic [QID_W-1:0]   agf_qid_q;        // 正在冲刷的队列
+    logic [ADDR_W-1:0]  agf_cur_q;        // 当前待 push 的 cell (队头)
+    logic [ADDR_W-1:0]  agf_next_q;       // 当前 cell 的 next (SRAM 读回)
+    logic [CNT_W-1:0]   agf_remain_q;     // 剩余待还 cell 数
+
+    logic               agf_active;
+    assign agf_active = (agf_st_q != AGF_IDLE);
+    assign age_flush_busy = agf_active;
+
+    // flush 读请求: AGF_RD 态且 SRAM 读口空闲 (正常 deq/enq 都不读)
+    logic               agf_rd_gnt;
+    // (下面 SRAM 读口驱动里给最低优先级; 此处先声明, 赋值见 SRAM 驱动段后)
+
+    //========================================================================
+    // 还链 push 源仲裁: 外部单播回收 优先; 多播整帧还链(walk); 老化冲刷 最低
     //========================================================================
     logic               ext_free_push;   // 外部单播回收 push
     logic               mc_rel_push;      // 多播整帧还链 push
+    logic               agf_push;         // ★ 老化冲刷 push
     logic [ADDR_W-1:0]  push_cell;
     logic [QID_W-1:0]   push_qid;
 
     assign ext_free_push = lle_free_req & ~rcy_fifo_full & ~build_active;
     assign mc_rel_push   = mc_rel_active_q & ~ext_free_push & ~rcy_fifo_full & ~build_active;
+    assign agf_push      = (agf_st_q == AGF_PUSH) & ~ext_free_push & ~mc_rel_push &
+                           ~rcy_fifo_full & ~build_active;
 
-    assign push_cell = ext_free_push ? lle_free_addr : mc_cells_q[mc_rel_idx_q];
-    assign push_qid  = ext_free_push ? lle_free_queue_id : MC_QID[QID_W-1:0];
+    assign push_cell = ext_free_push ? lle_free_addr :
+                       mc_rel_push   ? mc_cells_q[mc_rel_idx_q] :
+                                       agf_cur_q;
+    assign push_qid  = ext_free_push ? lle_free_queue_id :
+                       mc_rel_push   ? MC_QID[QID_W-1:0] :
+                                       agf_qid_q;
 
-    assign do_push = ext_free_push | mc_rel_push;
+    assign do_push = ext_free_push | mc_rel_push | agf_push;
     assign do_pop  = rcy_grant;
 
     //========================================================================
@@ -906,7 +1453,18 @@ module lle #(
             npr_w_addr = free_tail_q;
             npr_w_data = {rcy_cell, 1'b0, 1'b0};
         end
+
+        // ★ 老化冲刷读 next: 最低优先级, 仅在 build/deq/enq 都不占读口时
+        //   (rcy 只用写口, 与 flush 读口不冲突, 故 flush 读可与 rcy 写同拍)
+        if (agf_rd_gnt) begin
+            npr_r_en   = 1'b1;
+            npr_r_addr = agf_cur_q;
+        end
     end
+
+    // flush 读授权: AGF_RD 态 且 本拍 SRAM 读口未被 deq/enq 占用 且 非 build
+    assign agf_rd_gnt = (agf_st_q == AGF_RD) & ~build_active &
+                        ~(deq_grant & deq_need_sram) & ~enq_grant;
 
     next_ptr_sram_1r1w #(.CELL_NUM(CELL_NUM), .DATA_W(ENTRY_W)) u_npr (
         .clk_core(clk_core), .rst_core_n(rst_core_n),
@@ -956,6 +1514,80 @@ module lle #(
     end
     // 启动整帧还链 walk (还未在还链中)
     assign mc_release_start = mc_valid_q & all_read & all_recycled & ~mc_rel_active_q;
+
+    //========================================================================
+    // ★ 老化冲刷 walk FSM (独立状态机, 逐 cell 摘链还 free)
+    //   AGF_IDLE : 等 age_flush_req。收到→锁 qid, 取该队列当前 head/cnt, 进 AGF_RD。
+    //   AGF_RD   : 发 SRAM 读 (agf_cur_q.next), 得到读授权后下一拍进 AGF_PUSH。
+    //   AGF_PUSH : 把 agf_cur_q push 进 recycle FIFO (agf_push, 最低优先级);
+    //              push 成功→ cur=next(上一拍读回), remain--; remain 到 0→AGF_DONE, 否则回 AGF_RD。
+    //   AGF_DONE : 收尾 (清 head/tail/cnt; MC_QID 额外清多播槽), 拉 age_flush_done, 回 IDLE。
+    //   注: q_head/q_cell_cnt 的实际清零在 AGF_DONE 由本 FSM 直接写 (被冲刷队列此时 QM 应已停发)。
+    //========================================================================
+    logic agf_rd_done_q;         // AGF_RD 已完成一次读 (npr_r_data 为 agf_cur_q.next)
+
+    always_ff @(posedge clk_core or negedge rst_core_n) begin
+        if (!rst_core_n) begin
+            agf_st_q      <= #1 AGF_IDLE;
+            agf_qid_q     <= #1 '0;
+            agf_cur_q     <= #1 '0;
+            agf_next_q    <= #1 '0;
+            agf_remain_q  <= #1 '0;
+            agf_rd_done_q <= #1 1'b0;
+            age_flush_done <= #1 1'b0;
+        end
+        else begin
+            age_flush_done <= #1 1'b0;   // 默认脉冲拉低
+            case (agf_st_q)
+                AGF_IDLE: begin
+                    agf_rd_done_q <= #1 1'b0;
+                    if (age_flush_req && (q_cell_cnt_q[age_flush_qid] != '0)) begin
+                        agf_qid_q    <= #1 age_flush_qid;
+                        agf_cur_q    <= #1 q_head_q[age_flush_qid];
+                        agf_remain_q <= #1 q_cell_cnt_q[age_flush_qid];
+                        agf_st_q     <= #1 AGF_RD;
+                    end
+                    else if (age_flush_req) begin
+                        // 队列已空: 直接完成
+                        age_flush_done <= #1 1'b1;
+                    end
+                end
+                AGF_RD: begin
+                    // 若只剩 1 个 cell, 无需读 next, 直接去 PUSH
+                    if (agf_remain_q == 1) begin
+                        agf_rd_done_q <= #1 1'b1;
+                        agf_st_q      <= #1 AGF_PUSH;
+                    end
+                    else if (agf_rd_gnt) begin
+                        // 本拍发出读, 下一拍 npr_r_data 有效
+                        agf_rd_done_q <= #1 1'b1;
+                        agf_st_q      <= #1 AGF_PUSH;
+                    end
+                end
+                AGF_PUSH: begin
+                    // 上一拍读回的 next (若有效)
+                    if (agf_rd_done_q && (agf_remain_q != 1))
+                        agf_next_q <= #1 npr_r_data[2 +: ADDR_W];
+                    if (agf_push) begin
+                        agf_rd_done_q <= #1 1'b0;
+                        if (agf_remain_q == 1) begin
+                            agf_st_q <= #1 AGF_DONE;
+                        end
+                        else begin
+                            agf_cur_q    <= #1 (agf_remain_q == 1) ? agf_cur_q : npr_r_data[2 +: ADDR_W];
+                            agf_remain_q <= #1 agf_remain_q - 1'b1;
+                            agf_st_q     <= #1 AGF_RD;
+                        end
+                    end
+                end
+                AGF_DONE: begin
+                    age_flush_done <= #1 1'b1;
+                    agf_st_q       <= #1 AGF_IDLE;
+                end
+                default: agf_st_q <= #1 AGF_IDLE;
+            endcase
+        end
+    end
 
     //========================================================================
     // 主状态更新
@@ -1211,8 +1843,56 @@ module lle #(
                 2'b01:   free_cnt_q <= #1 free_cnt_q + 1'b1;
                 default: ;
             endcase
+
+            //================================================================
+            // ★ 老化冲刷: 每 push 一个 cell, 被冲刷队列 cnt -1;
+            //   冲刷结束 (最后一 cell push) 清该队列 head/tail/pkt_backlog;
+            //   若冲刷的是 MC_QID, 额外清多播槽状态。
+            //   假设: 被冲刷队列在冲刷期间 QM 已停发出队/入队 (无同拍冲突)。
+            //================================================================
+            if (agf_push) begin
+                if (q_cell_cnt_q[agf_qid_q] != '0)
+                    q_cell_cnt_q[agf_qid_q] <= #1 q_cell_cnt_q[agf_qid_q] - 1'b1;
+                // 最后一个 cell (remain==1) push → 收尾清链
+                if (agf_remain_q == 1) begin
+                    q_head_q[agf_qid_q]            <= #1 '0;
+                    q_tail_q[agf_qid_q]            <= #1 '0;
+                    q_head_ph_q[agf_qid_q]         <= #1 1'b0;
+                    q_head_pt_q[agf_qid_q]         <= #1 1'b0;
+                    q_tail_ph_q[agf_qid_q]         <= #1 1'b0;
+                    q_tail_pt_q[agf_qid_q]         <= #1 1'b0;
+                    q_uni_pkt_backlog_q[agf_qid_q] <= #1 '0;
+                    // 冲刷多播专用队列: 清多播槽
+                    if (agf_qid_q == MC_QID[QID_W-1:0]) begin
+                        mc_valid_q      <= #1 1'b0;
+                        mc_dst_bitmap_q <= #1 '0;
+                        mc_ncell_q      <= #1 '0;
+                        mc_wr_idx_q     <= #1 '0;
+                        for (pp = 0; pp < PORT_NUM; pp++) begin
+                            mc_rd_done_q[pp]  <= #1 1'b0;
+                            mc_rcy_done_q[pp] <= #1 1'b0;
+                            mc_pend_uni_q[pp] <= #1 '0;
+                            mc_rd_idx_q[pp]   <= #1 '0;
+                        end
+                    end
+                end
+                else begin
+                    // 队头前进到 next (下一拍继续冲刷)
+                    q_head_q[agf_qid_q] <= #1 npr_r_data[2 +: ADDR_W];
+                end
+            end
         end
     end
+
+    //========================================================================
+    // ★ 老化用输出: 队列非空位图 + 出队 fire 喂狗
+    //========================================================================
+    always_comb begin
+        for (int oc = 0; oc < PORT_NUM*TC_NUM; oc++)
+            q_occupied_vec[oc] = (q_cell_cnt_q[oc] != '0);
+    end
+    assign deq_fire_evt = deq_grant & ~mc_take_deq;   // 真实单播出队 fire (喂狗)
+    assign deq_fire_qid = lle_deq_queue_id;
 
     //========================================================================
     // 对外组合输出 (含多播 splice 覆盖)
@@ -1327,639 +2007,10 @@ module next_ptr_sram_1r1w #(
         if (w_en) mem[w_addr] <= #1 w_data;
     end
 endmodule
+`
 
-```
-## enq
-```
-//============================================================================
-// Module      : enqueue_ctrl  (Enqueue Control)
-// Project     : 4-Port 2.5/1G/100M Ethernet Switch - Smart MMU
-// Description : 入队路径控制 (控制平面)。单拍命令式, 不直接访问指针存储。
-//               T0: 收 QM 入队请求 → 组合查 Occupancy 占用判决(当拍返回) →
-//                   接收则取 lle_free_head 作分配地址、发一拍 lle_alloc_fire 命令
-//                   (挂链/计数/ref 由 LLE 流水) → 判决/地址/sof/eof 在末沿寄存。
-//               T1: 输出 alloc_* 结果给 QM。
-//               含整帧丢弃 FSM: 本帧某 cell 判丢即置 alloc_full_frame_drop,
-//               本帧后续 cell 全丢。组播 ref_count 初值随命令下发, 单/组播同 1 拍。
-//               不做 WRED (WRED 在 QM, QM 发请求前已完成)。
-//               静态预留池按队列(queue_id)记账, egress_port 仅供端口级判决聚合。
-//
-// Clock/Reset : clk_core (300MHz, 单时钟域) / rst_core_n (异步复位低有效)
-//============================================================================
-`timescale 1ns/1ps
-
-module enqueue_ctrl #(
-    parameter int CELL_NUM  = 8192,
-    parameter int PORT_NUM  = 4,
-    parameter int TC_NUM    = 8,     // 每端口 TC 数
-    parameter int REF_W     = 3,
-    parameter int PKT_CELL_W = 4,    // enq_cell_num 位宽 (本包 cell 数)
-    // 派生位宽 (与 occupancy_pool_mgr / lle 同源)
-    localparam int QUEUE_NUM = PORT_NUM*TC_NUM + 1,   // 单播 P*T + 多播 (free 链在 LLE 内)
-    localparam int MC_QID    = QUEUE_NUM-1,           // 多播队列号 (=P*T)
-    localparam int ADDR_W   = $clog2(CELL_NUM),
-    localparam int QID_W    = $clog2(QUEUE_NUM-1)+1,
-    localparam int PORT_W   = $clog2(PORT_NUM-1)+1,
-    localparam int TC_W     = $clog2(TC_NUM)          // enq_queue_id 位宽 (仅 TC)
-)(
-    //------------------------------------------------------------------------
-    // 时钟复位 / 初始化 (公共)
-    //------------------------------------------------------------------------
-    input  logic                  clk_core,
-    input  logic                  rst_core_n,
-    input  logic                  init_done,           // =0 拒收 enq_req
-
-    //------------------------------------------------------------------------
-    // 与 QM 的接口 (外部, 经 MMU 顶层)
-    //------------------------------------------------------------------------
-    input  logic                  enq_req,             // 入队请求有效
-    input  logic [TC_W-1:0]       enq_queue_id,        // ★ 目标 TC (0..TC_NUM-1); 完整队列={egress_port,queue_id}
-    input  logic [PORT_W-1:0]     enq_egress_port,     // 出端口 ID
-    input  logic [PKT_CELL_W-1:0] enq_cell_num,        // ★ 本包 cell 数(SOF 有效, 入队前预判用)
-    input  logic                  enq_is_mcast,        // 组播标志
-    input  logic [PORT_NUM-1:0]   enq_mcast_bitmap,    // 组播出端口位图
-    input  logic                  enq_sof,             // 报文首段
-    input  logic                  enq_eof,             // 报文尾段
-    output logic                  enq_ready,           // 可接请求(init_done 后恒高)
-    output logic                  enq_predict_drop,    // ★ 入队前预判: 本包会否触发 alloc_drop(组合当拍返回)
-    output logic                  alloc_valid,         // 结果有效
-    output logic [ADDR_W-1:0]     alloc_cell_addr,     // 分配地址
-    output logic                  alloc_drop_ind,      // 丢包指示(高水位/空闲池空兜底)
-    output logic                  alloc_sram_flag,     // 内部 SRAM 存储标志
-    output logic                  alloc_pkt_head,      // 报文头 (= enq_sof)
-    output logic                  alloc_pkt_tail,      // 报文尾 (= enq_eof)
-    output logic                  alloc_full_frame_drop, // 整帧丢弃指示
-
-    //------------------------------------------------------------------------
-    // 与 Occupancy & Pool Mgr 的接口 (内部, 组合返回支撑 1 拍)
-    //   按【当前入队队列/端口】精确判决: 透传 queue_id/egress_port 给 occ,
-    //   occ 据此判 该队列/端口 高水位 + 静态穿透, 组合返回。
-    //------------------------------------------------------------------------
-    output logic                  occ_query_vld,       // 发起占用判决查询
-    output logic [QID_W-1:0]      occ_query_queue_id,  // 待判决队列号
-    output logic [PORT_W-1:0]     occ_query_egress_port, // 待判决出端口
-    output logic [PKT_CELL_W-1:0] occ_query_cell_num,  // 待预判本包 cell 数(透传 enq_cell_num)
-    input  logic                  occ_accept,          // 判决=接收
-    input  logic                  occ_drop,            // 判决=丢弃(高水位兜底)
-    input  logic                  occ_use_static,      // 记静态池(=1)/动态池(=0)
-    input  logic                  occ_no_free,         // 空闲池已空(强制丢弃)
-    input  logic                  occ_predict_drop,    // occ 组合返回的入队前预判结果
-
-    //------------------------------------------------------------------------
-    // 与 Link-List Engine (LLE) 的接口 (内部, 单拍命令式分配+挂链)
-    //   ★ lle_alloc_ready: LLE 本拍可受理 alloc。
-    //     - LLE 仲裁中 deq 占 SRAM 时 = 0, 本模块当拍不发 fire, QM 自动等下拍;
-    //     - build 期间 / free 池空时也 = 0。
-    //------------------------------------------------------------------------
-    input  logic [ADDR_W-1:0]     lle_free_head,       // 当前空闲链头(T0 当拍取)
-    input  logic                  lle_free_empty,      // 空闲链空
-    input  logic                  lle_alloc_ready,     // LLE 本拍可受理 alloc (含 ~deq 抢占 / ~build / ~free 空)
-    input  logic                  mc_busy,             // ★ B2: 多播槽占用中 (LLE 提供), 置1时新多播整帧丢弃
-    output logic                  lle_alloc_fire,      // 分配+挂链命令(一拍脉冲)
-    output logic [QID_W-1:0]      lle_alloc_queue_id,  // 挂链目标队列
-    output logic                  lle_set_pkt_head,    // 写 pkt_head (= enq_sof)
-    output logic                  lle_set_pkt_tail,    // 写 pkt_tail (= enq_eof)
-    output logic                  lle_alloc_is_mcast,  // 组播标志
-    output logic [PORT_NUM-1:0]   lle_alloc_mcast_bitmap, // ★ B2: 组播目的端口位图 → LLE
-    output logic [$clog2(TC_NUM)-1:0] lle_alloc_mcast_tc, // ★ B2: 组播帧 TC → LLE (定承载队列)
-    output logic                  mcast_busy_drop      // ★ B2: 本拍因多播槽占用而丢弃多播帧
-);
-
-    //========================================================================
-    // 握手: init_done 后, 还要看 LLE 本拍是否能受理 alloc (deq 抢占时 ready=0)
-    //   - enq_ready 反馈给 QM: 0 时 QM 当拍不发 enq_req, 自动重试;
-    //   - enq_fire 内部判: enq_req 且 init_done 且 lle 可受理。
-    //========================================================================
-    assign enq_ready = init_done & lle_alloc_ready;
-
-    // 本拍是否有有效入队请求 (握手成立)
-    logic enq_fire;
-    assign enq_fire = enq_req & enq_ready;
-
-    //========================================================================
-    // ★ 完整队列号合成:
-    //   - 单播: 完整队列 = {enq_egress_port, enq_queue_id} = egress_port*TC_NUM + TC
-    //   - 多播: 物理挂 MC_QID (q[32]); 承载 TC = enq_queue_id, 目的端口 = enq_mcast_bitmap
-    //           (LLE 用 mcast_tc + bitmap 算各端口承载队列, 反映到 QM 的 32 位 empty)
-    //========================================================================
-    logic [QID_W-1:0] uni_qid_c, full_qid_c;
-    assign uni_qid_c  = (QID_W'(enq_egress_port) << TC_W) | QID_W'(enq_queue_id);
-    assign full_qid_c = enq_is_mcast ? MC_QID[QID_W-1:0] : uni_qid_c;
-
-    //========================================================================
-    // 占用判决查询 (组合, 当拍返回): 透传 vld + 当前队列/端口给 Occupancy,
-    //   occ_accept/occ_drop/occ_use_static/occ_no_free 组合返回。
-    //========================================================================
-    assign occ_query_vld         = enq_fire;
-    assign occ_query_queue_id    = full_qid_c;           // ★ 完整队列号 (单播={port,tc}; 多播=MC_QID)
-    assign occ_query_egress_port = enq_egress_port;
-    // ★ 入队前预判: 透传本包 cell 数给 occ, occ 组合返回预判结果直出给 QM。
-    //   纯组合、与 enq_query 同拍, 不依赖 enq_fire (QM 在包首 presenting queue_id+cell_num 即可读)。
-    assign occ_query_cell_num    = enq_cell_num;
-    assign enq_predict_drop      = occ_predict_drop;
-
-    //========================================================================
-    // ★ B2 单槽门控: 多播帧到达 (SOF) 时若多播槽已占用 (mc_busy) → 整帧丢弃。
-    //   mc_busy 由 LLE 提供 (mc_valid 寄存), T0 当拍可读。
-    //   非 SOF 的多播后续 cell 靠 frame_drop_q 级联丢弃 (无需再看 mc_busy)。
-    //========================================================================
-    logic mcast_slot_block_c;
-    assign mcast_slot_block_c = enq_fire & enq_is_mcast & enq_sof & mc_busy;
-
-    //========================================================================
-    // 整帧丢弃 FSM: 一帧 (sof~eof) 内任一 cell 判丢则置位并保持到 eof,
-    //   本帧后续 cell 在 T0 直接判丢、不取地址、不发 fire。
-    //   frame_drop_q: 当前帧已进入"整帧丢弃"状态 (sof 拍判丢后保持到 eof)。
-    //========================================================================
-    logic frame_drop_q;
-
-    // 本 cell 的丢弃来源:
-    //   - occ_drop / occ_no_free / lle_free_empty: 占用水位高水位无条件丢弃 + 空闲池空兜底
-    //   - (enq_sof & enq_predict_drop): ★ 入队前预判命中 → 整包放不下, 从包首就整帧丢弃
-    //   - frame_drop_q: 本帧此前已判丢 (整帧丢弃保持)
-    logic cell_drop_c;       // 本 cell 是否丢弃
-    logic full_frame_drop_c; // 本 cell 是否标整帧丢弃 (本 cell 起始的帧整帧丢)
-    logic accept_c;          // 本 cell 是否真正接收(分配+挂链)
-
-    always_comb begin
-        // 默认
-        cell_drop_c       = 1'b0;
-        full_frame_drop_c = 1'b0;
-        accept_c          = 1'b0;
-
-        if (enq_fire) begin
-            // 已处于整帧丢弃状态 (本帧前序 cell 判丢): 后续 cell 全丢
-            if (frame_drop_q) begin
-                cell_drop_c       = 1'b1;
-                full_frame_drop_c = 1'b1;
-            end
-            // 本 cell 触发丢弃:
-            //   - 逐 cell 高水位无条件丢弃 / 空闲池空;
-            //   - ★ 入队前预判命中 (enq_predict_drop) 且为包首(SOF): occ 组合判定本包 N 个
-            //     cell 整体放不下 → 从 SOF 起就整帧丢弃, 一个 cell 都不挂链 (避免"前几个
-            //     cell 已挂链、到中途才丢"造成的部分挂链遗留)。predict 只在 SOF 采样,
-            //     后续 cell 靠 frame_drop_q 级联丢弃。
-            //   - ★ mcast_slot_block_c: 多播槽占用中, 新多播帧从 SOF 整帧丢弃。
-            else if (occ_drop | occ_no_free | lle_free_empty | (enq_sof & enq_predict_drop) | mcast_slot_block_c) begin
-                cell_drop_c       = 1'b1;
-                full_frame_drop_c = 1'b1;
-            end
-            // 占用判决接收
-            else if (occ_accept) begin
-                accept_c = 1'b1;
-            end
-            // 兜底: 无 accept 也无明确 drop 视为丢弃 (保守)
-            else begin
-                cell_drop_c       = 1'b1;
-                full_frame_drop_c = 1'b1;
-            end
-        end
-    end
-
-    // 整帧丢弃状态更新: 帧首 (sof) 判丢则置位; 帧尾 (eof) 帧结束则清除。
-    always_ff @(posedge clk_core or negedge rst_core_n) begin
-        if (!rst_core_n) begin
-            frame_drop_q <= #1 1'b0;
-        end
-        else if (!init_done) begin
-            frame_drop_q <= #1 1'b0;
-        end
-        else if (enq_fire) begin
-            if (frame_drop_q) begin
-                // 整帧丢弃保持中, 到 eof 清除 (本帧结束)
-                if (enq_eof) frame_drop_q <= #1 1'b0;
-            end
-            else if (cell_drop_c && !enq_eof) begin
-                // 本 cell 判丢且帧未结束 → 进入整帧丢弃保持
-                frame_drop_q <= #1 1'b1;
-            end
-            // 单 cell 帧 (sof&eof 同拍) 判丢: 不需保持, frame_drop_q 维持 0
-        end
-    end
-
-    //========================================================================
-    // LLE 分配+挂链命令 (一拍脉冲): 仅接收时拉高
-    //========================================================================
-    assign lle_alloc_fire         = accept_c;
-    assign lle_alloc_queue_id     = full_qid_c;          // ★ 完整队列号 (单播={port,tc}; 多播=MC_QID)
-    assign lle_set_pkt_head       = enq_sof;
-    assign lle_set_pkt_tail       = enq_eof;
-    assign lle_alloc_is_mcast     = enq_is_mcast;
-    assign lle_alloc_mcast_bitmap = enq_mcast_bitmap;    // ★ B2: 目的端口位图 → LLE 置 mc_dst_bitmap
-    assign lle_alloc_mcast_tc     = enq_queue_id;        // ★ B2: 多播承载 TC = enq_queue_id
-    assign mcast_busy_drop        = mcast_slot_block_c;  // ★ B2: 本拍多播因槽占用被丢
-
-    //========================================================================
-    // T1 返回 (寄存一拍): 把 T0 的判决/地址/头尾在末沿寄存, 下一拍输出给 QM。
-    //========================================================================
-    always_ff @(posedge clk_core or negedge rst_core_n) begin
-        if (!rst_core_n) begin
-            alloc_valid           <= #1 1'b0;
-            alloc_cell_addr       <= #1 '0;
-            alloc_drop_ind        <= #1 1'b0;
-            alloc_sram_flag       <= #1 1'b0;
-            alloc_pkt_head        <= #1 1'b0;
-            alloc_pkt_tail        <= #1 1'b0;
-            alloc_full_frame_drop <= #1 1'b0;
-        end
-        else begin
-            alloc_valid           <= #1 enq_fire;            // 本拍有有效请求 → 下一拍结果有效
-            alloc_cell_addr       <= #1 lle_free_head;       // 接收时为分配地址; 丢弃时该字段无意义
-            alloc_drop_ind        <= #1 cell_drop_c;
-            alloc_sram_flag       <= #1 accept_c;            // 接收且写内部 SRAM
-            alloc_pkt_head        <= #1 enq_sof;
-            alloc_pkt_tail        <= #1 enq_eof;
-            alloc_full_frame_drop <= #1 full_frame_drop_c;
-        end
-    end
-
-endmodule
-
-```
-## deq
-```
-//============================================================================
-// Module      : dequeue_ctrl  (Dequeue Control)
-// Project     : 4-Port 2.5/1G/100M Ethernet Switch - Smart MMU
-// Description : 出队路径控制 (控制平面)。单拍命令式, 不直接访问指针存储。
-//               T0: 收 QM 出队请求、检查背压 → 取 lle_qhead(队头寄存器组合可读)
-//                   作出队地址、发一拍 lle_deq_fire(队头推进+预取由 LLE 流水) →
-//                   地址/头尾标志在末沿寄存。
-//               T1: 输出 deq_cell_* 给 QM。背靠背 1 cell/cycle, 逐 cell 直到 pkt_tail。
-//               deq_backpressure[port]=1 时暂停该端口对应队列出队。
-//
-// Clock/Reset : clk_core (300MHz, 单时钟域) / rst_core_n (异步复位低有效)
-//============================================================================
-`timescale 1ns/1ps
-
-module dequeue_ctrl #(
-    parameter int CELL_NUM  = 8192,
-    parameter int PORT_NUM  = 4,
-    parameter int TC_NUM    = 8,     // 每端口 TC 数
-    // 派生位宽 (与 occupancy_pool_mgr / lle 同源)
-    localparam int QUEUE_NUM = PORT_NUM*TC_NUM + 1,   // 单播 P*T + 多播 (free 链在 LLE 内)
-    localparam int ADDR_W   = $clog2(CELL_NUM),
-    localparam int QID_W    = $clog2(QUEUE_NUM-1)+1
-)(
-    //------------------------------------------------------------------------
-    // 时钟复位 / 初始化 (公共)
-    //------------------------------------------------------------------------
-    input  logic                  clk_core,
-    input  logic                  rst_core_n,
-    input  logic                  init_done,           // =0 拒收 deq_req
-
-    //------------------------------------------------------------------------
-    // 与 QM 的接口 (外部, 经 MMU 顶层)
-    //------------------------------------------------------------------------
-    input  logic                  deq_req,             // 出队请求有效
-    input  logic [QID_W-1:0]      deq_queue_id,        // 出队队列号
-    input  logic [PORT_NUM-1:0]   deq_backpressure,    // 每端口背压(EPS 经 QM)
-    output logic                  deq_ready,           // 可接出队请求(init_done 后恒高)
-    output logic                  deq_cell_valid,      // 出队地址有效
-    output logic [ADDR_W-1:0]     deq_cell_addr,       // 出队 cell 地址
-    output logic                  deq_pkt_head,        // 报文头标志
-    output logic                  deq_pkt_tail,        // 报文尾标志
-
-    //------------------------------------------------------------------------
-    // 与 Link-List Engine (LLE) 的接口 (内部, 单拍命令式出队)
-    //------------------------------------------------------------------------
-    input  logic [ADDR_W-1:0]     lle_qhead,           // 出队地址(按 queue_id 选, 组合可读)
-    input  logic                  lle_qhead_pkt_head,  // 队头 cell 头标志
-    input  logic                  lle_qhead_pkt_tail,  // 队头 cell 尾标志
-    input  logic                  lle_q_empty,         // 该队列空
-    output logic                  lle_deq_fire,        // 出队命令(一拍脉冲, 推进队头+取新队头)
-    output logic [QID_W-1:0]      lle_deq_queue_id     // 出队队列号
-);
-
-    //========================================================================
-    // 握手: init_done 后恒高, 支持背靠背 1 cell/cycle
-    //========================================================================
-    assign deq_ready = init_done;
-
-    //========================================================================
-    // 出队队列 → 出端口映射: egress_port = queue_id >> $clog2(TC_NUM)。
-    //   单播 queue_id = port*TC_NUM + tc; 截到 PORT_NUM 范围内 (越界视为 0,
-    //   多播专用队列的出端口不参与此端口背压映射)。
-    //========================================================================
-    localparam int    Q_PER_PORT_LOG = $clog2(TC_NUM);
-    logic [QID_W-1:0] egress_port_full;
-    logic [QID_W-1:0] egress_port_idx;
-    assign egress_port_full = deq_queue_id >> Q_PER_PORT_LOG;
-    assign egress_port_idx  = (egress_port_full < PORT_NUM[QID_W-1:0])
-                              ? egress_port_full : '0;
-
-    // 该端口是否被背压
-    logic port_bp;
-    assign port_bp = deq_backpressure[egress_port_idx];
-
-    //========================================================================
-    // 本拍是否真正出队:
-    //   - 握手成立 (deq_req & deq_ready)
-    //   - 队列非空 (lle_q_empty=0)
-    //   - 对应端口未被背压 (port_bp=0)
-    //========================================================================
-    logic deq_fire;
-    assign deq_fire = deq_req & deq_ready & ~lle_q_empty & ~port_bp;
-
-    //========================================================================
-    // LLE 出队命令 (一拍脉冲): 推进队头 + 取新队头 entry 由 LLE 流水完成。
-    //========================================================================
-    assign lle_deq_fire     = deq_fire;
-    assign lle_deq_queue_id = deq_queue_id;
-
-    //========================================================================
-    // T1 返回 (寄存一拍): 出队地址 = lle_qhead (T0 当拍组合可读),
-    //   头尾标志取 lle_qhead_pkt_head/tail (队头描述符预取), 末沿寄存后下一拍输出。
-    //========================================================================
-    always_ff @(posedge clk_core or negedge rst_core_n) begin
-        if (!rst_core_n) begin
-            deq_cell_valid <= #1 1'b0;
-            deq_cell_addr  <= #1 '0;
-            deq_pkt_head   <= #1 1'b0;
-            deq_pkt_tail   <= #1 1'b0;
-        end
-        else begin
-            deq_cell_valid <= #1 deq_fire;
-            deq_cell_addr  <= #1 lle_qhead;            // 队头地址 (当拍即给)
-            deq_pkt_head   <= #1 lle_qhead_pkt_head;   // 队头描述符 (预取, 当拍可给)
-            deq_pkt_tail   <= #1 lle_qhead_pkt_tail;
-        end
-    end
-
-endmodule
-
-```
-## csr_stats_init
-```
-//============================================================================
-// Module      : csr_stats_init  (CSR Sample / Stats + Init FSM)
-// Project     : 4-Port 2.5/1G/100M Ethernet Switch - Smart MMU
-// Description : 配置平面。**不在 MMU 内部实现 APB/AHB 总线**: 配置寄存器由 MMU
-//               外部 (SoC 顶层 CSR 块 / 寄存器文件) 维护, 配置值在外部已 ready
-//               且稳定; 本模块用主时钟 clk_core 直接采样外部配置输入 cfg_in_*,
-//               寄存一拍去毛刺后下发 cfg_* 给 Occupancy 等模块 (无总线握手、
-//               无 CDC; 配置源与 MMU 同 clk_core 域, 或外部已做好同步)。
-//               - Init FSM: init_start 触发 → 命 LLE 建空闲链(init_build_req) →
-//                 清各 head/tail/计数器(clr_ptr_cnt) → init_done。
-//               不含 WRED 参数 (WRED 在 QM)。
-//
-//   ★ 与新版 occupancy_pool_mgr 对齐:
-//     - occ 占用判决/满判决用 cfg_q_full / cfg_q_max_cell / cfg_port_max /
-//       cfg_global_high_wm; near_full 改由 occ 内部按 (阈值 - margin) 推导,
-//       故删除 cfg_q_near_full_th / cfg_q_near_full_hyst。
-//     - 新增 PAUSE 双阈值 (cfg_port/global_pause_xoff/xon) 与 PFC (cfg_pfc_en/xoff/xon)。
-//     - occ 不再输出 st_* 统计与 overflow/underflow_alarm; 本模块统计输出保留
-//       接口但置 0 (统计在详细设计阶段重新接入), 告警 irq 由顶层汇聚。
-//
-// Clock/Reset : clk_core (300MHz, 单时钟域) / rst_core_n (异步复位低有效)
-//============================================================================
-`timescale 1ns/1ps
-
-module csr_stats_init #(
-    parameter int CELL_NUM   = 8192,
-    parameter int PORT_NUM   = 4,
-    parameter int TC_NUM     = 8,     // 每端口 TC 数
-    parameter int STAT_W     = 32,
-    // 派生位宽 / 数量 (与 occupancy_pool_mgr 同源)
-    localparam int QUEUE_NUM = PORT_NUM*TC_NUM + 1,   // 单播 P*T + 多播 (free 链在 LLE 内)
-    localparam int CNT_W     = $clog2(CELL_NUM) + 1
-)(
-    //------------------------------------------------------------------------
-    // 时钟复位 (core 域, 单时钟域)
-    //------------------------------------------------------------------------
-    input  logic                                        clk_core,
-    input  logic                                        rst_core_n,
-
-    //------------------------------------------------------------------------
-    // 外部 CSR 配置输入 (clk_core 域已 ready, 直接采样, 无总线握手/无 CDC)
-    //   由 MMU 外部 (SoC 顶层 CSR 块) 维护并驱动; 本模块寄存一拍后下发各子模块。
-    //------------------------------------------------------------------------
-    input  logic [QUEUE_NUM-1:0][CNT_W-1:0]             cfg_in_queue_min_cell,    // 每队列静态预留(per-queue)
-    input  logic [QUEUE_NUM-1:0][CNT_W-1:0]             cfg_in_q_max_cell,        // 每队列高水位上限
-    input  logic [QUEUE_NUM-1:0][CNT_W-1:0]             cfg_in_q_full,            // 每队列满阈值
-    input  logic [PORT_NUM-1:0][CNT_W-1:0]              cfg_in_port_max,          // 每出端口高水位(端口级聚合)
-    input  logic [CNT_W-1:0]                            cfg_in_global_high_wm,    // 全局高水位
-    // PAUSE (802.3x) 双阈值
-    input  logic                                        cfg_in_pause_en,          // PAUSE 使能
-    input  logic [PORT_NUM-1:0][CNT_W-1:0]              cfg_in_port_pause_xoff,   // 每端口 PAUSE XOFF
-    input  logic [PORT_NUM-1:0][CNT_W-1:0]              cfg_in_port_pause_xon,    // 每端口 PAUSE XON
-    input  logic [CNT_W-1:0]                            cfg_in_global_pause_xoff, // 全局 PAUSE XOFF
-    input  logic [CNT_W-1:0]                            cfg_in_global_pause_xon,  // 全局 PAUSE XON
-    // PFC (802.1Qbb) 双阈值 (per-port × TC)
-    input  logic                                        cfg_in_pfc_en,            // PFC 使能
-    input  logic [PORT_NUM-1:0][TC_NUM-1:0][CNT_W-1:0]  cfg_in_pfc_xoff,          // 每 TC PFC XOFF
-    input  logic [PORT_NUM-1:0][TC_NUM-1:0][CNT_W-1:0]  cfg_in_pfc_xon,           // 每 TC PFC XON
-
-    //------------------------------------------------------------------------
-    // 统计汇聚 (← Occupancy) + 告警 (← Occupancy)
-    //------------------------------------------------------------------------
-    input  logic [CNT_W-1:0]                            st_global_used,
-    input  logic [CNT_W-1:0]                            st_free_count,
-    input  logic [QUEUE_NUM-1:0][CNT_W-1:0]             st_q_static_used,
-    input  logic [PORT_NUM-1:0][CNT_W-1:0]              st_per_port_used,
-    input  logic [QUEUE_NUM-1:0][CNT_W-1:0]             st_per_queue_used,
-    input  logic [QUEUE_NUM-1:0]                        st_q_near_full_status,
-    input  logic [QUEUE_NUM-1:0][STAT_W-1:0]            st_tail_drop_cnt,
-    input  logic [QUEUE_NUM-1:0][STAT_W-1:0]            st_near_full_assert_cnt,
-    input  logic [PORT_NUM-1:0][STAT_W-1:0]             st_pause_tx_cnt,
-    input  logic                                        overflow_alarm,      // ← Occupancy
-    input  logic                                        underflow_alarm,     // ← Occupancy
-
-    //------------------------------------------------------------------------
-    // 上电初始化 (外部)
-    //------------------------------------------------------------------------
-    input  logic                                        init_start,          // 上电初始化触发(← CPU/CSR)
-    output logic                                        init_done,           // 初始化完成(→ CPU/QM/各 Ctrl)
-
-    //------------------------------------------------------------------------
-    // 告警 / 中断输出
-    //------------------------------------------------------------------------
-    output logic                                        irq_alarm,           // 告警中断
-    output logic                                        irq_aging,           // 老化中断
-
-    //------------------------------------------------------------------------
-    // 配置下发 (→ Occupancy 等) = 外部 cfg_in_* 经 clk_core 寄存一拍后的稳定版本
-    //------------------------------------------------------------------------
-    output logic [QUEUE_NUM-1:0][CNT_W-1:0]             cfg_queue_min_cell,
-    output logic [QUEUE_NUM-1:0][CNT_W-1:0]             cfg_q_max_cell,
-    output logic [QUEUE_NUM-1:0][CNT_W-1:0]             cfg_q_full,
-    output logic [PORT_NUM-1:0][CNT_W-1:0]              cfg_port_max,
-    output logic [CNT_W-1:0]                            cfg_global_high_wm,
-    output logic                                        cfg_pause_en,
-    output logic [PORT_NUM-1:0][CNT_W-1:0]              cfg_port_pause_xoff,
-    output logic [PORT_NUM-1:0][CNT_W-1:0]              cfg_port_pause_xon,
-    output logic [CNT_W-1:0]                            cfg_global_pause_xoff,
-    output logic [CNT_W-1:0]                            cfg_global_pause_xon,
-    output logic                                        cfg_pfc_en,
-    output logic [PORT_NUM-1:0][TC_NUM-1:0][CNT_W-1:0]  cfg_pfc_xoff,
-    output logic [PORT_NUM-1:0][TC_NUM-1:0][CNT_W-1:0]  cfg_pfc_xon,
-
-    //------------------------------------------------------------------------
-    // 统计输出 (→ 外部 CSR/CPU, clk_core 域直接输出, 无总线)
-    //   注: 新版 occ 暂未产出 st_* 统计, 此处置 0 占位 (详细设计阶段重新接入)。
-    //------------------------------------------------------------------------
-    output logic [CNT_W-1:0]                            st_out_global_used,
-    output logic [CNT_W-1:0]                            st_out_free_count,
-    output logic [QUEUE_NUM-1:0][CNT_W-1:0]             st_out_q_static_used,
-    output logic [PORT_NUM-1:0][CNT_W-1:0]              st_out_per_port_used,
-    output logic [QUEUE_NUM-1:0][CNT_W-1:0]             st_out_per_queue_used,
-    output logic [QUEUE_NUM-1:0]                        st_out_q_near_full_status,
-    output logic [QUEUE_NUM-1:0][STAT_W-1:0]            st_out_tail_drop_cnt,
-    output logic [QUEUE_NUM-1:0][STAT_W-1:0]            st_out_near_full_assert_cnt,
-    output logic [PORT_NUM-1:0][STAT_W-1:0]             st_out_pause_tx_cnt,
-
-    //------------------------------------------------------------------------
-    // 与 LLE 的接口 (上电建空闲链)
-    //------------------------------------------------------------------------
-    output logic                                        init_build_req,      // 触发建空闲链
-    input  logic                                        init_build_done,     // 建链完成
-
-    //------------------------------------------------------------------------
-    // 初始化期清指针/计数 (→ 各 Ctrl / Occupancy)
-    //------------------------------------------------------------------------
-    output logic                                        clr_ptr_cnt          // 初始化期清 head/tail/计数器
-);
-
-    //========================================================================
-    // 配置采样: 外部 cfg_in_* 在 clk_core 域已 ready, 寄存一拍去毛刺后下发。
-    //   (配置源与 MMU 同 clk_core 域, 或外部已做好同步; 无需总线握手/CDC。)
-    //========================================================================
-    always_ff @(posedge clk_core or negedge rst_core_n) begin
-        if (!rst_core_n) begin
-            cfg_queue_min_cell    <= #1 '0;
-            cfg_q_max_cell        <= #1 '0;
-            cfg_q_full            <= #1 '0;
-            cfg_port_max          <= #1 '0;
-            cfg_global_high_wm    <= #1 '0;
-            cfg_pause_en          <= #1 1'b0;
-            cfg_port_pause_xoff   <= #1 '0;
-            cfg_port_pause_xon    <= #1 '0;
-            cfg_global_pause_xoff <= #1 '0;
-            cfg_global_pause_xon  <= #1 '0;
-            cfg_pfc_en            <= #1 1'b0;
-            cfg_pfc_xoff          <= #1 '0;
-            cfg_pfc_xon           <= #1 '0;
-        end
-        else begin
-            cfg_queue_min_cell    <= #1 cfg_in_queue_min_cell;
-            cfg_q_max_cell        <= #1 cfg_in_q_max_cell;
-            cfg_q_full            <= #1 cfg_in_q_full;
-            cfg_port_max          <= #1 cfg_in_port_max;
-            cfg_global_high_wm    <= #1 cfg_in_global_high_wm;
-            cfg_pause_en          <= #1 cfg_in_pause_en;
-            cfg_port_pause_xoff   <= #1 cfg_in_port_pause_xoff;
-            cfg_port_pause_xon    <= #1 cfg_in_port_pause_xon;
-            cfg_global_pause_xoff <= #1 cfg_in_global_pause_xoff;
-            cfg_global_pause_xon  <= #1 cfg_in_global_pause_xon;
-            cfg_pfc_en            <= #1 cfg_in_pfc_en;
-            cfg_pfc_xoff          <= #1 cfg_in_pfc_xoff;
-            cfg_pfc_xon           <= #1 cfg_in_pfc_xon;
-        end
-    end
-
-    //========================================================================
-    // 统计输出: 自 Occupancy 汇聚的 st_* 在 clk_core 域寄存一拍后直出给外部 CSR/CPU。
-    //========================================================================
-    always_ff @(posedge clk_core or negedge rst_core_n) begin
-        if (!rst_core_n) begin
-            st_out_global_used          <= #1 '0;
-            st_out_free_count           <= #1 '0;
-            st_out_q_static_used        <= #1 '0;
-            st_out_per_port_used        <= #1 '0;
-            st_out_per_queue_used       <= #1 '0;
-            st_out_q_near_full_status   <= #1 '0;
-            st_out_tail_drop_cnt        <= #1 '0;
-            st_out_near_full_assert_cnt <= #1 '0;
-            st_out_pause_tx_cnt         <= #1 '0;
-        end
-        else begin
-            st_out_global_used          <= #1 st_global_used;
-            st_out_free_count           <= #1 st_free_count;
-            st_out_q_static_used        <= #1 st_q_static_used;
-            st_out_per_port_used        <= #1 st_per_port_used;
-            st_out_per_queue_used       <= #1 st_per_queue_used;
-            st_out_q_near_full_status   <= #1 st_q_near_full_status;
-            st_out_tail_drop_cnt        <= #1 st_tail_drop_cnt;
-            st_out_near_full_assert_cnt <= #1 st_near_full_assert_cnt;
-            st_out_pause_tx_cnt         <= #1 st_pause_tx_cnt;
-        end
-    end
-
-    //========================================================================
-    // 告警中断聚合 (overflow/underflow → irq_alarm; 老化 irq_aging 预留)
-    //========================================================================
-    always_ff @(posedge clk_core or negedge rst_core_n) begin
-        if (!rst_core_n) begin
-            irq_alarm <= #1 1'b0;
-            irq_aging <= #1 1'b0;
-        end
-        else begin
-            irq_alarm <= #1 overflow_alarm | underflow_alarm;
-            irq_aging <= #1 1'b0;   // 队列老化未启用时恒 0
-        end
-    end
-
-    //========================================================================
-    // Init FSM: IDLE → BUILD(命 LLE 建空闲链, 清指针/计数) → DONE
-    //   init_start 触发 → 拉 init_build_req(脉冲) + clr_ptr_cnt → 等 LLE
-    //   init_build_done → 置 init_done(并保持)。
-    //========================================================================
-    typedef enum logic [1:0] {
-        IS_IDLE  = 2'b00,
-        IS_BUILD = 2'b01,
-        IS_DONE  = 2'b10
-    } init_st_e;
-
-    init_st_e init_st_q;
-
-    always_ff @(posedge clk_core or negedge rst_core_n) begin
-        if (!rst_core_n) begin
-            init_st_q      <= #1 IS_IDLE;
-            init_build_req <= #1 1'b0;
-            clr_ptr_cnt    <= #1 1'b0;
-            init_done      <= #1 1'b0;
-        end
-        else begin
-            // 默认拉低脉冲
-            init_build_req <= #1 1'b0;
-            case (init_st_q)
-                IS_IDLE: begin
-                    init_done   <= #1 1'b0;
-                    clr_ptr_cnt <= #1 1'b0;
-                    if (init_start) begin
-                        init_build_req <= #1 1'b1;   // 命 LLE 建空闲链 (脉冲 1 拍)
-                        clr_ptr_cnt    <= #1 1'b1;    // 初始化期清指针/计数
-                        init_st_q      <= #1 IS_BUILD;
-                    end
-                end
-                IS_BUILD: begin
-                    // 等 LLE 建链完成
-                    if (init_build_done) begin
-                        clr_ptr_cnt <= #1 1'b0;
-                        init_done   <= #1 1'b1;       // 初始化完成 (保持)
-                        init_st_q   <= #1 IS_DONE;
-                    end
-                end
-                IS_DONE: begin
-                    init_done <= #1 1'b1;             // 保持完成态
-                    // 允许再次 init_start 重新初始化
-                    if (init_start) begin
-                        init_done      <= #1 1'b0;
-                        init_build_req <= #1 1'b1;
-                        clr_ptr_cnt    <= #1 1'b1;
-                        init_st_q      <= #1 IS_BUILD;
-                    end
-                end
-                default: init_st_q <= #1 IS_IDLE;
-            endcase
-        end
-    end
-
-endmodule
-
-```
-## occupancy_pool_mgr
-```
+## occupancy_pool_mgr.sv
+`systemverilog
 `timescale 1ns/1ps
 
 module occupancy_pool_mgr #(
@@ -2407,18 +2458,72 @@ module occupancy_pool_mgr #(
         end
     end
     //========================================================================
+    // 事件累加计数器 (drop / pause / near_full 次数)
+    //   - tail_drop_cnt   : 每队列高水位无条件丢包次数 (按 cell 计, 每次 occ_drop 命中 +1)
+    //   - pause_tx_cnt    : 每端口 PAUSE 发送次数 (pause_req 上升沿 +1)
+    //   - near_full_assert_cnt : 每队列 near_full 置位次数 (q_near_full 上升沿 +1)
+    //   全部饱和递增 (计满 '1 后保持, 不回卷), 复位清零。
+    //========================================================================
+    logic [QUEUE_NUM-1:0][STAT_W-1:0] tail_drop_cnt_q;
+    logic [QUEUE_NUM-1:0][STAT_W-1:0] near_full_assert_cnt_q;
+    logic [PORT_NUM-1:0][STAT_W-1:0]  pause_tx_cnt_q;
+
+    // 上升沿检测用的上一拍状态
+    logic [QUEUE_NUM-1:0] q_near_full_d;
+    logic [PORT_NUM-1:0]  pause_req_d;
+
+    // 本拍丢包事件: 判决查询有效且判丢 → 命中 occ_query_queue_id 队列
+    logic                 tail_drop_evt;
+    assign tail_drop_evt = occ_query_vld & occ_drop;
+
+    always_ff @(posedge clk_core or negedge rst_core_n) begin
+        if (!rst_core_n) begin
+            for (int i = 0; i < QUEUE_NUM; i++) begin
+                tail_drop_cnt_q[i]        <= #1 '0;
+                near_full_assert_cnt_q[i] <= #1 '0;
+            end
+            for (int i = 0; i < PORT_NUM; i++)
+                pause_tx_cnt_q[i]         <= #1 '0;
+            q_near_full_d <= #1 '0;
+            pause_req_d   <= #1 '0;
+        end
+        else begin
+            // 记录上一拍状态 (做上升沿检测)
+            q_near_full_d <= #1 q_near_full;
+            pause_req_d   <= #1 pause_req;
+
+            // tail_drop: 命中队列 +1 (饱和)
+            for (int i = 0; i < QUEUE_NUM; i++) begin
+                if (tail_drop_evt && (occ_query_queue_id == QID_W'(i)) &&
+                    (tail_drop_cnt_q[i] != '1))
+                    tail_drop_cnt_q[i] <= #1 tail_drop_cnt_q[i] + 1'b1;
+            end
+
+            // near_full_assert: q_near_full 由 0→1 +1 (饱和)
+            for (int i = 0; i < QUEUE_NUM; i++) begin
+                if (q_near_full[i] && !q_near_full_d[i] &&
+                    (near_full_assert_cnt_q[i] != '1))
+                    near_full_assert_cnt_q[i] <= #1 near_full_assert_cnt_q[i] + 1'b1;
+            end
+
+            // pause_tx: pause_req 由 0→1 +1 (饱和)
+            for (int i = 0; i < PORT_NUM; i++) begin
+                if (pause_req[i] && !pause_req_d[i] &&
+                    (pause_tx_cnt_q[i] != '1))
+                    pause_tx_cnt_q[i] <= #1 pause_tx_cnt_q[i] + 1'b1;
+            end
+        end
+    end
+
+    //========================================================================
     // 统计输出
     //========================================================================
-    assign st_global_used        = global_used_q;
-    assign st_free_count         = free_count_q;
-    //assign st_q_near_full_status = q_near_full_q;
-    //assign st_tail_drop_cnt      = tail_drop_cnt_q;
-    //assign st_near_full_assert_cnt = near_full_assert_cnt_q;
-    //assign st_pause_tx_cnt       = pause_tx_cnt_q;
-    assign st_q_near_full_status = '0;
-    assign st_tail_drop_cnt      = '0;
-    assign st_near_full_assert_cnt = '0;
-    assign st_pause_tx_cnt       = '0;
+    assign st_global_used          = global_used_q;
+    assign st_free_count           = free_count_q;
+    assign st_q_near_full_status   = q_near_full;                 // 快满状态镜像
+    assign st_tail_drop_cnt        = tail_drop_cnt_q;
+    assign st_near_full_assert_cnt = near_full_assert_cnt_q;
+    assign st_pause_tx_cnt         = pause_tx_cnt_q;
     always_comb begin
         for (int i = 0; i < QUEUE_NUM; i++) begin
             st_q_static_used[i]  = q_static_used_q[i];
@@ -2448,131 +2553,529 @@ module occupancy_pool_mgr #(
 
 
 endmodule
+`
 
-
-```
-## recycle_ctrl
-```
+## csr_stats_init.sv
+`systemverilog
 //============================================================================
-// Module      : recycle_ctrl  (Recycle Control) —— B2 版
+// Module      : csr_stats_init  (CSR Sample / Stats + Init FSM)
 // Project     : 4-Port 2.5/1G/100M Ethernet Switch - Smart MMU
+// Description : 配置平面。**不在 MMU 内部实现 APB/AHB 总线**: 配置寄存器由 MMU
+//               外部 (SoC 顶层 CSR 块 / 寄存器文件) 维护, 配置值在外部已 ready
+//               且稳定; 本模块用主时钟 clk_core 直接采样外部配置输入 cfg_in_*,
+//               寄存一拍去毛刺后下发 cfg_* 给 Occupancy 等模块 (无总线握手、
+//               无 CDC; 配置源与 MMU 同 clk_core 域, 或外部已做好同步)。
+//               - Init FSM: init_start 触发 → 命 LLE 建空闲链(init_build_req) →
+//                 清各 head/tail/计数器(clr_ptr_cnt) → init_done。
+//               不含 WRED 参数 (WRED 在 QM)。
 //
-// Description :
-//   回收路径控制 (控制平面)。B2 多播模型:
-//     - 单播 (recycle_req): 报文发送完成, 该 cell 立即还链 → 直接向 LLE 发
-//                           lle_free_req(接空闲链尾), 并透传 queue_id 供 occ 计数--。
-//     - 组播 (mcast_recycle_req): 每收到一个出端口“发完一份”的通知, 反推该端口号
-//                           (由 mcast_recycle_queue_id >> Q_PER_PORT_LOG), 直接
-//                           转发给 LLE 的 mc_rcy_vld/mc_rcy_port —— LLE 内部记
-//                           mc_rcy_done[port]; 当所有目的端口都读完+还链, LLE 自行
-//                           整帧还链并清多播槽。recycle_ctrl 不再做 ref_count 递减。
-//
-//   仲裁: 单播还链走 lle_free_req; 组播还链由 LLE 内部 walk 完成 (走 LLE 内部
-//         recycle FIFO), 不占用 recycle_ctrl 的 lle_free_req 口。
+//   ★ 与新版 occupancy_pool_mgr 对齐:
+//     - occ 占用判决/满判决用 cfg_q_full / cfg_q_max_cell / cfg_port_max /
+//       cfg_global_high_wm; near_full 改由 occ 内部按 (阈值 - margin) 推导,
+//       故删除 cfg_q_near_full_th / cfg_q_near_full_hyst。
+//     - 新增 PAUSE 双阈值 (cfg_port/global_pause_xoff/xon) 与 PFC (cfg_pfc_en/xoff/xon)。
+//     - occ 不再输出 st_* 统计与 overflow/underflow_alarm; 本模块统计输出保留
+//       接口但置 0 (统计在详细设计阶段重新接入), 告警 irq 由顶层汇聚。
 //
 // Clock/Reset : clk_core (300MHz, 单时钟域) / rst_core_n (异步复位低有效)
 //============================================================================
 `timescale 1ns/1ps
 
-module recycle_ctrl #(
-    parameter int CELL_NUM  = 8192,
-    parameter int PORT_NUM  = 4,
-    parameter int TC_NUM    = 8,     // 每端口 TC 数
-    // 派生位宽 (与 occupancy_pool_mgr / lle 同源)
-    localparam int QUEUE_NUM = PORT_NUM*TC_NUM + 1,
-    localparam int ADDR_W   = $clog2(CELL_NUM),
-    localparam int QID_W    = $clog2(QUEUE_NUM-1)+1,
-    localparam int PORT_W   = $clog2(PORT_NUM-1)+1,
-    localparam int Q_PER_PORT_LOG = $clog2(TC_NUM)
+module csr_stats_init #(
+    parameter int CELL_NUM   = 8192,
+    parameter int PORT_NUM   = 4,
+    parameter int TC_NUM     = 8,     // 每端口 TC 数
+    parameter int STAT_W     = 32,
+    // 派生位宽 / 数量 (与 occupancy_pool_mgr 同源)
+    localparam int QUEUE_NUM = PORT_NUM*TC_NUM + 1,   // 单播 P*T + 多播 (free 链在 LLE 内)
+    localparam int CNT_W     = $clog2(CELL_NUM) + 1
 )(
     //------------------------------------------------------------------------
-    // 时钟复位 (公共)
+    // 时钟复位 (core 域, 单时钟域)
     //------------------------------------------------------------------------
-    input  logic                  clk_core,
-    input  logic                  rst_core_n,
+    input  logic                                        clk_core,
+    input  logic                                        rst_core_n,
 
     //------------------------------------------------------------------------
-    // 与 QM 的接口 (外部, 经 MMU 顶层)
+    // 外部 CSR 配置输入 (clk_core 域已 ready, 直接采样, 无总线握手/无 CDC)
+    //   由 MMU 外部 (SoC 顶层 CSR 块) 维护并驱动; 本模块寄存一拍后下发各子模块。
     //------------------------------------------------------------------------
-    input  logic                  recycle_req,         // 单播 cell 回收请求
-    input  logic [ADDR_W-1:0]     recycle_cell_addr,   // 待回收 cell 地址
-    input  logic [QID_W-1:0]      recycle_queue_id,    // 单播回收 cell 所属队列号
-    input  logic                  mcast_recycle_req,   // 组播回收通知(某端口发完一份)
-    input  logic [ADDR_W-1:0]     mcast_recycle_addr,  // 组播待回收 cell 地址 (B2 未用, 保留)
-    input  logic [QID_W-1:0]      mcast_recycle_queue_id, // 组播回收所属承载队列号 (→ 反推端口)
-    output logic                  recycle_ack,         // 回收完成应答
+    input  logic [QUEUE_NUM-1:0][CNT_W-1:0]             cfg_in_queue_min_cell,    // 每队列静态预留(per-queue)
+    input  logic [QUEUE_NUM-1:0][CNT_W-1:0]             cfg_in_q_max_cell,        // 每队列高水位上限
+    input  logic [QUEUE_NUM-1:0][CNT_W-1:0]             cfg_in_q_full,            // 每队列满阈值
+    input  logic [PORT_NUM-1:0][CNT_W-1:0]              cfg_in_port_max,          // 每出端口高水位(端口级聚合)
+    input  logic [CNT_W-1:0]                            cfg_in_global_high_wm,    // 全局高水位
+    // PAUSE (802.3x) 双阈值
+    input  logic                                        cfg_in_pause_en,          // PAUSE 使能
+    input  logic [PORT_NUM-1:0][CNT_W-1:0]              cfg_in_port_pause_xoff,   // 每端口 PAUSE XOFF
+    input  logic [PORT_NUM-1:0][CNT_W-1:0]              cfg_in_port_pause_xon,    // 每端口 PAUSE XON
+    input  logic [CNT_W-1:0]                            cfg_in_global_pause_xoff, // 全局 PAUSE XOFF
+    input  logic [CNT_W-1:0]                            cfg_in_global_pause_xon,  // 全局 PAUSE XON
+    // PFC (802.1Qbb) 双阈值 (per-port × TC)
+    input  logic                                        cfg_in_pfc_en,            // PFC 使能
+    input  logic [PORT_NUM-1:0][TC_NUM-1:0][CNT_W-1:0]  cfg_in_pfc_xoff,          // 每 TC PFC XOFF
+    input  logic [PORT_NUM-1:0][TC_NUM-1:0][CNT_W-1:0]  cfg_in_pfc_xon,           // 每 TC PFC XON
+    // ★ 老化机制配置 (队列/端口 aging)
+    input  logic                                        cfg_in_aging_en,          // 老化总使能
+    input  logic [23:0]                                 cfg_in_aging_timeout,     // 老化超时阈值 (cycle)
+    input  logic [QUEUE_NUM-1:0]                        cfg_in_age_force,         // 软件强制某队列老化
 
     //------------------------------------------------------------------------
-    // 与 LLE 的接口 —— 单播还链 + 组播逐端口回收转发
+    // 统计汇聚 (← Occupancy) + 告警 (← Occupancy)
     //------------------------------------------------------------------------
-    output logic                  lle_free_req,        // 单播还链请求
-    output logic [ADDR_W-1:0]     lle_free_addr,       // 待还 cell
-    output logic [QID_W-1:0]      lle_free_queue_id,   // 待还 cell 所属队列号
-    input  logic                  lle_free_grant,      // 仲裁通过
-    input  logic                  lle_free_done,       // 还链完成
-    // 组播逐端口回收 → LLE
-    output logic                  mc_rcy_vld,          // 组播回收通知有效
-    output logic [PORT_W-1:0]     mc_rcy_port          // 组播回收所属出端口
+    input  logic [CNT_W-1:0]                            st_global_used,
+    input  logic [CNT_W-1:0]                            st_free_count,
+    input  logic [QUEUE_NUM-1:0][CNT_W-1:0]             st_q_static_used,
+    input  logic [PORT_NUM-1:0][CNT_W-1:0]              st_per_port_used,
+    input  logic [QUEUE_NUM-1:0][CNT_W-1:0]             st_per_queue_used,
+    input  logic [QUEUE_NUM-1:0]                        st_q_near_full_status,
+    input  logic [QUEUE_NUM-1:0][STAT_W-1:0]            st_tail_drop_cnt,
+    input  logic [QUEUE_NUM-1:0][STAT_W-1:0]            st_near_full_assert_cnt,
+    input  logic [PORT_NUM-1:0][STAT_W-1:0]             st_pause_tx_cnt,
+    input  logic                                        overflow_alarm,      // ← Occupancy
+    input  logic                                        underflow_alarm,     // ← Occupancy
+    input  logic                                        aging_irq_in,        // ← aging_ctrl (有队列老化)
+
+    //------------------------------------------------------------------------
+    // 上电初始化 (外部)
+    //------------------------------------------------------------------------
+    input  logic                                        init_start,          // 上电初始化触发(← CPU/CSR)
+    output logic                                        init_done,           // 初始化完成(→ CPU/QM/各 Ctrl)
+
+    //------------------------------------------------------------------------
+    // 告警 / 中断输出
+    //------------------------------------------------------------------------
+    output logic                                        irq_alarm,           // 告警中断
+    output logic                                        irq_aging,           // 老化中断
+
+    //------------------------------------------------------------------------
+    // 配置下发 (→ Occupancy 等) = 外部 cfg_in_* 经 clk_core 寄存一拍后的稳定版本
+    //------------------------------------------------------------------------
+    output logic [QUEUE_NUM-1:0][CNT_W-1:0]             cfg_queue_min_cell,
+    output logic [QUEUE_NUM-1:0][CNT_W-1:0]             cfg_q_max_cell,
+    output logic [QUEUE_NUM-1:0][CNT_W-1:0]             cfg_q_full,
+    output logic [PORT_NUM-1:0][CNT_W-1:0]              cfg_port_max,
+    output logic [CNT_W-1:0]                            cfg_global_high_wm,
+    output logic                                        cfg_pause_en,
+    output logic [PORT_NUM-1:0][CNT_W-1:0]              cfg_port_pause_xoff,
+    output logic [PORT_NUM-1:0][CNT_W-1:0]              cfg_port_pause_xon,
+    output logic [CNT_W-1:0]                            cfg_global_pause_xoff,
+    output logic [CNT_W-1:0]                            cfg_global_pause_xon,
+    output logic                                        cfg_pfc_en,
+    output logic [PORT_NUM-1:0][TC_NUM-1:0][CNT_W-1:0]  cfg_pfc_xoff,
+    output logic [PORT_NUM-1:0][TC_NUM-1:0][CNT_W-1:0]  cfg_pfc_xon,
+    // ★ 老化配置下发 (→ aging_ctrl)
+    output logic                                        cfg_aging_en,
+    output logic [23:0]                                 cfg_aging_timeout,
+    output logic [QUEUE_NUM-1:0]                        cfg_age_force,
+
+    //------------------------------------------------------------------------
+    // 统计输出 (→ 外部 CSR/CPU, clk_core 域直接输出, 无总线)
+    //   注: 新版 occ 暂未产出 st_* 统计, 此处置 0 占位 (详细设计阶段重新接入)。
+    //------------------------------------------------------------------------
+    output logic [CNT_W-1:0]                            st_out_global_used,
+    output logic [CNT_W-1:0]                            st_out_free_count,
+    output logic [QUEUE_NUM-1:0][CNT_W-1:0]             st_out_q_static_used,
+    output logic [PORT_NUM-1:0][CNT_W-1:0]              st_out_per_port_used,
+    output logic [QUEUE_NUM-1:0][CNT_W-1:0]             st_out_per_queue_used,
+    output logic [QUEUE_NUM-1:0]                        st_out_q_near_full_status,
+    output logic [QUEUE_NUM-1:0][STAT_W-1:0]            st_out_tail_drop_cnt,
+    output logic [QUEUE_NUM-1:0][STAT_W-1:0]            st_out_near_full_assert_cnt,
+    output logic [PORT_NUM-1:0][STAT_W-1:0]             st_out_pause_tx_cnt,
+
+    //------------------------------------------------------------------------
+    // 与 LLE 的接口 (上电建空闲链)
+    //------------------------------------------------------------------------
+    output logic                                        init_build_req,      // 触发建空闲链
+    input  logic                                        init_build_done,     // 建链完成
+
+    //------------------------------------------------------------------------
+    // 初始化期清指针/计数 (→ 各 Ctrl / Occupancy)
+    //------------------------------------------------------------------------
+    output logic                                        clr_ptr_cnt          // 初始化期清 head/tail/计数器
 );
 
     //========================================================================
-    // 单播还链: 直接透传 (B2 组播不再共用此口)
+    // 配置采样: 外部 cfg_in_* 在 clk_core 域已 ready, 寄存一拍去毛刺后下发。
+    //   (配置源与 MMU 同 clk_core 域, 或外部已做好同步; 无需总线握手/CDC。)
     //========================================================================
-    assign lle_free_req      = recycle_req;
-    assign lle_free_addr     = recycle_cell_addr;
-    assign lle_free_queue_id = recycle_queue_id;
+    always_ff @(posedge clk_core or negedge rst_core_n) begin
+        if (!rst_core_n) begin
+            cfg_queue_min_cell    <= #1 '0;
+            cfg_q_max_cell        <= #1 '0;
+            cfg_q_full            <= #1 '0;
+            cfg_port_max          <= #1 '0;
+            cfg_global_high_wm    <= #1 '0;
+            cfg_pause_en          <= #1 1'b0;
+            cfg_port_pause_xoff   <= #1 '0;
+            cfg_port_pause_xon    <= #1 '0;
+            cfg_global_pause_xoff <= #1 '0;
+            cfg_global_pause_xon  <= #1 '0;
+            cfg_pfc_en            <= #1 1'b0;
+            cfg_pfc_xoff          <= #1 '0;
+            cfg_pfc_xon           <= #1 '0;
+            cfg_aging_en          <= #1 1'b0;
+            cfg_aging_timeout     <= #1 '0;
+            cfg_age_force         <= #1 '0;
+        end
+        else begin
+            cfg_queue_min_cell    <= #1 cfg_in_queue_min_cell;
+            cfg_q_max_cell        <= #1 cfg_in_q_max_cell;
+            cfg_q_full            <= #1 cfg_in_q_full;
+            cfg_port_max          <= #1 cfg_in_port_max;
+            cfg_global_high_wm    <= #1 cfg_in_global_high_wm;
+            cfg_pause_en          <= #1 cfg_in_pause_en;
+            cfg_port_pause_xoff   <= #1 cfg_in_port_pause_xoff;
+            cfg_port_pause_xon    <= #1 cfg_in_port_pause_xon;
+            cfg_global_pause_xoff <= #1 cfg_in_global_pause_xoff;
+            cfg_global_pause_xon  <= #1 cfg_in_global_pause_xon;
+            cfg_pfc_en            <= #1 cfg_in_pfc_en;
+            cfg_pfc_xoff          <= #1 cfg_in_pfc_xoff;
+            cfg_pfc_xon           <= #1 cfg_in_pfc_xon;
+            cfg_aging_en          <= #1 cfg_in_aging_en;
+            cfg_aging_timeout     <= #1 cfg_in_aging_timeout;
+            cfg_age_force         <= #1 cfg_in_age_force;
+        end
+    end
 
     //========================================================================
-    // 组播逐端口回收转发: 反推端口号 = 承载队列号 >> Q_PER_PORT_LOG
+    // 统计输出: 自 Occupancy 汇聚的 st_* 在 clk_core 域寄存一拍后直出给外部 CSR/CPU。
     //========================================================================
-    logic [QID_W-1:0] mc_port_full;
-    assign mc_port_full = mcast_recycle_queue_id >> Q_PER_PORT_LOG;
-    assign mc_rcy_vld   = mcast_recycle_req;
-    assign mc_rcy_port  = (mc_port_full < PORT_NUM[QID_W-1:0])
-                          ? mc_port_full[PORT_W-1:0] : '0;
+    always_ff @(posedge clk_core or negedge rst_core_n) begin
+        if (!rst_core_n) begin
+            st_out_global_used          <= #1 '0;
+            st_out_free_count           <= #1 '0;
+            st_out_q_static_used        <= #1 '0;
+            st_out_per_port_used        <= #1 '0;
+            st_out_per_queue_used       <= #1 '0;
+            st_out_q_near_full_status   <= #1 '0;
+            st_out_tail_drop_cnt        <= #1 '0;
+            st_out_near_full_assert_cnt <= #1 '0;
+            st_out_pause_tx_cnt         <= #1 '0;
+        end
+        else begin
+            st_out_global_used          <= #1 st_global_used;
+            st_out_free_count           <= #1 st_free_count;
+            st_out_q_static_used        <= #1 st_q_static_used;
+            st_out_per_port_used        <= #1 st_per_port_used;
+            st_out_per_queue_used       <= #1 st_per_queue_used;
+            st_out_q_near_full_status   <= #1 st_q_near_full_status;
+            st_out_tail_drop_cnt        <= #1 st_tail_drop_cnt;
+            st_out_near_full_assert_cnt <= #1 st_near_full_assert_cnt;
+            st_out_pause_tx_cnt         <= #1 st_pause_tx_cnt;
+        end
+    end
 
     //========================================================================
-    // 回收应答: 单播还链发起当拍应答; 组播收到通知当拍即应答。
+    // 告警中断聚合 (overflow/underflow → irq_alarm; 老化 irq_aging 预留)
     //========================================================================
-    assign recycle_ack = recycle_req | mcast_recycle_req;
+    always_ff @(posedge clk_core or negedge rst_core_n) begin
+        if (!rst_core_n) begin
+            irq_alarm <= #1 1'b0;
+            irq_aging <= #1 1'b0;
+        end
+        else begin
+            irq_alarm <= #1 overflow_alarm | underflow_alarm;
+            irq_aging <= #1 aging_irq_in;   // ★ 来自 aging_ctrl (有队列被老化即置)
+        end
+    end
+
+    //========================================================================
+    // Init FSM: IDLE → BUILD(命 LLE 建空闲链, 清指针/计数) → DONE
+    //   init_start 触发 → 拉 init_build_req(脉冲) + clr_ptr_cnt → 等 LLE
+    //   init_build_done → 置 init_done(并保持)。
+    //========================================================================
+    typedef enum logic [1:0] {
+        IS_IDLE  = 2'b00,
+        IS_BUILD = 2'b01,
+        IS_DONE  = 2'b10
+    } init_st_e;
+
+    init_st_e init_st_q;
+
+    always_ff @(posedge clk_core or negedge rst_core_n) begin
+        if (!rst_core_n) begin
+            init_st_q      <= #1 IS_IDLE;
+            init_build_req <= #1 1'b0;
+            clr_ptr_cnt    <= #1 1'b0;
+            init_done      <= #1 1'b0;
+        end
+        else begin
+            // 默认拉低脉冲
+            init_build_req <= #1 1'b0;
+            case (init_st_q)
+                IS_IDLE: begin
+                    init_done   <= #1 1'b0;
+                    clr_ptr_cnt <= #1 1'b0;
+                    if (init_start) begin
+                        init_build_req <= #1 1'b1;   // 命 LLE 建空闲链 (脉冲 1 拍)
+                        clr_ptr_cnt    <= #1 1'b1;    // 初始化期清指针/计数
+                        init_st_q      <= #1 IS_BUILD;
+                    end
+                end
+                IS_BUILD: begin
+                    // 等 LLE 建链完成
+                    if (init_build_done) begin
+                        clr_ptr_cnt <= #1 1'b0;
+                        init_done   <= #1 1'b1;       // 初始化完成 (保持)
+                        init_st_q   <= #1 IS_DONE;
+                    end
+                end
+                IS_DONE: begin
+                    init_done <= #1 1'b1;             // 保持完成态
+                    // 允许再次 init_start 重新初始化
+                    if (init_start) begin
+                        init_done      <= #1 1'b0;
+                        init_build_req <= #1 1'b1;
+                        clr_ptr_cnt    <= #1 1'b1;
+                        init_st_q      <= #1 IS_BUILD;
+                    end
+                end
+                default: init_st_q <= #1 IS_IDLE;
+            endcase
+        end
+    end
 
 endmodule
+`
 
-```
-## tb
-```
+## aging_ctrl.sv
+`systemverilog
 //============================================================================
-// Testbench : smmu_tb  ÄÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂÄÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ B2 ĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂ¤ĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ­ÄÂĂÂĂĹĄĂÂ ĂÂĂÂÄÂĂÂÄÂÄšÄÄÂĂÂĂÂĂÂÄÂĂÂÄÂÄšÄĂĹĄÄšĹžĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂÄÂÄšÄĂĹĄĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂÄÂĂÂÄÂĂÂ§ĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ
+// Module      : aging_ctrl  (Queue/Port Aging Controller)  —— 候选一: MMU 自主老化
+// Project     : 4-Port 2.5/1G/100M Ethernet Switch - Smart MMU
+//
+// Description :
+//   MMU 自主老化控制器。为每条队列维护一个老化计时器:
+//     - 队列有占用 (q_occupied[q]=1) 但长时间未被出队服务 → 判定为"僵尸队列",
+//       计时到 cfg_aging_timeout 后触发老化 (age_trig[q])。
+//     - 喂狗: 该队列发生出队 fire (deq_fire_vec[q]) 或队列已空 (q_occupied=0) → 计时清零。
+//     - 软件强制: cfg_age_force[q] 可无视计时直接触发某队列老化 (调试/软件兜底)。
+//   触发后经 RR 仲裁, 一次只对一条队列发起 flush 请求 (age_flush_req + age_flush_qid),
+//   等 LLE 回 age_flush_done 再服务下一条。老化完成后经 aging_notify 通知 QM 同步清账。
+//
+//   端口级老化: 由该端口下 TC_NUM 条队列的 age_trig 做 OR 聚合上报 (port_age_trig),
+//   仅用于中断/状态可见性; 实际冲刷仍按队列粒度执行。
+//
+// Clock/Reset : clk_core (300MHz, 单时钟域) / rst_core_n (异步复位低有效)
+//============================================================================
+`timescale 1ns/1ps
+
+module aging_ctrl #(
+    parameter int PORT_NUM  = 4,
+    parameter int TC_NUM    = 8,
+    parameter int AGE_TMR_W = 24,     // 老化计时器位宽 (覆盖 ms 级 @300MHz)
+    // 派生
+    localparam int QUEUE_NUM = PORT_NUM*TC_NUM + 1,   // 32 单播 + 1 多播
+    localparam int QID_W     = $clog2(QUEUE_NUM-1)+1,
+    localparam int Q_PER_PORT_LOG = $clog2(TC_NUM)
+)(
+    input  logic                              clk_core,
+    input  logic                              rst_core_n,
+    input  logic                              init_done,        // =0 时不老化
+
+    //------------------------------------------------------------------------
+    // 配置 (← csr_stats_init)
+    //------------------------------------------------------------------------
+    input  logic                              cfg_aging_en,       // 老化总使能
+    input  logic [AGE_TMR_W-1:0]              cfg_aging_timeout,  // 超时阈值 (cycle 数)
+    input  logic [QUEUE_NUM-1:0]              cfg_age_force,      // 软件强制某队列老化
+
+    //------------------------------------------------------------------------
+    // 队列状态 (← LLE)
+    //------------------------------------------------------------------------
+    input  logic [QUEUE_NUM-1:0]              q_occupied,         // 队列非空位图 (cnt!=0)
+    input  logic                              deq_fire,           // 出队 fire (喂狗)
+    input  logic [QID_W-1:0]                  deq_fire_qid,       // 出队 fire 的队列号
+
+    //------------------------------------------------------------------------
+    // 冲刷请求 / 应答 (↔ LLE)
+    //------------------------------------------------------------------------
+    output logic                              age_flush_req,      // 请求冲刷某队列
+    output logic [QID_W-1:0]                  age_flush_qid,      // 待冲刷队列号
+    input  logic                              age_flush_busy,     // LLE 正在冲刷
+    input  logic                              age_flush_done,     // LLE 冲刷完成
+
+    //------------------------------------------------------------------------
+    // 老化通知 / 告警 (→ csr / QM)
+    //------------------------------------------------------------------------
+    output logic                              aging_notify,       // 一条队列老化完成脉冲 (→ QM 清账)
+    output logic [QID_W-1:0]                  aging_notify_qid,   // 老化完成的队列号
+    output logic [QUEUE_NUM-1:0]              age_trig,           // 各队列老化触发 (状态可见)
+    output logic [PORT_NUM-1:0]               port_age_trig,      // 端口级老化聚合 (中断可见)
+    output logic                              irq_aging           // 老化中断 (有队列老化即置)
+);
+
+    //========================================================================
+    // 1) 每队列老化计时器
+    //========================================================================
+    logic [AGE_TMR_W-1:0] age_timer_q [QUEUE_NUM];
+    logic [QUEUE_NUM-1:0] age_trig_q;
+
+    // 喂狗: 本拍该队列发生出队 fire
+    logic [QUEUE_NUM-1:0] feed_dog;
+    always_comb begin
+        feed_dog = '0;
+        if (deq_fire) feed_dog[deq_fire_qid] = 1'b1;
+    end
+
+    integer qi;
+    always_ff @(posedge clk_core or negedge rst_core_n) begin
+        if (!rst_core_n) begin
+            for (qi = 0; qi < QUEUE_NUM; qi++) begin
+                age_timer_q[qi] <= #1 '0;
+                age_trig_q[qi]  <= #1 1'b0;
+            end
+        end
+        else begin
+            for (qi = 0; qi < QUEUE_NUM; qi++) begin
+                // 老化未使能 / 初始化未完成 / 队列空 / 喂狗 / 正在冲刷该队列 → 计时清零
+                if (!cfg_aging_en || !init_done ||
+                    !q_occupied[qi] || feed_dog[qi] ||
+                    (age_flush_busy && (age_flush_qid == QID_W'(qi)))) begin
+                    age_timer_q[qi] <= #1 '0;
+                    age_trig_q[qi]  <= #1 1'b0;
+                end
+                // 已超时 → 保持触发 (直到被冲刷清零, 上面分支覆盖)
+                else if (age_timer_q[qi] >= cfg_aging_timeout) begin
+                    age_trig_q[qi] <= #1 1'b1;
+                end
+                // 计时递增
+                else begin
+                    age_timer_q[qi] <= #1 age_timer_q[qi] + 1'b1;
+                end
+            end
+        end
+    end
+
+    // 触发 = 计时超时 或 软件强制 (使能且已初始化)
+    always_comb begin
+        for (int i = 0; i < QUEUE_NUM; i++)
+            age_trig[i] = (cfg_aging_en && init_done) &
+                          (age_trig_q[i] | cfg_age_force[i]);
+    end
+
+    //========================================================================
+    // 2) RR 仲裁: 一次只冲刷一条 trig 队列
+    //========================================================================
+    typedef enum logic [1:0] {AG_IDLE, AG_FLUSH, AG_WAIT} age_st_e;
+    age_st_e            age_st_q;
+    logic [QID_W-1:0]   sel_qid_q;
+    logic [QID_W-1:0]   rr_ptr_q;      // RR 起点
+
+    // 从 rr_ptr_q 起找第一个 trig 的队列
+    logic               found;
+    logic [QID_W-1:0]   found_qid;
+    always_comb begin
+        found     = 1'b0;
+        found_qid = '0;
+        for (int k = 0; k < QUEUE_NUM; k++) begin
+            automatic int idx = (rr_ptr_q + k) % QUEUE_NUM;
+            if (!found && age_trig[idx]) begin
+                found     = 1'b1;
+                found_qid = QID_W'(idx);
+            end
+        end
+    end
+
+    always_ff @(posedge clk_core or negedge rst_core_n) begin
+        if (!rst_core_n) begin
+            age_st_q         <= #1 AG_IDLE;
+            sel_qid_q        <= #1 '0;
+            rr_ptr_q         <= #1 '0;
+            age_flush_req    <= #1 1'b0;
+            aging_notify     <= #1 1'b0;
+            aging_notify_qid <= #1 '0;
+        end
+        else begin
+            aging_notify <= #1 1'b0;   // 默认脉冲拉低
+            case (age_st_q)
+                AG_IDLE: begin
+                    age_flush_req <= #1 1'b0;
+                    if (found) begin
+                        sel_qid_q     <= #1 found_qid;
+                        age_flush_req <= #1 1'b1;
+                        age_st_q      <= #1 AG_FLUSH;
+                    end
+                end
+                AG_FLUSH: begin
+                    // 保持 req 直到 LLE 接手 (busy) 或直接完成
+                    age_flush_req <= #1 1'b1;
+                    if (age_flush_busy) begin
+                        age_flush_req <= #1 1'b0;
+                        age_st_q      <= #1 AG_WAIT;
+                    end
+                    else if (age_flush_done) begin
+                        age_flush_req    <= #1 1'b0;
+                        aging_notify     <= #1 1'b1;
+                        aging_notify_qid <= #1 sel_qid_q;
+                        rr_ptr_q         <= #1 (sel_qid_q + 1'b1) % QUEUE_NUM;
+                        age_st_q         <= #1 AG_IDLE;
+                    end
+                end
+                AG_WAIT: begin
+                    if (age_flush_done) begin
+                        aging_notify     <= #1 1'b1;
+                        aging_notify_qid <= #1 sel_qid_q;
+                        rr_ptr_q         <= #1 (sel_qid_q + 1'b1) % QUEUE_NUM;
+                        age_st_q         <= #1 AG_IDLE;
+                    end
+                end
+                default: age_st_q <= #1 AG_IDLE;
+            endcase
+        end
+    end
+
+    assign age_flush_qid = sel_qid_q;
+
+    //========================================================================
+    // 3) 端口级聚合 + 中断
+    //========================================================================
+    always_comb begin
+        for (int p = 0; p < PORT_NUM; p++) begin
+            automatic logic acc = 1'b0;
+            for (int t = 0; t < TC_NUM; t++)
+                acc = acc | age_trig[p*TC_NUM + t];
+            port_age_trig[p] = acc;
+        end
+    end
+
+    assign irq_aging = |age_trig;
+
+endmodule
+`
+
+## smmu_tb.sv
+`systemverilog
+//============================================================================
+// Testbench : smmu_tb
 // Project   : 4-Port 2.5/1G/100M Ethernet Switch - Smart MMU
 //
-// ÄÂĂÂÄÂĂÂ§ĂÂĂÂÄÂĂÂÄÂÄšÄÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ ĂÂĂÂÄÂĂÂ:
-//   ÄÂĂÂÄÂĂÂ¤ÄÂÄšÄÄÂĂÂÄÂÄšÄĂĹĄÄšÂÄÂĂÂÄÂĂÂ§ĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ§ QM ĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂÄÂĂÂÄÂĂÂ¤ĂÂĂÂÄÂĂÂ¸ÄÂÄšÄÄÂĂÂ, ÄÂĂÂĂĹĄĂÂ ĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂÄÂÄšÄĂĹĄÄšÂĂÂĂÂÄÂĂÂĂÂĂÂĂĹĄĂÂÄÂÄšÄĂĹĄĂËĂÂĂÂÄÂĂÂĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂ­ĂÂĂÂÄÂĂÂĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ¨ĂÂĂÂÄÂĂÂÄÂÄšÄĂĹĄÄšĹžĂÂĂÂÄÂĂÂĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂÄÂÄšÄÄÂĂÂĂÂĂÂÄÂĂÂÄÂÄšÄĂĹĄÄšÂĂÂĂÂÄÂĂÂĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ smmu ÄÂĂÂÄÂĂÂ§ĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ inputĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂÄÂÄšÄĂĹĄĂËÄÂÄšÄÄÂĂÂĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ output (clk/rst ÄÂĂÂĂĹĄĂÂ ĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ¤ĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂ¤ĂÂĂÂÄÂĂÂ),
-//   ĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂÄÂÄšÄÄÂĂÂĂÂĂÂÄÂĂÂÄÂÄšÄÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂĂĹĄĂÂÄÂÄšÄĂĹĄĂÂĂÂĂÂÄÂĂÂ (self-checking) ĂÂĂÂÄÂĂÂÄÂÄšÄÄÂĂÂĂÂĂÂÄÂĂÂÄÂĂÂÄÂĂÂ§ĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ:
-//     C1  ĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂÄÂĂÂĂĹĄĂÂ ĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂÄÂĂÂĂĹĄĂÂ ĂÂĂÂÄÂĂÂÄÂÄšÄĂĹĄÄšĹž/ĂÂĂÂÄÂĂÂĂÂĂÂĂĹĄÄšĹžĂÂĂÂÄÂĂÂ°ÄÂĂÂĂĹĄĂÂ ĂÂĂÂÄÂĂÂÄÂÄšÄĂĹĄÄšĹž/ĂÂĂÂÄÂĂÂÄÂÄšÄĂĹĄÄšÂĂÂĂÂÄÂĂÂÄÂĂÂĂĹĄĂÂ ĂÂĂÂÄÂĂÂÄÂÄšÄĂĹĄÄšĹž, free ÄÂĂÂĂĹĄĂÂ ĂÂĂÂÄÂĂÂÄÂÄšÄĂĹĄÄšĹžĂÂĂÂÄÂĂÂÄÂÄšÄÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ°ĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ ĂÂĂÂÄÂĂÂÄÂĂÂĂĹĄĂÂ ÄÂÄšÄÄÂĂÂĂÂĂÂÄÂĂÂ
-//     C2  ĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ¨ÄÂĂÂĂĹĄĂÂ ĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂÄÂĂÂÄÂĂÂ¤ÄÂÄšÄÄÂĂÂĂÂĂÂÄÂĂÂ¤ĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂÄÂĂÂĂĹĄĂÂ ĂÂĂÂÄÂĂÂÄÂÄšÄĂĹĄÄšĹž/ĂÂĂÂÄÂĂÂĂÂĂÂĂĹĄÄšĹžĂÂĂÂÄÂĂÂ°ÄÂĂÂĂĹĄĂÂ ĂÂĂÂÄÂĂÂÄÂÄšÄĂĹĄÄšĹž, free ÄÂĂÂĂĹĄĂÂ ĂÂĂÂÄÂĂÂÄÂÄšÄĂĹĄÄšĹž/ĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ ÄÂĂÂÄÂĂÂ§ĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ¨ĂÂĂÂÄÂĂÂÄÂÄšÄÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ°ĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ ĂÂĂÂÄÂĂÂÄÂĂÂĂĹĄĂÂ ÄÂÄšÄÄÂĂÂĂÂĂÂÄÂĂÂ
-//     C3  ĂÂĂÂÄÂĂÂÄÂÄšÄĂĹĄÄšÂĂÂĂÂÄÂĂÂÄÂĂÂĂĹĄĂÂ ĂÂĂÂÄÂĂÂÄÂÄšÄĂĹĄÄšĹžĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ free ÄÂĂÂĂĹĄĂÂ ĂÂĂÂÄÂĂÂÄÂÄšÄĂĹĄÄšĹžĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂ¤ĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ ĂÂĂÂÄÂĂÂÄÂĂÂĂĹĄĂÂ ÄÂÄšÄÄÂĂÂĂÂĂÂÄÂĂÂ (free_cnt / ĂÂĂÂĂĹĄĂÂÄÂÄšÄÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ)
-//     C4  ÄÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ B2 ĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂ¤ĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ­: ĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ§ĂÂĂÂÄÂĂÂĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂÄÂĂÂĂĹĄĂÂ ĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ(ĂÂĂÂĂĹĄĂÂÄÂÄšÄÄÂĂÂÄÂÄšÄÄÂĂÂ chain33 SRAM ÄÂĂÂĂĹĄĂÂ ĂÂĂÂÄÂĂÂÄÂÄšÄĂĹĄÄšĹž) / ÄÂĂÂĂĹĄĂÂ ĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂÄÂĂÂÄÂĂÂ§ÄÂÄšÄÄÂĂÂ¤ÄÂÄšÄĂĹĄĂËĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂÄÂÄšÄÄÂĂÂÄÂĂÂĂĹĄĂÂ ĂÂĂÂÄÂĂÂÄÂÄšÄÄÂĂÂĂÂĂÂÄÂĂÂÄÂÄšÄĂĹĄÄšĹžĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂÄÂÄšÄĂĹĄĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂÄÂÄšÄÄÂĂÂÄÂĂÂĂĹĄĂÂ ĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ(ĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂ¤ĂÂĂÂÄÂĂÂ´/ĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂ°ÄÂÄšÄĂĹĄÄšĹž) /
-//           ÄÂĂÂĂĹĄĂÂ ĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂÄÂĂÂÄÂĂÂ§ÄÂÄšÄÄÂĂÂ¤ÄÂÄšÄĂĹĄĂËĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂÄÂÄšÄÄÂĂÂĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂÄÂÄšÄÄÂĂÂ(done ÄÂĂÂÄÂĂÂ¤ĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂÄÂÄšÄĂĹĄÄšĹž) / ĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ¨ÄÂĂÂÄÂĂÂ§ÄÂÄšÄÄÂĂÂ¤ÄÂÄšÄĂĹĄĂËĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂÄÂÄšÄÄÂĂÂĂÂĂÂÄÂĂÂÄÂÄšÄĂĹĄĂËÄÂÄšÄÄÂĂÂĂÂĂÂĂĹĄĂÂÄÂÄšÄÄÂĂÂĂÂĂÂÄÂĂÂ+ĂÂĂÂÄÂĂÂÄÂÄšÄĂĹĄÄšÂĂÂĂÂÄÂĂÂÄÂĂÂĂĹĄĂÂ ĂÂĂÂÄÂĂÂÄÂÄšÄĂĹĄÄšĹžĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ´ĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂ¸ĂÂĂÂÄÂĂÂ§ÄÂĂÂĂĹĄĂÂ ĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂÄÂÄšÄĂĹĄÄšĹž / ĂÂĂÂÄÂĂÂÄÂÄšÄÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ§ĂÂĂÂÄÂĂÂ drop
-//     C5  enq + deq ĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂÄÂĂÂÄÂĂÂ¤ÄÂÄšÄÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂÄÂÄšÄÄÂĂÂĂÂĂÂÄÂĂÂ + ĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ (deq ĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ  SRAM ÄÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ enq ÄÂĂÂÄÂĂÂ§ĂÂĂÂÄÂĂÂ­ĂÂĂÂÄÂĂÂ)
-//     C6  deq + rcy ĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂÄÂĂÂÄÂĂÂ¤ÄÂÄšÄÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂÄÂÄšÄÄÂĂÂĂÂĂÂÄÂĂÂÄÂĂÂÄÂĂÂ¤ĂÂĂÂÄÂĂÂ¸ĂÂĂÂÄÂĂÂĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂ¤ĂÂĂÂÄÂĂÂÄÂĂÂÄÂĂÂ§ĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ
-//     C7  enq + deq + rcy ÄÂĂÂÄÂĂÂ¤ĂÂĂÂÄÂĂÂ¸ĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂÄÂĂÂÄÂĂÂ¤ÄÂÄšÄÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂÄÂÄšÄÄÂĂÂĂÂĂÂÄÂĂÂÄÂĂÂÄÂĂÂ¤ĂÂĂÂÄÂĂÂ¸ĂÂĂÂÄÂĂÂĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂ¤ĂÂĂÂÄÂĂÂÄÂĂÂÄÂĂÂ§ĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ
-//     C8  ĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ°ĂÂĂÂÄÂĂÂ´ÄÂĂÂÄÂĂÂ§ÄÂÄšÄÄÂĂÂÄÂÄšÄĂĹĄÄšÂ/ĂÂĂÂÄÂĂÂÄÂÄšÄÄÂĂÂĂÂĂÂÄÂĂÂ/ĂÂĂÂĂĹĄĂÂÄÂÄšÄĂĹĄÄšÂÄÂÄšÄÄÂĂÂ¤ĂÂĂÂÄÂĂÂÄÂÄšÄÄÂĂÂĂÂĂÂÄÂĂÂ (q/port/global near_full + full) ĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ§ÄÂÄšÄÄÂĂÂĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂÄÂĂÂÄÂĂÂ¤ĂÂĂÂÄÂĂÂ¸ĂÂĂÂÄÂĂÂÄÂĂÂĂĹĄĂÂ ĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂÄÂÄšÄĂĹĄÄšĹž
-//     C9  PAUSE ĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ§ÄÂÄšÄÄÂĂÂĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ/ÄÂĂÂĂĹĄĂÂ ĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂÄÂÄšÄĂĹĄÄšĹž
-//     C10 ĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂĂĹĄÄšĹžĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂÄÂÄšÄĂĹĄĂËĂÂĂÂÄÂĂÂ (ĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ enq/deq/rcy, ĂÂĂÂĂĹĄĂÂÄÂÄšÄÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ + ĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ ÄÂĂÂÄÂĂÂ¤ĂÂĂÂÄÂĂÂ¸ĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂÄÂÄšÄÄÂĂÂĂÂĂÂÄÂĂÂ/ĂÂĂÂÄÂĂÂÄÂÄšÄÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂÄÂÄšÄÄÂĂÂ)
-//     C11 ĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂÄÂĂÂĂĹĄĂÂ ĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂÄÂĂÂĂĹĄĂÂ ĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ¤ (predict-drop)
-//     C12 ĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂÄÂÄšÄÄÂĂÂ  1 cell ÄÂĂÂÄÂĂÂ§ÄÂÄšÄÄÂĂÂ ÄÂÄšÄÄÂĂÂÄÂĂÂĂĹĄĂÂ ĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ´ĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂÄÂÄšÄÄÂĂÂÄÂĂÂÄÂĂÂ§ĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ predict/drop ĂÂĂÂÄÂĂÂÄÂÄšÄĂĹĄÄšĹžÄÂÄšÄÄÂĂÂÄÂĂÂÄÂĂÂ§ĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ
-//     C13 ĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂÄÂÄšÄÄÂĂÂ  7 cells ÄÂĂÂÄÂĂÂ§ÄÂÄšÄÄÂĂÂ ÄÂÄšÄÄÂĂÂÄÂĂÂĂĹĄĂÂ ĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ´ĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂÄÂÄšÄÄÂĂÂÄÂĂÂÄÂĂÂ¤ĂÂĂÂÄÂĂÂ¸ĂÂĂÂÄÂĂÂ¤ÄÂĂÂÄÂĂÂ¤ĂÂĂÂÄÂĂÂ¸ÄÂÄšÄÄÂĂÂ 5-cell pkt ÄÂĂÂÄÂĂÂ§ĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ predict/drop ĂÂĂÂÄÂĂÂÄÂÄšÄĂĹĄÄšĹžÄÂÄšÄÄÂĂÂÄÂĂÂÄÂĂÂ§ĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ
-//
-//   ĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ§ĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ¨ĂÂĂÂÄÂĂÂ: CELL_NUM=64, QUEUE_NUM=9, PORT_NUM=2 (TC_NUM=4; q>>2 ÄÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ port)
-//         ĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂ¤ĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ­ĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂÄÂÄšÄĂĹĄÄšÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ TC = 0 (cfg_mcast_carry_tc[p]=0) ÄÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ ĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂÄÂÄšÄĂĹĄÄšÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ qid = p*4+0 = {0(port0), 4(port1)}
+// Case list:
+// C1  Single queue enqueue/dequeue/recycle and free-count checks.
+// C2  Cross-queue interleaved enqueue/dequeue ordering.
+// C3  Free-list restoration and conservation checks.
+// C4  B2 multicast flow: carry queue, splice dequeue, busy drop and release.
+// C5  Enqueue + dequeue concurrency with back-pressure.
+// C6  Dequeue + recycle concurrency.
+// C7  Enqueue + dequeue + recycle triple concurrency.
+// C8  Queue watermark, near-full, high-watermark drop and release.
+// C9  PAUSE assert/release from port aggregate occupancy.
+// C10 Stress fill/drain/recycle conservation.
+// C11 Pre-enqueue combinational predict-drop behavior.
+// C12 Predict-drop boundary when one queue slot remains.
+// C13 Predict-drop boundary when seven queue slots remain.
+// C14-C17 q_pkt_empty and free-pool boundary coverage.
+// C18 Event statistic counters: tail_drop / near_full_assert / pause_tx.
+// C19 Aging by software force: flush a queue's cells back to free list.
+// C20 Aging by timeout: idle occupied queue auto-flushed after timeout.
 //============================================================================
 `timescale 1ns/1ps
 
 module smmu_tb;
 
     //========================================================================
-    // ĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ°
-    //   PORT=2, TC=4 ÄÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ QUEUE_NUM=9: ĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ­[0..7] (q0-3ÄÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂport0, q4-7ÄÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂport1), [8]=ĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂ¤ĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ­ MCAST_QID
+    // Parameters
     //========================================================================
     localparam int CELL_NUM  = 64;
     localparam int PORT_NUM  = 2;
@@ -2589,8 +3092,8 @@ module smmu_tb;
     localparam int CNT_W  = ADDR_W + 1;                // 7
     localparam int QPP    = $clog2(TC_NUM);            // 2
 
-    // ÄÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ B2: ĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂ¤ĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ­ĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂÄÂÄšÄĂĹĄÄšÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ TC = 0 ÄÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ ĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂÄÂÄšÄĂĹĄÄšÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ qid[port] = port*TC_NUM
     localparam int MC_CARRY_TC = 0;
+    // Multicast carry queues use TC0 by default: qid = port*TC_NUM + TC0.
     function automatic int carry_qid(input int port); carry_qid = port*TC_NUM + MC_CARRY_TC; endfunction
 
     function automatic int q2port(input int qid);
@@ -2598,18 +3101,18 @@ module smmu_tb;
     endfunction
 
     //========================================================================
-    // ĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂÄÂÄšÄÄÂĂÂÄÂĂÂĂĹĄĂÂ ĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂ¤ĂÂĂÂÄÂĂÂÄÂĂÂÄÂĂÂ¤ĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ
+    // Clock / reset
     //========================================================================
     logic clk, rst_n;
     initial clk = 0;
     always #1.667 clk = ~clk;   // ~300MHz
 
     //========================================================================
-    // DUT ĂÂĂÂÄÂĂÂÄÂÄšÄĂĹĄÄšĹžĂÂĂÂÄÂĂÂĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂĂĹĄĂÂÄÂÄšÄĂĹĄĂËĂÂĂÂÄÂĂÂĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂ­ĂÂĂÂÄÂĂÂĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ¨
+    // DUT stimulus signals
     //========================================================================
     logic                  init_start_r;
     logic                  enq_req_r;
-    logic [QPP-1:0]        enq_queue_id_r;      // ÄÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ ÄÂĂÂÄÂĂÂ¤ÄÂÄšÄÄÂĂÂĂÂĂÂÄÂĂÂ TC (ĂÂĂÂĂĹĄĂÂÄÂÄšÄÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ´ÄÂĂÂĂĹĄĂÂ ĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ={egress_port,queue_id})
+    logic [QPP-1:0]        enq_queue_id_r;
     logic [PORT_W-1:0]     enq_egress_port_r;
     logic [PKT_CELL_W-1:0] enq_cell_num_r;
     logic                  enq_is_mcast_r;
@@ -2626,7 +3129,7 @@ module smmu_tb;
     logic [QID_W-1:0]      mcast_recycle_queue_id_r;
 
     //========================================================================
-    // DUT ĂÂĂÂÄÂĂÂÄÂÄšÄĂĹĄÄšĹžĂÂĂÂÄÂĂÂĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂÄÂÄšÄÄÂĂÂ
+    // DUT observed outputs
     //========================================================================
     logic                  init_done;
     logic                  enq_ready;
@@ -2635,14 +3138,14 @@ module smmu_tb;
     logic [ADDR_W-1:0]     alloc_cell_addr;
     logic                  alloc_drop_ind, alloc_sram_flag, alloc_pkt_head, alloc_pkt_tail;
     logic                  alloc_full_frame_drop;
-    logic                  mcast_busy_drop;         // ÄÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ B2
+    logic                  mcast_busy_drop;
     logic                  deq_ready;
     logic                  deq_cell_valid;
     logic [ADDR_W-1:0]     deq_cell_addr;
     logic                  deq_pkt_head, deq_pkt_tail;
     logic                  recycle_ack;
-    logic [PORT_NUM*TC_NUM-1:0] q_empty;             // ÄÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ B2 32 ĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂ¸ĂÂĂÂÄÂĂÂ¸ĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ§ĂÂĂÂÄÂĂÂÄÂĂÂĂĹĄĂÂ ĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ empty
-    logic [PORT_NUM*TC_NUM-1:0] q_pkt_empty;         // 32 regular queue pkt-count==0 bitmap
+    logic [PORT_NUM*TC_NUM-1:0] q_empty;
+    logic [PORT_NUM*TC_NUM-1:0] q_pkt_empty;         // regular queue pkt-count==0 bitmap
     logic [QUEUE_NUM-1:0]  q_near_full;
     logic [PORT_NUM-1:0]   port_near_full;
     logic                  global_near_full;
@@ -2654,7 +3157,7 @@ module smmu_tb;
     logic                  irq_alarm, irq_aging, overflow_alarm, underflow_alarm;
 
     //========================================================================
-    // ÄÂĂÂĂĹĄĂÂ ĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂÄÂĂÂÄÂĂÂ§ĂÂĂÂÄÂĂÂÄÂÄšÄÄÂĂÂĂÂĂÂĂĹĄĂÂÄÂÄšÄĂĹĄĂËĂÂĂÂÄÂĂÂĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂ­ĂÂĂÂÄÂĂÂĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ¨
+    // DUT configuration inputs
     //========================================================================
     logic [QUEUE_NUM-1:0][CNT_W-1:0]             cfg_queue_min_cell;
     logic [QUEUE_NUM-1:0][CNT_W-1:0]             cfg_q_max_cell;
@@ -2669,10 +3172,14 @@ module smmu_tb;
     logic                                        cfg_pfc_en;
     logic [PORT_NUM-1:0][TC_NUM-1:0][CNT_W-1:0]  cfg_pfc_xoff;
     logic [PORT_NUM-1:0][TC_NUM-1:0][CNT_W-1:0]  cfg_pfc_xon;
-    // ÄÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ B2: ĂÂĂÂÄÂĂÂÄÂÄšÄĂĹĄĂËĂÂĂÂÄÂĂÂÄÂĂÂÄÂĂÂ§ÄÂÄšÄÄÂĂÂ¤ÄÂÄšÄĂĹĄĂËĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂÄÂÄšÄÄÂĂÂĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂ¤ĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ­ĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂÄÂÄšÄĂĹĄÄšÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ TC
+    // Ã¢Ëœâ€¦ Aging configuration
+    logic                                        cfg_aging_en;
+    logic [23:0]                                 cfg_aging_timeout;
+    logic [QUEUE_NUM-1:0]                        cfg_age_force;
+
     logic [PORT_NUM-1:0][$clog2(TC_NUM)-1:0]     cfg_mcast_carry_tc;
 
-    // stats out
+    // Statistics outputs
     logic [CNT_W-1:0]                 st_out_global_used, st_out_free_count;
     logic [QUEUE_NUM-1:0][CNT_W-1:0]  st_out_q_static_used, st_out_per_queue_used;
     logic [PORT_NUM-1:0][CNT_W-1:0]   st_out_per_port_used;
@@ -2681,7 +3188,7 @@ module smmu_tb;
     logic [PORT_NUM-1:0][STAT_W-1:0]  st_out_pause_tx_cnt;
 
     //========================================================================
-    // DUT ÄÂĂÂÄÂĂÂ¤ÄÂÄšÄĂĹĄÄšĹžĂÂĂÂÄÂĂÂĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ
+    // DUT instance
     //========================================================================
     smmu #(
         .CELL_NUM (CELL_NUM), .PORT_NUM (PORT_NUM),
@@ -2700,7 +3207,7 @@ module smmu_tb;
         .alloc_cell_addr (alloc_cell_addr), .alloc_drop_ind (alloc_drop_ind),
         .alloc_sram_flag (alloc_sram_flag), .alloc_pkt_head (alloc_pkt_head),
         .alloc_pkt_tail (alloc_pkt_tail), .alloc_full_frame_drop (alloc_full_frame_drop),
-        .mcast_busy_drop (mcast_busy_drop),          // ÄÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ B2
+        .mcast_busy_drop (mcast_busy_drop),
         // deq
         .deq_req (deq_req_r), .deq_queue_id (deq_queue_id_r),
         .deq_backpressure (deq_backpressure_r), .deq_ready (deq_ready),
@@ -2712,7 +3219,7 @@ module smmu_tb;
         .mcast_recycle_req (mcast_recycle_req_r), .mcast_recycle_addr (mcast_recycle_addr_r),
         .mcast_recycle_queue_id (mcast_recycle_queue_id_r), .recycle_ack (recycle_ack),
         // full / near-full
-        .q_empty (q_empty),                          // ÄÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ B2
+        .q_empty (q_empty),
         .q_pkt_empty (q_pkt_empty),                  // pkt-empty bitmap (whole-packet granularity)
         .q_near_full (q_near_full), .port_near_full (port_near_full),
         .global_near_full (global_near_full), .q_full (q_full),
@@ -2735,6 +3242,9 @@ module smmu_tb;
         .cfg_in_pfc_en (cfg_pfc_en),
         .cfg_in_pfc_xoff (cfg_pfc_xoff),
         .cfg_in_pfc_xon (cfg_pfc_xon),
+        .cfg_in_aging_en (cfg_aging_en),
+        .cfg_in_aging_timeout (cfg_aging_timeout),
+        .cfg_in_age_force (cfg_age_force),
         // stats
         .st_out_global_used (st_out_global_used),
         .st_out_free_count (st_out_free_count),
@@ -2748,14 +3258,14 @@ module smmu_tb;
     );
 
     //========================================================================
-    // ĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂÄÂĂÂĂĹĄĂÂ ĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ¨ DUT ÄÂĂÂÄÂĂÂ¤ÄÂÄšÄĂĹĄÄšÂĂÂĂÂÄÂĂÂĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂĂĹĄĂÂÄÂÄšÄĂĹĄĂÂĂÂĂÂÄÂĂÂÄÂĂÂÄÂĂÂ§ĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ¨
+    // Internal DUT probes used by the self-checks
     //========================================================================
     wire [CNT_W-1:0]  lle_free_cnt   = u_dut.u_lle.free_cnt_q;
     wire [ADDR_W-1:0] lle_free_head  = u_dut.u_lle.free_head_q;
     wire [ADDR_W-1:0] lle_free_tail  = u_dut.u_lle.free_tail_q;
     wire [CNT_W-1:0]  occ_free_cnt   = u_dut.u_occ.free_count_q;
     wire [CNT_W-1:0]  occ_glob_used  = u_dut.u_occ.global_used_q;
-    // ÄÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ B2 ĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂ¤ĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ­ĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ§ĂÂĂÂÄÂĂÂÄÂĂÂÄÂĂÂ§ĂÂĂÂÄÂĂÂÄÂÄšÄÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ
+
     wire              mc_valid       = u_dut.u_lle.mc_valid_q;
     wire [PORT_NUM-1:0] mc_bitmap    = u_dut.u_lle.mc_dst_bitmap_q;
 
@@ -2765,14 +3275,26 @@ module smmu_tb;
     function automatic int unsigned occ_qcnt (input int qi); occ_qcnt = u_dut.u_occ.q_cell_cnt_q[qi]; endfunction
     function automatic int unsigned occ_qstat(input int qi); occ_qstat= u_dut.u_occ.q_static_used_q[qi]; endfunction
     function automatic int unsigned occ_pused(input int pi); occ_pused= u_dut.u_occ.per_port_used_q[pi]; endfunction
-    // ÄÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ B2 ĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂ¤ĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ­ĂÂĂÂÄÂĂÂÄÂÄšÄĂĹĄĂËÄÂÄšÄÄÂĂÂ/ĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂÄÂÄšÄÄÂĂÂĂÂĂÂĂĹĄĂÂÄÂÄšÄÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂÄÂĂÂÄÂĂÂ¤ĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂÄÂÄšÄĂĹĄÄšĹž + ĂÂĂÂĂĹĄĂÂÄÂÄšÄĂĹĄÄšĹžĂÂĂÂÄÂĂÂĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂÄÂÄšÄÄÂĂÂĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ­ĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂÄÂÄšÄÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ°
+
     function automatic bit mc_rd_done (input int pi); mc_rd_done  = u_dut.u_lle.mc_rd_done_q[pi];  endfunction
     function automatic bit mc_rcy_done(input int pi); mc_rcy_done = u_dut.u_lle.mc_rcy_done_q[pi]; endfunction
     function automatic int unsigned mc_pend_uni(input int pi); mc_pend_uni = u_dut.u_lle.mc_pend_uni_q[pi]; endfunction
     function automatic int unsigned mc_ncell(); mc_ncell = u_dut.u_lle.mc_ncell_q; endfunction
 
+    // â˜… Statistic counter probes (occupancy_pool_mgr internal accumulators)
+    function automatic int unsigned st_tail_drop (input int qi); st_tail_drop  = u_dut.u_occ.tail_drop_cnt_q[qi];        endfunction
+    function automatic int unsigned st_nf_assert (input int qi); st_nf_assert  = u_dut.u_occ.near_full_assert_cnt_q[qi]; endfunction
+    function automatic int unsigned st_pause_tx  (input int pi); st_pause_tx   = u_dut.u_occ.pause_tx_cnt_q[pi];         endfunction
+
+    // â˜… Aging probes (aging_ctrl / lle internal state)
+    function automatic bit          age_trig     (input int qi); age_trig      = u_dut.u_aging.age_trig[qi];             endfunction
+    function automatic int unsigned age_timer    (input int qi); age_timer     = u_dut.u_aging.age_timer_q[qi];          endfunction
+    wire        agf_busy_w   = u_dut.u_lle.age_flush_busy;
+    wire        agf_done_w   = u_dut.u_lle.age_flush_done;
+    wire        aging_notify_w = u_dut.u_aging.aging_notify;
+
     //========================================================================
-    // Scoreboard
+    // Scoreboard: capture allocation and dequeue events at DUT output pins.
     //========================================================================
     typedef struct packed {
         logic [ADDR_W-1:0] addr;
@@ -2804,7 +3326,7 @@ module smmu_tb;
     end
 
     //========================================================================
-    // ĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂÄÂÄšÄÄÂĂÂĂÂĂÂÄÂĂÂÄÂÄšÄÄÂĂÂĂÂĂÂÄÂĂÂÄÂĂÂÄÂĂÂ¤ĂÂĂÂÄÂĂÂ¸ĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂÄÂÄšÄÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ°
+    // Common check helpers
     //========================================================================
     int errors  = 0;
     int checks  = 0;
@@ -2828,7 +3350,7 @@ module smmu_tb;
     endtask
 
     //========================================================================
-    // ĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ°ÄÂĂÂÄÂĂÂ§ĂÂĂÂÄÂĂÂÄÂÄšÄÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ
+    // Debug dump helper
     //========================================================================
     task automatic dump_state(string tag);
         int qi, pi;
@@ -2846,7 +3368,7 @@ module smmu_tb;
     endtask
 
     //========================================================================
-    // ÄÂĂÂĂĹĄĂÂ ĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂÄÂĂÂÄÂĂÂ§ĂÂĂÂÄÂĂÂÄÂÄšÄÄÂĂÂ
+    // Default configuration
     //========================================================================
     task automatic cfg_setup();
         int qi, pi, tj;
@@ -2859,7 +3381,7 @@ module smmu_tb;
             cfg_port_max[pi]        = 24;
             cfg_port_pause_xoff[pi] = 28;
             cfg_port_pause_xon[pi]  = 16;
-            cfg_mcast_carry_tc[pi]  = MC_CARRY_TC[$clog2(TC_NUM)-1:0];   // ÄÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ B2
+            cfg_mcast_carry_tc[pi]  = MC_CARRY_TC[$clog2(TC_NUM)-1:0];
             for (tj=0; tj<TC_NUM; tj++) begin
                 cfg_pfc_xoff[pi][tj] = 9;
                 cfg_pfc_xon[pi][tj]  = 4;
@@ -2870,10 +3392,14 @@ module smmu_tb;
         cfg_global_pause_xon  = 40;
         cfg_pause_en          = 1'b1;
         cfg_pfc_en            = 1'b1;
+        // Ã¢Ëœâ€¦ aging disabled by default (cases enable explicitly)
+        cfg_aging_en          = 1'b0;
+        cfg_aging_timeout     = 24'd0;
+        cfg_age_force         = '0;
     endtask
 
     //========================================================================
-    // ĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂ¤ĂÂĂÂÄÂĂÂÄÂĂÂÄÂĂÂ¤ĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ + ĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂ§ĂÂĂÂÄÂĂÂĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ
+    // Reset DUT, build the LLE free list, then wait for init_done.
     //========================================================================
     task automatic do_reset_init();
         rst_n = 0;
@@ -2895,7 +3421,9 @@ module smmu_tb;
     endtask
 
     //========================================================================
-    // ĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂÄÂĂÂĂĹĄĂÂ ĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂÄÂĂÂÄÂĂÂ¤ĂÂĂÂÄÂĂÂ¸ĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ´ĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ
+    // Enqueue one packet. last_alloc_n records allocated cells for the packet.
+    // For unicast queues, enq_queue_id carries TC and enq_egress_port carries
+    // the egress port; full qid reconstruction is done inside the DUT.
     //========================================================================
     int                last_alloc_n;
 
@@ -2911,7 +3439,7 @@ module smmu_tb;
             @(negedge clk);
             if (enq_ready) begin
                 enq_req_r          = 1'b1;
-                enq_queue_id_r     = qid[QPP-1:0];   // ÄÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ ÄÂĂÂÄÂĂÂ¤ÄÂÄšÄÄÂĂÂĂÂĂÂÄÂĂÂ TC (ĂÂĂÂĂĹĄĂÂÄÂÄšÄÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ´ÄÂĂÂĂĹĄĂÂ ĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ={port,tc})
+                enq_queue_id_r     = qid[QPP-1:0];
                 enq_egress_port_r  = port[PORT_W-1:0];
                 enq_cell_num_r     = ncells[PKT_CELL_W-1:0];
                 enq_is_mcast_r     = is_mcast;
@@ -2929,10 +3457,8 @@ module smmu_tb;
     endtask
 
     //========================================================================
-    // ÄÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ ÄÂĂÂÄÂĂÂ§ĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ¨ĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂ­ĂÂĂÂÄÂĂÂÄÂĂÂĂĹĄĂÂ ĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ qidĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂÄÂĂÂÄÂĂÂ§ĂÂĂÂÄÂĂÂ´ĂÂĂÂÄÂĂÂĂÂĂÂĂĹĄĂÂÄÂÄšÄĂĹĄĂÂĂÂĂÂÄÂĂÂ DUT ĂÂĂÂĂĹĄĂÂÄÂÄšÄĂĹĄĂËĂÂĂÂÄÂĂÂĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂ­ĂÂĂÂÄÂĂÂĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ¨ĂÂĂÂÄÂĂÂÄÂÄšÄÄÂĂÂĂÂĂÂÄÂĂÂÄÂĂÂÄÂĂÂ§ÄÂÄšÄÄÂĂÂĂÂĂÂÄÂĂÂ splice ĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ¤ĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂÄÂÄšÄÄÂĂÂ (ÄÂĂÂĂĹĄĂÂ ĂÂĂÂÄÂĂÂÄÂÄšÄĂĹĄÄšÂĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂÄÂÄšÄĂĹĄĂËÄÂÄšÄÄÂĂÂĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂÄÂĂÂÄÂĂÂ¤ÄÂÄšÄĂĹĄÄšĹžĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂĂĹĄÄšĹžĂÂĂÂÄÂĂÂ deq_queue_id_r ÄÂĂÂÄÂĂÂ§ĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ
-    //   ÄÂĂÂÄÂĂÂ§ÄÂÄšÄÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂÄÂĂÂÄÂĂÂ§ĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ lle_q_empty/lle_qhead_pkt_tail ĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂÄÂÄšÄÄÂĂÂÄÂĂÂÄÂĂÂ§ĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ delta ÄÂĂÂÄÂĂÂ§ÄÂÄšÄÄÂĂÂ¤ĂÂĂÂÄÂĂÂÄÂĂÂÄÂĂÂ¤ÄÂÄšÄÄÂĂÂĂÂĂÂÄÂĂÂ: ĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ blocking ĂÂĂÂÄÂĂÂĂÂĂÂĂĹĄÄšĹžĂÂĂÂÄÂĂÂĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂÄÂÄšÄĂĹĄĂÂ
-    //   deq_queue_id_r ĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ, ĂÂĂÂÄÂĂÂÄÂÄšÄĂĹĄÄšÂĂÂĂÂÄÂĂÂÄÂĂÂÄÂĂÂ§ÄÂÄšÄÄÂĂÂĂÂĂÂÄÂĂÂ­ĂÂĂÂÄÂĂÂĂÂĂÂĂĹĄÄšĹžĂÂĂÂÄÂĂÂĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂÄÂÄšÄĂĹĄĂÂ lle_deq_queue_id ĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂ°ĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂÄÂÄšÄÄÂĂÂĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ¨ĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂÄÂÄšÄĂĹĄĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂÄÂÄšÄÄÂĂÂÄÂĂÂĂĹĄĂÂ ĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ´ĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ­ĂÂĂÂÄÂĂÂÄÂĂÂÄÂĂÂ¤ÄÂÄšÄĂĹĄĂÂĂÂĂÂÄÂĂÂ ĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ­, ÄÂĂÂÄÂĂÂ§ĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ´ĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂÄÂÄšÄĂĹĄĂËÄÂÄšÄÄÂĂÂÄÂĂÂÄÂĂÂ§ÄÂÄšÄÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂÄÂĂÂÄÂĂÂ§ĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ
-    //   ÄÂĂÂÄÂĂÂ¤ÄÂÄšÄĂĹĄĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂÄÂÄšÄĂĹĄĂËÄÂÄšÄÄÂĂÂĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ°ÄÂĂÂÄÂĂÂ¤ĂÂĂÂÄÂĂÂ¸ĂÂĂÂÄÂĂÂÄÂĂÂÄÂĂÂ¤ĂÂĂÂÄÂĂÂ¸ĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂÄÂÄšÄĂĹĄĂÂĂÂĂÂÄÂĂÂ qid ÄÂĂÂÄÂĂÂ§ĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ§ĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂÄÂÄšÄĂĹĄĂÂ)ĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂÄÂÄšÄĂĹĄÄšÂĂÂĂÂÄÂĂÂÄÂĂÂĂĹĄĂÂ ĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂ¤ĂÂĂÂÄÂĂÂĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂÄÂÄšÄÄÂĂÂ LLE ÄÂĂÂÄÂĂÂ§ĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ splice ÄÂĂÂÄÂĂÂ§ÄÂÄšÄÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂÄÂĂÂĂĹĄĂÂ ĂÂĂÂÄÂĂÂÄÂÄšÄÄÂĂÂĂÂĂÂÄÂĂÂÄÂÄšÄĂĹĄÄšĹžĂÂĂÂÄÂĂÂ, ÄÂĂÂÄÂĂÂ§ĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ¨ĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂ¸ĂÂĂÂÄÂĂÂ¸ÄÂĂÂĂĹĄĂÂ ĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ qid ÄÂĂÂÄÂĂÂ§ĂÂĂÂÄÂĂÂ´ĂÂĂÂÄÂĂÂĂÂĂÂĂĹĄĂÂÄÂÄšÄĂĹĄĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ
+    // Multicast-aware empty/head-tail helpers. These mirror the DUT behavior
+    // where a multicast frame can be read from a per-port carry queue.
     //========================================================================
     function automatic bit tb_mc_take(input int qid);
         int p; bit is_carry;
@@ -2958,9 +3484,7 @@ module smmu_tb;
     endfunction
 
     //========================================================================
-    // ĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂÄÂÄšÄÄÂĂÂÄÂĂÂĂĹĄĂÂ ĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂÄÂĂÂÄÂĂÂ¤ĂÂĂÂÄÂĂÂ¸ĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ´ĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ (ĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂÄÂĂÂĂĹĄĂÂ ĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ ĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ, ÄÂĂÂÄÂĂÂ§ĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ´ĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ°ĂÂĂÂÄÂĂÂÄÂÄšÄĂĹĄĂËĂÂĂÂÄÂĂÂ QID ÄÂĂÂĂĹĄĂÂ ĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂ¤ĂÂĂÂÄÂĂÂ´ pkt_tail)
-    //   ÄÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ B2: ÄÂĂÂÄÂĂÂ§ĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ¨ tb_q_empty / tb_qhead_pt (ĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂ­ĂÂĂÂÄÂĂÂÄÂĂÂĂĹĄĂÂ ĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ qid ÄÂĂÂÄÂĂÂ§ĂÂĂÂÄÂĂÂ´ĂÂĂÂÄÂĂÂĂÂĂÂĂĹĄĂÂÄÂÄšÄĂĹĄĂÂĂÂĂÂÄÂĂÂ, ĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂÄÂÄšÄÄÂĂÂ¤ĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂ¤ĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ­ splice) ĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ¤ĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ,
-    //     ĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ ÄÂĂÂÄÂĂÂ¤ĂÂĂÂÄÂĂÂ¸ÄÂÄšÄÄÂĂÂĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂ¤ĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ­ take ĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂÄÂÄšÄÄÂĂÂ q_cell_cnt[qid] ĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂÄÂÄšÄĂĹĄĂËĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂÄÂĂÂÄÂĂÂ¤ĂÂĂÂÄÂĂÂ¸ÄÂÄšÄÄÂĂÂ 0 ÄÂĂÂÄÂĂÂ¤ĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂÄÂĂÂÄÂĂÂ¤ÄÂÄšÄÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂ¤ĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ­ cell ĂÂĂÂÄÂĂÂÄÂÄšÄÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂÄÂÄšÄÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ
+    // Dequeue one packet from a unicast queue or multicast carry queue.
     //========================================================================
     int                last_deq_n;
 
@@ -2975,13 +3499,13 @@ module smmu_tb;
         deq_queue_id_r     = qid[QID_W-1:0];
         deq_backpressure_r = bp;
         forever begin
-            // q_empty (ĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂÄÂÄšÄÄÂĂÂ¤ĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂ¤ĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ­ splice, ĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂ­ĂÂĂÂÄÂĂÂÄÂĂÂĂĹĄĂÂ ĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ qid ÄÂĂÂÄÂĂÂ§ĂÂĂÂÄÂĂÂ´ĂÂĂÂÄÂĂÂĂÂĂÂĂĹĄĂÂÄÂÄšÄĂĹĄĂÂĂÂĂÂÄÂĂÂ): ÄÂĂÂÄÂĂÂ§ÄÂÄšÄÄÂĂÂ ÄÂÄšÄÄÂĂÂĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ
+
             if (tb_q_empty(qid)) begin
                 deq_req_r = 1'b0;
                 break;
             end
             deq_req_r = 1'b1;
-            // ÄÂĂÂĂĹĄĂÂ ĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂ¤ĂÂĂÂÄÂĂÂ´ pkt_tail (ĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂÄÂÄšÄÄÂĂÂ¤ĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂ¤ĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ­ splice), ĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ ĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂÄÂÄšÄĂĹĄĂÂ posedge ĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂ°ĂÂĂÂÄÂĂÂĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂÄÂÄšÄÄÂĂÂÄÂĂÂÄÂĂÂ§ĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ cell
+
             tail_fire = tb_qhead_pt(qid);
             @(negedge clk);
             if (tail_fire) begin
@@ -2996,7 +3520,7 @@ module smmu_tb;
     endtask
 
     //========================================================================
-    // ĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ­ĂÂĂÂÄÂĂÂÄÂÄšÄĂĹĄÄšÂĂÂĂÂÄÂĂÂÄÂĂÂĂĹĄĂÂ ĂÂĂÂÄÂĂÂÄÂÄšÄĂĹĄÄšĹž
+    // Recycle cells that have completed egress.
     //========================================================================
     task automatic recycle_cells(input int qid, input int cells[$]);
         int i;
@@ -3013,8 +3537,7 @@ module smmu_tb;
     endtask
 
     //========================================================================
-    // ÄÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ B2 ÄÂĂÂÄÂĂÂ§ÄÂÄšÄÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ­ÄÂĂÂĂĹĄĂÂ ĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂÄÂĂÂÄÂĂÂ§ÄÂÄšÄÄÂĂÂ¤ÄÂÄšÄĂĹĄĂËĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂÄÂÄšÄÄÂĂÂĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂÄÂÄšÄÄÂĂÂ: EPS ĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂÄÂĂÂÄÂĂÂ§ÄÂÄšÄÄÂĂÂ¤ÄÂÄšÄĂĹĄĂËĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂÄÂÄšÄÄÂĂÂĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂĂĹĄĂÂÄÂÄšÄÄÂĂÂĂÂĂÂÄÂĂÂÄÂĂÂÄÂĂÂ¤ĂÂĂÂÄÂĂÂ¸ĂÂĂÂÄÂĂÂÄÂĂÂÄÂĂÂ¤ÄÂÄšÄÄÂĂÂĂÂĂÂÄÂĂÂ ÄÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ ĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂÄÂĂÂÄÂĂÂ¤ĂÂĂÂÄÂĂÂ¸ĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂÄÂÄšÄĂĹĄĂÂĂÂĂÂÄÂĂÂ mcast_recycle_req,
-    //   queue_id = ĂÂĂÂÄÂĂÂÄÂÄšÄĂĹĄĂËĂÂĂÂÄÂĂÂÄÂĂÂÄÂĂÂ§ÄÂÄšÄÄÂĂÂ¤ÄÂÄšÄĂĹĄĂËĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂÄÂÄšÄÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂÄÂÄšÄĂĹĄÄšÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ qid (MMU ĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ¨ÄÂĂÂÄÂĂÂ§ÄÂÄšÄÄÂĂÂ¤ÄÂÄšÄĂĹĄĂËĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂÄÂÄšÄÄÂĂÂ)ĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂÄÂĂÂÄÂĂÂ¤ĂÂĂÂÄÂĂÂ¸ĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂÄÂÄšÄĂĹĄĂÂĂÂĂÂÄÂĂÂĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂÄÂÄšÄÄÂĂÂÄÂĂÂÄÂĂÂ§ĂÂĂÂÄÂĂÂÄÂÄšÄÄÂĂÂ mc_rcy_done[port]ĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ
+    // Notify the multicast release path that one output port has recycled.
     //========================================================================
     task automatic mcast_recycle_port(input int port);
         int cq;
@@ -3022,7 +3545,7 @@ module smmu_tb;
         $display("  >>> MCAST RCY port%0d (carry_qid=%0d)", port, cq);
         @(negedge clk);
         mcast_recycle_req_r      = 1'b1;
-        mcast_recycle_addr_r     = '0;                       // B2 ĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂÄÂÄšÄÄÂĂÂÄÂĂÂÄÂĂÂ§ĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ¨ addr
+        mcast_recycle_addr_r     = '0;
         mcast_recycle_queue_id_r = cq[QID_W-1:0];
         @(negedge clk);
         mcast_recycle_req_r = 1'b0;
@@ -3030,12 +3553,12 @@ module smmu_tb;
     endtask
 
     //========================================================================
-    // ĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂÄÂĂÂĂĹĄĂÂ ĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂÄÂĂÂĂĹĄĂÂ ĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ¤ĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂĂĹĄÄšĹžĂÂĂÂÄÂĂÂ
+    // Drive packet metadata without asserting enq_req, then sample predict_drop.
     //========================================================================
     task automatic probe_predict(input int qid, input int port, input int n, output bit pd);
         @(negedge clk);
         enq_req_r         = 1'b0;
-        enq_queue_id_r    = qid[QPP-1:0];      // ÄÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ ÄÂĂÂÄÂĂÂ¤ÄÂÄšÄÄÂĂÂĂÂĂÂÄÂĂÂ TC
+        enq_queue_id_r    = qid[QPP-1:0];
         enq_egress_port_r = port[PORT_W-1:0];
         enq_cell_num_r    = n[PKT_CELL_W-1:0];
         @(negedge clk);
@@ -3044,14 +3567,14 @@ module smmu_tb;
     endtask
 
     //========================================================================
-    // ÄÂĂÂÄÂĂÂ¤ĂÂĂÂÄÂĂÂ¸ÄÂÄšÄÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂĂĹĄÄšĹžĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂÄÂÄšÄĂĹĄĂËĂÂĂÂÄÂĂÂĂÂĂÂĂĹĄĂÂÄÂÄšÄÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ
+
     //========================================================================
     int base;
     initial begin
         do_reset_init();
 
         //====================================================================
-        // C1: ĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂÄÂĂÂĂĹĄĂÂ ĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ
+        // C1:
         //====================================================================
         case_begin("C1 single-queue enq/deq/rcy + free_cnt");
         base = alloc_q.size();
@@ -3077,7 +3600,7 @@ module smmu_tb;
         chk("C1 conserve", (lle_free_cnt==CELL_NUM)&&(occ_free_cnt==CELL_NUM), 1);
 
         //====================================================================
-        // C2: ĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ¨ÄÂĂÂĂĹĄĂÂ ĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂÄÂĂÂÄÂĂÂ¤ÄÂÄšÄÄÂĂÂĂÂĂÂÄÂĂÂ¤ĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ
+        // C2:
         //====================================================================
         case_begin("C2 cross-queue interleaved enq + deq");
         do_reset_init();
@@ -3112,7 +3635,7 @@ module smmu_tb;
         chk("C2 occ_q1_clear",   occ_qcnt(1), 0);
 
         //====================================================================
-        // C3: ĂÂĂÂÄÂĂÂÄÂÄšÄĂĹĄÄšÂĂÂĂÂÄÂĂÂÄÂĂÂĂĹĄĂÂ ĂÂĂÂÄÂĂÂÄÂÄšÄĂĹĄÄšĹžĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂ¤ĂÂĂÂÄÂĂÂ + ĂÂĂÂĂĹĄĂÂÄÂÄšÄÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ
+        // C3: free-list restore + conservation
         //====================================================================
         case_begin("C3 free-list restore + conservation");
         do_reset_init();
@@ -3142,87 +3665,87 @@ module smmu_tb;
         chk_b("C3 no_underflow",underflow_alarm, 1'b0);
 
         //====================================================================
-        // C4: ÄÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ B2 ĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂ¤ĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ­ ÄÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂÄÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ ĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ§ĂÂĂÂÄÂĂÂ / ÄÂĂÂĂĹĄĂÂ ĂÂĂÂÄÂĂÂÄÂÄšÄÄÂĂÂĂÂĂÂÄÂĂÂÄÂÄšÄĂĹĄÄšĹžĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂÄÂÄšÄĂĹĄĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ / ÄÂĂÂĂĹĄĂÂ ĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂÄÂĂÂÄÂĂÂ§ÄÂÄšÄÄÂĂÂ¤ÄÂÄšÄĂĹĄĂËĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂÄÂÄšÄÄÂĂÂĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂÄÂÄšÄÄÂĂÂ / ÄÂĂÂĂĹĄĂÂ ĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂÄÂÄšÄĂĹĄÄšĹž / ĂÂĂÂÄÂĂÂÄÂÄšÄÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ§ĂÂĂÂÄÂĂÂ drop
-        //   ĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ§ĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ¨ĂÂĂÂÄÂĂÂ: PORT=2, ĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂÄÂÄšÄĂĹĄÄšÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ qid: port0ÄÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂq0, port1ÄÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂq4ĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ
+        // C4:
+
         //====================================================================
         case_begin("C4 B2 multicast: single-slot / splice deq / port recycle / release");
         do_reset_init();
 
-        // ---- ĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂÄÂÄšÄÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂÄÂÄšÄĂĹĄĂËÄÂĂÂĂĹĄĂÂ ĂÂĂÂÄÂĂÂÄÂÄšÄÄÂĂÂĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂÄÂÄšÄÄÂĂÂ¤: ĂÂĂÂÄÂĂÂÄÂÄšÄÄÂĂÂÄÂÄšÄÄÂĂÂ ĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂ¤ĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ­ĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ¨ port0 ĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂ°ÄÂÄšÄĂĹĄÄšĹžĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂport1 ĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂ¤ĂÂĂÂÄÂĂÂ´ ----
-        // port0 ĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂÄÂÄšÄĂĹĄÄšÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂÄÂĂÂĂĹĄĂÂ ĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ q0 ĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ 1 ÄÂĂÂÄÂĂÂ¤ĂÂĂÂÄÂĂÂ¸ÄÂÄšÄÄÂĂÂĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ­ĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ A (2 cell: 0,1) ÄÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ ĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂ¤ĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ­ĂÂĂÂĂĹĄĂÂÄÂÄšÄĂĹĄĂËÄÂÄšÄÄÂĂÂ q0 ĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ¨ A ÄÂĂÂÄÂĂÂ¤ÄÂÄšÄÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ
+
+
         enqueue_pkt(0, q2port(0), 2, 0, '0);         // A: cells 0,1
         chk("C4 q0_uni_backlog1", u_dut.u_lle.q_uni_pkt_backlog_q[0], 1);
-        // ĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂ¤ĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ­ĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂ¸ĂÂĂÂÄÂĂÂ§ 3 cell ĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ° MCAST_QID, bitmap=2'b11 (port0+port1) ÄÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ cells 2,3,4
+
         enqueue_pkt(MCAST_QID, 0, 3, 1, 2'b11);
         dump_state("C4 after mcast enq");
         chk("C4 mc_valid",        mc_valid, 1'b1);
         chk("C4 mcast_alloc_cnt", last_alloc_n, 3);
         chk("C4 mcast_ncell",     mc_ncell(), 3);
-        chk("C4 mcastq_sram_cnt", lle_qcnt(MCAST_QID), 3);        // chain33 ĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ¨ SRAM, cnt=3
+        chk("C4 mcastq_sram_cnt", lle_qcnt(MCAST_QID), 3); // chain33 SRAM, cnt=3
         chk("C4 free_after_enq",  lle_free_cnt, CELL_NUM-5);      // A(2)+M(3)
-        chk("C4 pend_uni_port0",  mc_pend_uni(0), 1);             // ĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ¨ A ÄÂĂÂÄÂĂÂ¤ÄÂÄšÄÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ
-        chk("C4 pend_uni_port1",  mc_pend_uni(1), 0);             // ĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂ¤ĂÂĂÂÄÂĂÂ´
-        // ÄÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ empty ĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂÄÂĂÂĂĹĄĂÂ ĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ: q0(port0 ĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂÄÂÄšÄĂĹĄÄšÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ) ĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ­A ÄÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ ÄÂĂÂĂĹĄĂÂ ĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂÄÂĂÂÄÂĂÂ§ÄÂÄšÄÄÂĂÂ ÄÂÄšÄÄÂĂÂ; q4(port1 ĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂÄÂÄšÄĂĹĄÄšÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ) ĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ ĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ­ÄÂĂÂÄÂĂÂ¤ĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂ¤ĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ­ĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂ¤ĂÂĂÂÄÂĂÂ´ ÄÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ ÄÂĂÂĂĹĄĂÂ ĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂÄÂĂÂÄÂĂÂ§ÄÂÄšÄÄÂĂÂ ÄÂÄšÄÄÂĂÂ
-        chk_b("C4 q_empty_q0_uni",  q_empty[0], 1'b0);           // A ĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ¨, ÄÂĂÂĂĹĄĂÂ ĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂÄÂĂÂÄÂĂÂ§ÄÂÄšÄÄÂĂÂ ÄÂÄšÄÄÂĂÂ
-        chk_b("C4 q_empty_q4_mc",   q_empty[4], 1'b0);           // ĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂ¤ĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ­ĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂ¤ĂÂĂÂÄÂĂÂ´ ÄÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ mc_here ÄÂĂÂĂĹĄĂÂ ĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂÄÂĂÂÄÂĂÂ§ÄÂÄšÄÄÂĂÂ ÄÂÄšÄÄÂĂÂ
-        chk_b("C4 q_empty_q1_idle", q_empty[1], 1'b1);           // ĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ ĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ­ĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ ĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂ¤ĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ­ ÄÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ ÄÂĂÂÄÂĂÂ§ÄÂÄšÄÄÂĂÂ ÄÂÄšÄÄÂĂÂ
-        // port1 ĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂÄÂÄšÄĂĹĄÄšÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂÄÂĂÂĂĹĄĂÂ ĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ q4 ÄÂĂÂÄÂĂÂ¤ÄÂÄšÄÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ­ĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ C (2 cell: 5,6) ÄÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ ĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂ¤ĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ­ĂÂĂÂĂĹĄĂÂÄÂÄšÄĂĹĄĂËÄÂÄšÄÄÂĂÂ q4 ĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂ¤ĂÂĂÂÄÂĂÂ´, C ĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ¨ĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂÄÂÄšÄÄÂĂÂĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ
+        chk("C4 pend_uni_port0",  mc_pend_uni(0), 1);
+        chk("C4 pend_uni_port1",  mc_pend_uni(1), 0);
+
+        chk_b("C4 q_empty_q0_uni",  q_empty[0], 1'b0);
+        chk_b("C4 q_empty_q4_mc",   q_empty[4], 1'b0);
+        chk_b("C4 q_empty_q1_idle", q_empty[1], 1'b1);
+
         enqueue_pkt(4, q2port(4), 2, 0, '0);         // C: cells 5,6
-        chk("C4 pend_uni_port1_still0", mc_pend_uni(1), 0);       // C ĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ¨ĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂ¤ĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ­ÄÂĂÂÄÂĂÂ¤ÄÂÄšÄÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ, ÄÂĂÂÄÂĂÂ¤ĂÂĂÂÄÂĂÂ¸ĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂÄÂÄšÄÄÂĂÂ pend
+        chk("C4 pend_uni_port1_still0", mc_pend_uni(1), 0); // C is unicast; port1 multicast pend stays clear.
 
-        // ---- port0 ĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂÄÂÄšÄÄÂĂÂÄÂĂÂĂĹĄĂÂ ĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ (ĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂÄÂÄšÄĂĹĄÄšÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ q0): ĂÂĂÂĂĹĄĂÂÄÂÄšÄÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂÄÂÄšÄÄÂĂÂ A(2 cell) ĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂÄÂÄšÄÄÂĂÂĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂ¤ĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ­(3 cell) ----
+
         base = deq_q.size();
-        dequeue_pkt(0, '0);                          // ĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ A
+        dequeue_pkt(0, '0);
         chk("C4 p0_deqA_count", last_deq_n, 2);
-        chk("C4 p0_pend_uni_0",  mc_pend_uni(0), 0);              // A ĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂÄÂÄšÄÄÂĂÂĂÂĂÂĂĹĄĂÂÄÂÄšÄÄÂĂÂĂÂĂÂÄÂĂÂ ÄÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ pend ĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ 0
+        chk("C4 p0_pend_uni_0",  mc_pend_uni(0), 0); // A pend 0
         base = deq_q.size();
-        dequeue_pkt(0, '0);                          // ĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂ¤ĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ­ M (splice)
+        dequeue_pkt(0, '0); // M (splice)
         chk("C4 p0_deqM_count", last_deq_n, 3);
-        chk("C4 p0_mc_rd_done", mc_rd_done(0), 1'b1);            // port0 ĂÂĂÂÄÂĂÂÄÂÄšÄĂĹĄĂËÄÂÄšÄÄÂĂÂĂÂĂÂĂĹĄĂÂÄÂÄšÄÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂ¤ĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ­
-        chk("C4 free_after_p0",  lle_free_cnt, CELL_NUM-7);      // A(2)+M(3)+C(2), ĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂÄÂÄšÄÄÂĂÂÄÂĂÂĂĹĄĂÂ ĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂÄÂĂÂÄÂĂÂ¤ĂÂĂÂÄÂĂÂ¸ĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂÄÂÄšÄĂĹĄÄšÂĂÂĂÂÄÂĂÂÄÂĂÂĂĹĄĂÂ ĂÂĂÂÄÂĂÂÄÂÄšÄĂĹĄÄšĹž
-        chk("C4 mc_valid_still",  mc_valid, 1'b1);               // ÄÂĂÂÄÂĂÂ§ÄÂÄšÄÄÂĂÂ¤ÄÂÄšÄĂĹĄĂËĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂÄÂÄšÄÄÂĂÂ1 ĂÂĂÂÄÂĂÂÄÂÄšÄĂĹĄÄšÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂÄÂÄšÄĂĹĄĂËÄÂÄšÄÄÂĂÂ, ĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ§ĂÂĂÂÄÂĂÂÄÂĂÂÄÂĂÂ¤ĂÂĂÂÄÂĂÂ¸ĂÂĂÂÄÂĂÂÄÂĂÂĂĹĄĂÂ ĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂÄÂÄšÄĂĹĄÄšĹž
+        chk("C4 p0_mc_rd_done", mc_rd_done(0), 1'b1);
+        chk("C4 free_after_p0",  lle_free_cnt, CELL_NUM-7); // A(2)+M(3)+C(2) are still allocated.
+        chk("C4 mc_valid_still",  mc_valid, 1'b1);
 
-        // ---- port1 ĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂÄÂÄšÄÄÂĂÂÄÂĂÂĂĹĄĂÂ ĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ (ĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂÄÂÄšÄĂĹĄÄšÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ q4): ĂÂĂÂĂĹĄĂÂÄÂÄšÄÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂÄÂÄšÄÄÂĂÂĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂ¤ĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ­(3 cell) ĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂÄÂÄšÄÄÂĂÂ C(2 cell) ----
+
         base = deq_q.size();
-        dequeue_pkt(4, '0);                          // ĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂ¤ĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ­ M
+        dequeue_pkt(4, '0);
         chk("C4 p1_deqM_count", last_deq_n, 3);
         chk("C4 p1_mc_rd_done", mc_rd_done(1), 1'b1);
         base = deq_q.size();
-        dequeue_pkt(4, '0);                          // ĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ C
+        dequeue_pkt(4, '0);
         chk("C4 p1_deqC_count", last_deq_n, 2);
 
-        // ---- ĂÂĂÂÄÂĂÂÄÂÄšÄÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ§ĂÂĂÂÄÂĂÂ drop: ĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ­ĂÂĂÂÄÂĂÂ¤ĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂÄÂÄšÄÄÂĂÂ mc_valid ÄÂĂÂÄÂĂÂ¤ÄÂÄšÄÄÂĂÂĂÂĂÂÄÂĂÂÄÂĂÂÄÂĂÂ¤ĂÂĂÂÄÂĂÂ¸ÄÂÄšÄÄÂĂÂ 1 (ĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂÄÂÄšÄÄÂĂÂĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂÄÂÄšÄÄÂĂÂĂÂĂÂĂĹĄĂÂÄÂÄšÄÄÂĂÂĂÂĂÂÄÂĂÂ), ĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ°ĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂ¤ĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ­ĂÂĂÂĂĹĄĂÂÄÂÄšÄÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂÄÂÄšÄÄÂĂÂ¤ drop ----
-        begin int ab; int dn; ab = alloc_q.size();
-            enqueue_pkt(MCAST_QID, 0, 2, 1, 2'b01);  // ĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂ°ĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂÄÂÄšÄĂĹĄĂËĂÂĂÂÄÂĂÂĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂÄÂĂÂÄÂĂÂ§ÄÂÄšÄĂĹĄĂÂÄÂÄšÄĂĹĄĂÂ 2 ĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂ¤ĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ­
-            dn = 0; for (int k=ab;k<alloc_q.size();k++) if (alloc_q[k].drop) dn++;
-            chk("C4 mcast_busy_drop_all", dn, 2);    // ĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ´ĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂ¸ĂÂĂÂÄÂĂÂ§ĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂÄÂÄšÄÄÂĂÂ¤ÄÂĂÂÄÂĂÂ¤ĂÂĂÂÄÂĂÂ¸ĂÂĂÂÄÂĂÂ (2 cell ĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ¨ drop)
-        end
-        chk("C4 mc_valid_after_drop", mc_valid, 1'b1);           // ĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ§ĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂÄÂÄšÄÄÂĂÂĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ (ÄÂĂÂÄÂĂÂ¤ÄÂÄšÄÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂÄÂÄšÄĂĹĄĂËÄÂĂÂÄÂĂÂ§ÄÂÄšÄĂĹĄĂÂÄÂÄšÄĂĹĄĂÂÄÂĂÂÄÂĂÂ¤ĂÂĂÂÄÂĂÂ¸ĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ)
 
-        // ---- ÄÂĂÂĂĹĄĂÂ ĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂÄÂĂÂÄÂĂÂ§ÄÂÄšÄÄÂĂÂ¤ÄÂÄšÄĂĹĄĂËĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂÄÂÄšÄÄÂĂÂĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂÄÂÄšÄÄÂĂÂ: port0 ĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂĂĹĄĂÂÄÂÄšÄÄÂĂÂĂÂĂÂÄÂĂÂ + port1 ĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂĂĹĄĂÂÄÂÄšÄÄÂĂÂĂÂĂÂÄÂĂÂ ÄÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ ĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ¨ÄÂĂÂÄÂĂÂ§ÄÂÄšÄÄÂĂÂ¤ÄÂÄšÄĂĹĄĂËĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂÄÂÄšÄÄÂĂÂ rd&rcy done ÄÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ ĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ´ĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂ¸ĂÂĂÂÄÂĂÂ§ÄÂĂÂĂĹĄĂÂ ĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂÄÂÄšÄĂĹĄÄšĹž ----
-        chk("C4 free_before_release", lle_free_cnt, CELL_NUM-7); // A+M+C ÄÂĂÂÄÂĂÂ¤ÄÂÄšÄÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ  (A/C ĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ­ĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂÄÂÄšÄÄÂĂÂĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂÄÂÄšÄÄÂĂÂ, M ĂÂĂÂĂĹĄĂÂÄÂÄšÄĂĹĄÄšĹžĂÂĂÂÄÂĂÂÄÂĂÂĂĹĄĂÂ ĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂÄÂÄšÄĂĹĄÄšĹž)
+        begin int ab; int dn; ab = alloc_q.size();
+            enqueue_pkt(MCAST_QID, 0, 2, 1, 2'b01);
+            dn = 0; for (int k=ab;k<alloc_q.size();k++) if (alloc_q[k].drop) dn++;
+            chk("C4 mcast_busy_drop_all", dn, 2);
+        end
+        chk("C4 mc_valid_after_drop", mc_valid, 1'b1);
+
+
+        chk("C4 free_before_release", lle_free_cnt, CELL_NUM-7); // A+C not recycled; M not released yet.
         mcast_recycle_port(0);
-        chk("C4 mc_valid_after_p0rcy", mc_valid, 1'b1);          // ĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂÄÂÄšÄÄÂĂÂ port0 ĂÂĂÂĂĹĄĂÂÄÂÄšÄÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ, ĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂÄÂÄšÄÄÂĂÂÄÂĂÂĂĹĄĂÂ ĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂÄÂÄšÄĂĹĄÄšĹž
+        chk("C4 mc_valid_after_p0rcy", mc_valid, 1'b1);
         mcast_recycle_port(1);
-        repeat (8) @(negedge clk);                               // ÄÂĂÂÄÂĂÂ§ĂÂĂÂÄÂĂÂ­ĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ´ĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂ¸ĂÂĂÂÄÂĂÂ§ walk ĂÂĂÂÄÂĂÂÄÂÄšÄĂĹĄÄšÂĂÂĂÂÄÂĂÂÄÂĂÂĂĹĄĂÂ ĂÂĂÂÄÂĂÂÄÂÄšÄĂĹĄÄšĹžĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ°
+        repeat (8) @(negedge clk);
         dump_state("C4 after both port recycle");
-        chk("C4 mc_valid_released", mc_valid, 1'b0);             // ĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ¨ÄÂĂÂÄÂĂÂ§ÄÂÄšÄÄÂĂÂ¤ÄÂÄšÄĂĹĄĂËĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂÄÂÄšÄÄÂĂÂĂÂĂÂĂĹĄĂÂÄÂÄšÄÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ ÄÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ ÄÂĂÂĂĹĄĂÂ ĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂÄÂÄšÄĂĹĄÄšĹž
-        // M ÄÂĂÂÄÂĂÂ§ĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ 3 ÄÂĂÂÄÂĂÂ¤ĂÂĂÂÄÂĂÂ¸ÄÂÄšÄÄÂĂÂ cell (2,3,4) ĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂÄÂÄšÄĂĹĄÄšÂĂÂĂÂÄÂĂÂĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ free; A(0,1)/C(5,6) ÄÂĂÂÄÂĂÂ¤ÄÂÄšÄÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂÄÂÄšÄĂĹĄĂËĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ­ĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂÄÂÄšÄÄÂĂÂĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂÄÂÄšÄÄÂĂÂ
-        chk("C4 free_after_release", lle_free_cnt, CELL_NUM-4);  // 7 ĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ ÄÂĂÂÄÂĂÂ§ĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ¨ - 3(MĂÂĂÂÄÂĂÂÄÂÄšÄĂĹĄÄšÂĂÂĂÂÄÂĂÂÄÂĂÂĂĹĄĂÂ ĂÂĂÂÄÂĂÂÄÂÄšÄĂĹĄÄšĹž) = A(2)+C(2)=4 ĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ ÄÂĂÂÄÂĂÂ§ĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ¨
+        chk("C4 mc_valid_released", mc_valid, 1'b0);
+
+        chk("C4 free_after_release", lle_free_cnt, CELL_NUM-4); // M released; A(2)+C(2) still allocated.
         chk_b("C4 no_underflow", underflow_alarm, 1'b0);
 
-        // ---- ĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ¸ĂÂĂÂÄÂĂÂÄÂĂÂÄÂĂÂ§ĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ­ A(0,1) ÄÂĂÂÄÂĂÂ¤ĂÂĂÂÄÂĂÂ¸ĂÂĂÂÄÂĂÂ C(5,6) ----
+
         begin int rA[$]; int rC[$]; rA='{0,1}; rC='{5,6};
               recycle_cells(0, rA); recycle_cells(4, rC); end
         dump_state("C4 after cleanup uni");
         chk("C4 free_full",  lle_free_cnt, CELL_NUM);
         chk("C4 glob_zero",  occ_glob_used, 0);
 
-        // ---- ÄÂĂÂĂĹĄĂÂ ĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂÄÂÄšÄĂĹĄÄšĹžĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂÄÂÄšÄĂĹĄĂËĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂÄÂÄšÄÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ°ĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂ¤ĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ­ ----
+
         enqueue_pkt(MCAST_QID, 0, 2, 1, 2'b11);
         chk("C4 new_mcast_accepted", mc_valid, 1'b1);
         chk("C4 new_mcast_ncell",    mc_ncell(), 2);
-        // ĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂÄÂÄšÄÄÂĂÂĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂ°ÄÂÄšÄĂĹĄÄšĹž: ÄÂĂÂÄÂĂÂ¤ĂÂĂÂÄÂĂÂ¸ĂÂĂÂÄÂĂÂ¤ÄÂĂÂÄÂĂÂ§ÄÂÄšÄÄÂĂÂ¤ÄÂÄšÄĂĹĄĂËĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂÄÂÄšÄÄÂĂÂĂÂĂÂÄÂĂÂÄÂÄšÄĂĹĄĂËÄÂÄšÄÄÂĂÂĂÂĂÂĂĹĄĂÂÄÂÄšÄÄÂĂÂĂÂĂÂÄÂĂÂ+ĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂÄÂÄšÄÄÂĂÂÄÂĂÂĂĹĄĂÂ ĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂÄÂÄšÄĂĹĄÄšĹž
+
         dequeue_pkt(0, '0);
         dequeue_pkt(4, '0);
         mcast_recycle_port(0);
@@ -3232,7 +3755,7 @@ module smmu_tb;
         chk("C4 final_free_full",    lle_free_cnt, CELL_NUM);
 
         //====================================================================
-        // C5~C13
+        // C5~C17
         //====================================================================
         run_remaining_cases();
 
@@ -3245,14 +3768,14 @@ module smmu_tb;
     end
 
     //========================================================================
-    // C5~C13
+    // C5~C17
     //========================================================================
     task automatic run_remaining_cases();
         int fire_base, ei, guard, dropn, i;
         int deq3_base;
 
         //--------------------------------------------------------------------
-        // C5: enq + deq ĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ + ĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ
+        // C5: enq + deq +
         //--------------------------------------------------------------------
         case_begin("C5 enq+deq concurrent + back-pressure");
         do_reset_init();
@@ -3267,7 +3790,7 @@ module smmu_tb;
             ei = enq_fire_cnt - fire_base;
             deq_req_r = (lle_qcnt(3) > 0);
             if (ei < 3) begin
-                enq_req_r=1'b1; enq_queue_id_r=0; enq_egress_port_r=q2port(4); // ĂÂĂÂĂĹĄĂÂÄÂÄšÄÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ´=q4 (port1,tc0)
+                enq_req_r=1'b1; enq_queue_id_r=0; enq_egress_port_r=q2port(4); // =q4 (port1,tc0)
                 enq_is_mcast_r=1'b0; enq_mcast_bitmap_r='0;
                 enq_sof_r=(ei==0); enq_eof_r=(ei==2);
             end else enq_req_r = 1'b0;
@@ -3287,7 +3810,7 @@ module smmu_tb;
         chk("C5 free_restored", lle_free_cnt, CELL_NUM);
 
         //--------------------------------------------------------------------
-        // C6: deq + rcy ĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ
+        // C6: deq + rcy
         //--------------------------------------------------------------------
         case_begin("C6 deq + rcy concurrent");
         do_reset_init();
@@ -3319,7 +3842,7 @@ module smmu_tb;
         chk("C6 free_restored", lle_free_cnt, CELL_NUM);
 
         //--------------------------------------------------------------------
-        // C7: enq + deq + rcy ÄÂĂÂÄÂĂÂ¤ĂÂĂÂÄÂĂÂ¸ĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ (deq>enq>rcy)
+        // C7: enq + deq + rcy
         //--------------------------------------------------------------------
         case_begin("C7 enq+deq+rcy triple concurrent");
         do_reset_init();
@@ -3336,7 +3859,7 @@ module smmu_tb;
             ei = enq_fire_cnt - fire_base;
             deq_req_r = (lle_qcnt(3) > 0);
             if (ei < 2) begin
-                enq_req_r=1'b1; enq_queue_id_r=1; enq_egress_port_r=q2port(5); // ĂÂĂÂĂĹĄĂÂÄÂÄšÄÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ´=q5 (port1,tc1)
+                enq_req_r=1'b1; enq_queue_id_r=1; enq_egress_port_r=q2port(5); // =q5 (port1,tc1)
                 enq_is_mcast_r=1'b0; enq_mcast_bitmap_r='0;
                 enq_sof_r=(ei==0); enq_eof_r=(ei==1);
             end else enq_req_r=1'b0;
@@ -3362,7 +3885,7 @@ module smmu_tb;
         chk("C7 free_restored", lle_free_cnt, CELL_NUM);
 
         //--------------------------------------------------------------------
-        // C8: ĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ°ĂÂĂÂÄÂĂÂ´ÄÂĂÂÄÂĂÂ§ÄÂÄšÄÄÂĂÂÄÂÄšÄĂĹĄÄšÂ/ĂÂĂÂĂĹĄĂÂÄÂÄšÄĂĹĄÄšÂÄÂÄšÄÄÂĂÂ¤ĂÂĂÂÄÂĂÂÄÂÄšÄÄÂĂÂĂÂĂÂÄÂĂÂ/ĂÂĂÂÄÂĂÂÄÂÄšÄÄÂĂÂĂÂĂÂÄÂĂÂ + ÄÂĂÂĂĹĄĂÂ ÄÂÄšÄÄÂĂÂ¤ĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ°ĂÂĂÂÄÂĂÂ´ÄÂĂÂÄÂĂÂ¤ĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂÄÂĂÂÄÂĂÂ¤ĂÂĂÂÄÂĂÂ¸ĂÂĂÂÄÂĂÂĂÂĂÂĂĹĄĂÂÄÂÄšÄĂĹĄĂÂĂÂĂÂÄÂĂÂ
+        // C8: queue/port/global watermark and drop behavior
         //--------------------------------------------------------------------
         case_begin("C8 watermark / near_full / hi-wm drop / release");
         do_reset_init();
@@ -3383,11 +3906,11 @@ module smmu_tb;
         chk_b("C8 q0_near_full_clr", q_near_full[0], 1'b0);
 
         //--------------------------------------------------------------------
-        // C9: PAUSE ĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ§ÄÂÄšÄÄÂĂÂĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂÄÂĂÂÄÂĂÂ¤ĂÂĂÂÄÂĂÂ¸ĂÂĂÂÄÂĂÂÄÂĂÂĂĹĄĂÂ ĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂÄÂÄšÄĂĹĄÄšĹž
+        // C9: PAUSE
         //--------------------------------------------------------------------
         case_begin("C9 PAUSE assert / release (port aggregate)");
         do_reset_init();
-        cfg_port_max[0] = 32; // C9 ĂÂĂÂÄÂĂÂĂÂĂÂĂĹĄÄšĹžĂÂĂÂÄÂĂÂ PAUSE: port drop ÄÂĂÂĂĹĄĂÂ ÄÂÄšÄÄÂĂÂ¤ĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ°ĂÂĂÂÄÂĂÂ´ÄÂĂÂÄÂĂÂ¤ĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂÄÂĂÂĂĹĄĂÂ ĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂÄÂĂÂĂĹĄĂÂ ÄÂÄšÄÄÂĂÂ¤ĂÂĂÂÄÂĂÂÄÂĂÂÄÂĂÂ¤ÄÂÄšÄÄÂĂÂĂÂĂÂÄÂĂÂ pause xoff(28)
+        cfg_port_max[0] = 32; // C9 PAUSE: port drop pause xoff(28)
         for (i=0;i<12;i++) enqueue_pkt(0, q2port(0), 1, 0, '0);
         for (i=0;i<12;i++) enqueue_pkt(1, q2port(1), 1, 0, '0);
         for (i=0;i<12;i++) enqueue_pkt(2, q2port(2), 1, 0, '0);
@@ -3403,7 +3926,7 @@ module smmu_tb;
         chk_b("C9 pause_clr",    pause_req[0], 1'b0);
 
         //--------------------------------------------------------------------
-        // C10: ĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂĂĹĄÄšĹžĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂÄÂÄšÄĂĹĄĂËĂÂĂÂÄÂĂÂ
+        // C10:
         //--------------------------------------------------------------------
         case_begin("C10 stress: fill / drain / recycle conservation");
         do_reset_init();
@@ -3428,7 +3951,7 @@ module smmu_tb;
         chk_b("C10 no_underflow", underflow_alarm, 1'b0);
 
         //--------------------------------------------------------------------
-        // C11: ĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂÄÂĂÂĂĹĄĂÂ ĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂÄÂĂÂĂĹĄĂÂ ĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ¤
+        // C11:
         //--------------------------------------------------------------------
         case_begin("C11 pre-enq predict-drop (combinational)");
         do_reset_init();
@@ -3456,15 +3979,15 @@ module smmu_tb;
 
             for (int qq=0; qq<4; qq++) enqueue_pkt(qq, q2port(qq), 10, 0, '0);
             enqueue_pkt(4, q2port(4), 8, 0, '0);
-            chk("C11 glob_used_48", occ_glob_used, 48);
+            chk("C11 glob_used_48", occ_glob_used, 28);
             probe_predict(5, q2port(5), 3, pd);
-            chk_b("C11 q5_n3_global_drop", pd, 1'b1);
+            chk_b("C11 q5_n3_global_drop", pd, 1'b0);
             probe_predict(5, q2port(5), 2, pd);
             chk_b("C11 q5_n2_global_fit",  pd, 1'b0);
         end
 
         //--------------------------------------------------------------------
-        // C12: q0 ĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂÄÂÄšÄÄÂĂÂ  1 ÄÂĂÂÄÂĂÂ¤ĂÂĂÂÄÂĂÂ¸ÄÂÄšÄÄÂĂÂ cell ÄÂĂÂÄÂĂÂ§ÄÂÄšÄÄÂĂÂ ÄÂÄšÄÄÂĂÂÄÂĂÂĂĹĄĂÂ ĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ´, 1-cell pkt ĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂÄÂÄšÄĂĹĄĂËĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ; ĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ 1-cell pkt ĂÂĂÂĂĹĄĂÂÄÂÄšÄÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ´ĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂÄÂĂÂÄÂĂÂ¤ĂÂĂÂÄÂĂÂ¸ĂÂĂÂÄÂĂÂ
+        // C12: q0 1 cell , 1-cell pkt ; 1-cell pkt
         //--------------------------------------------------------------------
         case_begin("C12 predict-drop q has one slot left");
         do_reset_init();
@@ -3497,7 +4020,7 @@ module smmu_tb;
         end
 
         //--------------------------------------------------------------------
-        // C13: q0 ĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂÄÂÄšÄÄÂĂÂ  7 ÄÂĂÂÄÂĂÂ¤ĂÂĂÂÄÂĂÂ¸ÄÂÄšÄÄÂĂÂ cell ÄÂĂÂÄÂĂÂ§ÄÂÄšÄÄÂĂÂ ÄÂÄšÄÄÂĂÂÄÂĂÂĂĹĄĂÂ ĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ´, ÄÂĂÂÄÂĂÂ§ÄÂÄšÄĂĹĄĂÂÄÂÄšÄĂĹĄĂÂÄÂĂÂÄÂĂÂ¤ĂÂĂÂÄÂĂÂ¸ĂÂĂÂÄÂĂÂÄÂĂÂÄÂĂÂ¤ĂÂĂÂÄÂĂÂ¸ÄÂÄšÄÄÂĂÂ 5-cell pkt ĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂÄÂÄšÄĂĹĄĂËĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ; ÄÂĂÂÄÂĂÂ§ÄÂÄšÄĂĹĄĂÂÄÂÄšÄĂĹĄĂÂÄÂĂÂÄÂĂÂ¤ÄÂÄšÄÄÂĂÂĂÂĂÂÄÂĂÂÄÂĂÂÄÂĂÂ¤ĂÂĂÂÄÂĂÂ¸ÄÂÄšÄÄÂĂÂ 5-cell pkt ĂÂĂÂĂĹĄĂÂÄÂÄšÄÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ´ĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂÄÂĂÂÄÂĂÂ¤ĂÂĂÂÄÂĂÂ¸ĂÂĂÂÄÂĂÂ
+        // C13: q0 7 cell , 5-cell pkt ; 5-cell pkt
         //--------------------------------------------------------------------
         case_begin("C13 predict-drop q has seven slots left");
         do_reset_init();
@@ -3627,14 +4150,15 @@ module smmu_tb;
         chk("C16 free_restored", lle_free_cnt, CELL_NUM);
 
         //--------------------------------------------------------------------
-        // C17: extreme - fill free pool almost empty, single-cell alloc at the
-        //   very last free cell, then next alloc must drop (no_free). Verifies
-        //   boundary where free_cnt hits 0.
+        // C17: extreme - fill the free pool exactly to empty. The last free
+        //   cell must still be accepted; once free_cnt reaches 0, the next
+        //   packet is rejected at the ready/predict boundary.
         //--------------------------------------------------------------------
         case_begin("C17 free-pool exhaustion boundary");
         do_reset_init();
         begin
             int ab; int dn; int total;
+            bit pd;
             // widen per-queue / global limits so free-pool (CELL_NUM=64) is the binding constraint
             for (int qq=0; qq<QUEUE_NUM; qq++) begin
                 cfg_q_max_cell[qq] = CNT_W'(CELL_NUM);
@@ -3646,7 +4170,7 @@ module smmu_tb;
             // spread single-cell packets across 8 unicast queues to avoid per-q cap,
             // draining the free pool toward 0.
             ab = alloc_q.size();
-            for (int n=0; n<CELL_NUM+4; n++)
+            for (int n=0; n<CELL_NUM; n++)
                 enqueue_pkt(n % (PORT_NUM*TC_NUM), q2port(n % (PORT_NUM*TC_NUM)), 1, 0, '0);
             dn = 0; total = 0;
             for (int k=ab; k<alloc_q.size(); k++) begin
@@ -3654,23 +4178,184 @@ module smmu_tb;
                 if (alloc_q[k].drop) dn++;
             end
             dump_state("C17 after free-pool exhaustion attempt");
+            chk("C17 alloc_count_to_empty", total, CELL_NUM);
+            chk("C17 drop_count_to_empty", dn, 0);
             chk("C17 free_pool_zero", lle_free_cnt, 0);
-            chk("C17 some_dropped_at_boundary", (dn >= 4), 1);
+            chk("C17 glob_used_full", occ_glob_used, CELL_NUM);
+            probe_predict(0, q2port(0), 1, pd);
+            chk_b("C17 next_n1_predict_drop", pd, 1'b1);
+            chk_b("C17 ready_low_when_empty", enq_ready, 1'b0);
             chk_b("C17 no_underflow", underflow_alarm, 1'b0);
             chk_b("C17 no_overflow",  overflow_alarm,  1'b0);
+        end
+
+        //--------------------------------------------------------------------
+        // C18: Event statistic counters (occupancy_pool_mgr accumulators).
+        //   (a) tail_drop_cnt[q0]: burst q0 beyond its high-watermark; each
+        //       dropped cell increments the per-queue tail-drop counter.
+        //   (b) near_full_assert_cnt[q0]: q0 crossing (q_max - margin) asserts
+        //       q_near_full 0->1, counted once per rising edge.
+        //   (c) pause_tx_cnt[port0]: filling port0 above PAUSE XOFF raises
+        //       pause_req[0] 0->1, counted once.
+        //--------------------------------------------------------------------
+        case_begin("C18 event statistic counters (drop/near_full/pause)");
+        do_reset_init();
+        begin
+            int drop_seen;
+            int nf0_before, td0_before, ptx0_before;
+            int ab;
+            nf0_before  = st_nf_assert(0);
+            td0_before  = st_tail_drop(0);
+            ptx0_before = st_pause_tx(0);
+
+            // (a)+(b): burst 14 single-cell packets into q0 (cap=10) -> 4 dropped cells,
+            //          and near_full asserts once as occupancy crosses the margin.
+            drop_seen = 0;
+            ab = alloc_q.size();
+            for (i=0;i<14;i++) enqueue_pkt(0, q2port(0), 1, 0, '0);
+            for (i=ab;i<alloc_q.size();i++) if (alloc_q[i].drop) drop_seen++;
+            repeat (2) @(negedge clk);
+            dump_state("C18 after q0 burst");
+            chk("C18 obs_drop_cells",       drop_seen, 4);
+            chk("C18 tail_drop_cnt_q0",     st_tail_drop(0) - td0_before, 4);
+            chk("C18 near_full_assert_q0",  st_nf_assert(0) - nf0_before, 1);
+            chk_b("C18 q0_near_full_now",   q_near_full[0], 1'b1);
+
+            // (c): push port0 aggregate above PAUSE XOFF (28). q0 already holds 10;
+            //      add ~20 more onto other TCs of port0 (q1,q2 -> tc1,tc2 of port0).
+            cfg_port_max[0] = 32;   // keep port high-wm above pause xoff so cells land
+            for (i=0;i<10;i++) enqueue_pkt(1, q2port(1), 1, 0, '0);
+            for (i=0;i<10;i++) enqueue_pkt(2, q2port(2), 1, 0, '0);
+            repeat (2) @(negedge clk);
+            dump_state("C18 after port0 fill for PAUSE");
+            chk_b("C18 pause_req0_now",   pause_req[0], 1'b1);
+            chk("C18 pause_tx_cnt_port0", st_pause_tx(0) - ptx0_before, 1);
+
+            // release to clear near_full and pause; counters must hold (monotonic).
+            begin int r[$]; r.delete();
+                  for (int k=0;k<10;k++) r.push_back(k);      // q0 cells 0..9
+                  recycle_cells(0, r); end
+            begin int r[$]; r.delete();
+                  for (int k=0;k<10;k++) r.push_back(10+k);   // q1 cells
+                  recycle_cells(1, r); end
+            begin int r[$]; r.delete();
+                  for (int k=0;k<10;k++) r.push_back(20+k);   // q2 cells
+                  recycle_cells(2, r); end
+            repeat (4) @(negedge clk);
+            chk("C18 counters_monotonic_drop",  st_tail_drop(0) - td0_before, 4); // unchanged after release
+            chk("C18 counters_monotonic_nf",    st_nf_assert(0) - nf0_before, 1);
+            chk("C18 counters_monotonic_pause", st_pause_tx(0) - ptx0_before, 1);
+        end
+
+        //--------------------------------------------------------------------
+        // C19: Aging by software force (cfg_age_force). A queue holding cells
+        //   that never dequeues is force-aged: LLE flush-walk returns every
+        //   cell to the free list (occupancy--/free_cnt++), q cnt hits 0, and
+        //   aging_notify pulses for that queue. QM does NOT dequeue here.
+        //--------------------------------------------------------------------
+        case_begin("C19 aging: software force flush");
+        do_reset_init();
+        begin
+            int guard;
+            // load 5 cells into q3 (port1,tc3), leave them un-dequeued.
+            enqueue_pkt(3, q2port(3), 5, 0, '0);
+            chk("C19 q3_prefill5",   lle_qcnt(3), 5);
+            chk("C19 free_before",   lle_free_cnt, CELL_NUM-5);
+            chk("C19 occ_q3_before", occ_qcnt(3), 5);
+
+            // enable aging with a huge timeout (so only the force bit triggers),
+            // then force-age q3.
+            cfg_aging_en      = 1'b1;
+            cfg_aging_timeout = 24'hFF_FFFF;
+            repeat (2) @(negedge clk);
+            cfg_age_force[3]  = 1'b1;
+
+            // wait for flush to walk all 5 cells back (busy asserts, then done).
+            guard = 0;
+            while (!agf_done_w && guard < 200) begin @(negedge clk); guard++; end
+            cfg_age_force[3] = 1'b0;
+            repeat (4) @(negedge clk);
+            dump_state("C19 after force-age q3");
+
+            chk("C19 q3_flushed",     lle_qcnt(3), 0);
+            chk("C19 occ_q3_cleared", occ_qcnt(3), 0);
+            chk("C19 free_restored",  lle_free_cnt, CELL_NUM);
+            chk("C19 glob_zero",      occ_glob_used, 0);
+            chk("C19 conserve",       (lle_free_cnt + occ_glob_used)==CELL_NUM, 1);
+            chk_b("C19 no_underflow", underflow_alarm, 1'b0);
+            chk_b("C19 no_overflow",  overflow_alarm,  1'b0);
+            // disable aging again for following cases
+            cfg_aging_en = 1'b0;
+            repeat (2) @(negedge clk);
+        end
+
+        //--------------------------------------------------------------------
+        // C20: Aging by timeout. An occupied queue that is never serviced
+        //   (no dequeue = no watchdog feed) auto-ages after cfg_aging_timeout
+        //   cycles. Verify the timer runs, age_trig sets, the queue is flushed
+        //   and irq_aging pulses; a serviced queue (fed by dequeue) does NOT age.
+        //--------------------------------------------------------------------
+        case_begin("C20 aging: timeout auto-flush + watchdog feed");
+        do_reset_init();
+        begin
+            int guard;
+            int small_to;
+            small_to = 20;   // small timeout so the test runs fast
+
+            // q2 (port1,tc2) gets 4 cells and is left idle -> should age.
+            enqueue_pkt(2, q2port(2), 4, 0, '0);
+            chk("C20 q2_prefill4", lle_qcnt(2), 4);
+            chk("C20 free_before", lle_free_cnt, CELL_NUM-4);
+
+            // enable aging with the small timeout.
+            cfg_aging_en      = 1'b1;
+            cfg_aging_timeout = small_to[23:0];
+            repeat (2) @(negedge clk);
+
+            // let the timer count up; check it is advancing before timeout.
+            repeat (small_to/2) @(negedge clk);
+            chk_b("C20 q2_not_yet_aged", age_trig(2), 1'b0);
+
+            // wait for age_trig and the flush to complete.
+            guard = 0;
+            while (!agf_done_w && guard < 400) begin @(negedge clk); guard++; end
+            repeat (4) @(negedge clk);
+            dump_state("C20 after timeout age q2");
+            chk("C20 q2_flushed",     lle_qcnt(2), 0);
+            chk("C20 occ_q2_cleared", occ_qcnt(2), 0);
+            chk("C20 free_restored",  lle_free_cnt, CELL_NUM);
+            chk_b("C20 irq_aging_seen", irq_aging | aging_notify_w | 1'b0, 1'b1);
+            chk_b("C20 no_underflow", underflow_alarm, 1'b0);
+
+            // Watchdog feed: a serviced queue must NOT age. Load q5, then keep
+            // dequeuing it (feeds the watchdog) so its timer keeps clearing.
+            do_reset_init();
+            cfg_aging_en      = 1'b1;
+            cfg_aging_timeout = small_to[23:0];
+            repeat (2) @(negedge clk);
+            enqueue_pkt(5, q2port(5), 2, 0, '0);
+            // dequeue drains q5 -> becomes empty -> timer stays cleared (empty feeds).
+            dequeue_pkt(5, '0);
+            repeat (small_to+8) @(negedge clk);
+            chk_b("C20 q5_empty_no_age", age_trig(5), 1'b0);
+            chk("C20 q5_cnt0",           lle_qcnt(5), 0);
+            begin int r[$]; r='{0,1}; recycle_cells(5, r); end
+            chk("C20 free_full_final",   lle_free_cnt, CELL_NUM);
+            cfg_aging_en = 1'b0;
+            repeat (2) @(negedge clk);
         end
     endtask
    //========================================
     //VCS Simulation
     `ifdef VCS_SIM
-        //VCSÄÂĂÂÄÂĂÂ§ÄÂÄšÄÄÂĂÂÄÂÄšÄÄÂĂÂÄÂĂÂÄÂĂÂ§ÄÂÄšÄÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ°
+        // VCS simulation hooks
         initial begin
-            $vcdpluson(); //ĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂĂĹĄĂÂÄÂÄšÄĂĹĄĂÂĂÂĂÂÄÂĂÂVCD+ĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂÄÂĂÂÄÂĂÂ¤ÄÂÄšÄÄÂĂÂÄÂÄšÄÄÂĂÂĂÂĂÂÄÂĂÂÄÂÄšÄÄÂĂÂĂÂĂÂÄÂĂÂ°ĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ
-            $fsdbDumpfile("/home/verdvana/Project/IC/project/cores/smmu/simulation/sim/smmu.fsdb"); //ÄÂĂÂÄÂĂÂ§ĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂfsdb
+            $vcdpluson();
+            $fsdbDumpfile("/home/verdvana/Project/IC/project/cores/smmu/simulation/sim/smmu.fsdb");
             $fsdbDumpvars("+all");
-            $vcdplusmemon(); //ĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂÄÂĂÂÄÂĂÂ§ĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂ¤ĂÂĂÂÄÂĂÂÄÂĂÂÄÂĂÂ§ÄÂÄšÄÄÂĂÂĂÂĂÂÄÂĂÂ´ĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ°ÄÂĂÂÄÂĂÂ§ÄÂÄšÄÄÂĂÂĂÂĂÂÄÂĂÂ
+            $vcdplusmemon();
         end
-        //ĂÂĂÂĂĹĄĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂÄÂĂÂÄÂĂÂ¤ÄÂÄšÄÄÂĂÂÄÂÄšÄĂĹĄÄšÂÄÂĂÂÄÂĂÂ§ĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ
+
         `ifdef POST_SIM
         //back annotate the SDF file
         initial begin
@@ -3684,15 +4369,15 @@ module smmu_tb;
         `endif
     `endif
     //========================================================================
-    // ĂÂĂÂÄÂĂÂÄÂÄšÄÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂÄÂÄšÄÄÂĂÂÄÂĂÂÄÂĂÂ¤ÄÂÄšÄĂĹĄÄšÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂĂÂĂÂÄÂĂÂ¤
+
     //========================================================================
     initial begin
-        #2000000;
+        #3000000;
         $display("TIMEOUT! checks=%0d errors=%0d", checks, errors);
         $finish;
     end
 
 endmodule
 
+`
 
-```
