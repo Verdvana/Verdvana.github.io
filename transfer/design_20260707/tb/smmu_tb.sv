@@ -549,7 +549,7 @@ module smmu_tb;
     endtask
 
     task automatic test_UNI_ENQ_006();
-        $display("\n===== UNI_ENQ-006: 入队前预判(predict_drop=1→整帧丢弃) =====");
+        $display("\n===== UNI_ENQ-006: 入队前预判(predict_drop=1->整帧丢弃) =====");
         reset_dut();
         do_init();
         // Set very small max: q_max=2, port_max=2, global_max=2
@@ -1360,7 +1360,7 @@ module smmu_tb;
     endtask
 
     task automatic test_CORNER_001();
-        $display("\n===== CORNER-001: 满池后回收→恢复入队 =====");
+        $display("\n===== CORNER-001: 满池后回收->恢复入队 =====");
         reset_dut();
         do_init();
         // Set global_max = 1 to easily reach "full"
@@ -1513,10 +1513,10 @@ module smmu_tb;
     endtask
 
     //------------------------------------------------------------------------
-    // 补充 Case: MC_ENQ-004 多播全端口读完+回收→清槽
+    // 补充 Case: MC_ENQ-004 多播全端口读完+回收->清槽
     //------------------------------------------------------------------------
     task automatic test_MC_ENQ_004();
-        $display("\n===== MC_ENQ-004: 多播全端口读完+回收→清槽 =====");
+        $display("\n===== MC_ENQ-004: 多播全端口读完+回收->清槽 =====");
         reset_dut();
         do_init();
         // Multicast 1 cell, bitmap=port0 only
@@ -1565,7 +1565,7 @@ module smmu_tb;
         @(posedge clk_core);
         mcast_recycle_req <= 0;
         wait_clks(2);
-        // Duplicate recycle for port0 → underflow
+        // Duplicate recycle for port0 -> underflow
         @(posedge clk_core);
         mcast_recycle_req <= 1; mcast_recycle_queue_id <= 0; mcast_recycle_addr <= 0;
         @(negedge clk_core);
@@ -1762,7 +1762,7 @@ module smmu_tb;
         cfg_in_pfc_xoff <= 14'd4;
         cfg_in_pfc_xon <= 14'd1;
         wait_clks(3);
-        // 2 cells: between xon(1) and xoff(4), pfc was 0 → stays 0
+        // 2 cells: between xon(1) and xoff(4), pfc was 0 -> stays 0
         enqueue_cell(0, 0, 1, 1, 1);
         wait_clks(1);
         enqueue_cell(0, 0, 1, 1, 1);
@@ -1800,10 +1800,10 @@ module smmu_tb;
     endtask
 
     //------------------------------------------------------------------------
-    // 补充 Case: RCY-005 组播所有端口回收完成→还链
+    // 补充 Case: RCY-005 组播所有端口回收完成->还链
     //------------------------------------------------------------------------
     task automatic test_RCY_005();
-        $display("\n===== RCY-005: 组播所有端口回收完成→还链 =====");
+        $display("\n===== RCY-005: 组播所有端口回收完成->还链 =====");
         reset_dut();
         do_init();
         // Multicast 1 cell, bitmap=port0+port1
@@ -2031,12 +2031,12 @@ module smmu_tb;
     endtask
 
     //------------------------------------------------------------------------
-    // 补充 Case: CSR-003 标量→数组fanout
+    // 补充 Case: CSR-003 标量->数组fanout
     //------------------------------------------------------------------------
     task automatic test_CSR_003();
         logic all_same;
 
-        $display("\n===== CSR-003: 标量→数组fanout =====");
+        $display("\n===== CSR-003: 标量->数组fanout =====");
         reset_dut();
         cfg_in_q_min_cell <= 14'd77;
         wait_clks(3);
@@ -2129,10 +2129,10 @@ module smmu_tb;
         $display("\n===== LLE-003: SRAM写relink =====");
         reset_dut();
         do_init();
-        // Enqueue 1st cell (head, cnt was 0 → no SRAM write)
+        // Enqueue 1st cell (head, cnt was 0 -> no SRAM write)
         enqueue_cell(0, 0, 1, 0, 2);
         wait_clks(2);
-        // Enqueue 2nd cell (cnt=1 → relink: write old tail.next = new cell)
+        // Enqueue 2nd cell (cnt=1 -> relink: write old tail.next = new cell)
         @(posedge clk_core);
         enq_req <= 1; enq_egress_port <= 0; enq_queue_id <= 0;
         enq_is_mcast <= 0; enq_sof <= 0; enq_eof <= 1; enq_cell_num <= 2;
@@ -2484,6 +2484,755 @@ module smmu_tb;
     //========================================================================
     // 主流程: 按序执行所有测试
     //========================================================================
+//========================================================================
+    // ===== V1.2 NEW/FIX supplemental cases =====
+    //========================================================================
+
+    task automatic test_INIT_006();
+        logic gnt_seen;
+        $display("\n===== INIT-006: build 期间各类请求全屏蔽 =====");
+        reset_dut();
+        @(posedge clk_core);
+        init_start <= 1;
+        @(posedge clk_core);
+        init_start <= 0;
+        @(posedge clk_core);
+        enq_req <= 1; enq_sof <= 1; enq_eof <= 1; enq_egress_port <= 0; enq_queue_id <= 0;
+        deq_req <= 1; deq_queue_id <= 0;
+        recycle_req <= 1; recycle_cell_addr <= 5; recycle_queue_id <= 0;
+        mcast_recycle_req <= 1; mcast_recycle_queue_id <= 0;
+        gnt_seen = 0;
+        for (int i = 0; i < 10; i++) begin
+            @(posedge clk_core);
+            if (init_done == 0)
+                gnt_seen |= `LLE_PATH.enq_grant | `LLE_PATH.deq_grant | `LLE_PATH.rcy_grant;
+        end
+        enq_req <= 0; enq_sof <= 0; enq_eof <= 0;
+        deq_req <= 0; recycle_req <= 0; mcast_recycle_req <= 0;
+        check("INIT-006a", "build期内 enq/deq/rcy grant 恒0", gnt_seen == 0);
+        wait(init_done == 1);
+        wait_clks(2);
+        check("INIT-006b", "init_done后 enq_ready=1", enq_ready == 1);
+    endtask
+
+    task automatic test_INIT_007();
+        $display("\n===== INIT-007: 建链中途复位再启 =====");
+        reset_dut();
+        @(posedge clk_core);
+        init_start <= 1;
+        @(posedge clk_core);
+        init_start <= 0;
+        wait_clks(20);
+        check("INIT-007a", "build 进行中 init_done=0", init_done == 0);
+        rst_core_n = 0;
+        repeat(3) @(posedge clk_core);
+        rst_core_n = 1;
+        @(posedge clk_core);
+        do_init();
+        wait_clks(3);
+        check("INIT-007b", "重建后 free_cnt=8192", `LLE_PATH.free_cnt_q == CELL_NUM);
+        check("INIT-007c", "重建后 init_done=1", init_done == 1);
+    endtask
+
+    task automatic test_UNI_DEQ_008();
+        logic valid_all;
+        $display("\n===== UNI_DEQ-008: deq_pend_same 自环连续出队 =====");
+        reset_dut();
+        do_init();
+        enqueue_frame(0, 0, 6);
+        wait_clks(3);
+        @(posedge clk_core);
+        deq_req <= 1; deq_queue_id <= 0; deq_backpressure <= 0;
+        @(posedge clk_core);
+        valid_all = 1;
+        for (int i = 0; i < 6; i++) begin
+            @(posedge clk_core);
+            if (!deq_cell_valid) valid_all = 0;
+            if (i == 4) deq_req <= 0;
+        end
+        check("UNI_DEQ-008a", "连续出队全 valid(pend_same bypass 无 bubble)", valid_all == 1);
+        check("UNI_DEQ-008b", "q_cell_cnt[0]=0", `LLE_PATH.q_cell_cnt_q[0] == 0);
+    endtask
+
+    task automatic test_MC_ENQ_008();
+        $display("\n===== MC_ENQ-008: 多目的端口交织 splice =====");
+        reset_dut();
+        do_init();
+        enqueue_frame(1, 0, 1);  wait_clks(1);
+        enqueue_frame(2, 0, 1);  wait_clks(1);
+        enqueue_frame(2, 0, 1);  wait_clks(1);
+        enqueue_frame(3, 0, 1);  wait_clks(1);
+        enqueue_frame(3, 0, 1);  wait_clks(1);
+        enqueue_frame(3, 0, 1);  wait_clks(2);
+        @(posedge clk_core);
+        enq_req <= 1; enq_is_mcast <= 1; enq_mcast_bitmap <= 4'b1111;
+        enq_queue_id <= 0; enq_egress_port <= 0;
+        enq_sof <= 1; enq_eof <= 0; enq_cell_num <= 2;
+        @(posedge clk_core);
+        enq_sof <= 0; enq_eof <= 1;
+        @(posedge clk_core);
+        enq_req <= 0; enq_eof <= 0; enq_is_mcast <= 0;
+        wait_clks(2);
+        check("MC_ENQ-008a", "mc_pend_uni[0]=0", `LLE_PATH.mc_pend_uni_q[0] == 0);
+        check("MC_ENQ-008b", "mc_pend_uni[1]=1", `LLE_PATH.mc_pend_uni_q[1] == 1);
+        check("MC_ENQ-008c", "mc_pend_uni[2]=2", `LLE_PATH.mc_pend_uni_q[2] == 2);
+        check("MC_ENQ-008d", "mc_pend_uni[3]=3", `LLE_PATH.mc_pend_uni_q[3] == 3);
+        @(posedge clk_core);
+        deq_req <= 1; deq_queue_id <= 0; deq_backpressure <= 0;
+        @(posedge clk_core);
+        deq_req <= 0;
+        @(posedge clk_core);
+        check("MC_ENQ-008e", "port0 直接 splice deq_cell_valid=1", deq_cell_valid == 1);
+    endtask
+
+    task automatic test_MC_ENQ_009();
+        logic [CNT_W-1:0] bl_before;
+        $display("\n===== MC_ENQ-009: SOF快照与backlog同拍一致性 =====");
+        reset_dut();
+        do_init();
+        enqueue_frame(0, 0, 1);
+        wait_clks(2);
+        bl_before = `LLE_PATH.q_uni_pkt_backlog_q[0];
+        check("MC_ENQ-009a", "backlog[0]=1 预置", bl_before == 1);
+        @(posedge clk_core);
+        enq_req <= 1; enq_is_mcast <= 1; enq_mcast_bitmap <= 4'b0001;
+        enq_queue_id <= 0; enq_egress_port <= 0;
+        enq_sof <= 1; enq_eof <= 1; enq_cell_num <= 1;
+        @(posedge clk_core);
+        enq_req <= 0; enq_sof <= 0; enq_eof <= 0; enq_is_mcast <= 0;
+        wait_clks(2);
+        check("MC_ENQ-009b", "mc_pend_uni[0]=快照backlog=1", `LLE_PATH.mc_pend_uni_q[0] == 1);
+    endtask
+
+    task automatic test_MC_ENQ_010();
+        $display("\n===== MC_ENQ-010: 多端口部分读完部分未完 =====");
+        reset_dut();
+        do_init();
+        @(posedge clk_core);
+        enq_req <= 1; enq_is_mcast <= 1; enq_mcast_bitmap <= 4'b0011;
+        enq_queue_id <= 0; enq_egress_port <= 0;
+        enq_sof <= 1; enq_eof <= 0; enq_cell_num <= 2;
+        @(posedge clk_core);
+        enq_sof <= 0; enq_eof <= 1;
+        @(posedge clk_core);
+        enq_req <= 0; enq_eof <= 0; enq_is_mcast <= 0;
+        wait_clks(2);
+        for (int i = 0; i < 2; i++) begin
+            @(posedge clk_core);
+            deq_req <= 1; deq_queue_id <= 0; deq_backpressure <= 0;
+        end
+        @(posedge clk_core);
+        deq_req <= 0;
+        wait_clks(2);
+        check("MC_ENQ-010a", "mc_rd_done[0]=1 (port0读完)", `LLE_PATH.mc_rd_done_q[0] == 1);
+        check("MC_ENQ-010b", "mc_rd_done[1]=0 (port1未读)", `LLE_PATH.mc_rd_done_q[1] == 0);
+        check("MC_ENQ-010c", "mc_valid=1 (未全read不释放)", `LLE_PATH.mc_valid_q == 1);
+    endtask
+
+    task automatic test_MC_ENQ_011();
+        $display("\n===== MC_ENQ-011: 单cell多播 SOF&EOF 同拍 =====");
+        reset_dut();
+        do_init();
+        @(posedge clk_core);
+        enq_req <= 1; enq_is_mcast <= 1; enq_mcast_bitmap <= 4'b0001;
+        enq_queue_id <= 0; enq_egress_port <= 0;
+        enq_sof <= 1; enq_eof <= 1; enq_cell_num <= 1;
+        @(posedge clk_core);
+        enq_req <= 0; enq_sof <= 0; enq_eof <= 0; enq_is_mcast <= 0;
+        wait_clks(2);
+        check("MC_ENQ-011a", "mc_ncell=1", `LLE_PATH.mc_ncell_q == 1);
+        @(posedge clk_core);
+        deq_req <= 1; deq_queue_id <= 0; deq_backpressure <= 0;
+        @(posedge clk_core);
+        deq_req <= 0;
+        @(posedge clk_core);
+        check("MC_ENQ-011b", "deq_pkt_head=1", deq_pkt_head == 1);
+        check("MC_ENQ-011c", "deq_pkt_tail=1", deq_pkt_tail == 1);
+    endtask
+
+    task automatic test_DROP_009();
+        $display("\n===== DROP-009: predict 与逐cell drop 口径 =====");
+        reset_dut();
+        do_init();
+        cfg_in_q_max_cell <= 14'd100;
+        cfg_in_port_max <= 14'd100;
+        cfg_in_global_max <= 14'd3;
+        cfg_in_q_min_cell <= 14'd0;
+        wait_clks(3);
+        enqueue_frame(1, 0, 2);
+        wait_clks(2);
+        @(posedge clk_core);
+        enq_req <= 1; enq_egress_port <= 0; enq_queue_id <= 0;
+        enq_is_mcast <= 0; enq_sof <= 1; enq_eof <= 0; enq_cell_num <= 1;
+        @(negedge clk_core);
+        check("DROP-009a", "predict_drop=0 (1 cell 可放)", enq_predict_drop == 0);
+        @(posedge clk_core);
+        enq_eof <= 1;
+        @(posedge clk_core);
+        enq_req <= 0; enq_sof <= 0; enq_eof <= 0;
+        wait_clks(3);
+        check("DROP-009b", "守恒 free+global=8192",
+              (`OCC_PATH.free_count_q + `OCC_PATH.global_used_q) == CELL_NUM);
+        cfg_in_q_max_cell <= 14'd8192;
+        cfg_in_port_max <= 14'd8192;
+        cfg_in_global_max <= 14'd8192;
+        wait_clks(3);
+    endtask
+
+    task automatic test_DROP_010();
+        $display("\n===== DROP-010: predict=1 保守多丢(SOF锁整帧丢) =====");
+        reset_dut();
+        do_init();
+        cfg_in_q_max_cell <= 14'd2;
+        cfg_in_port_max <= 14'd2;
+        cfg_in_global_max <= 14'd2;
+        cfg_in_q_min_cell <= 14'd0;
+        wait_clks(3);
+        @(posedge clk_core);
+        enq_req <= 1; enq_egress_port <= 0; enq_queue_id <= 0;
+        enq_is_mcast <= 0; enq_sof <= 1; enq_eof <= 0; enq_cell_num <= 5;
+        @(negedge clk_core);
+        check("DROP-010a", "predict_drop=1", enq_predict_drop == 1);
+        @(posedge clk_core);
+        enq_sof <= 0;
+        @(posedge clk_core);
+        enq_eof <= 1;
+        @(posedge clk_core);
+        enq_req <= 0; enq_eof <= 0;
+        wait_clks(2);
+        check("DROP-010b", "q_cell_cnt[0]=0 (整帧丢, 0挂链)", `LLE_PATH.q_cell_cnt_q[0] == 0);
+        cfg_in_q_max_cell <= 14'd8192;
+        cfg_in_port_max <= 14'd8192;
+        cfg_in_global_max <= 14'd8192;
+        wait_clks(3);
+    endtask
+
+    task automatic test_DROP_011();
+        $display("\n===== DROP-011: 三级 max 同时命中且非静态 =====");
+        reset_dut();
+        do_init();
+        cfg_in_q_max_cell <= 14'd1;
+        cfg_in_port_max <= 14'd1;
+        cfg_in_global_max <= 14'd1;
+        cfg_in_q_min_cell <= 14'd0;
+        wait_clks(3);
+        enqueue_cell(0, 0, 1, 1, 1);
+        wait_clks(2);
+        @(posedge clk_core);
+        enq_req <= 1; enq_egress_port <= 0; enq_queue_id <= 0;
+        enq_is_mcast <= 0; enq_sof <= 1; enq_eof <= 1; enq_cell_num <= 1;
+        @(posedge clk_core);
+        enq_req <= 0; enq_sof <= 0; enq_eof <= 0;
+        @(posedge clk_core);
+        check("DROP-011a", "alloc_drop_ind=1", alloc_drop_ind == 1);
+        check("DROP-011b", "q_max_reached[0]=1", q_max_reached[0] == 1);
+        check("DROP-011c", "port_max_reached[0]=1", port_max_reached[0] == 1);
+        check("DROP-011d", "global_max_reached=1", global_max_reached == 1);
+        cfg_in_q_max_cell <= 14'd8192;
+        cfg_in_port_max <= 14'd8192;
+        cfg_in_global_max <= 14'd8192;
+        wait_clks(3);
+    endtask
+
+    task automatic test_PAUSE_006();
+        $display("\n===== PAUSE-006: 端口回落但全局未回落时不撤销 =====");
+        reset_dut();
+        do_init();
+        cfg_in_pause_en <= 1;
+        cfg_in_port_pause_xoff <= 14'd2;
+        cfg_in_port_pause_xon  <= 14'd1;
+        cfg_in_global_pause_xoff <= 14'd3;
+        cfg_in_global_pause_xon  <= 14'd3;
+        wait_clks(3);
+        enqueue_cell(0, 0, 1, 1, 1); wait_clks(1);
+        enqueue_cell(0, 1, 1, 1, 1); wait_clks(1);
+        enqueue_cell(1, 0, 1, 1, 1); wait_clks(3);
+        check("PAUSE-006a", "pause_req[0]=1", pause_req[0] == 1);
+        @(posedge clk_core); deq_req <= 1; deq_queue_id <= 0; deq_backpressure <= 0;
+        @(posedge clk_core); deq_req <= 1; deq_queue_id <= 1;
+        @(posedge clk_core); deq_req <= 0;
+        wait_clks(3);
+        check("PAUSE-006b", "pause_req[0]保持1(全局未回落)", pause_req[0] == 1);
+    endtask
+
+    task automatic test_PFC_005();
+        $display("\n===== PFC-005: 多端口多TC独立PFC =====");
+        reset_dut();
+        do_init();
+        cfg_in_pfc_en <= 1;
+        cfg_in_pfc_xoff <= 14'd1;
+        cfg_in_pfc_xon <= 14'd1;
+        wait_clks(3);
+        enqueue_cell(0, 0, 1, 1, 1); wait_clks(1);
+        enqueue_cell(1, 3, 1, 1, 1); wait_clks(3);
+        check("PFC-005a", "pfc_req[0][0]=1", pfc_req[0][0] == 1);
+        check("PFC-005b", "pfc_req[1][3]=1", pfc_req[1][3] == 1);
+        check("PFC-005c", "pfc_req[0][1]=0 (无串扰)", pfc_req[0][1] == 0);
+        check("PFC-005d", "pfc_req[2][0]=0 (无串扰)", pfc_req[2][0] == 0);
+    endtask
+
+    task automatic test_RCY_007();
+        logic onehot_ok;
+        $display("\n===== RCY-007: 三源 push 优先级/onehot =====");
+        reset_dut();
+        do_init();
+        enqueue_frame(0, 0, 3);
+        wait_clks(3);
+        for (int i = 0; i < 3; i++) begin
+            @(posedge clk_core); deq_req <= 1; deq_queue_id <= 0; deq_backpressure <= 0;
+        end
+        @(posedge clk_core); deq_req <= 0;
+        wait_clks(3);
+        onehot_ok = 1;
+        for (int i = 0; i < 3; i++) begin
+            @(posedge clk_core);
+            recycle_req <= 1; recycle_cell_addr <= i[ADDR_W-1:0]; recycle_queue_id <= 0;
+            @(negedge clk_core);
+            if ((`LLE_PATH.ext_free_push + `LLE_PATH.mc_rel_push + `LLE_PATH.agf_push) > 1)
+                onehot_ok = 0;
+        end
+        @(posedge clk_core); recycle_req <= 0;
+        check("RCY-007a", "每拍最多1个 push 源(onehot0)", onehot_ok == 1);
+        wait_clks(5);
+    endtask
+
+    task automatic test_RCY_008();
+        $display("\n===== RCY-008: 单播回收与多播还链交替(ext优先) =====");
+        reset_dut();
+        do_init();
+        @(posedge clk_core);
+        enq_req <= 1; enq_is_mcast <= 1; enq_mcast_bitmap <= 4'b0001;
+        enq_queue_id <= 0; enq_egress_port <= 0;
+        enq_sof <= 1; enq_eof <= 0; enq_cell_num <= 2;
+        @(posedge clk_core);
+        enq_sof <= 0; enq_eof <= 1;
+        @(posedge clk_core);
+        enq_req <= 0; enq_eof <= 0; enq_is_mcast <= 0;
+        wait_clks(2);
+        for (int i = 0; i < 2; i++) begin
+            @(posedge clk_core); deq_req <= 1; deq_queue_id <= 0; deq_backpressure <= 0;
+        end
+        @(posedge clk_core); deq_req <= 0;
+        wait_clks(2);
+        @(posedge clk_core);
+        mcast_recycle_req <= 1; mcast_recycle_queue_id <= 0;
+        @(posedge clk_core);
+        mcast_recycle_req <= 0;
+        wait_clks(1);
+        @(posedge clk_core);
+        recycle_req <= 1; recycle_cell_addr <= 100; recycle_queue_id <= 0;
+        @(posedge clk_core);
+        recycle_req <= 0;
+        wait_clks(15);
+        check("RCY-008a", "mc_valid=0 (最终释放)", `LLE_PATH.mc_valid_q == 0);
+        check("RCY-008b", "守恒成立",
+              (`OCC_PATH.free_count_q + `OCC_PATH.global_used_q) == CELL_NUM);
+    endtask
+
+    task automatic test_RCY_009();
+        logic [ADDR_W-1:0] rcy_addr;
+
+        $display("\n===== RCY-009: 回收触发max回落 =====");
+        reset_dut();
+        do_init();
+        cfg_in_q_max_cell <= 14'd2;
+        cfg_in_q_min_cell <= 14'd0;
+        wait_clks(3);
+        enqueue_frame(0, 0, 2);
+        wait_clks(3);
+        check("RCY-009a", "q_max_reached[0]=1", q_max_reached[0] == 1);
+        @(posedge clk_core); deq_req <= 1; deq_queue_id <= 0; deq_backpressure <= 0;
+        @(posedge clk_core); deq_req <= 0;
+        @(posedge clk_core); rcy_addr = deq_cell_addr;
+        @(posedge clk_core); recycle_req <= 1; recycle_cell_addr <= rcy_addr; recycle_queue_id <= 0;
+        @(posedge clk_core); recycle_req <= 0;
+        wait_clks(5);
+        check("RCY-009b", "q_max_reached[0]=0 (回收后回落)", q_max_reached[0] == 0);
+        cfg_in_q_max_cell <= 14'd8192;
+        wait_clks(3);
+    endtask
+
+    task automatic test_AGE_010();
+        logic age_seen, irq_seen;
+        $display("\n===== AGE-010: 冲刷与背靠背读写抢SRAM读口 =====");
+        reset_dut();
+        do_init();
+        cfg_in_aging_en <= 1;
+        cfg_in_aging_timeout <= 24'd15;
+        wait_clks(3);
+        enqueue_frame(0, 0, 5);
+        wait_clks(1);
+        enqueue_frame(1, 0, 5);
+        wait_clks(2);
+        fork
+            begin
+                for (int i = 0; i < 60; i++) begin
+                    @(posedge clk_core); deq_req <= 1; deq_queue_id <= 8; deq_backpressure <= 0;
+                end
+                @(posedge clk_core); deq_req <= 0;
+            end
+            begin
+                capture_aging_event(0, 70, age_seen, irq_seen);
+            end
+        join
+        wait_clks(20);
+        check("AGE-010a", "qid0 最终冲刷完 q_cell_cnt[0]=0", `LLE_PATH.q_cell_cnt_q[0] == 0);
+    endtask
+
+    task automatic test_AGE_011();
+        logic mc_flush_done_seen;
+        int   wait_cnt;
+
+        $display("\n===== AGE-011: force_all冲刷MC_QID =====");
+        reset_dut();
+        do_init();
+        cfg_in_aging_en <= 1;
+        cfg_in_aging_timeout <= 24'd10000;
+        wait_clks(3);
+        @(posedge clk_core);
+        enq_req <= 1; enq_is_mcast <= 1; enq_mcast_bitmap <= 4'b0001;
+        enq_queue_id <= 0; enq_egress_port <= 0;
+        enq_sof <= 1; enq_eof <= 0; enq_cell_num <= 2;
+        @(posedge clk_core);
+        enq_sof <= 0; enq_eof <= 1;
+        @(posedge clk_core);
+        enq_req <= 0; enq_eof <= 0; enq_is_mcast <= 0;
+        wait_clks(2);
+        cfg_in_age_force_all <= 1;
+        mc_flush_done_seen = 0;
+        wait_cnt = 0;
+        while (!mc_flush_done_seen && (wait_cnt < 200)) begin
+            @(negedge clk_core);
+            if (`AGE_PATH.age_flush_done && (`AGE_PATH.age_flush_qid == QID_W'(MC_QID)))
+                mc_flush_done_seen = 1;
+            wait_cnt++;
+        end
+        @(posedge clk_core);
+        cfg_in_age_force_all <= 0;
+        wait_clks(10);
+        check("AGE-011a", "mc_valid=0 (冲刷清槽)", `LLE_PATH.mc_valid_q == 0);
+        check("AGE-011b", "q_cell_cnt[32]=0", `LLE_PATH.q_cell_cnt_q[MC_QID] == 0);
+        check("AGE-011c", "守恒成立(无双还链)",
+              (`OCC_PATH.free_count_q + `OCC_PATH.global_used_q) == CELL_NUM);
+    endtask
+
+    task automatic test_AGE_012();
+        $display("\n===== AGE-012: RR 指针回绕(wrap-around) =====");
+        reset_dut();
+        do_init();
+        cfg_in_aging_en <= 1;
+        cfg_in_aging_timeout <= 24'd10;
+        wait_clks(3);
+        enqueue_cell(0, 0, 1, 1, 1);
+        wait_clks(1);
+        @(posedge clk_core);
+        enq_req <= 1; enq_is_mcast <= 1; enq_mcast_bitmap <= 4'b0001;
+        enq_queue_id <= 0; enq_egress_port <= 0;
+        enq_sof <= 1; enq_eof <= 1; enq_cell_num <= 1;
+        @(posedge clk_core);
+        enq_req <= 0; enq_sof <= 0; enq_eof <= 0; enq_is_mcast <= 0;
+        wait_clks(80);
+        check("AGE-012a", "q_cell_cnt[0]=0 (flushed)", `LLE_PATH.q_cell_cnt_q[0] == 0);
+        check("AGE-012b", "MC 槽已释放", `LLE_PATH.mc_valid_q == 0);
+    endtask
+
+    task automatic test_AGE_013();
+        logic busy_seen;
+        $display("\n===== AGE-013: 冲刷进行中重入屏蔽 =====");
+        reset_dut();
+        do_init();
+        cfg_in_aging_en <= 1;
+        cfg_in_aging_timeout <= 24'd10000;
+        wait_clks(3);
+        enqueue_frame(0, 0, 5);
+        wait_clks(2);
+        cfg_in_age_force_all <= 1;
+        busy_seen = 0;
+        for (int i = 0; i < 40; i++) begin
+            @(posedge clk_core);
+            if (`LLE_PATH.age_flush_busy) busy_seen = 1;
+        end
+        cfg_in_age_force_all <= 0;
+        wait_clks(10);
+        check("AGE-013a", "冲刷期间 age_flush_busy 出现过", busy_seen == 1);
+        check("AGE-013b", "最终冲刷完成 q_cell_cnt[0]=0", `LLE_PATH.q_cell_cnt_q[0] == 0);
+    endtask
+
+    task automatic test_OCC_009();
+        logic [CNT_W-1:0] pp_before;
+        $display("\n===== OCC-009: 同端口不同队列同拍 alloc+free =====");
+        reset_dut();
+        do_init();
+        enqueue_cell(0, 1, 1, 1, 1);
+        wait_clks(2);
+        @(posedge clk_core); deq_req <= 1; deq_queue_id <= 1; deq_backpressure <= 0;
+        @(posedge clk_core); deq_req <= 0;
+        wait_clks(2);
+        pp_before = `OCC_PATH.per_port_used_q[0];
+        @(posedge clk_core);
+        enq_req <= 1; enq_egress_port <= 0; enq_queue_id <= 0;
+        enq_is_mcast <= 0; enq_sof <= 1; enq_eof <= 1; enq_cell_num <= 1;
+        recycle_req <= 1; recycle_cell_addr <= 0; recycle_queue_id <= 1;
+        @(posedge clk_core);
+        enq_req <= 0; enq_sof <= 0; enq_eof <= 0; recycle_req <= 0;
+        wait_clks(5);
+        check("OCC-009a", "守恒成立",
+              (`OCC_PATH.free_count_q + `OCC_PATH.global_used_q) == CELL_NUM);
+    endtask
+
+    task automatic test_OCC_010();
+        $display("\n===== OCC-010: 静态池防下溢 =====");
+        reset_dut();
+        do_init();
+        cfg_in_q_min_cell <= 14'd5;
+        cfg_in_q_max_cell <= 14'd100;
+        wait_clks(3);
+        enqueue_cell(0, 0, 1, 1, 1);
+        wait_clks(2);
+        check("OCC-010a", "q_static_used[0]=1", `OCC_PATH.q_static_used_q[0] == 1);
+        @(posedge clk_core); deq_req <= 1; deq_queue_id <= 0; deq_backpressure <= 0;
+        @(posedge clk_core); deq_req <= 0;
+        wait_clks(2);
+        @(posedge clk_core);
+        recycle_req <= 1; recycle_cell_addr <= 0; recycle_queue_id <= 0;
+        @(posedge clk_core);
+        recycle_req <= 0;
+        wait_clks(5);
+        check("OCC-010b", "q_static_used[0]=0 (不下溢)", `OCC_PATH.q_static_used_q[0] == 0);
+        cfg_in_q_min_cell <= 14'd0;
+        cfg_in_q_max_cell <= 14'd8192;
+        wait_clks(3);
+    endtask
+
+    task automatic test_OCC_011();
+        $display("\n===== OCC-011: free/global 边界守护 =====");
+        reset_dut();
+        do_init();
+        enqueue_frame(0, 0, 3);
+        wait_clks(3);
+        check("OCC-011a", "守恒成立",
+              (`OCC_PATH.free_count_q + `OCC_PATH.global_used_q) == CELL_NUM);
+        check("OCC-011b", "underflow_alarm=0 (正常)", underflow_alarm == 0);
+        check("OCC-011c", "overflow_alarm=0 (正常)", overflow_alarm == 0);
+    endtask
+
+    task automatic test_CSR_008();
+        $display("\n===== CSR-008: 统计计数器饱和不回绕 =====");
+        reset_dut();
+        do_init();
+        cfg_in_q_max_cell <= 14'd0;
+        cfg_in_q_min_cell <= 14'd0;
+        wait_clks(3);
+        for (int i = 0; i < 5; i++) begin
+            @(posedge clk_core);
+            enq_req <= 1; enq_egress_port <= 0; enq_queue_id <= 0;
+            enq_is_mcast <= 0; enq_sof <= 1; enq_eof <= 1; enq_cell_num <= 1;
+            @(posedge clk_core);
+            enq_req <= 0; enq_sof <= 0; enq_eof <= 0;
+            wait_clks(1);
+        end
+        wait_clks(4);
+        check("CSR-008a", "tail_drop_cnt[0]>=1 且未回绕", st_out_tail_drop_cnt[0] >= 1);
+        cfg_in_q_max_cell <= 14'd8192;
+        wait_clks(3);
+    endtask
+
+    task automatic test_LLE_007();
+        $display("\n===== LLE-007: enq_bypass 连续入队预取 =====");
+        reset_dut();
+        do_init();
+        @(posedge clk_core);
+        for (int i = 0; i < 6; i++) begin
+            enq_req <= 1; enq_egress_port <= 0; enq_queue_id <= 0;
+            enq_is_mcast <= 0; enq_sof <= (i==0); enq_eof <= (i==5); enq_cell_num <= 6;
+            @(posedge clk_core);
+        end
+        enq_req <= 0; enq_sof <= 0; enq_eof <= 0;
+        wait_clks(3);
+        check("LLE-007a", "q_cell_cnt[0]=6", `LLE_PATH.q_cell_cnt_q[0] == 6);
+        check("LLE-007b", "free_cnt=8186", `LLE_PATH.free_cnt_q == (CELL_NUM-6));
+    endtask
+
+    task automatic test_LLE_008();
+        $display("\n===== LLE-008: rcy写口与agf读口同拍并行 =====");
+        reset_dut();
+        do_init();
+        cfg_in_aging_en <= 1;
+        cfg_in_aging_timeout <= 24'd10000;
+        wait_clks(3);
+        enqueue_frame(0, 0, 5);
+        wait_clks(1);
+        enqueue_frame(1, 0, 3);
+        wait_clks(2);
+        for (int i = 0; i < 3; i++) begin
+            @(posedge clk_core); deq_req <= 1; deq_queue_id <= 8; deq_backpressure <= 0;
+        end
+        @(posedge clk_core); deq_req <= 0;
+        wait_clks(2);
+        cfg_in_age_force_all <= 1;
+        for (int i = 0; i < 3; i++) begin
+            @(posedge clk_core); recycle_req <= 1; recycle_cell_addr <= (200+i); recycle_queue_id <= 8;
+        end
+        @(posedge clk_core); recycle_req <= 0;
+        wait_clks(40);
+        cfg_in_age_force_all <= 0;
+        wait_clks(10);
+        check("LLE-008a", "冲刷完成 q_cell_cnt[0]=0", `LLE_PATH.q_cell_cnt_q[0] == 0);
+        check("LLE-008b", "守恒成立",
+              (`OCC_PATH.free_count_q + `OCC_PATH.global_used_q) == CELL_NUM);
+    endtask
+
+    task automatic test_LLE_009();
+        $display("\n===== LLE-009: 同拍读写同一SRAM地址(read-first) =====");
+        reset_dut();
+        do_init();
+        enqueue_frame(0, 0, 4);
+        wait_clks(2);
+        @(posedge clk_core);
+        deq_req <= 1; deq_queue_id <= 0; deq_backpressure <= 0;
+        enq_req <= 1; enq_egress_port <= 0; enq_queue_id <= 0;
+        enq_is_mcast <= 0; enq_sof <= 1; enq_eof <= 1; enq_cell_num <= 1;
+        @(posedge clk_core);
+        deq_req <= 0; enq_req <= 0; enq_sof <= 0; enq_eof <= 0;
+        wait_clks(5);
+        check("LLE-009a", "守恒成立(read-first 无错乱)",
+              (`OCC_PATH.free_count_q + `OCC_PATH.global_used_q) == CELL_NUM);
+    endtask
+
+    task automatic test_CORNER_005();
+        $display("\n===== CORNER-005: free_cnt=1 时来多cell帧 =====");
+        reset_dut();
+        do_init();
+        cfg_in_global_max <= 14'd1;
+        cfg_in_q_min_cell <= 14'd0;
+        wait_clks(3);
+        @(posedge clk_core);
+        enq_req <= 1; enq_egress_port <= 0; enq_queue_id <= 0;
+        enq_is_mcast <= 0; enq_sof <= 1; enq_eof <= 0; enq_cell_num <= 3;
+        @(posedge clk_core);
+        enq_sof <= 0;
+        @(posedge clk_core);
+        enq_eof <= 1;
+        @(posedge clk_core);
+        enq_req <= 0; enq_eof <= 0;
+        wait_clks(3);
+        check("CORNER-005a", "守恒成立",
+              (`OCC_PATH.free_count_q + `OCC_PATH.global_used_q) == CELL_NUM);
+        cfg_in_global_max <= 14'd8192;
+        wait_clks(3);
+    endtask
+
+    task automatic test_CORNER_006();
+        logic conserve_ok;
+        $display("\n===== CORNER-006: free 1<->0 反复抖动 =====");
+        reset_dut();
+        do_init();
+        conserve_ok = 1;
+        for (int i = 0; i < 6; i++) begin
+            enqueue_cell(0, 0, 1, 1, 1);
+            wait_clks(2);
+            @(posedge clk_core);
+            deq_req <= 1; deq_queue_id <= 0; deq_backpressure <= 0;
+            @(posedge clk_core);
+            deq_req <= 0;
+            wait_clks(1);
+            @(posedge clk_core);
+            recycle_req <= 1; recycle_cell_addr <= i[ADDR_W-1:0]; recycle_queue_id <= 0;
+            @(posedge clk_core);
+            recycle_req <= 0;
+            wait_clks(3);
+            if ((`OCC_PATH.free_count_q + `OCC_PATH.global_used_q) != CELL_NUM)
+                conserve_ok = 0;
+        end
+        check("CORNER-006a", "守恒始终成立(抖动稳定)", conserve_ok == 1);
+        check("CORNER-006b", "underflow_alarm=0", underflow_alarm == 0);
+    endtask
+
+    task automatic test_CORNER_007();
+        $display("\n===== CORNER-007: 满池 PAUSE/PFC 与丢弃并发 =====");
+        reset_dut();
+        do_init();
+        cfg_in_pause_en <= 1;
+        cfg_in_pfc_en <= 1;
+        cfg_in_q_max_cell <= 14'd2;
+        cfg_in_port_pause_xoff <= 14'd2;
+        cfg_in_port_pause_xon <= 14'd1;
+        cfg_in_pfc_xoff <= 14'd2;
+        cfg_in_pfc_xon <= 14'd1;
+        cfg_in_global_pause_xoff <= 14'd8000;
+        cfg_in_global_pause_xon <= 14'd7000;
+        cfg_in_q_min_cell <= 14'd0;
+        wait_clks(3);
+        enqueue_cell(0, 0, 1, 1, 1); wait_clks(1);
+        enqueue_cell(0, 0, 1, 1, 1); wait_clks(3);
+        // 此时 q 到 max=2, pause/pfc 触发; 再发到同队列应丢
+        check("CORNER-007a", "pfc_req[0][0]=1", pfc_req[0][0] == 1);
+        @(posedge clk_core);
+        enq_req <= 1; enq_egress_port <= 0; enq_queue_id <= 0;
+        enq_is_mcast <= 0; enq_sof <= 1; enq_eof <= 1; enq_cell_num <= 1;
+        @(posedge clk_core);
+        enq_req <= 0; enq_sof <= 0; enq_eof <= 0;
+        @(posedge clk_core);
+        check("CORNER-007b", "alloc_drop_ind=1 (max) 与流控并存", alloc_drop_ind == 1);
+        cfg_in_pause_en <= 0;
+        cfg_in_pfc_en <= 0;
+        cfg_in_q_max_cell <= 14'd8192;
+        wait_clks(3);
+    endtask
+
+    task automatic test_LAT_001();
+        $display("\n===== LAT-001/002: 入队/出队 latency 量化 =====");
+        reset_dut();
+        do_init();
+        // 入队: T0 fire -> T1 alloc_valid (1 拍)
+        @(posedge clk_core);
+        enq_req <= 1; enq_egress_port <= 0; enq_queue_id <= 0;
+        enq_is_mcast <= 0; enq_sof <= 1; enq_eof <= 1; enq_cell_num <= 1;
+        @(posedge clk_core);
+        enq_req <= 0; enq_sof <= 0; enq_eof <= 0;
+        @(posedge clk_core);
+        check("LAT-001a", "入队 latency=1拍 (alloc_valid)", alloc_valid == 1);
+        // 出队: T0 fire -> T1 deq_cell_valid (1 拍)
+        @(posedge clk_core);
+        deq_req <= 1; deq_queue_id <= 0; deq_backpressure <= 0;
+        @(posedge clk_core);
+        deq_req <= 0;
+        @(posedge clk_core);
+        check("LAT-002a", "出队 latency=1拍 (deq_cell_valid)", deq_cell_valid == 1);
+    endtask
+
+    task automatic test_LAT_003();
+        logic valid_all;
+        $display("\n===== LAT-003: 背靠背吞吐无气泡 =====");
+        reset_dut();
+        do_init();
+        enqueue_frame(0, 0, 6);
+        wait_clks(3);
+        @(posedge clk_core);
+        deq_req <= 1; deq_queue_id <= 0; deq_backpressure <= 0;
+        @(posedge clk_core);
+        valid_all = 1;
+        for (int i = 0; i < 6; i++) begin
+            @(posedge clk_core);
+            if (!deq_cell_valid) valid_all = 0;
+            if (i == 4) deq_req <= 0;
+        end
+        check("LAT-003a", "背靠背出队无 bubble", valid_all == 1);
+        // LAT-004: deq occupying SRAM read port yields enq for 1 cycle
+        enqueue_frame(1, 0, 4);
+        wait_clks(2);
+        @(posedge clk_core);
+        deq_req <= 1; deq_queue_id <= 8; deq_backpressure <= 0;
+        @(negedge clk_core);
+        if (`LLE_PATH.deq_need_sram)
+            check("LAT-004a", "deq occupies SRAM -> enq_ready=0 (yield 1 cycle)", enq_ready == 0);
+        else
+            check("LAT-004a", "deq no SRAM -> enq_ready=1", enq_ready == 1);
+        @(posedge clk_core);
+        deq_req <= 0;
+        wait_clks(3);
+    endtask
+
     initial begin
         total_cases = 0;
         pass_cases  = 0;
@@ -2607,6 +3356,40 @@ module smmu_tb;
 
         // 汇总
         $display("\n==========================================================");
+
+        // ===== V1.2 NEW/FIX supplemental cases =====
+        test_INIT_006();
+        test_INIT_007();
+        test_UNI_DEQ_008();
+        test_MC_ENQ_008();
+        test_MC_ENQ_009();
+        test_MC_ENQ_010();
+        test_MC_ENQ_011();
+        test_DROP_009();
+        test_DROP_010();
+        test_DROP_011();
+        test_PAUSE_006();
+        test_PFC_005();
+        test_RCY_007();
+        test_RCY_008();
+        test_RCY_009();
+        test_AGE_010();
+        test_AGE_011();
+        test_AGE_012();
+        test_AGE_013();
+        test_OCC_009();
+        test_OCC_010();
+        test_OCC_011();
+        test_CSR_008();
+        test_LLE_007();
+        test_LLE_008();
+        test_LLE_009();
+        test_CORNER_005();
+        test_CORNER_006();
+        test_CORNER_007();
+        test_LAT_001();
+        test_LAT_003();
+
         $display("       SMMU Verification Testbench - Summary");
         $display("==========================================================");
         $display("  Total Checks : %0d", total_cases);
@@ -2639,7 +3422,7 @@ module smmu_tb;
                           "TYPICAL",
                           "1:1:1",
                           "FROM_MTM");
-            $display("\033[31;5m back annotate [0m",`__FILE__,`__LINE__);
+            $display("\033[31;5m back annotate \033[0m",`__FILE__,`__LINE__);
         end
         `endif
     `endif
