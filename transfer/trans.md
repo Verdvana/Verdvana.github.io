@@ -3068,8 +3068,8 @@ endmodule
 //============================================================================
 // Testbench : smmu_tb
 // Project   : 4-Port 2.5/1G/100M Ethernet Switch - Smart MMU
-// Description : 完整验证 testbench，基于 MMU_TestPlan.md，
-//               每个 case 对相关寄存器/IO 进行期望值对比，一致则 PASS。
+// Description : ĺŽć´éŞčŻ testbenchďźĺşäş MMU_TestPlan.mdďź
+//               ćŻä¸Ş case ĺŻšç¸ĺłĺŻĺ­ĺ¨/IO čżčĄććĺźĺŻšćŻďźä¸č´ĺ PASSă
 //============================================================================
 `timescale 1ns/1ps
 `define SIM_BEHAVIOR_SRAM
@@ -3077,7 +3077,7 @@ endmodule
 module smmu_tb;
 
     //========================================================================
-    // 参数 (与 DUT 一致)
+    // ĺć° (ä¸ DUT ä¸č´)
     //========================================================================
     localparam int CELL_NUM   = 8192;
     localparam int PORT_NUM   = 4;
@@ -3093,7 +3093,7 @@ module smmu_tb;
     localparam int MC_QID     = QUEUE_NUM - 1;        // 32
 
     //========================================================================
-    // 时钟与复位
+    // ćśéä¸ĺ¤ä˝
     //========================================================================
     logic clk_core;
     logic rst_core_n;
@@ -3102,12 +3102,12 @@ module smmu_tb;
     always #1.667 clk_core = ~clk_core;  // 300MHz
 
     //========================================================================
-    // DUT 接口信号
+    // DUT ćĽĺŁäżĄĺˇ
     //========================================================================
     logic                  init_start;
     logic                  init_done;
 
-    // 入队接口
+    // ĺĽéćĽĺŁ
     logic                  enq_req;
     logic [$clog2(TC_NUM)-1:0] enq_queue_id;
     logic [PORT_W-1:0]     enq_egress_port;
@@ -3127,7 +3127,7 @@ module smmu_tb;
     logic                  alloc_full_frame_drop;
     logic                  mcast_busy_drop;
 
-    // 出队接口
+    // ĺşéćĽĺŁ
     logic                  deq_req;
     logic [QID_W-1:0]      deq_queue_id;
     logic [PORT_NUM-1:0]   deq_backpressure;
@@ -3137,7 +3137,7 @@ module smmu_tb;
     logic                  deq_pkt_head;
     logic                  deq_pkt_tail;
 
-    // 回收接口
+    // ĺćśćĽĺŁ
     logic                  recycle_req;
     logic [ADDR_W-1:0]     recycle_cell_addr;
     logic [QID_W-1:0]      recycle_queue_id;
@@ -3146,14 +3146,14 @@ module smmu_tb;
     logic [QID_W-1:0]      mcast_recycle_queue_id;
     logic                  recycle_ack;
 
-    // 满/快满/空
+    // ćťĄ/ĺżŤćťĄ/çŠş
     logic [PORT_NUM*TC_NUM-1:0] q_empty;
     logic [PORT_NUM*TC_NUM-1:0] q_pkt_empty;
     logic [QUEUE_NUM-1:0]  q_max_reached;
     logic [PORT_NUM-1:0]   port_max_reached;
     logic                  global_max_reached;
 
-    // 流控/告警
+    // ćľć§/ĺč­Ś
     logic [PORT_NUM-1:0]             pause_req;
     logic [PORT_NUM-1:0][TC_NUM-1:0] pfc_req;
     logic                            irq_alarm;
@@ -3161,7 +3161,7 @@ module smmu_tb;
     logic                            overflow_alarm;
     logic                            underflow_alarm;
 
-    // 配置输入
+    // éç˝ŽčžĺĽ
     logic [CNT_W-1:0]   cfg_in_q_min_cell;
     logic [CNT_W-1:0]   cfg_in_q_max_cell;
     logic [CNT_W-1:0]   cfg_in_port_max;
@@ -3178,7 +3178,7 @@ module smmu_tb;
     logic [23:0]         cfg_in_aging_timeout;
     logic                cfg_in_age_force_all;
 
-    // 统计输出
+    // çťčŽĄčžĺş
     logic [CNT_W-1:0]                 st_out_global_used;
     logic [CNT_W-1:0]                 st_out_free_count;
     logic [QUEUE_NUM-1:0][CNT_W-1:0]  st_out_q_static_used;
@@ -3190,7 +3190,7 @@ module smmu_tb;
     logic [PORT_NUM-1:0][STAT_W-1:0]  st_out_pause_tx_cnt;
 
     //========================================================================
-    // DUT 例化
+    // DUT äžĺ
     //========================================================================
     smmu #(
         .CELL_NUM   (CELL_NUM),
@@ -3204,7 +3204,7 @@ module smmu_tb;
         .rst_core_n         (rst_core_n),
         .init_start         (init_start),
         .init_done          (init_done),
-        // 入队
+        // ĺĽé
         .enq_req            (enq_req),
         .enq_queue_id       (enq_queue_id),
         .enq_egress_port    (enq_egress_port),
@@ -3223,7 +3223,7 @@ module smmu_tb;
         .alloc_pkt_tail     (alloc_pkt_tail),
         .alloc_full_frame_drop (alloc_full_frame_drop),
         .mcast_busy_drop    (mcast_busy_drop),
-        // 出队
+        // ĺşé
         .deq_req            (deq_req),
         .deq_queue_id       (deq_queue_id),
         .deq_backpressure   (deq_backpressure),
@@ -3232,7 +3232,7 @@ module smmu_tb;
         .deq_cell_addr      (deq_cell_addr),
         .deq_pkt_head       (deq_pkt_head),
         .deq_pkt_tail       (deq_pkt_tail),
-        // 回收
+        // ĺćś
         .recycle_req        (recycle_req),
         .recycle_cell_addr  (recycle_cell_addr),
         .recycle_queue_id   (recycle_queue_id),
@@ -3240,20 +3240,20 @@ module smmu_tb;
         .mcast_recycle_addr (mcast_recycle_addr),
         .mcast_recycle_queue_id (mcast_recycle_queue_id),
         .recycle_ack        (recycle_ack),
-        // 满/空
+        // ćťĄ/çŠş
         .q_empty            (q_empty),
         .q_pkt_empty        (q_pkt_empty),
         .q_max_reached      (q_max_reached),
         .port_max_reached   (port_max_reached),
         .global_max_reached (global_max_reached),
-        // 流控/告警
+        // ćľć§/ĺč­Ś
         .pause_req          (pause_req),
         .pfc_req            (pfc_req),
         .irq_alarm          (irq_alarm),
         .irq_aging          (irq_aging),
         .overflow_alarm     (overflow_alarm),
         .underflow_alarm    (underflow_alarm),
-        // 配置
+        // éç˝Ž
         .cfg_in_q_min_cell       (cfg_in_q_min_cell),
         .cfg_in_q_max_cell       (cfg_in_q_max_cell),
         .cfg_in_port_max         (cfg_in_port_max),
@@ -3269,7 +3269,7 @@ module smmu_tb;
         .cfg_in_aging_en         (cfg_in_aging_en),
         .cfg_in_aging_timeout    (cfg_in_aging_timeout),
         .cfg_in_age_force_all    (cfg_in_age_force_all),
-        // 统计
+        // çťčŽĄ
         .st_out_global_used          (st_out_global_used),
         .st_out_free_count           (st_out_free_count),
         .st_out_q_static_used        (st_out_q_static_used),
@@ -3282,14 +3282,14 @@ module smmu_tb;
     );
 
     //========================================================================
-    // 测试结果计数
+    // ćľčŻçťćčŽĄć°
     //========================================================================
     int total_cases;
     int pass_cases;
     int fail_cases;
 
     //========================================================================
-    // 辅助 task / function
+    // čžĺŠ task / function
     //========================================================================
 
     task automatic check(input string case_id, input string desc,
@@ -3309,30 +3309,32 @@ module smmu_tb;
         repeat(n) @(posedge clk_core);
     endtask
 
+    // SMMU is driven as a same-clock submodule: non-reset inputs model
+    // upstream flops and update in the NBA region after each active edge.
     task automatic reset_dut();
         rst_core_n = 0;
-        init_start = 0;
-        enq_req = 0; enq_queue_id = 0; enq_egress_port = 0;
-        enq_cell_num = 0; enq_is_mcast = 0; enq_mcast_bitmap = 0;
-        enq_sof = 0; enq_eof = 0;
-        deq_req = 0; deq_queue_id = 0; deq_backpressure = 0;
-        recycle_req = 0; recycle_cell_addr = 0; recycle_queue_id = 0;
-        mcast_recycle_req = 0; mcast_recycle_addr = 0; mcast_recycle_queue_id = 0;
-        cfg_in_q_min_cell = 0;
-        cfg_in_q_max_cell = 14'd8192;
-        cfg_in_port_max   = 14'd8192;
-        cfg_in_global_max = 14'd8192;
-        cfg_in_pause_en   = 0;
-        cfg_in_port_pause_xoff = 14'd7000;
-        cfg_in_port_pause_xon  = 14'd5000;
-        cfg_in_global_pause_xoff = 14'd7500;
-        cfg_in_global_pause_xon  = 14'd5500;
-        cfg_in_pfc_en   = 0;
-        cfg_in_pfc_xoff = 14'd1000;
-        cfg_in_pfc_xon  = 14'd800;
-        cfg_in_aging_en = 0;
-        cfg_in_aging_timeout = 24'd100;
-        cfg_in_age_force_all = 0;
+        init_start <= 0;
+        enq_req <= 0; enq_queue_id <= 0; enq_egress_port <= 0;
+        enq_cell_num <= 0; enq_is_mcast <= 0; enq_mcast_bitmap <= 0;
+        enq_sof <= 0; enq_eof <= 0;
+        deq_req <= 0; deq_queue_id <= 0; deq_backpressure <= 0;
+        recycle_req <= 0; recycle_cell_addr <= 0; recycle_queue_id <= 0;
+        mcast_recycle_req <= 0; mcast_recycle_addr <= 0; mcast_recycle_queue_id <= 0;
+        cfg_in_q_min_cell <= 0;
+        cfg_in_q_max_cell <= 14'd8192;
+        cfg_in_port_max <= 14'd8192;
+        cfg_in_global_max <= 14'd8192;
+        cfg_in_pause_en <= 0;
+        cfg_in_port_pause_xoff <= 14'd7000;
+        cfg_in_port_pause_xon <= 14'd5000;
+        cfg_in_global_pause_xoff <= 14'd7500;
+        cfg_in_global_pause_xon <= 14'd5500;
+        cfg_in_pfc_en <= 0;
+        cfg_in_pfc_xoff <= 14'd1000;
+        cfg_in_pfc_xon <= 14'd800;
+        cfg_in_aging_en <= 0;
+        cfg_in_aging_timeout <= 24'd100;
+        cfg_in_age_force_all <= 0;
         repeat(5) @(posedge clk_core);
         rst_core_n = 1;
         @(posedge clk_core);
@@ -3340,66 +3342,66 @@ module smmu_tb;
 
     task automatic do_init();
         @(posedge clk_core);
-        init_start = 1;
+        init_start <= 1;
         @(posedge clk_core);
-        init_start = 0;
-        // 等待 init_done
+        init_start <= 0;
+        // ç­ĺž init_done
         wait(init_done == 1);
         @(posedge clk_core);
     endtask
 
-    // 单播入队一个cell
+    // ĺć­ĺĽéä¸ä¸Şcell
     task automatic enqueue_cell(input logic [PORT_W-1:0] port,
                                 input logic [$clog2(TC_NUM)-1:0] tc,
                                 input logic sof, input logic eof,
                                 input logic [PKT_CELL_W-1:0] cell_num_val);
         @(posedge clk_core);
-        enq_req         = 1;
-        enq_egress_port = port;
-        enq_queue_id    = tc;
-        enq_is_mcast    = 0;
-        enq_mcast_bitmap= 0;
-        enq_sof         = sof;
-        enq_eof         = eof;
-        enq_cell_num    = cell_num_val;
+        enq_req <= 1;
+        enq_egress_port <= port;
+        enq_queue_id <= tc;
+        enq_is_mcast <= 0;
+        enq_mcast_bitmap <= 0;
+        enq_sof <= sof;
+        enq_eof <= eof;
+        enq_cell_num <= cell_num_val;
         @(posedge clk_core);
-        enq_req = 0;
-        enq_sof = 0;
-        enq_eof = 0;
+        enq_req <= 0;
+        enq_sof <= 0;
+        enq_eof <= 0;
     endtask
 
-    // 单播入队一个完整帧 (N cells)
+    // ĺć­ĺĽéä¸ä¸ŞĺŽć´ĺ¸§ (N cells)
     task automatic enqueue_frame(input logic [PORT_W-1:0] port,
                                  input logic [$clog2(TC_NUM)-1:0] tc,
                                  input int num_cells);
         for (int i = 0; i < num_cells; i++) begin
             @(posedge clk_core);
-            enq_req         = 1;
-            enq_egress_port = port;
-            enq_queue_id    = tc;
-            enq_is_mcast    = 0;
-            enq_mcast_bitmap= 0;
-            enq_sof         = (i == 0);
-            enq_eof         = (i == num_cells-1);
-            enq_cell_num    = num_cells[PKT_CELL_W-1:0];
+            enq_req <= 1;
+            enq_egress_port <= port;
+            enq_queue_id <= tc;
+            enq_is_mcast <= 0;
+            enq_mcast_bitmap <= 0;
+            enq_sof <= (i == 0);
+            enq_eof <= (i == num_cells-1);
+            enq_cell_num <= num_cells[PKT_CELL_W-1:0];
         end
         @(posedge clk_core);
-        enq_req = 0;
-        enq_sof = 0;
-        enq_eof = 0;
+        enq_req <= 0;
+        enq_sof <= 0;
+        enq_eof <= 0;
     endtask
 
-    // 出队一个cell
+    // ĺşéä¸ä¸Şcell
     task automatic dequeue_cell(input logic [QID_W-1:0] qid);
         @(posedge clk_core);
-        deq_req      = 1;
-        deq_queue_id = qid;
+        deq_req <= 1;
+        deq_queue_id <= qid;
         @(posedge clk_core);
-        deq_req = 0;
+        deq_req <= 0;
     endtask
 
-    // 获取内部路径 (通过层次引用)
-    // 注: 以下通过 DUT 层次路径访问内部信号用于验证
+    // čˇĺĺé¨čˇŻĺž (éčżĺąćŹĄĺźç¨)
+    // ćł¨: äťĽä¸éčż DUT ĺąćŹĄčˇŻĺžčŽżéŽĺé¨äżĄĺˇç¨äşéŞčŻ
     `define LLE_PATH   u_dut.u_lle
     `define ENQ_PATH   u_dut.u_enq
     `define DEQ_PATH   u_dut.u_deq
@@ -3408,23 +3410,35 @@ module smmu_tb;
     `define AGE_PATH   u_dut.u_aging
     `define RCY_PATH   u_dut.u_rcy
 
+    task automatic capture_aging_event(input int qid, input int cycles,
+                                       output logic age_seen,
+                                       output logic irq_seen);
+        age_seen = 1'b0;
+        irq_seen = 1'b0;
+        for (int i = 0; i < cycles; i++) begin
+            @(posedge clk_core);
+            age_seen |= `AGE_PATH.age_trig[qid];
+            irq_seen |= irq_aging;
+        end
+    endtask
+
     //========================================================================
-    // 测试用例
+    // ćľčŻç¨äž
     //========================================================================
 
     //------------------------------------------------------------------------
-    // 一、上电初始化 / 热启动建链
+    // ä¸ăä¸çľĺĺ§ĺ / ç­ĺŻĺ¨ĺťşéž
     //------------------------------------------------------------------------
     task automatic test_INIT_001();
-        $display("\n===== INIT-001: 上电冷启动初始化 =====");
+        $display("\n===== INIT-001: ä¸çľĺˇĺŻĺ¨ĺĺ§ĺ =====");
         reset_dut();
         // init_done should be 0
         check("INIT-001a", "init_done=0 before init_start", init_done == 0);
         // Trigger init
         @(posedge clk_core);
-        init_start = 1;
+        init_start <= 1;
         @(posedge clk_core);
-        init_start = 0;
+        init_start <= 0;
         // Wait for init_done
         wait(init_done == 1);
         @(posedge clk_core);
@@ -3436,16 +3450,16 @@ module smmu_tb;
     endtask
 
     task automatic test_INIT_002();
-        $display("\n===== INIT-002: 初始化期间拒绝入队/出队 =====");
+        $display("\n===== INIT-002: ĺĺ§ĺćé´ćçťĺĽé/ĺşé =====");
         reset_dut();
         // Before init: enq_ready and deq_ready should be 0
         check("INIT-002a", "enq_ready=0 before init", enq_ready == 0);
         check("INIT-002b", "deq_ready=0 before init", deq_ready == 0);
         // Try enqueue - should not produce alloc_valid
         @(posedge clk_core);
-        enq_req = 1; enq_sof = 1; enq_eof = 1; enq_egress_port = 0; enq_queue_id = 0;
+        enq_req <= 1; enq_sof <= 1; enq_eof <= 1; enq_egress_port <= 0; enq_queue_id <= 0;
         @(posedge clk_core);
-        enq_req = 0; enq_sof = 0; enq_eof = 0;
+        enq_req <= 0; enq_sof <= 0; enq_eof <= 0;
         @(posedge clk_core);
         check("INIT-002c", "alloc_valid=0 during init", alloc_valid == 0);
         // Do init to restore state
@@ -3453,7 +3467,7 @@ module smmu_tb;
     endtask
 
     task automatic test_INIT_003();
-        $display("\n===== INIT-003: 热启动(重新初始化) =====");
+        $display("\n===== INIT-003: ç­ĺŻĺ¨(éć°ĺĺ§ĺ) =====");
         reset_dut();
         do_init();
         // Enqueue some cells first
@@ -3461,9 +3475,9 @@ module smmu_tb;
         wait_clks(2);
         // Re-init
         @(posedge clk_core);
-        init_start = 1;
+        init_start <= 1;
         @(posedge clk_core);
-        init_start = 0;
+        init_start <= 0;
         // init_done should go low
         wait_clks(2);
         check("INIT-003a", "init_done goes low during re-init", init_done == 0);
@@ -3474,7 +3488,7 @@ module smmu_tb;
     endtask
 
     task automatic test_INIT_004();
-        $display("\n===== INIT-004: 建链后空闲链完整性 =====");
+        $display("\n===== INIT-004: ĺťşéžĺçŠşé˛éžĺŽć´ć§ =====");
         reset_dut();
         do_init();
         check("INIT-004a", "lle_free_head=0", `LLE_PATH.free_head_q == 0);
@@ -3484,32 +3498,32 @@ module smmu_tb;
     endtask
 
     task automatic test_INIT_005();
-        $display("\n===== INIT-005: 初始化期间配置采样 =====");
+        $display("\n===== INIT-005: ĺĺ§ĺćé´éç˝Žéć ˇ =====");
         reset_dut();
-        cfg_in_q_max_cell = 14'd500;
+        cfg_in_q_max_cell <= 14'd500;
         @(posedge clk_core);
-        @(posedge clk_core); // 寄存一拍
+        @(posedge clk_core); // ĺŻĺ­ä¸ć
         @(posedge clk_core);
         check("INIT-005a", "cfg_q_max_cell updated after 1 clk",
               `CSR_PATH.cfg_q_max_cell[0] == 14'd500);
         // Restore
-        cfg_in_q_max_cell = 14'd8192;
+        cfg_in_q_max_cell <= 14'd8192;
         do_init();
     endtask
 
     //------------------------------------------------------------------------
-    // 二、单播入队
+    // äşăĺć­ĺĽé
     //------------------------------------------------------------------------
     task automatic test_UNI_ENQ_001();
-        $display("\n===== UNI_ENQ-001: 单cell单播入队(SOF+EOF同拍) =====");
+        $display("\n===== UNI_ENQ-001: ĺcellĺć­ĺĽé(SOF+EOFĺć) =====");
         reset_dut();
         do_init();
         // Single cell enqueue: port=0, tc=0, sof=1, eof=1
         @(posedge clk_core);
-        enq_req = 1; enq_egress_port = 0; enq_queue_id = 0;
-        enq_is_mcast = 0; enq_sof = 1; enq_eof = 1; enq_cell_num = 1;
+        enq_req <= 1; enq_egress_port <= 0; enq_queue_id <= 0;
+        enq_is_mcast <= 0; enq_sof <= 1; enq_eof <= 1; enq_cell_num <= 1;
         @(posedge clk_core);
-        enq_req = 0; enq_sof = 0; enq_eof = 0;
+        enq_req <= 0; enq_sof <= 0; enq_eof <= 0;
         // T1: check alloc output
         @(posedge clk_core);
         check("UNI_ENQ-001a", "alloc_valid=1", alloc_valid == 1);
@@ -3525,22 +3539,22 @@ module smmu_tb;
     endtask
 
     task automatic test_UNI_ENQ_002();
-        $display("\n===== UNI_ENQ-002: 多cell单播入队(3-cell帧) =====");
+        $display("\n===== UNI_ENQ-002: ĺ¤cellĺć­ĺĽé(3-cellĺ¸§) =====");
         reset_dut();
         do_init();
         // 3-cell frame: port=1, tc=2 => qid = 1*8+2 = 10
         // Cell 0: SOF
         @(posedge clk_core);
-        enq_req = 1; enq_egress_port = 1; enq_queue_id = 2;
-        enq_is_mcast = 0; enq_sof = 1; enq_eof = 0; enq_cell_num = 3;
+        enq_req <= 1; enq_egress_port <= 1; enq_queue_id <= 2;
+        enq_is_mcast <= 0; enq_sof <= 1; enq_eof <= 0; enq_cell_num <= 3;
         // Cell 1: MID
         @(posedge clk_core);
-        enq_sof = 0; enq_eof = 0;
+        enq_sof <= 0; enq_eof <= 0;
         // Cell 2: EOF
         @(posedge clk_core);
-        enq_eof = 1;
+        enq_eof <= 1;
         @(posedge clk_core);
-        enq_req = 0; enq_eof = 0;
+        enq_req <= 0; enq_eof <= 0;
         // Wait for all 3 alloc outputs
         @(posedge clk_core);
         // After 3 cells enqueued, check counters
@@ -3549,7 +3563,7 @@ module smmu_tb;
     endtask
 
     task automatic test_UNI_ENQ_003();
-        $display("\n===== UNI_ENQ-003: 不同端口/TC交织入队 =====");
+        $display("\n===== UNI_ENQ-003: ä¸ĺçŤŻĺŁ/TCäş¤çťĺĽé =====");
         reset_dut();
         do_init();
         // Port0/TC0 => qid=0, Port1/TC3 => qid=11, Port2/TC7 => qid=23
@@ -3565,64 +3579,64 @@ module smmu_tb;
     endtask
 
     task automatic test_UNI_ENQ_004();
-        $display("\n===== UNI_ENQ-004: 队列号合成验证 =====");
+        $display("\n===== UNI_ENQ-004: éĺĺˇĺćéŞčŻ =====");
         reset_dut();
         do_init();
         // Port=2, TC=5 => qid = 2*8+5 = 21
         @(posedge clk_core);
-        enq_req = 1; enq_egress_port = 2; enq_queue_id = 5;
-        enq_is_mcast = 0; enq_sof = 1; enq_eof = 1; enq_cell_num = 1;
+        enq_req <= 1; enq_egress_port <= 2; enq_queue_id <= 5;
+        enq_is_mcast <= 0; enq_sof <= 1; enq_eof <= 1; enq_cell_num <= 1;
         // Check combinational outputs this cycle
         @(negedge clk_core); // sample mid-cycle
         check("UNI_ENQ-004a", "occ_query_queue_id=21",
               u_dut.occ_query_queue_id == 21);
         @(posedge clk_core);
-        enq_req = 0; enq_sof = 0; enq_eof = 0;
+        enq_req <= 0; enq_sof <= 0; enq_eof <= 0;
         wait_clks(2);
         check("UNI_ENQ-004b", "q_cell_cnt[21]=1", `LLE_PATH.q_cell_cnt_q[21] == 1);
     endtask
 
     task automatic test_UNI_ENQ_005();
-        $display("\n===== UNI_ENQ-005: 入队前预判(predict_drop=0) =====");
+        $display("\n===== UNI_ENQ-005: ĺĽéĺé˘ĺ¤(predict_drop=0) =====");
         reset_dut();
         do_init();
-        cfg_in_q_max_cell = 14'd100;
-        cfg_in_port_max   = 14'd100;
-        cfg_in_global_max = 14'd100;
+        cfg_in_q_max_cell <= 14'd100;
+        cfg_in_port_max <= 14'd100;
+        cfg_in_global_max <= 14'd100;
         wait_clks(3); // wait for config propagation
         // SOF, cell_num=3, thresholds are high enough
         @(posedge clk_core);
-        enq_req = 1; enq_egress_port = 0; enq_queue_id = 0;
-        enq_is_mcast = 0; enq_sof = 1; enq_eof = 1; enq_cell_num = 3;
+        enq_req <= 1; enq_egress_port <= 0; enq_queue_id <= 0;
+        enq_is_mcast <= 0; enq_sof <= 1; enq_eof <= 1; enq_cell_num <= 3;
         @(negedge clk_core);
         check("UNI_ENQ-005a", "enq_predict_drop=0", enq_predict_drop == 0);
         @(posedge clk_core);
-        enq_req = 0; enq_sof = 0; enq_eof = 0;
+        enq_req <= 0; enq_sof <= 0; enq_eof <= 0;
         wait_clks(2);
     endtask
 
     task automatic test_UNI_ENQ_006();
-        $display("\n===== UNI_ENQ-006: 入队前预判(predict_drop=1→整帧丢弃) =====");
+        $display("\n===== UNI_ENQ-006: ĺĽéĺé˘ĺ¤(predict_drop=1âć´ĺ¸§ä¸˘ĺź) =====");
         reset_dut();
         do_init();
         // Set very small max: q_max=2, port_max=2, global_max=2
-        cfg_in_q_max_cell = 14'd2;
-        cfg_in_port_max   = 14'd2;
-        cfg_in_global_max = 14'd2;
+        cfg_in_q_max_cell <= 14'd2;
+        cfg_in_port_max <= 14'd2;
+        cfg_in_global_max <= 14'd2;
         wait_clks(3);
         // Try to enqueue 6-cell frame (predict: can't fit)
         @(posedge clk_core);
-        enq_req = 1; enq_egress_port = 0; enq_queue_id = 0;
-        enq_is_mcast = 0; enq_sof = 1; enq_eof = 0; enq_cell_num = 6;
+        enq_req <= 1; enq_egress_port <= 0; enq_queue_id <= 0;
+        enq_is_mcast <= 0; enq_sof <= 1; enq_eof <= 0; enq_cell_num <= 6;
         @(negedge clk_core);
         check("UNI_ENQ-006a", "enq_predict_drop=1", enq_predict_drop == 1);
         @(posedge clk_core);
         // Continue frame (SOF already sent)
-        enq_sof = 0;
+        enq_sof <= 0;
         @(posedge clk_core);
-        enq_eof = 1;
+        enq_eof <= 1;
         @(posedge clk_core);
-        enq_req = 0; enq_eof = 0;
+        enq_req <= 0; enq_eof <= 0;
         @(posedge clk_core);
         // Check: alloc_drop_ind should have been 1 and alloc_full_frame_drop=1
         check("UNI_ENQ-006b", "alloc_full_frame_drop was asserted",
@@ -3631,29 +3645,29 @@ module smmu_tb;
         check("UNI_ENQ-006c", "q_cell_cnt[0]=0 (frame dropped)",
               `LLE_PATH.q_cell_cnt_q[0] == 0);
         // Restore
-        cfg_in_q_max_cell = 14'd8192;
-        cfg_in_port_max   = 14'd8192;
-        cfg_in_global_max = 14'd8192;
+        cfg_in_q_max_cell <= 14'd8192;
+        cfg_in_port_max <= 14'd8192;
+        cfg_in_global_max <= 14'd8192;
         wait_clks(3);
     endtask
 
     task automatic test_UNI_ENQ_007();
-        $display("\n===== UNI_ENQ-007: 静态预留池穿透 =====");
+        $display("\n===== UNI_ENQ-007: éćé˘çćą çŠżé =====");
         reset_dut();
         do_init();
         // Set: q_min=10 (static reserve), q_max=0 (meaning immediate max hit)
         // global_max=0 => normally would drop, but static reserve should allow
-        cfg_in_q_min_cell = 14'd10;
-        cfg_in_q_max_cell = 14'd0;
-        cfg_in_port_max   = 14'd0;
-        cfg_in_global_max = 14'd0;
+        cfg_in_q_min_cell <= 14'd10;
+        cfg_in_q_max_cell <= 14'd0;
+        cfg_in_port_max <= 14'd0;
+        cfg_in_global_max <= 14'd0;
         wait_clks(3);
         // Enqueue single cell
         @(posedge clk_core);
-        enq_req = 1; enq_egress_port = 0; enq_queue_id = 0;
-        enq_is_mcast = 0; enq_sof = 1; enq_eof = 1; enq_cell_num = 1;
+        enq_req <= 1; enq_egress_port <= 0; enq_queue_id <= 0;
+        enq_is_mcast <= 0; enq_sof <= 1; enq_eof <= 1; enq_cell_num <= 1;
         @(posedge clk_core);
-        enq_req = 0; enq_sof = 0; enq_eof = 0;
+        enq_req <= 0; enq_sof <= 0; enq_eof <= 0;
         @(posedge clk_core);
         // Should succeed due to static reserve bypass
         check("UNI_ENQ-007a", "alloc_drop_ind=0 (static bypass)",
@@ -3662,15 +3676,15 @@ module smmu_tb;
               alloc_sram_flag == 1);
         check("UNI_ENQ-007c", "q_cell_cnt[0]=1", `LLE_PATH.q_cell_cnt_q[0] == 1);
         // Restore
-        cfg_in_q_min_cell = 14'd0;
-        cfg_in_q_max_cell = 14'd8192;
-        cfg_in_port_max   = 14'd8192;
-        cfg_in_global_max = 14'd8192;
+        cfg_in_q_min_cell <= 14'd0;
+        cfg_in_q_max_cell <= 14'd8192;
+        cfg_in_port_max <= 14'd8192;
+        cfg_in_global_max <= 14'd8192;
         wait_clks(3);
     endtask
 
     task automatic test_UNI_ENQ_008();
-        $display("\n===== UNI_ENQ-008: LLE busy时enq_ready拉低 =====");
+        $display("\n===== UNI_ENQ-008: LLE busyćśenq_readyćä˝ =====");
         reset_dut();
         do_init();
         // Enqueue 3 cells to fill some queue so deq can trigger SRAM read
@@ -3678,7 +3692,7 @@ module smmu_tb;
         wait_clks(2);
         // Start deq (will need SRAM read since cnt>=3)
         @(posedge clk_core);
-        deq_req = 1; deq_queue_id = 0;
+        deq_req <= 1; deq_queue_id <= 0;
         @(negedge clk_core);
         // When deq_need_sram=1, lle_alloc_ready should be 0
         if (`LLE_PATH.deq_need_sram) begin
@@ -3691,27 +3705,29 @@ module smmu_tb;
                   enq_ready == 1);
         end
         @(posedge clk_core);
-        deq_req = 0;
+        deq_req <= 0;
         wait_clks(3);
     endtask
 
     //------------------------------------------------------------------------
-    // 三、单播出队
+    // ä¸ăĺć­ĺşé
     //------------------------------------------------------------------------
     task automatic test_UNI_DEQ_001();
-        $display("\n===== UNI_DEQ-001: 单cell出队 =====");
+        logic [ADDR_W-1:0] expected_addr;
+
+        $display("\n===== UNI_DEQ-001: ĺcellĺşé =====");
+
         reset_dut();
         do_init();
         // Enqueue 1 cell
         enqueue_cell(0, 0, 1, 1, 1);
         wait_clks(2);
-        logic [ADDR_W-1:0] expected_addr;
         expected_addr = 0; // first alloc
         // Dequeue
         @(posedge clk_core);
-        deq_req = 1; deq_queue_id = 0; deq_backpressure = 0;
+        deq_req <= 1; deq_queue_id <= 0; deq_backpressure <= 0;
         @(posedge clk_core);
-        deq_req = 0;
+        deq_req <= 0;
         @(posedge clk_core);
         check("UNI_DEQ-001a", "deq_cell_valid=1", deq_cell_valid == 1);
         check("UNI_DEQ-001b", "deq_cell_addr=0", deq_cell_addr == expected_addr);
@@ -3721,28 +3737,27 @@ module smmu_tb;
     endtask
 
     task automatic test_UNI_DEQ_002();
-        $display("\n===== UNI_DEQ-002: 多cell背靠背出队 =====");
+        logic deq_valid_seen [3];
+        logic head_seen [3];
+        logic tail_seen [3];
+
+        $display("\n===== UNI_DEQ-002: ĺ¤cellčé čĺşé =====");
         reset_dut();
         do_init();
         // Enqueue 3-cell frame
         enqueue_frame(0, 0, 3);
         wait_clks(3);
-        // Dequeue 3 cells back-to-back
-        logic deq_valid_seen [3];
-        logic head_seen [3];
-        logic tail_seen [3];
-        for (int i = 0; i < 3; i++) begin
-            @(posedge clk_core);
-            deq_req = 1; deq_queue_id = 0;
-        end
+        // Dequeue 3 cells back-to-back. Inputs model upstream flops, so the
+        // first result is stable two active edges after asserting deq_req.
         @(posedge clk_core);
-        deq_req = 0;
-        // Collect results over next 3 cycles
+        deq_req <= 1; deq_queue_id <= 0;
+        @(posedge clk_core);
         for (int i = 0; i < 3; i++) begin
             @(posedge clk_core);
             deq_valid_seen[i] = deq_cell_valid;
             head_seen[i] = deq_pkt_head;
             tail_seen[i] = deq_pkt_tail;
+            if (i == 1) deq_req <= 0;
         end
         check("UNI_DEQ-002a", "all 3 deq_cell_valid=1",
               deq_valid_seen[0] && deq_valid_seen[1] && deq_valid_seen[2]);
@@ -3752,46 +3767,46 @@ module smmu_tb;
     endtask
 
     task automatic test_UNI_DEQ_003();
-        $display("\n===== UNI_DEQ-003: 空队列出队 =====");
+        $display("\n===== UNI_DEQ-003: çŠşéĺĺşé =====");
         reset_dut();
         do_init();
         // Dequeue from empty queue
         @(posedge clk_core);
-        deq_req = 1; deq_queue_id = 5; deq_backpressure = 0;
+        deq_req <= 1; deq_queue_id <= 5; deq_backpressure <= 0;
         @(posedge clk_core);
-        deq_req = 0;
+        deq_req <= 0;
         @(posedge clk_core);
         check("UNI_DEQ-003a", "deq_cell_valid=0 (empty queue)", deq_cell_valid == 0);
     endtask
 
     task automatic test_UNI_DEQ_004();
-        $display("\n===== UNI_DEQ-004: 背压测试 =====");
+        $display("\n===== UNI_DEQ-004: čĺćľčŻ =====");
         reset_dut();
         do_init();
         // Enqueue to port1/tc0 => qid=8
         enqueue_cell(1, 0, 1, 1, 1);
         wait_clks(2);
         // Set backpressure on port1
-        deq_backpressure = 4'b0010;
+        deq_backpressure <= 4'b0010;
         @(posedge clk_core);
-        deq_req = 1; deq_queue_id = 8;
+        deq_req <= 1; deq_queue_id <= 8;
         @(posedge clk_core);
-        deq_req = 0;
+        deq_req <= 0;
         @(posedge clk_core);
         check("UNI_DEQ-004a", "deq_cell_valid=0 (backpressure)", deq_cell_valid == 0);
         check("UNI_DEQ-004b", "q_cell_cnt[8] still 1", `LLE_PATH.q_cell_cnt_q[8] == 1);
         // Release backpressure and dequeue
-        deq_backpressure = 0;
+        deq_backpressure <= 0;
         @(posedge clk_core);
-        deq_req = 1; deq_queue_id = 8;
+        deq_req <= 1; deq_queue_id <= 8;
         @(posedge clk_core);
-        deq_req = 0;
+        deq_req <= 0;
         @(posedge clk_core);
         check("UNI_DEQ-004c", "deq_cell_valid=1 after BP release", deq_cell_valid == 1);
     endtask
 
     task automatic test_UNI_DEQ_005();
-        $display("\n===== UNI_DEQ-005: q_empty_vec验证 =====");
+        $display("\n===== UNI_DEQ-005: q_empty_vecéŞčŻ =====");
         reset_dut();
         do_init();
         // Initially all queues empty
@@ -3802,31 +3817,31 @@ module smmu_tb;
         check("UNI_DEQ-005b", "q_empty[0]=0 (non-empty)", q_empty[0] == 0);
         // Dequeue
         @(posedge clk_core);
-        deq_req = 1; deq_queue_id = 0;
+        deq_req <= 1; deq_queue_id <= 0;
         @(posedge clk_core);
-        deq_req = 0;
+        deq_req <= 0;
         wait_clks(2);
         check("UNI_DEQ-005c", "q_empty[0]=1 (empty again)", q_empty[0] == 1);
     endtask
 
     //------------------------------------------------------------------------
-    // 四、组播入队/出队
+    // ĺăçťć­ĺĽé/ĺşé
     //------------------------------------------------------------------------
     task automatic test_MC_ENQ_001();
-        $display("\n===== MC_ENQ-001: 单槽多播入队(2-cell帧) =====");
+        $display("\n===== MC_ENQ-001: ĺć§˝ĺ¤ć­ĺĽé(2-cellĺ¸§) =====");
         reset_dut();
         do_init();
         // Multicast: bitmap=4'b1010 (port1, port3), TC=3
         // Cell 0: SOF
         @(posedge clk_core);
-        enq_req = 1; enq_is_mcast = 1; enq_mcast_bitmap = 4'b1010;
-        enq_queue_id = 3; enq_egress_port = 0;
-        enq_sof = 1; enq_eof = 0; enq_cell_num = 2;
+        enq_req <= 1; enq_is_mcast <= 1; enq_mcast_bitmap <= 4'b1010;
+        enq_queue_id <= 3; enq_egress_port <= 0;
+        enq_sof <= 1; enq_eof <= 0; enq_cell_num <= 2;
         // Cell 1: EOF
         @(posedge clk_core);
-        enq_sof = 0; enq_eof = 1;
+        enq_sof <= 0; enq_eof <= 1;
         @(posedge clk_core);
-        enq_req = 0; enq_eof = 0; enq_is_mcast = 0;
+        enq_req <= 0; enq_eof <= 0; enq_is_mcast <= 0;
         wait_clks(2);
         check("MC_ENQ-001a", "mc_valid=1", `LLE_PATH.mc_valid_q == 1);
         check("MC_ENQ-001b", "mc_dst_bitmap=4'b1010", `LLE_PATH.mc_dst_bitmap_q == 4'b1010);
@@ -3840,44 +3855,44 @@ module smmu_tb;
     endtask
 
     task automatic test_MC_ENQ_005();
-        $display("\n===== MC_ENQ-005: 多播槽忙时新多播被丢 =====");
+        $display("\n===== MC_ENQ-005: ĺ¤ć­ć§˝ĺżćść°ĺ¤ć­č˘Ťä¸˘ =====");
         reset_dut();
         do_init();
         // First multicast (occupy slot)
         @(posedge clk_core);
-        enq_req = 1; enq_is_mcast = 1; enq_mcast_bitmap = 4'b0001;
-        enq_queue_id = 0; enq_egress_port = 0;
-        enq_sof = 1; enq_eof = 1; enq_cell_num = 1;
+        enq_req <= 1; enq_is_mcast <= 1; enq_mcast_bitmap <= 4'b0001;
+        enq_queue_id <= 0; enq_egress_port <= 0;
+        enq_sof <= 1; enq_eof <= 1; enq_cell_num <= 1;
         @(posedge clk_core);
-        enq_req = 0; enq_sof = 0; enq_eof = 0; enq_is_mcast = 0;
+        enq_req <= 0; enq_sof <= 0; enq_eof <= 0; enq_is_mcast <= 0;
         wait_clks(2);
         check("MC_ENQ-005a", "mc_valid=1 (slot occupied)", `LLE_PATH.mc_valid_q == 1);
         // Second multicast should be dropped
         @(posedge clk_core);
-        enq_req = 1; enq_is_mcast = 1; enq_mcast_bitmap = 4'b0010;
-        enq_queue_id = 1; enq_egress_port = 0;
-        enq_sof = 1; enq_eof = 1; enq_cell_num = 1;
+        enq_req <= 1; enq_is_mcast <= 1; enq_mcast_bitmap <= 4'b0010;
+        enq_queue_id <= 1; enq_egress_port <= 0;
+        enq_sof <= 1; enq_eof <= 1; enq_cell_num <= 1;
         @(negedge clk_core);
         check("MC_ENQ-005b", "mcast_busy_drop=1", mcast_busy_drop == 1);
         @(posedge clk_core);
-        enq_req = 0; enq_sof = 0; enq_eof = 0; enq_is_mcast = 0;
+        enq_req <= 0; enq_sof <= 0; enq_eof <= 0; enq_is_mcast <= 0;
         @(posedge clk_core);
         check("MC_ENQ-005c", "alloc_drop_ind=1", alloc_drop_ind == 1);
         check("MC_ENQ-005d", "alloc_full_frame_drop=1", alloc_full_frame_drop == 1);
     endtask
 
     //------------------------------------------------------------------------
-    // 五、丢包场景
+    // äşăä¸˘ĺĺşćŻ
     //------------------------------------------------------------------------
     task automatic test_DROP_001();
-        $display("\n===== DROP-001: 队列max丢弃 =====");
+        $display("\n===== DROP-001: éĺmaxä¸˘ĺź =====");
         reset_dut();
         do_init();
         // Set q_max=2
-        cfg_in_q_max_cell = 14'd2;
-        cfg_in_port_max   = 14'd8192;
-        cfg_in_global_max = 14'd8192;
-        cfg_in_q_min_cell = 14'd0;  // No static reserve
+        cfg_in_q_max_cell <= 14'd2;
+        cfg_in_port_max <= 14'd8192;
+        cfg_in_global_max <= 14'd8192;
+        cfg_in_q_min_cell <= 14'd0;  // No static reserve
         wait_clks(3);
         // Enqueue 2 cells (fill to max)
         enqueue_cell(0, 0, 1, 1, 1);
@@ -3887,26 +3902,26 @@ module smmu_tb;
         check("DROP-001a", "q_cell_cnt[0]=2", `LLE_PATH.q_cell_cnt_q[0] == 2);
         // 3rd cell should be dropped
         @(posedge clk_core);
-        enq_req = 1; enq_egress_port = 0; enq_queue_id = 0;
-        enq_is_mcast = 0; enq_sof = 1; enq_eof = 1; enq_cell_num = 1;
+        enq_req <= 1; enq_egress_port <= 0; enq_queue_id <= 0;
+        enq_is_mcast <= 0; enq_sof <= 1; enq_eof <= 1; enq_cell_num <= 1;
         @(posedge clk_core);
-        enq_req = 0; enq_sof = 0; enq_eof = 0;
+        enq_req <= 0; enq_sof <= 0; enq_eof <= 0;
         @(posedge clk_core);
         check("DROP-001b", "alloc_drop_ind=1 (queue max)", alloc_drop_ind == 1);
         check("DROP-001c", "q_cell_cnt[0] still 2", `LLE_PATH.q_cell_cnt_q[0] == 2);
         // Restore
-        cfg_in_q_max_cell = 14'd8192;
+        cfg_in_q_max_cell <= 14'd8192;
         wait_clks(3);
     endtask
 
     task automatic test_DROP_002();
-        $display("\n===== DROP-002: 端口max丢弃 =====");
+        $display("\n===== DROP-002: çŤŻĺŁmaxä¸˘ĺź =====");
         reset_dut();
         do_init();
-        cfg_in_q_max_cell = 14'd8192;
-        cfg_in_port_max   = 14'd2;
-        cfg_in_global_max = 14'd8192;
-        cfg_in_q_min_cell = 14'd0;
+        cfg_in_q_max_cell <= 14'd8192;
+        cfg_in_port_max <= 14'd2;
+        cfg_in_global_max <= 14'd8192;
+        cfg_in_q_min_cell <= 14'd0;
         wait_clks(3);
         // Fill port0 with 2 cells across different TCs
         enqueue_cell(0, 0, 1, 1, 1);
@@ -3915,25 +3930,25 @@ module smmu_tb;
         wait_clks(2);
         // 3rd cell to port0 should drop
         @(posedge clk_core);
-        enq_req = 1; enq_egress_port = 0; enq_queue_id = 2;
-        enq_is_mcast = 0; enq_sof = 1; enq_eof = 1; enq_cell_num = 1;
+        enq_req <= 1; enq_egress_port <= 0; enq_queue_id <= 2;
+        enq_is_mcast <= 0; enq_sof <= 1; enq_eof <= 1; enq_cell_num <= 1;
         @(posedge clk_core);
-        enq_req = 0; enq_sof = 0; enq_eof = 0;
+        enq_req <= 0; enq_sof <= 0; enq_eof <= 0;
         @(posedge clk_core);
         check("DROP-002a", "alloc_drop_ind=1 (port max)", alloc_drop_ind == 1);
         // Restore
-        cfg_in_port_max = 14'd8192;
+        cfg_in_port_max <= 14'd8192;
         wait_clks(3);
     endtask
 
     task automatic test_DROP_003();
-        $display("\n===== DROP-003: 全局max丢弃 =====");
+        $display("\n===== DROP-003: ĺ¨ĺąmaxä¸˘ĺź =====");
         reset_dut();
         do_init();
-        cfg_in_q_max_cell = 14'd8192;
-        cfg_in_port_max   = 14'd8192;
-        cfg_in_global_max = 14'd2;
-        cfg_in_q_min_cell = 14'd0;
+        cfg_in_q_max_cell <= 14'd8192;
+        cfg_in_port_max <= 14'd8192;
+        cfg_in_global_max <= 14'd2;
+        cfg_in_q_min_cell <= 14'd0;
         wait_clks(3);
         // Fill global with 2 cells
         enqueue_cell(0, 0, 1, 1, 1);
@@ -3942,35 +3957,35 @@ module smmu_tb;
         wait_clks(2);
         // 3rd cell should drop (global max)
         @(posedge clk_core);
-        enq_req = 1; enq_egress_port = 2; enq_queue_id = 0;
-        enq_is_mcast = 0; enq_sof = 1; enq_eof = 1; enq_cell_num = 1;
+        enq_req <= 1; enq_egress_port <= 2; enq_queue_id <= 0;
+        enq_is_mcast <= 0; enq_sof <= 1; enq_eof <= 1; enq_cell_num <= 1;
         @(posedge clk_core);
-        enq_req = 0; enq_sof = 0; enq_eof = 0;
+        enq_req <= 0; enq_sof <= 0; enq_eof <= 0;
         @(posedge clk_core);
         check("DROP-003a", "alloc_drop_ind=1 (global max)", alloc_drop_ind == 1);
         check("DROP-003b", "global_max_reached=1", global_max_reached == 1);
         // Restore
-        cfg_in_global_max = 14'd8192;
+        cfg_in_global_max <= 14'd8192;
         wait_clks(3);
     endtask
 
     task automatic test_DROP_005();
-        $display("\n===== DROP-005: 整帧丢弃保持(multi-cell帧) =====");
+        $display("\n===== DROP-005: ć´ĺ¸§ä¸˘ĺźäżć(multi-cellĺ¸§) =====");
         reset_dut();
         do_init();
-        cfg_in_q_max_cell = 14'd0;  // 0 means immediate drop
-        cfg_in_q_min_cell = 14'd0;
+        cfg_in_q_max_cell <= 14'd0;  // 0 means immediate drop
+        cfg_in_q_min_cell <= 14'd0;
         wait_clks(3);
         // 3-cell frame: first cell will be dropped, rest should follow
         @(posedge clk_core);
-        enq_req = 1; enq_egress_port = 0; enq_queue_id = 0;
-        enq_is_mcast = 0; enq_sof = 1; enq_eof = 0; enq_cell_num = 3;
+        enq_req <= 1; enq_egress_port <= 0; enq_queue_id <= 0;
+        enq_is_mcast <= 0; enq_sof <= 1; enq_eof <= 0; enq_cell_num <= 3;
         @(posedge clk_core);
-        enq_sof = 0; enq_eof = 0;
+        enq_sof <= 0; enq_eof <= 0;
         @(posedge clk_core);
-        enq_eof = 1;
+        enq_eof <= 1;
         @(posedge clk_core);
-        enq_req = 0; enq_eof = 0;
+        enq_req <= 0; enq_eof <= 0;
         // Check frame_drop was maintained through the frame
         @(posedge clk_core);
         check("DROP-005a", "alloc_full_frame_drop=1 at EOF", alloc_full_frame_drop == 1);
@@ -3979,22 +3994,22 @@ module smmu_tb;
         // frame_drop_q should be cleared after EOF
         check("DROP-005c", "frame_drop_q=0 after EOF", `ENQ_PATH.frame_drop_q == 0);
         // Restore
-        cfg_in_q_max_cell = 14'd8192;
+        cfg_in_q_max_cell <= 14'd8192;
         wait_clks(3);
     endtask
 
     //------------------------------------------------------------------------
-    // 六、PAUSE / PFC 流控
+    // ĺ­ăPAUSE / PFC ćľć§
     //------------------------------------------------------------------------
     task automatic test_PAUSE_001();
-        $display("\n===== PAUSE-001: 端口PAUSE触发(XOFF) =====");
+        $display("\n===== PAUSE-001: çŤŻĺŁPAUSEč§Śĺ(XOFF) =====");
         reset_dut();
         do_init();
-        cfg_in_pause_en = 1;
-        cfg_in_port_pause_xoff = 14'd3;
-        cfg_in_port_pause_xon  = 14'd1;
-        cfg_in_global_pause_xoff = 14'd8000;
-        cfg_in_global_pause_xon  = 14'd7000;
+        cfg_in_pause_en <= 1;
+        cfg_in_port_pause_xoff <= 14'd3;
+        cfg_in_port_pause_xon <= 14'd1;
+        cfg_in_global_pause_xoff <= 14'd8000;
+        cfg_in_global_pause_xon <= 14'd7000;
         wait_clks(3);
         // Enqueue 3 cells to port0 to reach xoff threshold
         enqueue_cell(0, 0, 1, 1, 1);
@@ -4007,58 +4022,59 @@ module smmu_tb;
     endtask
 
     task automatic test_PAUSE_002();
-        $display("\n===== PAUSE-002: 端口PAUSE撤销(XON) =====");
+        logic [ADDR_W-1:0] addr0, addr1;
+        logic [ADDR_W-1:0] addr2;
+
+        $display("\n===== PAUSE-002: çŤŻĺŁPAUSEć¤é(XON) =====");
         // Continue from PAUSE-001 state: port0 has 3 cells, pause is active
         // Recycle 2 cells to bring below XON (1)
         // First dequeue to get addresses
-        logic [ADDR_W-1:0] addr0, addr1;
         @(posedge clk_core);
-        deq_req = 1; deq_queue_id = 0; deq_backpressure = 0;
+        deq_req <= 1; deq_queue_id <= 0; deq_backpressure <= 0;
         @(posedge clk_core);
-        deq_req = 0;
+        deq_req <= 0;
         @(posedge clk_core);
         addr0 = deq_cell_addr;
         @(posedge clk_core);
-        deq_req = 1; deq_queue_id = 1; // port0/tc1
+        deq_req <= 1; deq_queue_id <= 1; // port0/tc1
         @(posedge clk_core);
-        deq_req = 0;
+        deq_req <= 0;
         @(posedge clk_core);
         addr1 = deq_cell_addr;
         // Recycle
         @(posedge clk_core);
-        recycle_req = 1; recycle_cell_addr = addr0; recycle_queue_id = 0;
+        recycle_req <= 1; recycle_cell_addr <= addr0; recycle_queue_id <= 0;
         @(posedge clk_core);
-        recycle_req = 0;
+        recycle_req <= 0;
         wait_clks(2);
         @(posedge clk_core);
-        recycle_req = 1; recycle_cell_addr = addr1; recycle_queue_id = 1;
+        recycle_req <= 1; recycle_cell_addr <= addr1; recycle_queue_id <= 1;
         @(posedge clk_core);
-        recycle_req = 0;
+        recycle_req <= 0;
         wait_clks(5);
         // per_port_used[0] should be 1 now (below xon=1? no, xon=1 means <1 to clear)
         // Actually xon threshold: port_used < cfg_port_pause_xon = 1, so need port_used = 0
         // Dequeue and recycle the last one
         @(posedge clk_core);
-        deq_req = 1; deq_queue_id = 2; // port0/tc2
+        deq_req <= 1; deq_queue_id <= 2; // port0/tc2
         @(posedge clk_core);
-        deq_req = 0;
+        deq_req <= 0;
         @(posedge clk_core);
-        logic [ADDR_W-1:0] addr2;
         addr2 = deq_cell_addr;
         @(posedge clk_core);
-        recycle_req = 1; recycle_cell_addr = addr2; recycle_queue_id = 2;
+        recycle_req <= 1; recycle_cell_addr <= addr2; recycle_queue_id <= 2;
         @(posedge clk_core);
-        recycle_req = 0;
+        recycle_req <= 0;
         wait_clks(5);
         check("PAUSE-002a", "pause_req[0]=0 (XON, port_used<1)", pause_req[0] == 0);
     endtask
 
     task automatic test_PAUSE_005();
-        $display("\n===== PAUSE-005: PAUSE禁用 =====");
+        $display("\n===== PAUSE-005: PAUSEçŚç¨ =====");
         reset_dut();
         do_init();
-        cfg_in_pause_en = 0;
-        cfg_in_port_pause_xoff = 14'd1;
+        cfg_in_pause_en <= 0;
+        cfg_in_port_pause_xoff <= 14'd1;
         wait_clks(3);
         // Enqueue to reach threshold
         enqueue_cell(0, 0, 1, 1, 1);
@@ -4067,12 +4083,12 @@ module smmu_tb;
     endtask
 
     task automatic test_PFC_001();
-        $display("\n===== PFC-001: per-TC PFC触发(XOFF) =====");
+        $display("\n===== PFC-001: per-TC PFCč§Śĺ(XOFF) =====");
         reset_dut();
         do_init();
-        cfg_in_pfc_en = 1;
-        cfg_in_pfc_xoff = 14'd2;
-        cfg_in_pfc_xon  = 14'd1;
+        cfg_in_pfc_en <= 1;
+        cfg_in_pfc_xoff <= 14'd2;
+        cfg_in_pfc_xon <= 14'd1;
         wait_clks(3);
         // Enqueue 2 cells to port0/tc0 => qid=0, per_tc_used[0][0]=2 >= xoff=2
         enqueue_cell(0, 0, 1, 1, 1);
@@ -4084,11 +4100,11 @@ module smmu_tb;
     endtask
 
     task automatic test_PFC_004();
-        $display("\n===== PFC-004: PFC禁用 =====");
+        $display("\n===== PFC-004: PFCçŚç¨ =====");
         reset_dut();
         do_init();
-        cfg_in_pfc_en = 0;
-        cfg_in_pfc_xoff = 14'd1;
+        cfg_in_pfc_en <= 0;
+        cfg_in_pfc_xoff <= 14'd1;
         wait_clks(3);
         enqueue_cell(0, 0, 1, 1, 1);
         wait_clks(3);
@@ -4096,84 +4112,88 @@ module smmu_tb;
     endtask
 
     //------------------------------------------------------------------------
-    // 七、地址回收
+    // ä¸ăĺ°ĺĺćś
     //------------------------------------------------------------------------
     task automatic test_RCY_001();
-        $display("\n===== RCY-001: 单播单cell回收 =====");
+        logic [CNT_W-1:0] free_before;
+        logic [ADDR_W-1:0] rcy_addr;
+
+        $display("\n===== RCY-001: ĺć­ĺcellĺćś =====");
         reset_dut();
         do_init();
         // Enqueue 1 cell
         enqueue_cell(0, 0, 1, 1, 1);
         wait_clks(2);
-        logic [CNT_W-1:0] free_before;
         free_before = `LLE_PATH.free_cnt_q;
         // Dequeue to get address
         @(posedge clk_core);
-        deq_req = 1; deq_queue_id = 0; deq_backpressure = 0;
+        deq_req <= 1; deq_queue_id <= 0; deq_backpressure <= 0;
         @(posedge clk_core);
-        deq_req = 0;
+        deq_req <= 0;
         @(posedge clk_core);
-        logic [ADDR_W-1:0] rcy_addr;
         rcy_addr = deq_cell_addr;
         // Recycle
         @(posedge clk_core);
-        recycle_req = 1; recycle_cell_addr = rcy_addr; recycle_queue_id = 0;
+        recycle_req <= 1; recycle_cell_addr <= rcy_addr; recycle_queue_id <= 0;
         @(negedge clk_core);
         check("RCY-001a", "recycle_ack=1 (immediate)", recycle_ack == 1);
         @(posedge clk_core);
-        recycle_req = 0;
+        recycle_req <= 0;
         wait_clks(5); // wait for rcy_grant and free_cnt update
         check("RCY-001b", "free_cnt restored", `LLE_PATH.free_cnt_q == CELL_NUM);
     endtask
 
     task automatic test_RCY_004();
-        $display("\n===== RCY-004: 组播逐端口回收通知 =====");
+        $display("\n===== RCY-004: çťć­éçŤŻĺŁĺćśéçĽ =====");
         reset_dut();
         do_init();
         // Setup a multicast frame first
         @(posedge clk_core);
-        enq_req = 1; enq_is_mcast = 1; enq_mcast_bitmap = 4'b0011;
-        enq_queue_id = 0; enq_egress_port = 0;
-        enq_sof = 1; enq_eof = 1; enq_cell_num = 1;
+        enq_req <= 1; enq_is_mcast <= 1; enq_mcast_bitmap <= 4'b0011;
+        enq_queue_id <= 0; enq_egress_port <= 0;
+        enq_sof <= 1; enq_eof <= 1; enq_cell_num <= 1;
         @(posedge clk_core);
-        enq_req = 0; enq_sof = 0; enq_eof = 0; enq_is_mcast = 0;
+        enq_req <= 0; enq_sof <= 0; enq_eof <= 0; enq_is_mcast <= 0;
         wait_clks(2);
         // Send mcast recycle for port0 (queue_id=0, port = 0>>3 = 0)
         @(posedge clk_core);
-        mcast_recycle_req = 1; mcast_recycle_queue_id = 0; mcast_recycle_addr = 0;
+        mcast_recycle_req <= 1; mcast_recycle_queue_id <= 0; mcast_recycle_addr <= 0;
         @(negedge clk_core);
         check("RCY-004a", "recycle_ack=1", recycle_ack == 1);
         @(posedge clk_core);
-        mcast_recycle_req = 0;
+        mcast_recycle_req <= 0;
         wait_clks(1);
         check("RCY-004b", "mc_rcy_done[0]=1", `LLE_PATH.mc_rcy_done_q[0] == 1);
     endtask
 
     //------------------------------------------------------------------------
-    // 八、老化机制
+    // ĺŤăčĺćşĺś
     //------------------------------------------------------------------------
     task automatic test_AGE_001();
-        $display("\n===== AGE-001: 队列正常老化超时 =====");
+        logic age_seen;
+        logic irq_seen;
+
+        $display("\n===== AGE-001: éĺć­Łĺ¸¸čĺčśćś =====");
         reset_dut();
         do_init();
-        cfg_in_aging_en = 1;
-        cfg_in_aging_timeout = 24'd20; // very short timeout for test
+        cfg_in_aging_en <= 1;
+        cfg_in_aging_timeout <= 24'd20; // very short timeout for test
         wait_clks(3);
         // Enqueue 1 cell (make queue occupied) - no dequeue (no feed_dog)
         enqueue_cell(0, 0, 1, 1, 1);
         wait_clks(2);
-        // Wait for timeout
-        wait_clks(25);
-        check("AGE-001a", "age_trig[0]=1 (timeout)", `AGE_PATH.age_trig[0] == 1);
-        check("AGE-001b", "irq_aging=1", irq_aging == 1);
+        // age_trig/irq_aging are non-sticky and may clear once flush starts.
+        capture_aging_event(0, 35, age_seen, irq_seen);
+        check("AGE-001a", "age_trig[0] asserted (timeout)", age_seen == 1);
+        check("AGE-001b", "irq_aging asserted", irq_seen == 1);
     endtask
 
     task automatic test_AGE_002();
-        $display("\n===== AGE-002: 出队喂狗复位计时器 =====");
+        $display("\n===== AGE-002: ĺşéĺçĺ¤ä˝čŽĄćśĺ¨ =====");
         reset_dut();
         do_init();
-        cfg_in_aging_en = 1;
-        cfg_in_aging_timeout = 24'd30;
+        cfg_in_aging_en <= 1;
+        cfg_in_aging_timeout <= 24'd30;
         wait_clks(3);
         // Enqueue 2 cells
         enqueue_cell(0, 0, 1, 0, 2);
@@ -4184,9 +4204,9 @@ module smmu_tb;
         wait_clks(25);
         // Dequeue (feed_dog)
         @(posedge clk_core);
-        deq_req = 1; deq_queue_id = 0; deq_backpressure = 0;
+        deq_req <= 1; deq_queue_id <= 0; deq_backpressure <= 0;
         @(posedge clk_core);
-        deq_req = 0;
+        deq_req <= 0;
         wait_clks(3);
         // Timer should have been reset
         check("AGE-002a", "age_timer[0] reset (< timeout)",
@@ -4195,29 +4215,29 @@ module smmu_tb;
     endtask
 
     task automatic test_AGE_004();
-        $display("\n===== AGE-004: 软件强制老化 =====");
+        $display("\n===== AGE-004: č˝Żäťśĺźşĺśčĺ =====");
         reset_dut();
         do_init();
-        cfg_in_aging_en = 1;
-        cfg_in_aging_timeout = 24'd10000; // very long, won't naturally trigger
+        cfg_in_aging_en <= 1;
+        cfg_in_aging_timeout <= 24'd10000; // very long, won't naturally trigger
         wait_clks(3);
         // Enqueue 1 cell
         enqueue_cell(0, 0, 1, 1, 1);
         wait_clks(2);
         // Force aging
-        cfg_in_age_force_all = 1;
+        cfg_in_age_force_all <= 1;
         wait_clks(5);
         check("AGE-004a", "age_trig[0]=1 (forced)", `AGE_PATH.age_trig[0] == 1);
-        cfg_in_age_force_all = 0;
+        cfg_in_age_force_all <= 0;
         wait_clks(3);
     endtask
 
     task automatic test_AGE_009();
-        $display("\n===== AGE-009: 老化禁用 =====");
+        $display("\n===== AGE-009: čĺçŚç¨ =====");
         reset_dut();
         do_init();
-        cfg_in_aging_en = 0;
-        cfg_in_aging_timeout = 24'd5;
+        cfg_in_aging_en <= 0;
+        cfg_in_aging_timeout <= 24'd5;
         wait_clks(3);
         enqueue_cell(0, 0, 1, 1, 1);
         wait_clks(20);
@@ -4226,10 +4246,12 @@ module smmu_tb;
     endtask
 
     //------------------------------------------------------------------------
-    // 九、占用管理与双池
+    // äšăĺ ç¨çŽĄçä¸ĺćą 
     //------------------------------------------------------------------------
     task automatic test_OCC_001();
-        $display("\n===== OCC-001: 全局计数守恒 =====");
+        logic [CNT_W-1:0] free_c, used_c;
+
+        $display("\n===== OCC-001: ĺ¨ĺąčŽĄć°ĺŽć =====");
         reset_dut();
         do_init();
         // Enqueue several cells
@@ -4240,18 +4262,17 @@ module smmu_tb;
         enqueue_cell(2, 2, 1, 1, 1);
         wait_clks(3);
         // Check conservation
-        logic [CNT_W-1:0] free_c, used_c;
         free_c = `OCC_PATH.free_count_q;
         used_c = `OCC_PATH.global_used_q;
         check("OCC-001a", "free+global=8192", (free_c + used_c) == CELL_NUM);
     endtask
 
     task automatic test_OCC_005();
-        $display("\n===== OCC-005: q_max_reached翻转计数 =====");
+        $display("\n===== OCC-005: q_max_reachedçżťč˝ŹčŽĄć° =====");
         reset_dut();
         do_init();
-        cfg_in_q_max_cell = 14'd2;
-        cfg_in_q_min_cell = 14'd0;
+        cfg_in_q_max_cell <= 14'd2;
+        cfg_in_q_min_cell <= 14'd0;
         wait_clks(3);
         // Enqueue 2 cells to trigger max
         enqueue_cell(0, 0, 1, 1, 1);
@@ -4264,56 +4285,58 @@ module smmu_tb;
         check("OCC-005b", "st_out_q_max_assert_cnt[0]>=1",
               st_out_q_max_assert_cnt[0] >= 1);
         // Restore
-        cfg_in_q_max_cell = 14'd8192;
+        cfg_in_q_max_cell <= 14'd8192;
         wait_clks(3);
     endtask
 
     //------------------------------------------------------------------------
-    // 十、CSR配置与统计
+    // ĺăCSRéç˝Žä¸çťčŽĄ
     //------------------------------------------------------------------------
     task automatic test_CSR_001();
-        $display("\n===== CSR-001: 配置采样延迟 =====");
+        $display("\n===== CSR-001: éç˝Žéć ˇĺťśčż =====");
         reset_dut();
         do_init();
-        cfg_in_q_max_cell = 14'd1234;
+        cfg_in_q_max_cell <= 14'd1234;
         @(posedge clk_core);
         // After 1 clock, CSR should have sampled
         @(posedge clk_core);
         check("CSR-001a", "cfg_q_max_cell[0]=1234 after 1clk",
               `CSR_PATH.cfg_q_max_cell[0] == 14'd1234);
-        cfg_in_q_max_cell = 14'd8192;
+        cfg_in_q_max_cell <= 14'd8192;
         wait_clks(3);
     endtask
 
     task automatic test_CSR_004();
-        $display("\n===== CSR-004: tail_drop计数 =====");
+        $display("\n===== CSR-004: tail_dropčŽĄć° =====");
         reset_dut();
         do_init();
-        cfg_in_q_max_cell = 14'd1;
-        cfg_in_q_min_cell = 14'd0;
+        cfg_in_q_max_cell <= 14'd1;
+        cfg_in_q_min_cell <= 14'd0;
         wait_clks(3);
         // Fill queue to max
         enqueue_cell(0, 0, 1, 1, 1);
         wait_clks(2);
         // Drop 1 cell
         @(posedge clk_core);
-        enq_req = 1; enq_egress_port = 0; enq_queue_id = 0;
-        enq_is_mcast = 0; enq_sof = 1; enq_eof = 1; enq_cell_num = 1;
+        enq_req <= 1; enq_egress_port <= 0; enq_queue_id <= 0;
+        enq_is_mcast <= 0; enq_sof <= 1; enq_eof <= 1; enq_cell_num <= 1;
         @(posedge clk_core);
-        enq_req = 0; enq_sof = 0; enq_eof = 0;
+        enq_req <= 0; enq_sof <= 0; enq_eof <= 0;
         wait_clks(4);
         check("CSR-004a", "st_out_tail_drop_cnt[0]>=1",
               st_out_tail_drop_cnt[0] >= 1);
         // Restore
-        cfg_in_q_max_cell = 14'd8192;
+        cfg_in_q_max_cell <= 14'd8192;
         wait_clks(3);
     endtask
 
     //------------------------------------------------------------------------
-    // 十一、链表引擎内部
+    // ĺä¸ăéžčĄ¨ĺźćĺé¨
     //------------------------------------------------------------------------
     task automatic test_LLE_001();
-        $display("\n===== LLE-001: 仲裁优先级验证(deq>enq>rcy) =====");
+        logic [ADDR_W-1:0] raddr;
+
+        $display("\n===== LLE-001: äť˛čŁäźĺçş§éŞčŻ(deq>enq>rcy) =====");
         reset_dut();
         do_init();
         // Need a queue with >= 3 cells for deq_need_sram
@@ -4322,36 +4345,36 @@ module smmu_tb;
         // Setup recycle FIFO non-empty
         // Dequeue 1 cell first to get addr for recycle
         @(posedge clk_core);
-        deq_req = 1; deq_queue_id = 0; deq_backpressure = 0;
+        deq_req <= 1; deq_queue_id <= 0; deq_backpressure <= 0;
         @(posedge clk_core);
-        deq_req = 0;
+        deq_req <= 0;
         @(posedge clk_core);
-        logic [ADDR_W-1:0] raddr;
         raddr = deq_cell_addr;
         // Push to recycle FIFO
         @(posedge clk_core);
-        recycle_req = 1; recycle_cell_addr = raddr; recycle_queue_id = 0;
+        recycle_req <= 1; recycle_cell_addr <= raddr; recycle_queue_id <= 0;
         @(posedge clk_core);
-        recycle_req = 0;
+        recycle_req <= 0;
         wait_clks(2);
         // Now do simultaneous deq + enq (enq will be blocked if deq needs SRAM)
         @(posedge clk_core);
-        deq_req = 1; deq_queue_id = 0;
-        enq_req = 1; enq_egress_port = 1; enq_queue_id = 0;
-        enq_is_mcast = 0; enq_sof = 1; enq_eof = 1; enq_cell_num = 1;
+        deq_req <= 1; deq_queue_id <= 0;
+        enq_req <= 1; enq_egress_port <= 1; enq_queue_id <= 0;
+        enq_is_mcast <= 0; enq_sof <= 1; enq_eof <= 1; enq_cell_num <= 1;
         @(negedge clk_core);
         // deq should win
         check("LLE-001a", "deq_grant=1", `LLE_PATH.deq_grant == 1);
         @(posedge clk_core);
-        deq_req = 0; enq_req = 0; enq_sof = 0; enq_eof = 0;
+        deq_req <= 0; enq_req <= 0; enq_sof <= 0; enq_eof <= 0;
         wait_clks(3);
     endtask
 
     task automatic test_LLE_006();
-        $display("\n===== LLE-006: free_cnt一致性 =====");
+        logic [CNT_W-1:0] fc_start;
+
+        $display("\n===== LLE-006: free_cntä¸č´ć§ =====");
         reset_dut();
         do_init();
-        logic [CNT_W-1:0] fc_start;
         fc_start = `LLE_PATH.free_cnt_q;
         // Enqueue 5 cells
         for (int i = 0; i < 5; i++) begin
@@ -4364,27 +4387,27 @@ module smmu_tb;
     endtask
 
     //------------------------------------------------------------------------
-    // 十二、背压与边界
+    // ĺäşăčĺä¸čžšç
     //------------------------------------------------------------------------
     task automatic test_BP_001();
-        $display("\n===== BP-001: 单端口背压 =====");
+        $display("\n===== BP-001: ĺçŤŻĺŁčĺ =====");
         reset_dut();
         do_init();
         enqueue_cell(1, 0, 1, 1, 1);
         wait_clks(2);
-        deq_backpressure = 4'b0010; // port1 backpressure
+        deq_backpressure <= 4'b0010; // port1 backpressure
         @(posedge clk_core);
-        deq_req = 1; deq_queue_id = 8; // port1/tc0
+        deq_req <= 1; deq_queue_id <= 8; // port1/tc0
         @(posedge clk_core);
-        deq_req = 0;
+        deq_req <= 0;
         @(posedge clk_core);
         check("BP-001a", "deq_cell_valid=0 (BP active)", deq_cell_valid == 0);
-        deq_backpressure = 0;
+        deq_backpressure <= 0;
         wait_clks(2);
     endtask
 
     task automatic test_BP_003();
-        $display("\n===== BP-003: 多端口同时背压 =====");
+        $display("\n===== BP-003: ĺ¤çŤŻĺŁĺćśčĺ =====");
         reset_dut();
         do_init();
         enqueue_cell(0, 0, 1, 1, 1);
@@ -4392,78 +4415,77 @@ module smmu_tb;
         enqueue_cell(2, 0, 1, 1, 1);
         enqueue_cell(3, 0, 1, 1, 1);
         wait_clks(3);
-        deq_backpressure = 4'b1111; // all ports
+        deq_backpressure <= 4'b1111; // all ports
         @(posedge clk_core);
-        deq_req = 1; deq_queue_id = 0;
+        deq_req <= 1; deq_queue_id <= 0;
         @(posedge clk_core);
-        deq_req = 0;
+        deq_req <= 0;
         @(posedge clk_core);
         check("BP-003a", "deq_cell_valid=0 (all BP)", deq_cell_valid == 0);
-        deq_backpressure = 0;
+        deq_backpressure <= 0;
         wait_clks(2);
     endtask
 
     task automatic test_CORNER_001();
-        $display("\n===== CORNER-001: 满池后回收→恢复入队 =====");
+        $display("\n===== CORNER-001: ćťĄćą ĺĺćśâć˘ĺ¤ĺĽé =====");
         reset_dut();
         do_init();
         // Set global_max = 1 to easily reach "full"
-        cfg_in_global_max = 14'd1;
-        cfg_in_q_min_cell = 14'd0;
+        cfg_in_global_max <= 14'd1;
+        cfg_in_q_min_cell <= 14'd0;
         wait_clks(3);
         // Enqueue 1 cell (reaches max)
         enqueue_cell(0, 0, 1, 1, 1);
         wait_clks(2);
         // Next enqueue should drop
         @(posedge clk_core);
-        enq_req = 1; enq_egress_port = 0; enq_queue_id = 1;
-        enq_is_mcast = 0; enq_sof = 1; enq_eof = 1; enq_cell_num = 1;
+        enq_req <= 1; enq_egress_port <= 0; enq_queue_id <= 1;
+        enq_is_mcast <= 0; enq_sof <= 1; enq_eof <= 1; enq_cell_num <= 1;
         @(posedge clk_core);
-        enq_req = 0; enq_sof = 0; enq_eof = 0;
+        enq_req <= 0; enq_sof <= 0; enq_eof <= 0;
         @(posedge clk_core);
         check("CORNER-001a", "alloc_drop_ind=1 (max reached)", alloc_drop_ind == 1);
         // Now increase max and try again
-        cfg_in_global_max = 14'd8192;
+        cfg_in_global_max <= 14'd8192;
         wait_clks(3);
         @(posedge clk_core);
-        enq_req = 1; enq_egress_port = 0; enq_queue_id = 1;
-        enq_is_mcast = 0; enq_sof = 1; enq_eof = 1; enq_cell_num = 1;
+        enq_req <= 1; enq_egress_port <= 0; enq_queue_id <= 1;
+        enq_is_mcast <= 0; enq_sof <= 1; enq_eof <= 1; enq_cell_num <= 1;
         @(posedge clk_core);
-        enq_req = 0; enq_sof = 0; enq_eof = 0;
+        enq_req <= 0; enq_sof <= 0; enq_eof <= 0;
         @(posedge clk_core);
         check("CORNER-001b", "alloc_drop_ind=0 (recovered)", alloc_drop_ind == 0);
     endtask
 
     //------------------------------------------------------------------------
-    // 补充 Case: UNI_DEQ-006 两级预取验证
+    // čĄĽĺ Case: UNI_DEQ-006 ä¸¤çş§é˘ĺéŞčŻ
     //------------------------------------------------------------------------
     task automatic test_UNI_DEQ_006();
-        $display("\n===== UNI_DEQ-006: 两级预取验证 =====");
+        logic valid_all;
+
+        $display("\n===== UNI_DEQ-006: ä¸¤çş§é˘ĺéŞčŻ =====");
         reset_dut();
         do_init();
         // Enqueue 5-cell frame (cnt>=3 triggers SRAM read for prefetch)
         enqueue_frame(0, 0, 5);
         wait_clks(3);
-        // Dequeue all 5 cells back-to-back
-        for (int i = 0; i < 5; i++) begin
-            @(posedge clk_core);
-            deq_req = 1; deq_queue_id = 0; deq_backpressure = 0;
-        end
+        // Dequeue all 5 cells back-to-back. Inputs model upstream flops, so
+        // collect returned cells while the final requests are still in flight.
         @(posedge clk_core);
-        deq_req = 0;
-        // Collect results
-        logic valid_all;
+        deq_req <= 1; deq_queue_id <= 0; deq_backpressure <= 0;
+        @(posedge clk_core);
         valid_all = 1;
         for (int i = 0; i < 5; i++) begin
             @(posedge clk_core);
             if (!deq_cell_valid) valid_all = 0;
+            if (i == 3) deq_req <= 0;
         end
         check("UNI_DEQ-006a", "all 5 deq_cell_valid=1 (no bubble)", valid_all == 1);
         check("UNI_DEQ-006b", "q_cell_cnt[0]=0", `LLE_PATH.q_cell_cnt_q[0] == 0);
     endtask
 
     //------------------------------------------------------------------------
-    // 补充 Case: UNI_DEQ-007 q_pkt_empty_vec
+    // čĄĽĺ Case: UNI_DEQ-007 q_pkt_empty_vec
     //------------------------------------------------------------------------
     task automatic test_UNI_DEQ_007();
         $display("\n===== UNI_DEQ-007: q_pkt_empty_vec =====");
@@ -4478,36 +4500,36 @@ module smmu_tb;
         // Dequeue all 3 cells (pkt_tail at last)
         for (int i = 0; i < 3; i++) begin
             @(posedge clk_core);
-            deq_req = 1; deq_queue_id = 0; deq_backpressure = 0;
+            deq_req <= 1; deq_queue_id <= 0; deq_backpressure <= 0;
         end
         @(posedge clk_core);
-        deq_req = 0;
+        deq_req <= 0;
         wait_clks(3);
         check("UNI_DEQ-007c", "q_pkt_empty[0]=1 (pkt dequeued)", q_pkt_empty[0] == 1);
     endtask
 
     //------------------------------------------------------------------------
-    // 补充 Case: MC_ENQ-002 多播出队(逻辑拼接splice)
+    // čĄĽĺ Case: MC_ENQ-002 ĺ¤ć­ĺşé(éťčžćźćĽsplice)
     //------------------------------------------------------------------------
     task automatic test_MC_ENQ_002();
-        $display("\n===== MC_ENQ-002: 多播出队(splice, pend=0) =====");
+        $display("\n===== MC_ENQ-002: ĺ¤ć­ĺşé(splice, pend=0) =====");
         reset_dut();
         do_init();
         // Multicast 1-cell frame, bitmap port0 only, TC=0
         @(posedge clk_core);
-        enq_req = 1; enq_is_mcast = 1; enq_mcast_bitmap = 4'b0001;
-        enq_queue_id = 0; enq_egress_port = 0;
-        enq_sof = 1; enq_eof = 1; enq_cell_num = 1;
+        enq_req <= 1; enq_is_mcast <= 1; enq_mcast_bitmap <= 4'b0001;
+        enq_queue_id <= 0; enq_egress_port <= 0;
+        enq_sof <= 1; enq_eof <= 1; enq_cell_num <= 1;
         @(posedge clk_core);
-        enq_req = 0; enq_sof = 0; enq_eof = 0; enq_is_mcast = 0;
+        enq_req <= 0; enq_sof <= 0; enq_eof <= 0; enq_is_mcast <= 0;
         wait_clks(2);
         // mc_pend_uni[0] should be 0 (no unicast in carry queue before mcast)
         check("MC_ENQ-002a", "mc_pend_uni[0]=0", `LLE_PATH.mc_pend_uni_q[0] == 0);
         // Dequeue from carry queue (port0/tc0 = qid 0): should splice mcast
         @(posedge clk_core);
-        deq_req = 1; deq_queue_id = 0; deq_backpressure = 0;
+        deq_req <= 1; deq_queue_id <= 0; deq_backpressure <= 0;
         @(posedge clk_core);
-        deq_req = 0;
+        deq_req <= 0;
         @(posedge clk_core);
         check("MC_ENQ-002b", "deq_cell_valid=1 (mcast splice)", deq_cell_valid == 1);
         check("MC_ENQ-002c", "deq_pkt_head=1", deq_pkt_head == 1);
@@ -4518,10 +4540,10 @@ module smmu_tb;
     endtask
 
     //------------------------------------------------------------------------
-    // 补充 Case: MC_ENQ-003 多播前有单播包的splice切换
+    // čĄĽĺ Case: MC_ENQ-003 ĺ¤ć­ĺćĺć­ĺçspliceĺć˘
     //------------------------------------------------------------------------
     task automatic test_MC_ENQ_003();
-        $display("\n===== MC_ENQ-003: 多播前有单播包的splice切换 =====");
+        $display("\n===== MC_ENQ-003: ĺ¤ć­ĺćĺć­ĺçspliceĺć˘ =====");
         reset_dut();
         do_init();
         // First enqueue 1 unicast packet (2 cells) to port0/tc0 (qid=0)
@@ -4529,60 +4551,60 @@ module smmu_tb;
         wait_clks(2);
         // Then enqueue multicast (port0, tc=0)
         @(posedge clk_core);
-        enq_req = 1; enq_is_mcast = 1; enq_mcast_bitmap = 4'b0001;
-        enq_queue_id = 0; enq_egress_port = 0;
-        enq_sof = 1; enq_eof = 1; enq_cell_num = 1;
+        enq_req <= 1; enq_is_mcast <= 1; enq_mcast_bitmap <= 4'b0001;
+        enq_queue_id <= 0; enq_egress_port <= 0;
+        enq_sof <= 1; enq_eof <= 1; enq_cell_num <= 1;
         @(posedge clk_core);
-        enq_req = 0; enq_sof = 0; enq_eof = 0; enq_is_mcast = 0;
+        enq_req <= 0; enq_sof <= 0; enq_eof <= 0; enq_is_mcast <= 0;
         wait_clks(2);
         // mc_pend_uni[0] should be 1 (one unicast packet ahead)
         check("MC_ENQ-003a", "mc_pend_uni[0]=1", `LLE_PATH.mc_pend_uni_q[0] == 1);
         // Dequeue unicast cells: 2 cells, pkt_tail at second
         @(posedge clk_core);
-        deq_req = 1; deq_queue_id = 0; deq_backpressure = 0;
+        deq_req <= 1; deq_queue_id <= 0; deq_backpressure <= 0;
         @(posedge clk_core);
-        deq_req = 1; deq_queue_id = 0;
+        deq_req <= 1; deq_queue_id <= 0;
         @(posedge clk_core);
-        deq_req = 0;
+        deq_req <= 0;
         wait_clks(2);
         // After unicast pkt_tail, pend should be 0
         check("MC_ENQ-003b", "mc_pend_uni[0]=0 after uni pkt done",
               `LLE_PATH.mc_pend_uni_q[0] == 0);
         // Next dequeue should splice multicast
         @(posedge clk_core);
-        deq_req = 1; deq_queue_id = 0;
+        deq_req <= 1; deq_queue_id <= 0;
         @(posedge clk_core);
-        deq_req = 0;
+        deq_req <= 0;
         @(posedge clk_core);
         check("MC_ENQ-003c", "deq_cell_valid=1 (mcast splice)", deq_cell_valid == 1);
     endtask
 
     //------------------------------------------------------------------------
-    // 补充 Case: MC_ENQ-004 多播全端口读完+回收→清槽
+    // čĄĽĺ Case: MC_ENQ-004 ĺ¤ć­ĺ¨çŤŻĺŁčŻťĺŽ+ĺćśâć¸ć§˝
     //------------------------------------------------------------------------
     task automatic test_MC_ENQ_004();
-        $display("\n===== MC_ENQ-004: 多播全端口读完+回收→清槽 =====");
+        $display("\n===== MC_ENQ-004: ĺ¤ć­ĺ¨çŤŻĺŁčŻťĺŽ+ĺćśâć¸ć§˝ =====");
         reset_dut();
         do_init();
         // Multicast 1 cell, bitmap=port0 only
         @(posedge clk_core);
-        enq_req = 1; enq_is_mcast = 1; enq_mcast_bitmap = 4'b0001;
-        enq_queue_id = 0; enq_egress_port = 0;
-        enq_sof = 1; enq_eof = 1; enq_cell_num = 1;
+        enq_req <= 1; enq_is_mcast <= 1; enq_mcast_bitmap <= 4'b0001;
+        enq_queue_id <= 0; enq_egress_port <= 0;
+        enq_sof <= 1; enq_eof <= 1; enq_cell_num <= 1;
         @(posedge clk_core);
-        enq_req = 0; enq_sof = 0; enq_eof = 0; enq_is_mcast = 0;
+        enq_req <= 0; enq_sof <= 0; enq_eof <= 0; enq_is_mcast <= 0;
         wait_clks(2);
         // Dequeue (read done for port0)
         @(posedge clk_core);
-        deq_req = 1; deq_queue_id = 0; deq_backpressure = 0;
+        deq_req <= 1; deq_queue_id <= 0; deq_backpressure <= 0;
         @(posedge clk_core);
-        deq_req = 0;
+        deq_req <= 0;
         wait_clks(2);
         // Send mcast recycle for port0
         @(posedge clk_core);
-        mcast_recycle_req = 1; mcast_recycle_queue_id = 0; mcast_recycle_addr = 0;
+        mcast_recycle_req <= 1; mcast_recycle_queue_id <= 0; mcast_recycle_addr <= 0;
         @(posedge clk_core);
-        mcast_recycle_req = 0;
+        mcast_recycle_req <= 0;
         // Wait for release walk to complete
         wait_clks(10);
         check("MC_ENQ-004a", "mc_valid=0 (slot released)", `LLE_PATH.mc_valid_q == 0);
@@ -4590,55 +4612,56 @@ module smmu_tb;
     endtask
 
     //------------------------------------------------------------------------
-    // 补充 Case: MC_ENQ-006 多播回收下溢检测
+    // čĄĽĺ Case: MC_ENQ-006 ĺ¤ć­ĺćśä¸ćş˘ćŁćľ
     //------------------------------------------------------------------------
     task automatic test_MC_ENQ_006();
-        $display("\n===== MC_ENQ-006: 多播回收下溢检测 =====");
+        $display("\n===== MC_ENQ-006: ĺ¤ć­ĺćśä¸ćş˘ćŁćľ =====");
         reset_dut();
         do_init();
         // Setup multicast with port0
         @(posedge clk_core);
-        enq_req = 1; enq_is_mcast = 1; enq_mcast_bitmap = 4'b0001;
-        enq_queue_id = 0; enq_egress_port = 0;
-        enq_sof = 1; enq_eof = 1; enq_cell_num = 1;
+        enq_req <= 1; enq_is_mcast <= 1; enq_mcast_bitmap <= 4'b0001;
+        enq_queue_id <= 0; enq_egress_port <= 0;
+        enq_sof <= 1; enq_eof <= 1; enq_cell_num <= 1;
         @(posedge clk_core);
-        enq_req = 0; enq_sof = 0; enq_eof = 0; enq_is_mcast = 0;
+        enq_req <= 0; enq_sof <= 0; enq_eof <= 0; enq_is_mcast <= 0;
         wait_clks(2);
         // First recycle for port0
         @(posedge clk_core);
-        mcast_recycle_req = 1; mcast_recycle_queue_id = 0; mcast_recycle_addr = 0;
+        mcast_recycle_req <= 1; mcast_recycle_queue_id <= 0; mcast_recycle_addr <= 0;
         @(posedge clk_core);
-        mcast_recycle_req = 0;
+        mcast_recycle_req <= 0;
         wait_clks(2);
-        // Duplicate recycle for port0 → underflow
+        // Duplicate recycle for port0 â underflow
         @(posedge clk_core);
-        mcast_recycle_req = 1; mcast_recycle_queue_id = 0; mcast_recycle_addr = 0;
+        mcast_recycle_req <= 1; mcast_recycle_queue_id <= 0; mcast_recycle_addr <= 0;
         @(negedge clk_core);
         check("MC_ENQ-006a", "mcast_underflow detected",
               `LLE_PATH.mcast_underflow == 1);
-        @(posedge clk_core);
-        mcast_recycle_req = 0;
-        wait_clks(2);
         check("MC_ENQ-006b", "underflow_alarm=1", underflow_alarm == 1);
+        @(posedge clk_core);
+        mcast_recycle_req <= 0;
+        wait_clks(2);
     endtask
 
     //------------------------------------------------------------------------
-    // 补充 Case: MC_ENQ-007 多播占用不计入端口
+    // čĄĽĺ Case: MC_ENQ-007 ĺ¤ć­ĺ ç¨ä¸čŽĄĺĽçŤŻĺŁ
     //------------------------------------------------------------------------
     task automatic test_MC_ENQ_007();
-        $display("\n===== MC_ENQ-007: 多播占用不计入端口 =====");
+        logic [CNT_W-1:0] port0_before, port1_before;
+
+        $display("\n===== MC_ENQ-007: ĺ¤ć­ĺ ç¨ä¸čŽĄĺĽçŤŻĺŁ =====");
         reset_dut();
         do_init();
-        logic [CNT_W-1:0] port0_before, port1_before;
         port0_before = `OCC_PATH.per_port_used_q[0];
         port1_before = `OCC_PATH.per_port_used_q[1];
         // Multicast to port0+port1
         @(posedge clk_core);
-        enq_req = 1; enq_is_mcast = 1; enq_mcast_bitmap = 4'b0011;
-        enq_queue_id = 0; enq_egress_port = 0;
-        enq_sof = 1; enq_eof = 1; enq_cell_num = 1;
+        enq_req <= 1; enq_is_mcast <= 1; enq_mcast_bitmap <= 4'b0011;
+        enq_queue_id <= 0; enq_egress_port <= 0;
+        enq_sof <= 1; enq_eof <= 1; enq_cell_num <= 1;
         @(posedge clk_core);
-        enq_req = 0; enq_sof = 0; enq_eof = 0; enq_is_mcast = 0;
+        enq_req <= 0; enq_sof <= 0; enq_eof <= 0; enq_is_mcast <= 0;
         wait_clks(3);
         check("MC_ENQ-007a", "per_port_used[0] unchanged",
               `OCC_PATH.per_port_used_q[0] == port0_before);
@@ -4649,10 +4672,10 @@ module smmu_tb;
     endtask
 
     //------------------------------------------------------------------------
-    // 补充 Case: DROP-004 空闲池空丢弃
+    // čĄĽĺ Case: DROP-004 çŠşé˛ćą çŠşä¸˘ĺź
     //------------------------------------------------------------------------
     task automatic test_DROP_004();
-        $display("\n===== DROP-004: 空闲池空丢弃 =====");
+        $display("\n===== DROP-004: çŠşé˛ćą çŠşä¸˘ĺź =====");
         reset_dut();
         do_init();
         // We can't easily exhaust 8192 cells, so check via lle_free_empty signal logic
@@ -4665,65 +4688,65 @@ module smmu_tb;
     endtask
 
     //------------------------------------------------------------------------
-    // 补充 Case: DROP-006 单cell帧丢弃(sof+eof同拍)
+    // čĄĽĺ Case: DROP-006 ĺcellĺ¸§ä¸˘ĺź(sof+eofĺć)
     //------------------------------------------------------------------------
     task automatic test_DROP_006();
-        $display("\n===== DROP-006: 单cell帧丢弃(sof+eof同拍) =====");
+        $display("\n===== DROP-006: ĺcellĺ¸§ä¸˘ĺź(sof+eofĺć) =====");
         reset_dut();
         do_init();
-        cfg_in_q_max_cell = 14'd0;
-        cfg_in_q_min_cell = 14'd0;
+        cfg_in_q_max_cell <= 14'd0;
+        cfg_in_q_min_cell <= 14'd0;
         wait_clks(3);
         @(posedge clk_core);
-        enq_req = 1; enq_egress_port = 0; enq_queue_id = 0;
-        enq_is_mcast = 0; enq_sof = 1; enq_eof = 1; enq_cell_num = 1;
+        enq_req <= 1; enq_egress_port <= 0; enq_queue_id <= 0;
+        enq_is_mcast <= 0; enq_sof <= 1; enq_eof <= 1; enq_cell_num <= 1;
         @(posedge clk_core);
-        enq_req = 0; enq_sof = 0; enq_eof = 0;
+        enq_req <= 0; enq_sof <= 0; enq_eof <= 0;
         @(posedge clk_core);
         check("DROP-006a", "alloc_drop_ind=1", alloc_drop_ind == 1);
         check("DROP-006b", "alloc_full_frame_drop=1", alloc_full_frame_drop == 1);
         // frame_drop_q should NOT be set (single cell, no continuation)
         check("DROP-006c", "frame_drop_q=0 (no continuation)", `ENQ_PATH.frame_drop_q == 0);
-        cfg_in_q_max_cell = 14'd8192;
+        cfg_in_q_max_cell <= 14'd8192;
         wait_clks(3);
     endtask
 
     //------------------------------------------------------------------------
-    // 补充 Case: DROP-007 静态穿透不丢 (same as UNI_ENQ-007 but from drop perspective)
+    // čĄĽĺ Case: DROP-007 éćçŠżéä¸ä¸˘ (same as UNI_ENQ-007 but from drop perspective)
     //------------------------------------------------------------------------
     task automatic test_DROP_007();
-        $display("\n===== DROP-007: 静态穿透不丢(max已触发但static reserve有效) =====");
+        $display("\n===== DROP-007: éćçŠżéä¸ä¸˘(maxĺˇ˛č§Śĺä˝static reservećć) =====");
         reset_dut();
         do_init();
-        cfg_in_q_min_cell = 14'd5;
-        cfg_in_q_max_cell = 14'd0;
-        cfg_in_port_max   = 14'd0;
-        cfg_in_global_max = 14'd0;
+        cfg_in_q_min_cell <= 14'd5;
+        cfg_in_q_max_cell <= 14'd0;
+        cfg_in_port_max <= 14'd0;
+        cfg_in_global_max <= 14'd0;
         wait_clks(3);
         // Enqueue - should bypass max due to static reserve
         enqueue_cell(0, 0, 1, 1, 1);
         @(posedge clk_core);
         check("DROP-007a", "alloc_drop_ind=0 (static bypass)", alloc_drop_ind == 0);
         check("DROP-007b", "q_cell_cnt[0]=1", `LLE_PATH.q_cell_cnt_q[0] == 1);
-        cfg_in_q_min_cell = 14'd0;
-        cfg_in_q_max_cell = 14'd8192;
-        cfg_in_port_max   = 14'd8192;
-        cfg_in_global_max = 14'd8192;
+        cfg_in_q_min_cell <= 14'd0;
+        cfg_in_q_max_cell <= 14'd8192;
+        cfg_in_port_max <= 14'd8192;
+        cfg_in_global_max <= 14'd8192;
         wait_clks(3);
     endtask
 
     //------------------------------------------------------------------------
-    // 补充 Case: PAUSE-003 PAUSE迟滞(中间区保持)
+    // čĄĽĺ Case: PAUSE-003 PAUSEčżćť(ä¸­é´ĺşäżć)
     //------------------------------------------------------------------------
     task automatic test_PAUSE_003();
-        $display("\n===== PAUSE-003: PAUSE迟滞(中间区保持) =====");
+        $display("\n===== PAUSE-003: PAUSEčżćť(ä¸­é´ĺşäżć) =====");
         reset_dut();
         do_init();
-        cfg_in_pause_en = 1;
-        cfg_in_port_pause_xoff = 14'd4;
-        cfg_in_port_pause_xon  = 14'd1;
-        cfg_in_global_pause_xoff = 14'd8000;
-        cfg_in_global_pause_xon  = 14'd7000;
+        cfg_in_pause_en <= 1;
+        cfg_in_port_pause_xoff <= 14'd4;
+        cfg_in_port_pause_xon <= 14'd1;
+        cfg_in_global_pause_xoff <= 14'd8000;
+        cfg_in_global_pause_xon <= 14'd7000;
         wait_clks(3);
         // Enqueue 2 cells (between xon=1 and xoff=4): pause should stay 0
         enqueue_cell(0, 0, 1, 1, 1);
@@ -4734,17 +4757,17 @@ module smmu_tb;
     endtask
 
     //------------------------------------------------------------------------
-    // 补充 Case: PAUSE-004 全局PAUSE联动
+    // čĄĽĺ Case: PAUSE-004 ĺ¨ĺąPAUSEčĺ¨
     //------------------------------------------------------------------------
     task automatic test_PAUSE_004();
-        $display("\n===== PAUSE-004: 全局PAUSE联动 =====");
+        $display("\n===== PAUSE-004: ĺ¨ĺąPAUSEčĺ¨ =====");
         reset_dut();
         do_init();
-        cfg_in_pause_en = 1;
-        cfg_in_port_pause_xoff = 14'd8000; // port threshold very high
-        cfg_in_port_pause_xon  = 14'd7000;
-        cfg_in_global_pause_xoff = 14'd2;  // global threshold very low
-        cfg_in_global_pause_xon  = 14'd1;
+        cfg_in_pause_en <= 1;
+        cfg_in_port_pause_xoff <= 14'd8000; // port threshold very high
+        cfg_in_port_pause_xon <= 14'd7000;
+        cfg_in_global_pause_xoff <= 14'd2;  // global threshold very low
+        cfg_in_global_pause_xon <= 14'd1;
         wait_clks(3);
         // Enqueue 2 cells across different ports to trigger global xoff
         enqueue_cell(0, 0, 1, 1, 1);
@@ -4757,15 +4780,17 @@ module smmu_tb;
     endtask
 
     //------------------------------------------------------------------------
-    // 补充 Case: PFC-002 PFC撤销(XON)
+    // čĄĽĺ Case: PFC-002 PFCć¤é(XON)
     //------------------------------------------------------------------------
     task automatic test_PFC_002();
-        $display("\n===== PFC-002: per-TC PFC撤销(XON) =====");
+        logic [ADDR_W-1:0] a0, a1;
+
+        $display("\n===== PFC-002: per-TC PFCć¤é(XON) =====");
         reset_dut();
         do_init();
-        cfg_in_pfc_en = 1;
-        cfg_in_pfc_xoff = 14'd2;
-        cfg_in_pfc_xon  = 14'd1;
+        cfg_in_pfc_en <= 1;
+        cfg_in_pfc_xoff <= 14'd2;
+        cfg_in_pfc_xon <= 14'd1;
         wait_clks(3);
         // Trigger PFC
         enqueue_cell(0, 0, 1, 1, 1);
@@ -4775,37 +4800,36 @@ module smmu_tb;
         check("PFC-002a", "pfc_req[0][0]=1 (active)", pfc_req[0][0] == 1);
         // Dequeue + recycle to bring below xon
         @(posedge clk_core);
-        deq_req = 1; deq_queue_id = 0; deq_backpressure = 0;
+        deq_req <= 1; deq_queue_id <= 0; deq_backpressure <= 0;
         @(posedge clk_core);
-        deq_req = 1; deq_queue_id = 0;
+        deq_req <= 1; deq_queue_id <= 0;
         @(posedge clk_core);
-        deq_req = 0;
+        deq_req <= 0;
         @(posedge clk_core);
-        logic [ADDR_W-1:0] a0, a1;
         a0 = deq_cell_addr; // approximate - use last value
         // Recycle both
         @(posedge clk_core);
-        recycle_req = 1; recycle_cell_addr = 0; recycle_queue_id = 0;
+        recycle_req <= 1; recycle_cell_addr <= 0; recycle_queue_id <= 0;
         @(posedge clk_core);
-        recycle_req = 1; recycle_cell_addr = 1; recycle_queue_id = 0;
+        recycle_req <= 1; recycle_cell_addr <= 1; recycle_queue_id <= 0;
         @(posedge clk_core);
-        recycle_req = 0;
+        recycle_req <= 0;
         wait_clks(8);
         check("PFC-002b", "pfc_req[0][0]=0 (XON, cnt<1)", pfc_req[0][0] == 0);
     endtask
 
     //------------------------------------------------------------------------
-    // 补充 Case: PFC-003 PFC迟滞
+    // čĄĽĺ Case: PFC-003 PFCčżćť
     //------------------------------------------------------------------------
     task automatic test_PFC_003();
-        $display("\n===== PFC-003: PFC迟滞(中间区保持) =====");
+        $display("\n===== PFC-003: PFCčżćť(ä¸­é´ĺşäżć) =====");
         reset_dut();
         do_init();
-        cfg_in_pfc_en = 1;
-        cfg_in_pfc_xoff = 14'd4;
-        cfg_in_pfc_xon  = 14'd1;
+        cfg_in_pfc_en <= 1;
+        cfg_in_pfc_xoff <= 14'd4;
+        cfg_in_pfc_xon <= 14'd1;
         wait_clks(3);
-        // 2 cells: between xon(1) and xoff(4), pfc was 0 → stays 0
+        // 2 cells: between xon(1) and xoff(4), pfc was 0 â stays 0
         enqueue_cell(0, 0, 1, 1, 1);
         wait_clks(1);
         enqueue_cell(0, 0, 1, 1, 1);
@@ -4814,10 +4838,10 @@ module smmu_tb;
     endtask
 
     //------------------------------------------------------------------------
-    // 补充 Case: RCY-002 单播连续回收
+    // čĄĽĺ Case: RCY-002 ĺć­čżçť­ĺćś
     //------------------------------------------------------------------------
     task automatic test_RCY_002();
-        $display("\n===== RCY-002: 单播连续回收 =====");
+        $display("\n===== RCY-002: ĺć­čżçť­ĺćś =====");
         reset_dut();
         do_init();
         // Enqueue 3 cells
@@ -4826,88 +4850,89 @@ module smmu_tb;
         // Dequeue all 3
         for (int i = 0; i < 3; i++) begin
             @(posedge clk_core);
-            deq_req = 1; deq_queue_id = 0; deq_backpressure = 0;
+            deq_req <= 1; deq_queue_id <= 0; deq_backpressure <= 0;
         end
         @(posedge clk_core);
-        deq_req = 0;
+        deq_req <= 0;
         wait_clks(4);
         // Recycle all 3 (addresses 0,1,2)
         for (int i = 0; i < 3; i++) begin
             @(posedge clk_core);
-            recycle_req = 1; recycle_cell_addr = i[ADDR_W-1:0]; recycle_queue_id = 0;
+            recycle_req <= 1; recycle_cell_addr <= i[ADDR_W-1:0]; recycle_queue_id <= 0;
         end
         @(posedge clk_core);
-        recycle_req = 0;
+        recycle_req <= 0;
         wait_clks(8);
         check("RCY-002a", "free_cnt=8192 (all recovered)", `LLE_PATH.free_cnt_q == CELL_NUM);
     endtask
 
     //------------------------------------------------------------------------
-    // 补充 Case: RCY-005 组播所有端口回收完成→还链
+    // čĄĽĺ Case: RCY-005 çťć­ććçŤŻĺŁĺćśĺŽćâčżéž
     //------------------------------------------------------------------------
     task automatic test_RCY_005();
-        $display("\n===== RCY-005: 组播所有端口回收完成→还链 =====");
+        $display("\n===== RCY-005: çťć­ććçŤŻĺŁĺćśĺŽćâčżéž =====");
         reset_dut();
         do_init();
         // Multicast 1 cell, bitmap=port0+port1
         @(posedge clk_core);
-        enq_req = 1; enq_is_mcast = 1; enq_mcast_bitmap = 4'b0011;
-        enq_queue_id = 0; enq_egress_port = 0;
-        enq_sof = 1; enq_eof = 1; enq_cell_num = 1;
+        enq_req <= 1; enq_is_mcast <= 1; enq_mcast_bitmap <= 4'b0011;
+        enq_queue_id <= 0; enq_egress_port <= 0;
+        enq_sof <= 1; enq_eof <= 1; enq_cell_num <= 1;
         @(posedge clk_core);
-        enq_req = 0; enq_sof = 0; enq_eof = 0; enq_is_mcast = 0;
+        enq_req <= 0; enq_sof <= 0; enq_eof <= 0; enq_is_mcast <= 0;
         wait_clks(2);
         // Read from both ports
         @(posedge clk_core);
-        deq_req = 1; deq_queue_id = 0; deq_backpressure = 0; // port0/tc0
+        deq_req <= 1; deq_queue_id <= 0; deq_backpressure <= 0; // port0/tc0
         @(posedge clk_core);
-        deq_req = 0;
+        deq_req <= 0;
         wait_clks(2);
         @(posedge clk_core);
-        deq_req = 1; deq_queue_id = 8; // port1/tc0
+        deq_req <= 1; deq_queue_id <= 8; // port1/tc0
         @(posedge clk_core);
-        deq_req = 0;
+        deq_req <= 0;
         wait_clks(2);
         // Recycle both ports
         @(posedge clk_core);
-        mcast_recycle_req = 1; mcast_recycle_queue_id = 0; mcast_recycle_addr = 0;
+        mcast_recycle_req <= 1; mcast_recycle_queue_id <= 0; mcast_recycle_addr <= 0;
         @(posedge clk_core);
-        mcast_recycle_req = 0;
+        mcast_recycle_req <= 0;
         wait_clks(1);
         @(posedge clk_core);
-        mcast_recycle_req = 1; mcast_recycle_queue_id = 8; mcast_recycle_addr = 0;
+        mcast_recycle_req <= 1; mcast_recycle_queue_id <= 8; mcast_recycle_addr <= 0;
         @(posedge clk_core);
-        mcast_recycle_req = 0;
+        mcast_recycle_req <= 0;
         wait_clks(15);
         check("RCY-005a", "mc_valid=0 (slot released)", `LLE_PATH.mc_valid_q == 0);
         check("RCY-005b", "free_cnt=8192", `LLE_PATH.free_cnt_q == CELL_NUM);
     endtask
 
     //------------------------------------------------------------------------
-    // 补充 Case: RCY-006 单播回收与入队同拍(同queue)
+    // čĄĽĺ Case: RCY-006 ĺć­ĺćśä¸ĺĽéĺć(ĺqueue)
     //------------------------------------------------------------------------
     task automatic test_RCY_006();
-        $display("\n===== RCY-006: 回收与入队同拍同queue净不变 =====");
+        logic [CNT_W-1:0] global_before;
+
+        $display("\n===== RCY-006: ĺćśä¸ĺĽéĺćĺqueueĺä¸ĺ =====");
         reset_dut();
         do_init();
         enqueue_cell(0, 0, 1, 1, 1);
         wait_clks(2);
         // Dequeue to get address
         @(posedge clk_core);
-        deq_req = 1; deq_queue_id = 0; deq_backpressure = 0;
+        deq_req <= 1; deq_queue_id <= 0; deq_backpressure <= 0;
         @(posedge clk_core);
-        deq_req = 0;
+        deq_req <= 0;
         wait_clks(2);
-        logic [CNT_W-1:0] global_before;
         global_before = `OCC_PATH.global_used_q;
         // Simultaneous enqueue and recycle push (approximate same-cycle via back-to-back)
         @(posedge clk_core);
-        enq_req = 1; enq_egress_port = 0; enq_queue_id = 0;
-        enq_is_mcast = 0; enq_sof = 1; enq_eof = 1; enq_cell_num = 1;
-        recycle_req = 1; recycle_cell_addr = 0; recycle_queue_id = 0;
+        enq_req <= 1; enq_egress_port <= 0; enq_queue_id <= 0;
+        enq_is_mcast <= 0; enq_sof <= 1; enq_eof <= 1; enq_cell_num <= 1;
+        recycle_req <= 1; recycle_cell_addr <= 0; recycle_queue_id <= 0;
         @(posedge clk_core);
-        enq_req = 0; enq_sof = 0; enq_eof = 0;
-        recycle_req = 0;
+        enq_req <= 0; enq_sof <= 0; enq_eof <= 0;
+        recycle_req <= 0;
         wait_clks(5);
         // global should be same or +1 (enq adds, recycle FIFO pop later)
         // The key check: occ detects same_queue_evt for the alloc+free
@@ -4916,14 +4941,14 @@ module smmu_tb;
     endtask
 
     //------------------------------------------------------------------------
-    // 补充 Case: AGE-003 队列空时不老化
+    // čĄĽĺ Case: AGE-003 éĺçŠşćśä¸čĺ
     //------------------------------------------------------------------------
     task automatic test_AGE_003();
-        $display("\n===== AGE-003: 队列空时不老化 =====");
+        $display("\n===== AGE-003: éĺçŠşćśä¸čĺ =====");
         reset_dut();
         do_init();
-        cfg_in_aging_en = 1;
-        cfg_in_aging_timeout = 24'd5;
+        cfg_in_aging_en <= 1;
+        cfg_in_aging_timeout <= 24'd5;
         wait_clks(3);
         // Don't enqueue anything (queue stays empty)
         wait_clks(15);
@@ -4931,46 +4956,52 @@ module smmu_tb;
     endtask
 
     //------------------------------------------------------------------------
-    // 补充 Case: AGE-005 冲刷过程验证
+    // čĄĽĺ Case: AGE-005 ĺ˛ĺˇčżç¨éŞčŻ
     //------------------------------------------------------------------------
     task automatic test_AGE_005();
-        $display("\n===== AGE-005: 冲刷过程验证 =====");
+        logic age_seen;
+        logic irq_seen;
+
+        $display("\n===== AGE-005: ĺ˛ĺˇčżç¨éŞčŻ =====");
         reset_dut();
         do_init();
-        cfg_in_aging_en = 1;
-        cfg_in_aging_timeout = 24'd10;
+        cfg_in_aging_en <= 1;
+        cfg_in_aging_timeout <= 24'd10;
         wait_clks(3);
         // Enqueue 3 cells
         enqueue_frame(0, 0, 3);
         wait_clks(2);
         check("AGE-005a", "q_cell_cnt[0]=3 before flush", `LLE_PATH.q_cell_cnt_q[0] == 3);
-        // Wait for aging timeout + flush
-        wait_clks(50);
+        // Capture the non-sticky aging event while waiting for timeout + flush.
+        capture_aging_event(0, 60, age_seen, irq_seen);
         // After flush, queue should be empty
         check("AGE-005b", "q_cell_cnt[0]=0 after flush", `LLE_PATH.q_cell_cnt_q[0] == 0);
-        check("AGE-005c", "irq_aging was asserted", irq_aging == 1);
+        check("AGE-005c", "irq_aging was asserted", irq_seen == 1);
     endtask
 
     //------------------------------------------------------------------------
-    // 补充 Case: AGE-008 老化中断
+    // čĄĽĺ Case: AGE-008 čĺä¸­ć­
     //------------------------------------------------------------------------
     task automatic test_AGE_008();
-        $display("\n===== AGE-008: 老化中断 =====");
+        logic age_seen;
+        logic irq_seen;
+
+        $display("\n===== AGE-008: čĺä¸­ć­ =====");
         reset_dut();
         do_init();
-        cfg_in_aging_en = 1;
-        cfg_in_aging_timeout = 24'd10;
+        cfg_in_aging_en <= 1;
+        cfg_in_aging_timeout <= 24'd10;
         wait_clks(3);
         enqueue_cell(0, 0, 1, 1, 1);
-        wait_clks(20);
-        check("AGE-008a", "irq_aging=1", irq_aging == 1);
+        capture_aging_event(0, 30, age_seen, irq_seen);
+        check("AGE-008a", "irq_aging asserted", irq_seen == 1);
     endtask
 
     //------------------------------------------------------------------------
-    // 补充 Case: OCC-002 per-queue计数准确
+    // čĄĽĺ Case: OCC-002 per-queuečŽĄć°ĺçĄŽ
     //------------------------------------------------------------------------
     task automatic test_OCC_002();
-        $display("\n===== OCC-002: per-queue计数准确 =====");
+        $display("\n===== OCC-002: per-queuečŽĄć°ĺçĄŽ =====");
         reset_dut();
         do_init();
         // Enqueue 4 cells to qid=5 (port0/tc5)
@@ -4983,10 +5014,10 @@ module smmu_tb;
     endtask
 
     //------------------------------------------------------------------------
-    // 补充 Case: OCC-003 per-port计数准确
+    // čĄĽĺ Case: OCC-003 per-portčŽĄć°ĺçĄŽ
     //------------------------------------------------------------------------
     task automatic test_OCC_003();
-        $display("\n===== OCC-003: per-port计数准确 =====");
+        $display("\n===== OCC-003: per-portčŽĄć°ĺçĄŽ =====");
         reset_dut();
         do_init();
         // Port0: TC0 + TC3 = 2 cells each = 4 total
@@ -5003,14 +5034,14 @@ module smmu_tb;
     endtask
 
     //------------------------------------------------------------------------
-    // 补充 Case: OCC-004 静态池计数
+    // čĄĽĺ Case: OCC-004 éććą čŽĄć°
     //------------------------------------------------------------------------
     task automatic test_OCC_004();
-        $display("\n===== OCC-004: 静态池计数 =====");
+        $display("\n===== OCC-004: éććą čŽĄć° =====");
         reset_dut();
         do_init();
-        cfg_in_q_min_cell = 14'd10;  // static reserve = 10
-        cfg_in_q_max_cell = 14'd100;
+        cfg_in_q_min_cell <= 14'd10;  // static reserve = 10
+        cfg_in_q_max_cell <= 14'd100;
         wait_clks(3);
         // Enqueue 3 cells (all should go to static pool)
         for (int i = 0; i < 3; i++)
@@ -5020,10 +5051,10 @@ module smmu_tb;
     endtask
 
     //------------------------------------------------------------------------
-    // 补充 Case: OCC-006 溢出告警
+    // čĄĽĺ Case: OCC-006 ćş˘ĺşĺč­Ś
     //------------------------------------------------------------------------
     task automatic test_OCC_006();
-        $display("\n===== OCC-006: 溢出告警(逻辑验证) =====");
+        $display("\n===== OCC-006: ćş˘ĺşĺč­Ś(éťčžéŞčŻ) =====");
         reset_dut();
         do_init();
         // Under normal operation, overflow should not occur
@@ -5033,16 +5064,17 @@ module smmu_tb;
     endtask
 
     //------------------------------------------------------------------------
-    // 补充 Case: OCC-008 同拍alloc+free净不变
+    // čĄĽĺ Case: OCC-008 ĺćalloc+freeĺä¸ĺ
     //------------------------------------------------------------------------
     task automatic test_OCC_008();
-        $display("\n===== OCC-008: 同拍alloc+free净不变(conservation) =====");
+        logic [CNT_W-1:0] g_before;
+
+        $display("\n===== OCC-008: ĺćalloc+freeĺä¸ĺ(conservation) =====");
         reset_dut();
         do_init();
         // Enqueue and then setup scenario where alloc and free happen same cycle
         enqueue_cell(0, 0, 1, 1, 1);
         wait_clks(3);
-        logic [CNT_W-1:0] g_before;
         g_before = `OCC_PATH.global_used_q;
         // Conservation should always hold
         check("OCC-008a", "conservation: free+global=8192",
@@ -5050,10 +5082,10 @@ module smmu_tb;
     endtask
 
     //------------------------------------------------------------------------
-    // 补充 Case: CSR-002 统计输出延迟
+    // čĄĽĺ Case: CSR-002 çťčŽĄčžĺşĺťśčż
     //------------------------------------------------------------------------
     task automatic test_CSR_002();
-        $display("\n===== CSR-002: 统计输出延迟 =====");
+        $display("\n===== CSR-002: çťčŽĄčžĺşĺťśčż =====");
         reset_dut();
         do_init();
         enqueue_cell(0, 0, 1, 1, 1);
@@ -5066,38 +5098,39 @@ module smmu_tb;
     endtask
 
     //------------------------------------------------------------------------
-    // 补充 Case: CSR-003 标量→数组fanout
+    // čĄĽĺ Case: CSR-003 ć éâć°çťfanout
     //------------------------------------------------------------------------
     task automatic test_CSR_003();
-        $display("\n===== CSR-003: 标量→数组fanout =====");
+        logic all_same;
+
+        $display("\n===== CSR-003: ć éâć°çťfanout =====");
         reset_dut();
-        cfg_in_q_min_cell = 14'd77;
+        cfg_in_q_min_cell <= 14'd77;
         wait_clks(3);
         do_init();
         wait_clks(2);
         // All 33 queues should have same value
-        logic all_same;
         all_same = 1;
         for (int i = 0; i < QUEUE_NUM; i++) begin
             if (`CSR_PATH.cfg_q_min_cell[i] != 14'd77) all_same = 0;
         end
         check("CSR-003a", "all 33 cfg_q_min_cell = 77", all_same == 1);
-        cfg_in_q_min_cell = 14'd0;
+        cfg_in_q_min_cell <= 14'd0;
         wait_clks(3);
     endtask
 
     //------------------------------------------------------------------------
-    // 补充 Case: CSR-005 pause_tx计数
+    // čĄĽĺ Case: CSR-005 pause_txčŽĄć°
     //------------------------------------------------------------------------
     task automatic test_CSR_005();
-        $display("\n===== CSR-005: pause_tx计数 =====");
+        $display("\n===== CSR-005: pause_txčŽĄć° =====");
         reset_dut();
         do_init();
-        cfg_in_pause_en = 1;
-        cfg_in_port_pause_xoff = 14'd1;
-        cfg_in_port_pause_xon  = 14'd0;
-        cfg_in_global_pause_xoff = 14'd8000;
-        cfg_in_global_pause_xon  = 14'd7000;
+        cfg_in_pause_en <= 1;
+        cfg_in_port_pause_xoff <= 14'd1;
+        cfg_in_port_pause_xon <= 14'd0;
+        cfg_in_global_pause_xoff <= 14'd8000;
+        cfg_in_global_pause_xon <= 14'd7000;
         wait_clks(3);
         // Trigger PAUSE on port0
         enqueue_cell(0, 0, 1, 1, 1);
@@ -5108,10 +5141,10 @@ module smmu_tb;
     endtask
 
     //------------------------------------------------------------------------
-    // 补充 Case: CSR-006 告警中断聚合
+    // čĄĽĺ Case: CSR-006 ĺč­Śä¸­ć­čĺ
     //------------------------------------------------------------------------
     task automatic test_CSR_006();
-        $display("\n===== CSR-006: 告警中断聚合 =====");
+        $display("\n===== CSR-006: ĺč­Śä¸­ć­čĺ =====");
         reset_dut();
         do_init();
         // Normal operation: no alarm
@@ -5120,22 +5153,22 @@ module smmu_tb;
     endtask
 
     //------------------------------------------------------------------------
-    // 补充 Case: CSR-007 老化中断输出
+    // čĄĽĺ Case: CSR-007 čĺä¸­ć­čžĺş
     //------------------------------------------------------------------------
     task automatic test_CSR_007();
-        $display("\n===== CSR-007: 老化中断输出 =====");
+        $display("\n===== CSR-007: čĺä¸­ć­čžĺş =====");
         reset_dut();
         do_init();
-        cfg_in_aging_en = 0;
+        cfg_in_aging_en <= 0;
         wait_clks(3);
         check("CSR-007a", "irq_aging=0 (aging disabled)", irq_aging == 0);
     endtask
 
     //------------------------------------------------------------------------
-    // 补充 Case: LLE-002 enq不占SRAM读口时deq+enq并行
+    // čĄĽĺ Case: LLE-002 enqä¸ĺ SRAMčŻťĺŁćśdeq+enqĺšśčĄ
     //------------------------------------------------------------------------
     task automatic test_LLE_002();
-        $display("\n===== LLE-002: deq不需SRAM时deq+enq可并行 =====");
+        $display("\n===== LLE-002: deqä¸éSRAMćśdeq+enqĺŻĺšśčĄ =====");
         reset_dut();
         do_init();
         // Enqueue 2 cells (cnt=2 < 3, deq won't need SRAM)
@@ -5145,31 +5178,31 @@ module smmu_tb;
         wait_clks(2);
         // Simultaneous deq + enq
         @(posedge clk_core);
-        deq_req = 1; deq_queue_id = 0; deq_backpressure = 0;
-        enq_req = 1; enq_egress_port = 1; enq_queue_id = 0;
-        enq_is_mcast = 0; enq_sof = 1; enq_eof = 1; enq_cell_num = 1;
+        deq_req <= 1; deq_queue_id <= 0; deq_backpressure <= 0;
+        enq_req <= 1; enq_egress_port <= 1; enq_queue_id <= 0;
+        enq_is_mcast <= 0; enq_sof <= 1; enq_eof <= 1; enq_cell_num <= 1;
         @(negedge clk_core);
         check("LLE-002a", "deq_grant=1", `LLE_PATH.deq_grant == 1);
         check("LLE-002b", "enq_grant=1 (parallel)", `LLE_PATH.enq_grant == 1);
         @(posedge clk_core);
-        deq_req = 0; enq_req = 0; enq_sof = 0; enq_eof = 0;
+        deq_req <= 0; enq_req <= 0; enq_sof <= 0; enq_eof <= 0;
         wait_clks(3);
     endtask
 
     //------------------------------------------------------------------------
-    // 补充 Case: LLE-003 SRAM写relink
+    // čĄĽĺ Case: LLE-003 SRAMĺrelink
     //------------------------------------------------------------------------
     task automatic test_LLE_003();
-        $display("\n===== LLE-003: SRAM写relink =====");
+        $display("\n===== LLE-003: SRAMĺrelink =====");
         reset_dut();
         do_init();
-        // Enqueue 1st cell (head, cnt was 0 → no SRAM write)
+        // Enqueue 1st cell (head, cnt was 0 â no SRAM write)
         enqueue_cell(0, 0, 1, 0, 2);
         wait_clks(2);
-        // Enqueue 2nd cell (cnt=1 → relink: write old tail.next = new cell)
+        // Enqueue 2nd cell (cnt=1 â relink: write old tail.next = new cell)
         @(posedge clk_core);
-        enq_req = 1; enq_egress_port = 0; enq_queue_id = 0;
-        enq_is_mcast = 0; enq_sof = 0; enq_eof = 1; enq_cell_num = 2;
+        enq_req <= 1; enq_egress_port <= 0; enq_queue_id <= 0;
+        enq_is_mcast <= 0; enq_sof <= 0; enq_eof <= 1; enq_cell_num <= 2;
         @(negedge clk_core);
         // When enq_grant fires with cnt>=1, npr_w_en should be 1
         if (`LLE_PATH.enq_grant && (`LLE_PATH.q_cell_cnt_q[0] >= 1)) begin
@@ -5179,15 +5212,15 @@ module smmu_tb;
             check("LLE-003a", "enq conditions met", 1'b1);
         end
         @(posedge clk_core);
-        enq_req = 0; enq_eof = 0;
+        enq_req <= 0; enq_eof <= 0;
         wait_clks(2);
     endtask
 
     //------------------------------------------------------------------------
-    // 补充 Case: LLE-005 recycle FIFO满时阻塞push
+    // čĄĽĺ Case: LLE-005 recycle FIFOćťĄćśéťĺĄpush
     //------------------------------------------------------------------------
     task automatic test_LLE_005();
-        $display("\n===== LLE-005: recycle FIFO满时阻塞push =====");
+        $display("\n===== LLE-005: recycle FIFOćťĄćśéťĺĄpush =====");
         reset_dut();
         do_init();
         // Fill recycle FIFO (depth=8) by enqueueing 8 cells then recycling all
@@ -5197,18 +5230,18 @@ module smmu_tb;
         // Dequeue all
         for (int i = 0; i < 8; i++) begin
             @(posedge clk_core);
-            deq_req = 1; deq_queue_id = 0; deq_backpressure = 0;
+            deq_req <= 1; deq_queue_id <= 0; deq_backpressure <= 0;
         end
         @(posedge clk_core);
-        deq_req = 0;
+        deq_req <= 0;
         wait_clks(5);
         // Recycle 8 cells rapidly (FIFO should fill)
         for (int i = 0; i < 8; i++) begin
             @(posedge clk_core);
-            recycle_req = 1; recycle_cell_addr = i[ADDR_W-1:0]; recycle_queue_id = 0;
+            recycle_req <= 1; recycle_cell_addr <= i[ADDR_W-1:0]; recycle_queue_id <= 0;
         end
         @(posedge clk_core);
-        recycle_req = 0;
+        recycle_req <= 0;
         wait_clks(1);
         // Check FIFO state
         check("LLE-005a", "rcy_fifo either full or draining",
@@ -5217,37 +5250,37 @@ module smmu_tb;
     endtask
 
     //------------------------------------------------------------------------
-    // 补充 Case: BP-002 背压释放后恢复
+    // čĄĽĺ Case: BP-002 čĺéćžĺć˘ĺ¤
     //------------------------------------------------------------------------
     task automatic test_BP_002();
-        $display("\n===== BP-002: 背压释放后恢复 =====");
+        $display("\n===== BP-002: čĺéćžĺć˘ĺ¤ =====");
         reset_dut();
         do_init();
         enqueue_cell(2, 0, 1, 1, 1);
         wait_clks(2);
         // Backpressure port2
-        deq_backpressure = 4'b0100;
+        deq_backpressure <= 4'b0100;
         @(posedge clk_core);
-        deq_req = 1; deq_queue_id = 16; // port2/tc0
+        deq_req <= 1; deq_queue_id <= 16; // port2/tc0
         @(posedge clk_core);
-        deq_req = 0;
+        deq_req <= 0;
         @(posedge clk_core);
         check("BP-002a", "deq_cell_valid=0 (BP)", deq_cell_valid == 0);
         // Release
-        deq_backpressure = 0;
+        deq_backpressure <= 0;
         @(posedge clk_core);
-        deq_req = 1; deq_queue_id = 16;
+        deq_req <= 1; deq_queue_id <= 16;
         @(posedge clk_core);
-        deq_req = 0;
+        deq_req <= 0;
         @(posedge clk_core);
         check("BP-002b", "deq_cell_valid=1 (recovered)", deq_cell_valid == 1);
     endtask
 
     //------------------------------------------------------------------------
-    // 补充 Case: CORNER-002 最大帧(6 cell)
+    // čĄĽĺ Case: CORNER-002 ćĺ¤§ĺ¸§(6 cell)
     //------------------------------------------------------------------------
     task automatic test_CORNER_002();
-        $display("\n===== CORNER-002: 最大帧(6 cell = 1522B/256B) =====");
+        $display("\n===== CORNER-002: ćĺ¤§ĺ¸§(6 cell = 1522B/256B) =====");
         reset_dut();
         do_init();
         enqueue_frame(0, 0, 6);
@@ -5256,44 +5289,46 @@ module smmu_tb;
         // Dequeue all 6
         for (int i = 0; i < 6; i++) begin
             @(posedge clk_core);
-            deq_req = 1; deq_queue_id = 0; deq_backpressure = 0;
+            deq_req <= 1; deq_queue_id <= 0; deq_backpressure <= 0;
         end
         @(posedge clk_core);
-        deq_req = 0;
+        deq_req <= 0;
         wait_clks(5);
         check("CORNER-002b", "q_cell_cnt[0]=0 (all dequeued)", `LLE_PATH.q_cell_cnt_q[0] == 0);
     endtask
 
     //------------------------------------------------------------------------
-    // 补充 Case: CORNER-003 多播最大cell数(8)
+    // čĄĽĺ Case: CORNER-003 ĺ¤ć­ćĺ¤§cellć°(8)
     //------------------------------------------------------------------------
     task automatic test_CORNER_003();
-        $display("\n===== CORNER-003: 多播最大cell数(MAX_MC_CELLS=8) =====");
+        $display("\n===== CORNER-003: ĺ¤ć­ćĺ¤§cellć°(MAX_MC_CELLS=8) =====");
         reset_dut();
         do_init();
         // 8-cell multicast frame
         @(posedge clk_core);
-        enq_req = 1; enq_is_mcast = 1; enq_mcast_bitmap = 4'b0001;
-        enq_queue_id = 0; enq_egress_port = 0;
-        enq_sof = 1; enq_eof = 0; enq_cell_num = 8;
+        enq_req <= 1; enq_is_mcast <= 1; enq_mcast_bitmap <= 4'b0001;
+        enq_queue_id <= 0; enq_egress_port <= 0;
+        enq_sof <= 1; enq_eof <= 0; enq_cell_num <= 8;
         for (int i = 1; i < 7; i++) begin
             @(posedge clk_core);
-            enq_sof = 0; enq_eof = 0;
+            enq_sof <= 0; enq_eof <= 0;
         end
         @(posedge clk_core);
-        enq_eof = 1;
+        enq_eof <= 1;
         @(posedge clk_core);
-        enq_req = 0; enq_eof = 0; enq_is_mcast = 0;
+        enq_req <= 0; enq_eof <= 0; enq_is_mcast <= 0;
         wait_clks(3);
         check("CORNER-003a", "mc_ncell=8", `LLE_PATH.mc_ncell_q == 8);
         check("CORNER-003b", "mc_valid=1", `LLE_PATH.mc_valid_q == 1);
     endtask
 
     //------------------------------------------------------------------------
-    // 补充 Case: CORNER-004 所有队列同时非空
+    // čĄĽĺ Case: CORNER-004 ććéĺĺćśéçŠş
     //------------------------------------------------------------------------
     task automatic test_CORNER_004();
-        $display("\n===== CORNER-004: 所有32个单播队列同时非空 =====");
+        logic all_occupied;
+
+        $display("\n===== CORNER-004: ćć32ä¸Şĺć­éĺĺćśéçŠş =====");
         reset_dut();
         do_init();
         // Enqueue 1 cell to each of 32 unicast queues
@@ -5305,7 +5340,6 @@ module smmu_tb;
         end
         wait_clks(5);
         // Check all 32 queues non-empty
-        logic all_occupied;
         all_occupied = 1;
         for (int i = 0; i < PORT_NUM*TC_NUM; i++) begin
             if (q_empty[i] != 0) all_occupied = 0;
@@ -5314,10 +5348,10 @@ module smmu_tb;
     endtask
 
     //------------------------------------------------------------------------
-    // 补充 Case: RCY-003 回收FIFO满背压
+    // čĄĽĺ Case: RCY-003 ĺćśFIFOćťĄčĺ
     //------------------------------------------------------------------------
     task automatic test_RCY_003();
-        $display("\n===== RCY-003: 回收FIFO满背压 =====");
+        $display("\n===== RCY-003: ĺćśFIFOćťĄčĺ =====");
         reset_dut();
         do_init();
         // Enqueue 8 cells, dequeue all, then rapidly recycle to fill FIFO
@@ -5326,18 +5360,18 @@ module smmu_tb;
         wait_clks(3);
         for (int i = 0; i < 8; i++) begin
             @(posedge clk_core);
-            deq_req = 1; deq_queue_id = 0; deq_backpressure = 0;
+            deq_req <= 1; deq_queue_id <= 0; deq_backpressure <= 0;
         end
         @(posedge clk_core);
-        deq_req = 0;
+        deq_req <= 0;
         wait_clks(5);
         // Rapid recycle 8 cells (fills FIFO depth=8)
         for (int i = 0; i < 8; i++) begin
             @(posedge clk_core);
-            recycle_req = 1; recycle_cell_addr = i[ADDR_W-1:0]; recycle_queue_id = 0;
+            recycle_req <= 1; recycle_cell_addr <= i[ADDR_W-1:0]; recycle_queue_id <= 0;
         end
         @(posedge clk_core);
-        recycle_req = 0;
+        recycle_req <= 0;
         @(posedge clk_core);
         // If FIFO filled up, lle_free_grant should have gone 0 at some point
         // Check: after rapid push, fifo_cnt should be > 0
@@ -5346,28 +5380,28 @@ module smmu_tb;
     endtask
 
     //------------------------------------------------------------------------
-    // 补充 Case: AGE-006 多播队列冲刷
+    // čĄĽĺ Case: AGE-006 ĺ¤ć­éĺĺ˛ĺˇ
     //------------------------------------------------------------------------
     task automatic test_AGE_006();
-        $display("\n===== AGE-006: 多播队列冲刷(MC_QID) =====");
+        $display("\n===== AGE-006: ĺ¤ć­éĺĺ˛ĺˇ(MC_QID) =====");
         reset_dut();
         do_init();
-        cfg_in_aging_en = 1;
-        cfg_in_aging_timeout = 24'd10;
+        cfg_in_aging_en <= 1;
+        cfg_in_aging_timeout <= 24'd10;
         wait_clks(3);
         // Enqueue multicast (occupies MC_QID=32)
         @(posedge clk_core);
-        enq_req = 1; enq_is_mcast = 1; enq_mcast_bitmap = 4'b0001;
-        enq_queue_id = 0; enq_egress_port = 0;
-        enq_sof = 1; enq_eof = 1; enq_cell_num = 1;
+        enq_req <= 1; enq_is_mcast <= 1; enq_mcast_bitmap <= 4'b0001;
+        enq_queue_id <= 0; enq_egress_port <= 0;
+        enq_sof <= 1; enq_eof <= 1; enq_cell_num <= 1;
         @(posedge clk_core);
-        enq_req = 0; enq_sof = 0; enq_eof = 0; enq_is_mcast = 0;
+        enq_req <= 0; enq_sof <= 0; enq_eof <= 0; enq_is_mcast <= 0;
         wait_clks(2);
         check("AGE-006a", "mc_valid=1 before flush", `LLE_PATH.mc_valid_q == 1);
         // Force aging on MC_QID (all queues get force)
-        cfg_in_age_force_all = 1;
+        cfg_in_age_force_all <= 1;
         wait_clks(50); // wait for flush to complete
-        cfg_in_age_force_all = 0;
+        cfg_in_age_force_all <= 0;
         wait_clks(10);
         // After flush, MC_QID should be cleared + multicast slot cleared
         check("AGE-006b", "q_cell_cnt[32]=0 after MC flush", `LLE_PATH.q_cell_cnt_q[MC_QID] == 0);
@@ -5375,14 +5409,14 @@ module smmu_tb;
     endtask
 
     //------------------------------------------------------------------------
-    // 补充 Case: AGE-007 RR仲裁公平性
+    // čĄĽĺ Case: AGE-007 RRäť˛čŁĺŹĺšłć§
     //------------------------------------------------------------------------
     task automatic test_AGE_007();
-        $display("\n===== AGE-007: RR仲裁公平性 =====");
+        $display("\n===== AGE-007: RRäť˛čŁĺŹĺšłć§ =====");
         reset_dut();
         do_init();
-        cfg_in_aging_en = 1;
-        cfg_in_aging_timeout = 24'd10;
+        cfg_in_aging_en <= 1;
+        cfg_in_aging_timeout <= 24'd10;
         wait_clks(3);
         // Enqueue to 2 different queues (qid=0, qid=1)
         enqueue_cell(0, 0, 1, 1, 1);
@@ -5397,10 +5431,10 @@ module smmu_tb;
     endtask
 
     //------------------------------------------------------------------------
-    // 补充 Case: OCC-007 下溢告警
+    // čĄĽĺ Case: OCC-007 ä¸ćş˘ĺč­Ś
     //------------------------------------------------------------------------
     task automatic test_OCC_007();
-        $display("\n===== OCC-007: 下溢告警(逻辑验证) =====");
+        $display("\n===== OCC-007: ä¸ćş˘ĺč­Ś(éťčžéŞčŻ) =====");
         reset_dut();
         do_init();
         // Under normal operation, no underflow
@@ -5412,10 +5446,10 @@ module smmu_tb;
     endtask
 
     //------------------------------------------------------------------------
-    // 补充 Case: LLE-004 pend流水回填
+    // čĄĽĺ Case: LLE-004 pendćľć°´ĺĺĄŤ
     //------------------------------------------------------------------------
     task automatic test_LLE_004();
-        $display("\n===== LLE-004: pend流水回填 =====");
+        $display("\n===== LLE-004: pendćľć°´ĺĺĄŤ =====");
         reset_dut();
         do_init();
         // Enqueue 4 cells to get cnt>=3
@@ -5423,100 +5457,833 @@ module smmu_tb;
         wait_clks(3);
         // Dequeue triggers SRAM read (deq_pend_q will be set)
         @(posedge clk_core);
-        deq_req = 1; deq_queue_id = 0; deq_backpressure = 0;
+        deq_req <= 1; deq_queue_id <= 0; deq_backpressure <= 0;
         @(posedge clk_core);
-        deq_req = 0;
+        deq_req <= 0;
         // After 1 cycle, pend should process and refill next_ph/pt
         wait_clks(2);
         // Dequeue again - should still work (prefetch valid)
         @(posedge clk_core);
-        deq_req = 1; deq_queue_id = 0;
+        deq_req <= 1; deq_queue_id <= 0;
         @(posedge clk_core);
-        deq_req = 0;
+        deq_req <= 0;
         @(posedge clk_core);
         check("LLE-004a", "deq_cell_valid=1 (prefetch worked)", deq_cell_valid == 1);
         // Continue to empty
         @(posedge clk_core);
-        deq_req = 1; deq_queue_id = 0;
+        deq_req <= 1; deq_queue_id <= 0;
         @(posedge clk_core);
-        deq_req = 1; deq_queue_id = 0;
+        deq_req <= 1; deq_queue_id <= 0;
         @(posedge clk_core);
-        deq_req = 0;
+        deq_req <= 0;
         wait_clks(3);
         check("LLE-004b", "q_cell_cnt[0]=0 (all dequeued)", `LLE_PATH.q_cell_cnt_q[0] == 0);
     endtask
 
     //------------------------------------------------------------------------
-    // 补充 Case: BP-004 背压+多播splice
+    // čĄĽĺ Case: BP-004 čĺ+ĺ¤ć­splice
     //------------------------------------------------------------------------
     task automatic test_BP_004();
-        $display("\n===== BP-004: 背压对多播splice同样生效 =====");
+        $display("\n===== BP-004: čĺĺŻšĺ¤ć­spliceĺć ˇçć =====");
         reset_dut();
         do_init();
         // Multicast to port0
         @(posedge clk_core);
-        enq_req = 1; enq_is_mcast = 1; enq_mcast_bitmap = 4'b0001;
-        enq_queue_id = 0; enq_egress_port = 0;
-        enq_sof = 1; enq_eof = 1; enq_cell_num = 1;
+        enq_req <= 1; enq_is_mcast <= 1; enq_mcast_bitmap <= 4'b0001;
+        enq_queue_id <= 0; enq_egress_port <= 0;
+        enq_sof <= 1; enq_eof <= 1; enq_cell_num <= 1;
         @(posedge clk_core);
-        enq_req = 0; enq_sof = 0; enq_eof = 0; enq_is_mcast = 0;
+        enq_req <= 0; enq_sof <= 0; enq_eof <= 0; enq_is_mcast <= 0;
         wait_clks(2);
         // Backpressure port0
-        deq_backpressure = 4'b0001;
+        deq_backpressure <= 4'b0001;
         @(posedge clk_core);
-        deq_req = 1; deq_queue_id = 0; // carry queue for port0
+        deq_req <= 1; deq_queue_id <= 0; // carry queue for port0
         @(posedge clk_core);
-        deq_req = 0;
+        deq_req <= 0;
         @(posedge clk_core);
         check("BP-004a", "deq_cell_valid=0 (BP blocks mcast splice)", deq_cell_valid == 0);
         // Release BP
-        deq_backpressure = 0;
+        deq_backpressure <= 0;
         @(posedge clk_core);
-        deq_req = 1; deq_queue_id = 0;
+        deq_req <= 1; deq_queue_id <= 0;
         @(posedge clk_core);
-        deq_req = 0;
+        deq_req <= 0;
         @(posedge clk_core);
         check("BP-004b", "deq_cell_valid=1 (BP released)", deq_cell_valid == 1);
     endtask
 
     //------------------------------------------------------------------------
-    // 补充 Case: DROP-008 入队前预判整帧丢弃(从SOF起0 cell挂链)
+    // čĄĽĺ Case: DROP-008 ĺĽéĺé˘ĺ¤ć´ĺ¸§ä¸˘ĺź(äťSOFčľˇ0 cellćéž)
     //------------------------------------------------------------------------
     task automatic test_DROP_008();
-        $display("\n===== DROP-008: 入队前预判整帧丢弃 =====");
+        $display("\n===== DROP-008: ĺĽéĺé˘ĺ¤ć´ĺ¸§ä¸˘ĺź =====");
         reset_dut();
         do_init();
-        cfg_in_q_max_cell = 14'd3;
-        cfg_in_port_max   = 14'd3;
-        cfg_in_global_max = 14'd3;
-        cfg_in_q_min_cell = 14'd0;
+        cfg_in_q_max_cell <= 14'd3;
+        cfg_in_port_max <= 14'd3;
+        cfg_in_global_max <= 14'd3;
+        cfg_in_q_min_cell <= 14'd0;
         wait_clks(3);
         // SOF with cell_num=5 > max=3: predict_drop should trigger
         @(posedge clk_core);
-        enq_req = 1; enq_egress_port = 0; enq_queue_id = 0;
-        enq_is_mcast = 0; enq_sof = 1; enq_eof = 0; enq_cell_num = 5;
+        enq_req <= 1; enq_egress_port <= 0; enq_queue_id <= 0;
+        enq_is_mcast <= 0; enq_sof <= 1; enq_eof <= 0; enq_cell_num <= 5;
         @(negedge clk_core);
         check("DROP-008a", "enq_predict_drop=1", enq_predict_drop == 1);
         @(posedge clk_core);
-        enq_sof = 0;
+        enq_sof <= 0;
         @(posedge clk_core);
         @(posedge clk_core);
         @(posedge clk_core);
-        enq_eof = 1;
+        enq_eof <= 1;
         @(posedge clk_core);
-        enq_req = 0; enq_eof = 0;
+        enq_req <= 0; enq_eof <= 0;
         wait_clks(2);
         // No cells should have been enqueued (0 cells linked)
         check("DROP-008b", "q_cell_cnt[0]=0 (0 cells linked)", `LLE_PATH.q_cell_cnt_q[0] == 0);
-        cfg_in_q_max_cell = 14'd8192;
-        cfg_in_port_max   = 14'd8192;
-        cfg_in_global_max = 14'd8192;
+        cfg_in_q_max_cell <= 14'd8192;
+        cfg_in_port_max <= 14'd8192;
+        cfg_in_global_max <= 14'd8192;
         wait_clks(3);
     endtask
 
     //========================================================================
-    // 主流程: 按序执行所有测试
+    // ä¸ťćľç¨: ćĺşć§čĄćććľčŻ
     //========================================================================
+//========================================================================
+    // ===== V1.2 NEW/FIX supplemental cases =====
+    //========================================================================
+
+    task automatic test_INIT_006();
+        logic gnt_seen;
+        $display("\n===== INIT-006: build 期间各类请求全屏蔽 =====");
+        reset_dut();
+        @(posedge clk_core);
+        init_start <= 1;
+        @(posedge clk_core);
+        init_start <= 0;
+        @(posedge clk_core);
+        enq_req <= 1; enq_sof <= 1; enq_eof <= 1; enq_egress_port <= 0; enq_queue_id <= 0;
+        deq_req <= 1; deq_queue_id <= 0;
+        recycle_req <= 1; recycle_cell_addr <= 5; recycle_queue_id <= 0;
+        mcast_recycle_req <= 1; mcast_recycle_queue_id <= 0;
+        gnt_seen = 0;
+        for (int i = 0; i < 10; i++) begin
+            @(posedge clk_core);
+            if (init_done == 0)
+                gnt_seen |= `LLE_PATH.enq_grant | `LLE_PATH.deq_grant | `LLE_PATH.rcy_grant;
+        end
+        enq_req <= 0; enq_sof <= 0; enq_eof <= 0;
+        deq_req <= 0; recycle_req <= 0; mcast_recycle_req <= 0;
+        check("INIT-006a", "build期内 enq/deq/rcy grant 恒0", gnt_seen == 0);
+        wait(init_done == 1);
+        wait_clks(2);
+        check("INIT-006b", "init_done后 enq_ready=1", enq_ready == 1);
+    endtask
+
+    task automatic test_INIT_007();
+        $display("\n===== INIT-007: 建链中途复位再启 =====");
+        reset_dut();
+        @(posedge clk_core);
+        init_start <= 1;
+        @(posedge clk_core);
+        init_start <= 0;
+        wait_clks(20);
+        check("INIT-007a", "build 进行中 init_done=0", init_done == 0);
+        rst_core_n = 0;
+        repeat(3) @(posedge clk_core);
+        rst_core_n = 1;
+        @(posedge clk_core);
+        do_init();
+        wait_clks(3);
+        check("INIT-007b", "重建后 free_cnt=8192", `LLE_PATH.free_cnt_q == CELL_NUM);
+        check("INIT-007c", "重建后 init_done=1", init_done == 1);
+    endtask
+
+    task automatic test_UNI_DEQ_008();
+        logic valid_all;
+        $display("\n===== UNI_DEQ-008: deq_pend_same 自环连续出队 =====");
+        reset_dut();
+        do_init();
+        enqueue_frame(0, 0, 6);
+        wait_clks(3);
+        @(posedge clk_core);
+        deq_req <= 1; deq_queue_id <= 0; deq_backpressure <= 0;
+        @(posedge clk_core);
+        valid_all = 1;
+        for (int i = 0; i < 6; i++) begin
+            @(posedge clk_core);
+            if (!deq_cell_valid) valid_all = 0;
+            if (i == 4) deq_req <= 0;
+        end
+        check("UNI_DEQ-008a", "连续出队全 valid(pend_same bypass 无 bubble)", valid_all == 1);
+        check("UNI_DEQ-008b", "q_cell_cnt[0]=0", `LLE_PATH.q_cell_cnt_q[0] == 0);
+    endtask
+
+    task automatic test_MC_ENQ_008();
+        $display("\n===== MC_ENQ-008: 多目的端口交织 splice =====");
+        reset_dut();
+        do_init();
+        enqueue_frame(1, 0, 1);  wait_clks(1);
+        enqueue_frame(2, 0, 1);  wait_clks(1);
+        enqueue_frame(2, 0, 1);  wait_clks(1);
+        enqueue_frame(3, 0, 1);  wait_clks(1);
+        enqueue_frame(3, 0, 1);  wait_clks(1);
+        enqueue_frame(3, 0, 1);  wait_clks(2);
+        @(posedge clk_core);
+        enq_req <= 1; enq_is_mcast <= 1; enq_mcast_bitmap <= 4'b1111;
+        enq_queue_id <= 0; enq_egress_port <= 0;
+        enq_sof <= 1; enq_eof <= 0; enq_cell_num <= 2;
+        @(posedge clk_core);
+        enq_sof <= 0; enq_eof <= 1;
+        @(posedge clk_core);
+        enq_req <= 0; enq_eof <= 0; enq_is_mcast <= 0;
+        wait_clks(2);
+        check("MC_ENQ-008a", "mc_pend_uni[0]=0", `LLE_PATH.mc_pend_uni_q[0] == 0);
+        check("MC_ENQ-008b", "mc_pend_uni[1]=1", `LLE_PATH.mc_pend_uni_q[1] == 1);
+        check("MC_ENQ-008c", "mc_pend_uni[2]=2", `LLE_PATH.mc_pend_uni_q[2] == 2);
+        check("MC_ENQ-008d", "mc_pend_uni[3]=3", `LLE_PATH.mc_pend_uni_q[3] == 3);
+        @(posedge clk_core);
+        deq_req <= 1; deq_queue_id <= 0; deq_backpressure <= 0;
+        @(posedge clk_core);
+        deq_req <= 0;
+        @(posedge clk_core);
+        check("MC_ENQ-008e", "port0 直接 splice deq_cell_valid=1", deq_cell_valid == 1);
+    endtask
+
+    task automatic test_MC_ENQ_009();
+        logic [CNT_W-1:0] bl_before;
+        $display("\n===== MC_ENQ-009: SOF快照与backlog同拍一致性 =====");
+        reset_dut();
+        do_init();
+        enqueue_frame(0, 0, 1);
+        wait_clks(2);
+        bl_before = `LLE_PATH.q_uni_pkt_backlog_q[0];
+        check("MC_ENQ-009a", "backlog[0]=1 预置", bl_before == 1);
+        @(posedge clk_core);
+        enq_req <= 1; enq_is_mcast <= 1; enq_mcast_bitmap <= 4'b0001;
+        enq_queue_id <= 0; enq_egress_port <= 0;
+        enq_sof <= 1; enq_eof <= 1; enq_cell_num <= 1;
+        @(posedge clk_core);
+        enq_req <= 0; enq_sof <= 0; enq_eof <= 0; enq_is_mcast <= 0;
+        wait_clks(2);
+        check("MC_ENQ-009b", "mc_pend_uni[0]=快照backlog=1", `LLE_PATH.mc_pend_uni_q[0] == 1);
+    endtask
+
+    task automatic test_MC_ENQ_010();
+        $display("\n===== MC_ENQ-010: 多端口部分读完部分未完 =====");
+        reset_dut();
+        do_init();
+        @(posedge clk_core);
+        enq_req <= 1; enq_is_mcast <= 1; enq_mcast_bitmap <= 4'b0011;
+        enq_queue_id <= 0; enq_egress_port <= 0;
+        enq_sof <= 1; enq_eof <= 0; enq_cell_num <= 2;
+        @(posedge clk_core);
+        enq_sof <= 0; enq_eof <= 1;
+        @(posedge clk_core);
+        enq_req <= 0; enq_eof <= 0; enq_is_mcast <= 0;
+        wait_clks(2);
+        for (int i = 0; i < 2; i++) begin
+            @(posedge clk_core);
+            deq_req <= 1; deq_queue_id <= 0; deq_backpressure <= 0;
+        end
+        @(posedge clk_core);
+        deq_req <= 0;
+        wait_clks(2);
+        check("MC_ENQ-010a", "mc_rd_done[0]=1 (port0读完)", `LLE_PATH.mc_rd_done_q[0] == 1);
+        check("MC_ENQ-010b", "mc_rd_done[1]=0 (port1未读)", `LLE_PATH.mc_rd_done_q[1] == 0);
+        check("MC_ENQ-010c", "mc_valid=1 (未全read不释放)", `LLE_PATH.mc_valid_q == 1);
+    endtask
+
+    task automatic test_MC_ENQ_011();
+        $display("\n===== MC_ENQ-011: 单cell多播 SOF&EOF 同拍 =====");
+        reset_dut();
+        do_init();
+        @(posedge clk_core);
+        enq_req <= 1; enq_is_mcast <= 1; enq_mcast_bitmap <= 4'b0001;
+        enq_queue_id <= 0; enq_egress_port <= 0;
+        enq_sof <= 1; enq_eof <= 1; enq_cell_num <= 1;
+        @(posedge clk_core);
+        enq_req <= 0; enq_sof <= 0; enq_eof <= 0; enq_is_mcast <= 0;
+        wait_clks(2);
+        check("MC_ENQ-011a", "mc_ncell=1", `LLE_PATH.mc_ncell_q == 1);
+        @(posedge clk_core);
+        deq_req <= 1; deq_queue_id <= 0; deq_backpressure <= 0;
+        @(posedge clk_core);
+        deq_req <= 0;
+        @(posedge clk_core);
+        check("MC_ENQ-011b", "deq_pkt_head=1", deq_pkt_head == 1);
+        check("MC_ENQ-011c", "deq_pkt_tail=1", deq_pkt_tail == 1);
+    endtask
+
+    task automatic test_DROP_009();
+        $display("\n===== DROP-009: predict 与逐cell drop 口径 =====");
+        reset_dut();
+        do_init();
+        cfg_in_q_max_cell <= 14'd100;
+        cfg_in_port_max <= 14'd100;
+        cfg_in_global_max <= 14'd3;
+        cfg_in_q_min_cell <= 14'd0;
+        wait_clks(3);
+        enqueue_frame(1, 0, 2);
+        wait_clks(2);
+        @(posedge clk_core);
+        enq_req <= 1; enq_egress_port <= 0; enq_queue_id <= 0;
+        enq_is_mcast <= 0; enq_sof <= 1; enq_eof <= 0; enq_cell_num <= 1;
+        @(negedge clk_core);
+        check("DROP-009a", "predict_drop=0 (1 cell 可放)", enq_predict_drop == 0);
+        @(posedge clk_core);
+        enq_eof <= 1;
+        @(posedge clk_core);
+        enq_req <= 0; enq_sof <= 0; enq_eof <= 0;
+        wait_clks(3);
+        check("DROP-009b", "守恒 free+global=8192",
+              (`OCC_PATH.free_count_q + `OCC_PATH.global_used_q) == CELL_NUM);
+        cfg_in_q_max_cell <= 14'd8192;
+        cfg_in_port_max <= 14'd8192;
+        cfg_in_global_max <= 14'd8192;
+        wait_clks(3);
+    endtask
+
+    task automatic test_DROP_010();
+        $display("\n===== DROP-010: predict=1 保守多丢(SOF锁整帧丢) =====");
+        reset_dut();
+        do_init();
+        cfg_in_q_max_cell <= 14'd2;
+        cfg_in_port_max <= 14'd2;
+        cfg_in_global_max <= 14'd2;
+        cfg_in_q_min_cell <= 14'd0;
+        wait_clks(3);
+        @(posedge clk_core);
+        enq_req <= 1; enq_egress_port <= 0; enq_queue_id <= 0;
+        enq_is_mcast <= 0; enq_sof <= 1; enq_eof <= 0; enq_cell_num <= 5;
+        @(negedge clk_core);
+        check("DROP-010a", "predict_drop=1", enq_predict_drop == 1);
+        @(posedge clk_core);
+        enq_sof <= 0;
+        @(posedge clk_core);
+        enq_eof <= 1;
+        @(posedge clk_core);
+        enq_req <= 0; enq_eof <= 0;
+        wait_clks(2);
+        check("DROP-010b", "q_cell_cnt[0]=0 (整帧丢, 0挂链)", `LLE_PATH.q_cell_cnt_q[0] == 0);
+        cfg_in_q_max_cell <= 14'd8192;
+        cfg_in_port_max <= 14'd8192;
+        cfg_in_global_max <= 14'd8192;
+        wait_clks(3);
+    endtask
+
+    task automatic test_DROP_011();
+        $display("\n===== DROP-011: 三级 max 同时命中且非静态 =====");
+        reset_dut();
+        do_init();
+        cfg_in_q_max_cell <= 14'd1;
+        cfg_in_port_max <= 14'd1;
+        cfg_in_global_max <= 14'd1;
+        cfg_in_q_min_cell <= 14'd0;
+        wait_clks(3);
+        enqueue_cell(0, 0, 1, 1, 1);
+        wait_clks(2);
+        @(posedge clk_core);
+        enq_req <= 1; enq_egress_port <= 0; enq_queue_id <= 0;
+        enq_is_mcast <= 0; enq_sof <= 1; enq_eof <= 1; enq_cell_num <= 1;
+        @(posedge clk_core);
+        enq_req <= 0; enq_sof <= 0; enq_eof <= 0;
+        @(posedge clk_core);
+        check("DROP-011a", "alloc_drop_ind=1", alloc_drop_ind == 1);
+        check("DROP-011b", "q_max_reached[0]=1", q_max_reached[0] == 1);
+        check("DROP-011c", "port_max_reached[0]=1", port_max_reached[0] == 1);
+        check("DROP-011d", "global_max_reached=1", global_max_reached == 1);
+        cfg_in_q_max_cell <= 14'd8192;
+        cfg_in_port_max <= 14'd8192;
+        cfg_in_global_max <= 14'd8192;
+        wait_clks(3);
+    endtask
+
+    task automatic test_PAUSE_006();
+        $display("\n===== PAUSE-006: 端口回落但全局未回落时不撤销 =====");
+        reset_dut();
+        do_init();
+        cfg_in_pause_en <= 1;
+        cfg_in_port_pause_xoff <= 14'd2;
+        cfg_in_port_pause_xon  <= 14'd1;
+        cfg_in_global_pause_xoff <= 14'd3;
+        cfg_in_global_pause_xon  <= 14'd3;
+        wait_clks(3);
+        enqueue_cell(0, 0, 1, 1, 1); wait_clks(1);
+        enqueue_cell(0, 1, 1, 1, 1); wait_clks(1);
+        enqueue_cell(1, 0, 1, 1, 1); wait_clks(3);
+        check("PAUSE-006a", "pause_req[0]=1", pause_req[0] == 1);
+        @(posedge clk_core); deq_req <= 1; deq_queue_id <= 0; deq_backpressure <= 0;
+        @(posedge clk_core); deq_req <= 1; deq_queue_id <= 1;
+        @(posedge clk_core); deq_req <= 0;
+        wait_clks(3);
+        check("PAUSE-006b", "pause_req[0]保持1(全局未回落)", pause_req[0] == 1);
+    endtask
+
+    task automatic test_PFC_005();
+        $display("\n===== PFC-005: 多端口多TC独立PFC =====");
+        reset_dut();
+        do_init();
+        cfg_in_pfc_en <= 1;
+        cfg_in_pfc_xoff <= 14'd1;
+        cfg_in_pfc_xon <= 14'd1;
+        wait_clks(3);
+        enqueue_cell(0, 0, 1, 1, 1); wait_clks(1);
+        enqueue_cell(1, 3, 1, 1, 1); wait_clks(3);
+        check("PFC-005a", "pfc_req[0][0]=1", pfc_req[0][0] == 1);
+        check("PFC-005b", "pfc_req[1][3]=1", pfc_req[1][3] == 1);
+        check("PFC-005c", "pfc_req[0][1]=0 (无串扰)", pfc_req[0][1] == 0);
+        check("PFC-005d", "pfc_req[2][0]=0 (无串扰)", pfc_req[2][0] == 0);
+    endtask
+
+    task automatic test_RCY_007();
+        logic onehot_ok;
+        $display("\n===== RCY-007: 三源 push 优先级/onehot =====");
+        reset_dut();
+        do_init();
+        enqueue_frame(0, 0, 3);
+        wait_clks(3);
+        for (int i = 0; i < 3; i++) begin
+            @(posedge clk_core); deq_req <= 1; deq_queue_id <= 0; deq_backpressure <= 0;
+        end
+        @(posedge clk_core); deq_req <= 0;
+        wait_clks(3);
+        onehot_ok = 1;
+        for (int i = 0; i < 3; i++) begin
+            @(posedge clk_core);
+            recycle_req <= 1; recycle_cell_addr <= i[ADDR_W-1:0]; recycle_queue_id <= 0;
+            @(negedge clk_core);
+            if ((`LLE_PATH.ext_free_push + `LLE_PATH.mc_rel_push + `LLE_PATH.agf_push) > 1)
+                onehot_ok = 0;
+        end
+        @(posedge clk_core); recycle_req <= 0;
+        check("RCY-007a", "每拍最多1个 push 源(onehot0)", onehot_ok == 1);
+        wait_clks(5);
+    endtask
+
+    task automatic test_RCY_008();
+        $display("\n===== RCY-008: 单播回收与多播还链交替(ext优先) =====");
+        reset_dut();
+        do_init();
+        @(posedge clk_core);
+        enq_req <= 1; enq_is_mcast <= 1; enq_mcast_bitmap <= 4'b0001;
+        enq_queue_id <= 0; enq_egress_port <= 0;
+        enq_sof <= 1; enq_eof <= 0; enq_cell_num <= 2;
+        @(posedge clk_core);
+        enq_sof <= 0; enq_eof <= 1;
+        @(posedge clk_core);
+        enq_req <= 0; enq_eof <= 0; enq_is_mcast <= 0;
+        wait_clks(2);
+        for (int i = 0; i < 2; i++) begin
+            @(posedge clk_core); deq_req <= 1; deq_queue_id <= 0; deq_backpressure <= 0;
+        end
+        @(posedge clk_core); deq_req <= 0;
+        wait_clks(2);
+        @(posedge clk_core);
+        mcast_recycle_req <= 1; mcast_recycle_queue_id <= 0;
+        @(posedge clk_core);
+        mcast_recycle_req <= 0;
+        wait_clks(1);
+        @(posedge clk_core);
+        recycle_req <= 1; recycle_cell_addr <= 100; recycle_queue_id <= 0;
+        @(posedge clk_core);
+        recycle_req <= 0;
+        wait_clks(15);
+        check("RCY-008a", "mc_valid=0 (最终释放)", `LLE_PATH.mc_valid_q == 0);
+        check("RCY-008b", "守恒成立",
+              (`OCC_PATH.free_count_q + `OCC_PATH.global_used_q) == CELL_NUM);
+    endtask
+
+    task automatic test_RCY_009();
+        $display("\n===== RCY-009: 回收/出队同拍触发max回落 =====");
+        reset_dut();
+        do_init();
+        cfg_in_q_max_cell <= 14'd2;
+        cfg_in_q_min_cell <= 14'd0;
+        wait_clks(3);
+        enqueue_frame(0, 0, 2);
+        wait_clks(3);
+        check("RCY-009a", "q_max_reached[0]=1", q_max_reached[0] == 1);
+        @(posedge clk_core); deq_req <= 1; deq_queue_id <= 0; deq_backpressure <= 0;
+        @(posedge clk_core); deq_req <= 0;
+        wait_clks(3);
+        check("RCY-009b", "q_max_reached[0]=0 (回落)", q_max_reached[0] == 0);
+        cfg_in_q_max_cell <= 14'd8192;
+        wait_clks(3);
+    endtask
+
+    task automatic test_AGE_010();
+        logic age_seen, irq_seen;
+        $display("\n===== AGE-010: 冲刷与背靠背读写抢SRAM读口 =====");
+        reset_dut();
+        do_init();
+        cfg_in_aging_en <= 1;
+        cfg_in_aging_timeout <= 24'd15;
+        wait_clks(3);
+        enqueue_frame(0, 0, 5);
+        wait_clks(1);
+        enqueue_frame(1, 0, 5);
+        wait_clks(2);
+        fork
+            begin
+                for (int i = 0; i < 60; i++) begin
+                    @(posedge clk_core); deq_req <= 1; deq_queue_id <= 8; deq_backpressure <= 0;
+                end
+                @(posedge clk_core); deq_req <= 0;
+            end
+            begin
+                capture_aging_event(0, 70, age_seen, irq_seen);
+            end
+        join
+        wait_clks(20);
+        check("AGE-010a", "qid0 最终冲刷完 q_cell_cnt[0]=0", `LLE_PATH.q_cell_cnt_q[0] == 0);
+    endtask
+
+    task automatic test_AGE_011();
+        $display("\n===== AGE-011: 冲刷MC_QID与mc_rel walk冲突 =====");
+        reset_dut();
+        do_init();
+        cfg_in_aging_en <= 1;
+        cfg_in_aging_timeout <= 24'd10000;
+        wait_clks(3);
+        @(posedge clk_core);
+        enq_req <= 1; enq_is_mcast <= 1; enq_mcast_bitmap <= 4'b0001;
+        enq_queue_id <= 0; enq_egress_port <= 0;
+        enq_sof <= 1; enq_eof <= 0; enq_cell_num <= 2;
+        @(posedge clk_core);
+        enq_sof <= 0; enq_eof <= 1;
+        @(posedge clk_core);
+        enq_req <= 0; enq_eof <= 0; enq_is_mcast <= 0;
+        wait_clks(2);
+        cfg_in_age_force_all <= 1;
+        wait_clks(60);
+        cfg_in_age_force_all <= 0;
+        wait_clks(10);
+        check("AGE-011a", "mc_valid=0 (冲刷清槽)", `LLE_PATH.mc_valid_q == 0);
+        check("AGE-011b", "q_cell_cnt[32]=0", `LLE_PATH.q_cell_cnt_q[MC_QID] == 0);
+        check("AGE-011c", "守恒成立(无双还链)",
+              (`OCC_PATH.free_count_q + `OCC_PATH.global_used_q) == CELL_NUM);
+    endtask
+
+    task automatic test_AGE_012();
+        $display("\n===== AGE-012: RR 指针回绕(wrap-around) =====");
+        reset_dut();
+        do_init();
+        cfg_in_aging_en <= 1;
+        cfg_in_aging_timeout <= 24'd10;
+        wait_clks(3);
+        enqueue_cell(0, 0, 1, 1, 1);
+        wait_clks(1);
+        @(posedge clk_core);
+        enq_req <= 1; enq_is_mcast <= 1; enq_mcast_bitmap <= 4'b0001;
+        enq_queue_id <= 0; enq_egress_port <= 0;
+        enq_sof <= 1; enq_eof <= 1; enq_cell_num <= 1;
+        @(posedge clk_core);
+        enq_req <= 0; enq_sof <= 0; enq_eof <= 0; enq_is_mcast <= 0;
+        wait_clks(80);
+        check("AGE-012a", "q_cell_cnt[0]=0 (flushed)", `LLE_PATH.q_cell_cnt_q[0] == 0);
+        check("AGE-012b", "MC 槽已释放", `LLE_PATH.mc_valid_q == 0);
+    endtask
+
+    task automatic test_AGE_013();
+        logic busy_seen;
+        $display("\n===== AGE-013: 冲刷进行中重入屏蔽 =====");
+        reset_dut();
+        do_init();
+        cfg_in_aging_en <= 1;
+        cfg_in_aging_timeout <= 24'd10000;
+        wait_clks(3);
+        enqueue_frame(0, 0, 5);
+        wait_clks(2);
+        cfg_in_age_force_all <= 1;
+        busy_seen = 0;
+        for (int i = 0; i < 40; i++) begin
+            @(posedge clk_core);
+            if (`LLE_PATH.age_flush_busy) busy_seen = 1;
+        end
+        cfg_in_age_force_all <= 0;
+        wait_clks(10);
+        check("AGE-013a", "冲刷期间 age_flush_busy 出现过", busy_seen == 1);
+        check("AGE-013b", "最终冲刷完成 q_cell_cnt[0]=0", `LLE_PATH.q_cell_cnt_q[0] == 0);
+    endtask
+
+    task automatic test_OCC_009();
+        logic [CNT_W-1:0] pp_before;
+        $display("\n===== OCC-009: 同端口不同队列同拍 alloc+free =====");
+        reset_dut();
+        do_init();
+        enqueue_cell(0, 1, 1, 1, 1);
+        wait_clks(2);
+        @(posedge clk_core); deq_req <= 1; deq_queue_id <= 1; deq_backpressure <= 0;
+        @(posedge clk_core); deq_req <= 0;
+        wait_clks(2);
+        pp_before = `OCC_PATH.per_port_used_q[0];
+        @(posedge clk_core);
+        enq_req <= 1; enq_egress_port <= 0; enq_queue_id <= 0;
+        enq_is_mcast <= 0; enq_sof <= 1; enq_eof <= 1; enq_cell_num <= 1;
+        recycle_req <= 1; recycle_cell_addr <= 0; recycle_queue_id <= 1;
+        @(posedge clk_core);
+        enq_req <= 0; enq_sof <= 0; enq_eof <= 0; recycle_req <= 0;
+        wait_clks(5);
+        check("OCC-009a", "守恒成立",
+              (`OCC_PATH.free_count_q + `OCC_PATH.global_used_q) == CELL_NUM);
+    endtask
+
+    task automatic test_OCC_010();
+        $display("\n===== OCC-010: 静态池防下溢 =====");
+        reset_dut();
+        do_init();
+        cfg_in_q_min_cell <= 14'd5;
+        cfg_in_q_max_cell <= 14'd100;
+        wait_clks(3);
+        enqueue_cell(0, 0, 1, 1, 1);
+        wait_clks(2);
+        check("OCC-010a", "q_static_used[0]=1", `OCC_PATH.q_static_used_q[0] == 1);
+        @(posedge clk_core); deq_req <= 1; deq_queue_id <= 0; deq_backpressure <= 0;
+        @(posedge clk_core); deq_req <= 0;
+        wait_clks(2);
+        @(posedge clk_core);
+        recycle_req <= 1; recycle_cell_addr <= 0; recycle_queue_id <= 0;
+        @(posedge clk_core);
+        recycle_req <= 0;
+        wait_clks(5);
+        check("OCC-010b", "q_static_used[0]=0 (不下溢)", `OCC_PATH.q_static_used_q[0] == 0);
+        cfg_in_q_min_cell <= 14'd0;
+        cfg_in_q_max_cell <= 14'd8192;
+        wait_clks(3);
+    endtask
+
+    task automatic test_OCC_011();
+        $display("\n===== OCC-011: free/global 边界守护 =====");
+        reset_dut();
+        do_init();
+        enqueue_frame(0, 0, 3);
+        wait_clks(3);
+        check("OCC-011a", "守恒成立",
+              (`OCC_PATH.free_count_q + `OCC_PATH.global_used_q) == CELL_NUM);
+        check("OCC-011b", "underflow_alarm=0 (正常)", underflow_alarm == 0);
+        check("OCC-011c", "overflow_alarm=0 (正常)", overflow_alarm == 0);
+    endtask
+
+    task automatic test_CSR_008();
+        $display("\n===== CSR-008: 统计计数器饱和不回绕 =====");
+        reset_dut();
+        do_init();
+        cfg_in_q_max_cell <= 14'd0;
+        cfg_in_q_min_cell <= 14'd0;
+        wait_clks(3);
+        for (int i = 0; i < 5; i++) begin
+            @(posedge clk_core);
+            enq_req <= 1; enq_egress_port <= 0; enq_queue_id <= 0;
+            enq_is_mcast <= 0; enq_sof <= 1; enq_eof <= 1; enq_cell_num <= 1;
+            @(posedge clk_core);
+            enq_req <= 0; enq_sof <= 0; enq_eof <= 0;
+            wait_clks(1);
+        end
+        wait_clks(4);
+        check("CSR-008a", "tail_drop_cnt[0]>=1 且未回绕", st_out_tail_drop_cnt[0] >= 1);
+        cfg_in_q_max_cell <= 14'd8192;
+        wait_clks(3);
+    endtask
+
+    task automatic test_LLE_007();
+        $display("\n===== LLE-007: enq_bypass 连续入队预取 =====");
+        reset_dut();
+        do_init();
+        @(posedge clk_core);
+        for (int i = 0; i < 6; i++) begin
+            enq_req <= 1; enq_egress_port <= 0; enq_queue_id <= 0;
+            enq_is_mcast <= 0; enq_sof <= (i==0); enq_eof <= (i==5); enq_cell_num <= 6;
+            @(posedge clk_core);
+        end
+        enq_req <= 0; enq_sof <= 0; enq_eof <= 0;
+        wait_clks(3);
+        check("LLE-007a", "q_cell_cnt[0]=6", `LLE_PATH.q_cell_cnt_q[0] == 6);
+        check("LLE-007b", "free_cnt=8186", `LLE_PATH.free_cnt_q == (CELL_NUM-6));
+    endtask
+
+    task automatic test_LLE_008();
+        $display("\n===== LLE-008: rcy写口与agf读口同拍并行 =====");
+        reset_dut();
+        do_init();
+        cfg_in_aging_en <= 1;
+        cfg_in_aging_timeout <= 24'd10000;
+        wait_clks(3);
+        enqueue_frame(0, 0, 5);
+        wait_clks(1);
+        enqueue_frame(1, 0, 3);
+        wait_clks(2);
+        for (int i = 0; i < 3; i++) begin
+            @(posedge clk_core); deq_req <= 1; deq_queue_id <= 8; deq_backpressure <= 0;
+        end
+        @(posedge clk_core); deq_req <= 0;
+        wait_clks(2);
+        cfg_in_age_force_all <= 1;
+        for (int i = 0; i < 3; i++) begin
+            @(posedge clk_core); recycle_req <= 1; recycle_cell_addr <= (200+i); recycle_queue_id <= 8;
+        end
+        @(posedge clk_core); recycle_req <= 0;
+        wait_clks(40);
+        cfg_in_age_force_all <= 0;
+        wait_clks(10);
+        check("LLE-008a", "冲刷完成 q_cell_cnt[0]=0", `LLE_PATH.q_cell_cnt_q[0] == 0);
+        check("LLE-008b", "守恒成立",
+              (`OCC_PATH.free_count_q + `OCC_PATH.global_used_q) == CELL_NUM);
+    endtask
+
+    task automatic test_LLE_009();
+        $display("\n===== LLE-009: 同拍读写同一SRAM地址(read-first) =====");
+        reset_dut();
+        do_init();
+        enqueue_frame(0, 0, 4);
+        wait_clks(2);
+        @(posedge clk_core);
+        deq_req <= 1; deq_queue_id <= 0; deq_backpressure <= 0;
+        enq_req <= 1; enq_egress_port <= 0; enq_queue_id <= 0;
+        enq_is_mcast <= 0; enq_sof <= 1; enq_eof <= 1; enq_cell_num <= 1;
+        @(posedge clk_core);
+        deq_req <= 0; enq_req <= 0; enq_sof <= 0; enq_eof <= 0;
+        wait_clks(5);
+        check("LLE-009a", "守恒成立(read-first 无错乱)",
+              (`OCC_PATH.free_count_q + `OCC_PATH.global_used_q) == CELL_NUM);
+    endtask
+
+    task automatic test_CORNER_005();
+        $display("\n===== CORNER-005: free_cnt=1 时来多cell帧 =====");
+        reset_dut();
+        do_init();
+        cfg_in_global_max <= 14'd1;
+        cfg_in_q_min_cell <= 14'd0;
+        wait_clks(3);
+        @(posedge clk_core);
+        enq_req <= 1; enq_egress_port <= 0; enq_queue_id <= 0;
+        enq_is_mcast <= 0; enq_sof <= 1; enq_eof <= 0; enq_cell_num <= 3;
+        @(posedge clk_core);
+        enq_sof <= 0;
+        @(posedge clk_core);
+        enq_eof <= 1;
+        @(posedge clk_core);
+        enq_req <= 0; enq_eof <= 0;
+        wait_clks(3);
+        check("CORNER-005a", "守恒成立",
+              (`OCC_PATH.free_count_q + `OCC_PATH.global_used_q) == CELL_NUM);
+        cfg_in_global_max <= 14'd8192;
+        wait_clks(3);
+    endtask
+
+    task automatic test_CORNER_006();
+        logic conserve_ok;
+        $display("\n===== CORNER-006: free 1<->0 反复抖动 =====");
+        reset_dut();
+        do_init();
+        conserve_ok = 1;
+        for (int i = 0; i < 6; i++) begin
+            enqueue_cell(0, 0, 1, 1, 1);
+            wait_clks(2);
+            @(posedge clk_core);
+            deq_req <= 1; deq_queue_id <= 0; deq_backpressure <= 0;
+            @(posedge clk_core);
+            deq_req <= 0;
+            wait_clks(1);
+            @(posedge clk_core);
+            recycle_req <= 1; recycle_cell_addr <= i[ADDR_W-1:0]; recycle_queue_id <= 0;
+            @(posedge clk_core);
+            recycle_req <= 0;
+            wait_clks(3);
+            if ((`OCC_PATH.free_count_q + `OCC_PATH.global_used_q) != CELL_NUM)
+                conserve_ok = 0;
+        end
+        check("CORNER-006a", "守恒始终成立(抖动稳定)", conserve_ok == 1);
+        check("CORNER-006b", "underflow_alarm=0", underflow_alarm == 0);
+    endtask
+
+    task automatic test_CORNER_007();
+        $display("\n===== CORNER-007: 满池 PAUSE/PFC 与丢弃并发 =====");
+        reset_dut();
+        do_init();
+        cfg_in_pause_en <= 1;
+        cfg_in_pfc_en <= 1;
+        cfg_in_q_max_cell <= 14'd2;
+        cfg_in_port_pause_xoff <= 14'd2;
+        cfg_in_port_pause_xon <= 14'd1;
+        cfg_in_pfc_xoff <= 14'd2;
+        cfg_in_pfc_xon <= 14'd1;
+        cfg_in_global_pause_xoff <= 14'd8000;
+        cfg_in_global_pause_xon <= 14'd7000;
+        cfg_in_q_min_cell <= 14'd0;
+        wait_clks(3);
+        enqueue_cell(0, 0, 1, 1, 1); wait_clks(1);
+        enqueue_cell(0, 0, 1, 1, 1); wait_clks(3);
+        // 此时 q 到 max=2, pause/pfc 触发; 再发到同队列应丢
+        check("CORNER-007a", "pfc_req[0][0]=1", pfc_req[0][0] == 1);
+        @(posedge clk_core);
+        enq_req <= 1; enq_egress_port <= 0; enq_queue_id <= 0;
+        enq_is_mcast <= 0; enq_sof <= 1; enq_eof <= 1; enq_cell_num <= 1;
+        @(posedge clk_core);
+        enq_req <= 0; enq_sof <= 0; enq_eof <= 0;
+        @(posedge clk_core);
+        check("CORNER-007b", "alloc_drop_ind=1 (max) 与流控并存", alloc_drop_ind == 1);
+        cfg_in_pause_en <= 0;
+        cfg_in_pfc_en <= 0;
+        cfg_in_q_max_cell <= 14'd8192;
+        wait_clks(3);
+    endtask
+
+    task automatic test_LAT_001();
+        $display("\n===== LAT-001/002: 入队/出队 latency 量化 =====");
+        reset_dut();
+        do_init();
+        // 入队: T0 fire -> T1 alloc_valid (1 拍)
+        @(posedge clk_core);
+        enq_req <= 1; enq_egress_port <= 0; enq_queue_id <= 0;
+        enq_is_mcast <= 0; enq_sof <= 1; enq_eof <= 1; enq_cell_num <= 1;
+        @(posedge clk_core);
+        enq_req <= 0; enq_sof <= 0; enq_eof <= 0;
+        @(posedge clk_core);
+        check("LAT-001a", "入队 latency=1拍 (alloc_valid)", alloc_valid == 1);
+        // 出队: T0 fire -> T1 deq_cell_valid (1 拍)
+        @(posedge clk_core);
+        deq_req <= 1; deq_queue_id <= 0; deq_backpressure <= 0;
+        @(posedge clk_core);
+        deq_req <= 0;
+        @(posedge clk_core);
+        check("LAT-002a", "出队 latency=1拍 (deq_cell_valid)", deq_cell_valid == 1);
+    endtask
+
+    task automatic test_LAT_003();
+        logic valid_all;
+        $display("\n===== LAT-003: 背靠背吞吐无气泡 =====");
+        reset_dut();
+        do_init();
+        enqueue_frame(0, 0, 6);
+        wait_clks(3);
+        @(posedge clk_core);
+        deq_req <= 1; deq_queue_id <= 0; deq_backpressure <= 0;
+        @(posedge clk_core);
+        valid_all = 1;
+        for (int i = 0; i < 6; i++) begin
+            @(posedge clk_core);
+            if (!deq_cell_valid) valid_all = 0;
+            if (i == 4) deq_req <= 0;
+        end
+        check("LAT-003a", "背靠背出队无 bubble", valid_all == 1);
+        // LAT-004: deq occupying SRAM read port yields enq for 1 cycle
+        enqueue_frame(1, 0, 4);
+        wait_clks(2);
+        @(posedge clk_core);
+        deq_req <= 1; deq_queue_id <= 8; deq_backpressure <= 0;
+        @(negedge clk_core);
+        if (`LLE_PATH.deq_need_sram)
+            check("LAT-004a", "deq occupies SRAM -> enq_ready=0 (yield 1 cycle)", enq_ready == 0);
+        else
+            check("LAT-004a", "deq no SRAM -> enq_ready=1", enq_ready == 1);
+        @(posedge clk_core);
+        deq_req <= 0;
+        wait_clks(3);
+    endtask
+
     initial begin
         total_cases = 0;
         pass_cases  = 0;
@@ -5526,14 +6293,14 @@ module smmu_tb;
         $display("       SMMU Verification Testbench - Start");
         $display("==========================================================");
 
-        // 一、初始化
+        // ä¸ăĺĺ§ĺ
         test_INIT_001();
         test_INIT_002();
         test_INIT_003();
         test_INIT_004();
         test_INIT_005();
 
-        // 二、单播入队
+        // äşăĺć­ĺĽé
         test_UNI_ENQ_001();
         test_UNI_ENQ_002();
         test_UNI_ENQ_003();
@@ -5543,7 +6310,7 @@ module smmu_tb;
         test_UNI_ENQ_007();
         test_UNI_ENQ_008();
 
-        // 三、单播出队
+        // ä¸ăĺć­ĺşé
         test_UNI_DEQ_001();
         test_UNI_DEQ_002();
         test_UNI_DEQ_003();
@@ -5552,7 +6319,7 @@ module smmu_tb;
         test_UNI_DEQ_006();
         test_UNI_DEQ_007();
 
-        // 四、组播
+        // ĺăçťć­
         test_MC_ENQ_001();
         test_MC_ENQ_002();
         test_MC_ENQ_003();
@@ -5561,7 +6328,7 @@ module smmu_tb;
         test_MC_ENQ_006();
         test_MC_ENQ_007();
 
-        // 五、丢包
+        // äşăä¸˘ĺ
         test_DROP_001();
         test_DROP_002();
         test_DROP_003();
@@ -5571,7 +6338,7 @@ module smmu_tb;
         test_DROP_007();
         test_DROP_008();
 
-        // 六、PAUSE/PFC
+        // ĺ­ăPAUSE/PFC
         test_PAUSE_001();
         test_PAUSE_002();
         test_PAUSE_003();
@@ -5582,7 +6349,7 @@ module smmu_tb;
         test_PFC_003();
         test_PFC_004();
 
-        // 七、回收
+        // ä¸ăĺćś
         test_RCY_001();
         test_RCY_002();
         test_RCY_003();
@@ -5590,7 +6357,7 @@ module smmu_tb;
         test_RCY_005();
         test_RCY_006();
 
-        // 八、老化
+        // ĺŤăčĺ
         test_AGE_001();
         test_AGE_002();
         test_AGE_003();
@@ -5601,7 +6368,7 @@ module smmu_tb;
         test_AGE_008();
         test_AGE_009();
 
-        // 九、占用管理
+        // äšăĺ ç¨çŽĄç
         test_OCC_001();
         test_OCC_002();
         test_OCC_003();
@@ -5611,7 +6378,7 @@ module smmu_tb;
         test_OCC_007();
         test_OCC_008();
 
-        // 十、CSR
+        // ĺăCSR
         test_CSR_001();
         test_CSR_002();
         test_CSR_003();
@@ -5620,7 +6387,7 @@ module smmu_tb;
         test_CSR_006();
         test_CSR_007();
 
-        // 十一、LLE内部
+        // ĺä¸ăLLEĺé¨
         test_LLE_001();
         test_LLE_002();
         test_LLE_003();
@@ -5628,7 +6395,7 @@ module smmu_tb;
         test_LLE_005();
         test_LLE_006();
 
-        // 十二、背压与边界
+        // ĺäşăčĺä¸čžšç
         test_BP_001();
         test_BP_002();
         test_BP_003();
@@ -5638,8 +6405,42 @@ module smmu_tb;
         test_CORNER_003();
         test_CORNER_004();
 
-        // 汇总
+        // ćąćť
         $display("\n==========================================================");
+
+        // ===== V1.2 NEW/FIX supplemental cases =====
+        test_INIT_006();
+        test_INIT_007();
+        test_UNI_DEQ_008();
+        test_MC_ENQ_008();
+        test_MC_ENQ_009();
+        test_MC_ENQ_010();
+        test_MC_ENQ_011();
+        test_DROP_009();
+        test_DROP_010();
+        test_DROP_011();
+        test_PAUSE_006();
+        test_PFC_005();
+        test_RCY_007();
+        test_RCY_008();
+        test_RCY_009();
+        test_AGE_010();
+        test_AGE_011();
+        test_AGE_012();
+        test_AGE_013();
+        test_OCC_009();
+        test_OCC_010();
+        test_OCC_011();
+        test_CSR_008();
+        test_LLE_007();
+        test_LLE_008();
+        test_LLE_009();
+        test_CORNER_005();
+        test_CORNER_006();
+        test_CORNER_007();
+        test_LAT_001();
+        test_LAT_003();
+
         $display("       SMMU Verification Testbench - Summary");
         $display("==========================================================");
         $display("  Total Checks : %0d", total_cases);
@@ -5653,6 +6454,32 @@ module smmu_tb;
         $finish;
     end
 
+   //========================================
+    //VCS Simulation
+    `ifdef VCS_SIM
+        // VCS simulation hooks
+        initial begin
+            $vcdpluson();
+            $fsdbDumpfile("/home/verdvana/Project/IC/project/cores/smmu/simulation/sim/smmu.fsdb");
+            $fsdbDumpvars("+all");
+            $vcdplusmemon();
+        end
+
+        `ifdef POST_SIM
+        //back annotate the SDF file
+        initial begin
+            $sdf_annotate("/home/verdvana/Project/IC/project/cores/smmu/synthesis/mapped/smmu.sdf",
+                          smmu_tb.u_smmu,,,
+                          "TYPICAL",
+                          "1:1:1",
+                          "FROM_MTM");
+            $display("\033[31;5m back annotate [0m",`__FILE__,`__LINE__);
+        end
+        `endif
+    `endif
+    //========================================================================
+
+
     // Timeout watchdog
     initial begin
         #10_000_000; // 10ms
@@ -5661,6 +6488,7 @@ module smmu_tb;
     end
 
 endmodule
+
 
 
 ```
