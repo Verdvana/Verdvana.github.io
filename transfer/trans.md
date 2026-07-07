@@ -98,12 +98,10 @@ module smmu #(
     //     (QM 有 descriptor)。透传给 recycle_ctrl → LLE → occupancy, 用于 per-queue
     //     /port 占用计数 --, 与 LLE free 事件同拍。
     //------------------------------------------------------------------------
-    input  logic                  recycle_req,         // 单播 cell 回收请求
+    input  logic                  recycle_req,         // 还链请求 (单/多播统一, QM 逐 cell 还)
     input  logic [ADDR_W-1:0]     recycle_cell_addr,   // 待回收 cell 地址
-    input  logic [QID_W-1:0]      recycle_queue_id,    // 单播回收 cell 所属队列号
-    input  logic                  mcast_recycle_req,   // 组播回收通知
-    input  logic [ADDR_W-1:0]     mcast_recycle_addr,  // 组播待回收 cell 地址
-    input  logic [QID_W-1:0]      mcast_recycle_queue_id, // 组播回收 cell 所属队列号
+    input  logic [QID_W-1:0]      recycle_queue_id,    // 单播回收所属队列号 (多播命中时忽略)
+    input  logic                  recycle_is_mcast,    // 该 cell 是否多播 (提示位; MMU 亦可靠地址匹配自判)
     output logic                  recycle_ack,         // 回收完成应答
 
     //------------------------------------------------------------------------
@@ -194,15 +192,14 @@ module smmu #(
     logic                  lle_q_empty;
     logic                  lle_deq_fire;
 
-    // Recycle Ctrl ↔ LLE (还链 + 透传被回收 cell 的 queue_id)
+    // Recycle Ctrl ↔ LLE (统一还链: 单播直接还; 多播按 cell ref-count, 减到 0 才还)
     logic                  lle_free_req;
     logic [ADDR_W-1:0]     lle_free_addr;
     logic [QID_W-1:0]      lle_free_queue_id;
+    logic                  lle_free_is_mcast;
     logic                  lle_free_grant, lle_free_done;
 
-    // ★ B2: Recycle Ctrl → LLE 多播逐端口回收 + LLE 多播回收下溢告警
-    logic                  mc_rcy_vld;
-    logic [PORT_W-1:0]     mc_rcy_port;
+    // ★ LLE 多播回收下溢告警 (对未命中活跃多播帧的 is_mcast 还链)
     logic                  mcast_underflow;
 
     // LLE ↔ Occupancy:
@@ -260,18 +257,18 @@ module smmu #(
     logic [PORT_NUM-1:0][TC_NUM-1:0][CNT_W-1:0]  cfg_in_pfc_xon_arr;
     logic [QUEUE_NUM-1:0]                        cfg_in_age_force_arr;
     always_comb begin
-        for (int q = 0; q < QUEUE_NUM; q++) begin
-            cfg_in_q_min_cell_arr[q]  = cfg_in_q_min_cell;
-            cfg_in_q_max_cell_arr[q]  = cfg_in_q_max_cell;
-            cfg_in_age_force_arr[q]   = cfg_in_age_force_all;
+        for (int q_idx = 0; q_idx < QUEUE_NUM; q_idx++) begin : CFG_Q_ARRAY_INIT
+            cfg_in_q_min_cell_arr[q_idx] = cfg_in_q_min_cell;
+            cfg_in_q_max_cell_arr[q_idx] = cfg_in_q_max_cell;
+            cfg_in_age_force_arr[q_idx]  = cfg_in_age_force_all;
         end
-        for (int p = 0; p < PORT_NUM; p++) begin
-            cfg_in_port_max_arr[p]        = cfg_in_port_max;
-            cfg_in_port_pause_xoff_arr[p] = cfg_in_port_pause_xoff;
-            cfg_in_port_pause_xon_arr[p]  = cfg_in_port_pause_xon;
-            for (int t = 0; t < TC_NUM; t++) begin
-                cfg_in_pfc_xoff_arr[p][t] = cfg_in_pfc_xoff;
-                cfg_in_pfc_xon_arr[p][t]  = cfg_in_pfc_xon;
+        for (int port_idx = 0; port_idx < PORT_NUM; port_idx++) begin : CFG_PORT_ARRAY_INIT
+            cfg_in_port_max_arr[port_idx]        = cfg_in_port_max;
+            cfg_in_port_pause_xoff_arr[port_idx] = cfg_in_port_pause_xoff;
+            cfg_in_port_pause_xon_arr[port_idx]  = cfg_in_port_pause_xon;
+            for (int tc_idx = 0; tc_idx < TC_NUM; tc_idx++) begin : CFG_PFC_TC_ARRAY_INIT
+                cfg_in_pfc_xoff_arr[port_idx][tc_idx] = cfg_in_pfc_xoff;
+                cfg_in_pfc_xon_arr[port_idx][tc_idx]  = cfg_in_pfc_xon;
             end
         end
     end
@@ -381,18 +378,14 @@ module smmu #(
         .recycle_req            (recycle_req),
         .recycle_cell_addr      (recycle_cell_addr),
         .recycle_queue_id       (recycle_queue_id),
-        .mcast_recycle_req      (mcast_recycle_req),
-        .mcast_recycle_addr     (mcast_recycle_addr),
-        .mcast_recycle_queue_id (mcast_recycle_queue_id),
+        .recycle_is_mcast       (recycle_is_mcast),
         .recycle_ack            (recycle_ack),
         .lle_free_req           (lle_free_req),
         .lle_free_addr          (lle_free_addr),
         .lle_free_queue_id      (lle_free_queue_id),
+        .lle_free_is_mcast      (lle_free_is_mcast),
         .lle_free_grant         (lle_free_grant),
-        .lle_free_done          (lle_free_done),
-        // ★ B2: 组播逐端口回收 → LLE
-        .mc_rcy_vld             (mc_rcy_vld),
-        .mc_rcy_port            (mc_rcy_port)
+        .lle_free_done          (lle_free_done)
     );
 
     // ---- Link-List Engine (含内部 Next-Ptr SRAM) ----
@@ -426,11 +419,10 @@ module smmu #(
         .lle_free_req       (lle_free_req),
         .lle_free_addr      (lle_free_addr),
         .lle_free_queue_id  (lle_free_queue_id),
+        .lle_free_is_mcast  (lle_free_is_mcast),
         .lle_free_grant     (lle_free_grant),
         .lle_free_done      (lle_free_done),
-        // ★ B2: 组播逐端口回收 + 下溢告警
-        .mc_rcy_vld         (mc_rcy_vld),
-        .mc_rcy_port        (mc_rcy_port),
+        // ★ 统一还链: 多播 ref-count 下溢告警
         .mcast_underflow    (mcast_underflow),
         // alloc 事件 → occ (per-queue/port ++)
         .lle_alloc_evt      (lle_alloc_evt),
@@ -621,6 +613,7 @@ module smmu #(
     //       u_csr 的 clr_ptr_cnt 在详细设计阶段连到各 Ctrl/Occupancy 的初始化清零口。
 
 endmodule
+
 
 
 ```
