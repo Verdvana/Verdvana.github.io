@@ -78,6 +78,8 @@ module smmu #(
     output logic                  alloc_pkt_tail,      // 报文尾 (= enq_eof)
     output logic                  alloc_full_frame_drop, // 整帧丢弃指示
     output logic                  mcast_busy_drop,     // ★ B2: 多播槽占用, 新多播帧被丢弃
+    output logic [CNT_W-1:0]      enq_q_cell_cnt [QUEUE_NUM],   // 每队列当前占用 cell 数 (→ QM 统计)
+    output logic [CNT_W-1:0]      enq_free_count,          // 当前空闲链表 cell 数 (→ QM 统计)
 
     //------------------------------------------------------------------------
     // G3 - 出队 / 地址读取接口 (QM ↔ MMU, 1 拍)
@@ -173,6 +175,8 @@ module smmu #(
     logic [PKT_CELL_W-1:0] occ_query_cell_num;    // 入队前预判: 本包 cell 数
     logic                  occ_accept, occ_drop, occ_use_static, occ_no_free;
     logic                  occ_predict_drop;      // 入队前预判结果
+    logic [CNT_W-1:0]      occ_free_count;       // 当前空闲池 cell 数 (→ QM 统计)
+    logic [CNT_W-1:0]      occ_q_cell_cnt [QUEUE_NUM];  // 每队列当前占用 cell 数 (→ QM 统计)
 
     // Enqueue Ctrl ↔ LLE
     logic [ADDR_W-1:0]     lle_free_head;
@@ -317,6 +321,8 @@ module smmu #(
         .enq_eof               (enq_eof),
         .enq_ready             (enq_ready),
         .enq_predict_drop      (enq_predict_drop),
+        .enq_free_count        (enq_free_count),
+        .enq_q_cell_cnt        (enq_q_cell_cnt),
         .alloc_valid           (alloc_valid),
         .alloc_cell_addr       (alloc_cell_addr),
         .alloc_drop_ind        (alloc_drop_ind),
@@ -333,6 +339,8 @@ module smmu #(
         .occ_use_static        (occ_use_static),
         .occ_no_free           (occ_no_free),
         .occ_predict_drop      (occ_predict_drop),
+        .occ_free_count        (occ_free_count),
+        .occ_q_cell_cnt        (occ_q_cell_cnt),
         .lle_free_head         (lle_free_head),
         .lle_free_empty        (lle_free_empty),
         .lle_alloc_ready       (lle_alloc_ready),
@@ -489,6 +497,8 @@ module smmu #(
         .occ_use_static        (occ_use_static),
         .occ_no_free           (occ_no_free),
         .occ_predict_drop      (occ_predict_drop),
+        .occ_free_count        (occ_free_count),
+        .occ_q_cell_cnt        (occ_q_cell_cnt),
         // 与 LLE (分配事件)
         .lle_alloc_evt         (lle_alloc_evt),
         .evt_queue_id          (evt_queue_id),

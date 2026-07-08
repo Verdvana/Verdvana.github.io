@@ -60,6 +60,8 @@ module smmu_tb;
     logic                  alloc_pkt_tail;
     logic                  alloc_full_frame_drop;
     logic                  mcast_busy_drop;
+    logic [CNT_W-1:0]      enq_q_cell_cnt [QUEUE_NUM];   // 每队列当前占用 cell 数 (→ QM 统计)
+    logic [CNT_W-1:0]      enq_free_count;          // 当前空闲链表 cell 数 (→ QM 统计)
 
     // 出队接口
     logic                  deq_req;
@@ -168,6 +170,8 @@ module smmu_tb;
         .alloc_pkt_tail     (alloc_pkt_tail),
         .alloc_full_frame_drop (alloc_full_frame_drop),
         .mcast_busy_drop    (mcast_busy_drop),
+        .enq_q_cell_cnt      (enq_q_cell_cnt),
+        .enq_free_count      (enq_free_count),
         // 出队
         .deq_req            (deq_req),
         .deq_queue_id       (dut_deq_queue_id),

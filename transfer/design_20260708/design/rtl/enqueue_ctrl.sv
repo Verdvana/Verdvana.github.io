@@ -25,6 +25,7 @@ module enqueue_ctrl #(
     localparam int QUEUE_NUM = PORT_NUM*TC_NUM + 1,   // 单播 P*T + 多播 (free 链在 LLE 内)
     localparam int MC_QID    = QUEUE_NUM-1,           // 多播队列号 (=P*T)
     localparam int ADDR_W   = $clog2(CELL_NUM),
+    localparam int CNT_W     = ADDR_W+1,		     // 占用计数位宽 (0~CELL_NUM)
     localparam int QID_W    = $clog2(QUEUE_NUM-1)+1,
     localparam int PORT_W   = $clog2(PORT_NUM-1)+1,
     localparam int TC_W     = $clog2(TC_NUM)          // enq_queue_id 位宽 (仅 TC)
@@ -56,6 +57,8 @@ module enqueue_ctrl #(
     output logic                  alloc_pkt_head,      // 报文头 (= enq_sof)
     output logic                  alloc_pkt_tail,      // 报文尾 (= enq_eof)
     output logic                  alloc_full_frame_drop, // 整帧丢弃指示
+	output logic [CNT_W-1:0]      enq_q_cell_cnt [QUEUE_NUM],   // 每队列当前占用 cell 数 (→ QM 统计)
+    output logic [CNT_W-1:0]      enq_free_count,          // 当前空闲链表 cell 数 (→ QM 统计)
 
     //------------------------------------------------------------------------
     // 与 Occupancy & Pool Mgr 的接口 (内部, 组合返回支撑 1 拍)
@@ -71,6 +74,8 @@ module enqueue_ctrl #(
     input  logic                  occ_use_static,      // 记静态池(=1)/动态池(=0)
     input  logic                  occ_no_free,         // 空闲池已空(强制丢弃)
     input  logic                  occ_predict_drop,    // occ 组合返回的入队前预判结果
+	input  logic [CNT_W-1:0]      occ_free_count,       // 当前空闲池 cell 数 (→ QM 统计)
+	input  logic [CNT_W-1:0]      occ_q_cell_cnt [QUEUE_NUM], // 每队列当前占用 cell 数 (→ QM 统计)
 
     //------------------------------------------------------------------------
     // 与 Link-List Engine (LLE) 的接口 (内部, 单拍命令式分配+挂链)
@@ -124,6 +129,8 @@ module enqueue_ctrl #(
     //   纯组合、与 enq_query 同拍, 不依赖 enq_fire (QM 在包首 presenting queue_id+cell_num 即可读)。
     assign occ_query_cell_num    = enq_cell_num;
     assign enq_predict_drop      = occ_predict_drop;
+	assign enq_free_count        = occ_free_count;
+	assign enq_q_cell_cnt        = occ_q_cell_cnt;
 
     //========================================================================
     // ★ B2 单槽门控: 多播帧到达 (SOF) 时若多播槽已占用 (mc_busy) → 整帧丢弃。

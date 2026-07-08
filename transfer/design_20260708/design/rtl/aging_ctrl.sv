@@ -122,8 +122,12 @@ module aging_ctrl #(
     //========================================================================
     // 2) RR 仲裁: 一次只冲刷一条 trig 队列
     //========================================================================
-    typedef enum logic [1:0] {AG_IDLE, AG_FLUSH, AG_WAIT} age_st_e;
-    age_st_e            age_st_q;
+    typedef enum logic [1:0] {
+        AG_IDLE     = 2'b00, 
+        AG_FLUSH    = 2'b01, 
+        AG_WAIT     = 2'b10
+    } age_st_e;
+    age_st_e            state_curr,state_next;
     logic [QID_W-1:0]   sel_qid_q;
     logic [QID_W-1:0]   rr_ptr_q;      // RR 起点
 
@@ -143,8 +147,30 @@ module aging_ctrl #(
     end
 
     always_ff @(posedge clk_core or negedge rst_core_n) begin
+        if (!rst_core_n)        state_curr <= AG_IDLE;
+        else if (clr_ptr_cnt)   state_curr <= AG_IDLE;
+        else                    state_curr <= state_next;
+    end
+
+    always_comb begin
+        state_next = state_curr;
+        unique case (state_curr)
+            AG_IDLE: begin
+                if (found) state_next = AG_FLUSH;
+            end
+            AG_FLUSH: begin
+                if (age_flush_busy) state_next = AG_WAIT;
+                else if (age_flush_done) state_next = AG_IDLE;
+            end
+            AG_WAIT: begin
+                if (age_flush_done) state_next = AG_IDLE;
+            end
+            default: state_next = AG_IDLE;
+        endcase
+    end
+
+    always_ff @(posedge clk_core or negedge rst_core_n) begin
         if (!rst_core_n) begin
-            age_st_q         <= AG_IDLE;
             sel_qid_q        <= '0;
             rr_ptr_q         <= '0;
             age_flush_req    <= 1'b0;
@@ -152,7 +178,6 @@ module aging_ctrl #(
             aging_notify_qid <= '0;
         end
         else if (clr_ptr_cnt) begin              // ★ 初始化期同步清
-            age_st_q         <= AG_IDLE;
             sel_qid_q        <= '0;
             rr_ptr_q         <= '0;
             age_flush_req    <= 1'b0;
@@ -161,13 +186,12 @@ module aging_ctrl #(
         end
         else begin
             aging_notify <= 1'b0;   // 默认脉冲拉低
-            unique case (age_st_q)
+            unique case (state_curr)
                 AG_IDLE: begin
                     age_flush_req <= 1'b0;
                     if (found) begin
                         sel_qid_q     <= found_qid;
                         age_flush_req <= 1'b1;
-                        age_st_q      <= AG_FLUSH;
                     end
                 end
                 AG_FLUSH: begin
@@ -175,14 +199,12 @@ module aging_ctrl #(
                     age_flush_req <= 1'b1;
                     if (age_flush_busy) begin
                         age_flush_req <= 1'b0;
-                        age_st_q      <= AG_WAIT;
                     end
                     else if (age_flush_done) begin
                         age_flush_req    <= 1'b0;
                         aging_notify     <= 1'b1;
                         aging_notify_qid <= sel_qid_q;
                         rr_ptr_q         <= (sel_qid_q + 1'b1) % QUEUE_NUM;
-                        age_st_q         <= AG_IDLE;
                     end
                 end
                 AG_WAIT: begin
@@ -190,11 +212,9 @@ module aging_ctrl #(
                         aging_notify     <= 1'b1;
                         aging_notify_qid <= sel_qid_q;
                         rr_ptr_q         <= (sel_qid_q + 1'b1) % QUEUE_NUM;
-                        age_st_q         <= AG_IDLE;
                     end
                 end
                 default: begin
-                    age_st_q         <= AG_IDLE;
                     sel_qid_q        <= '0;
                     age_flush_req    <= 1'b0;
                     aging_notify     <= 1'b0;

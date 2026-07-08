@@ -48,6 +48,8 @@ module occupancy_pool_mgr #(
     output logic                       occ_use_static,       // 记静态(=1)/动态(=0)
     output logic                       occ_no_free,          // 空闲池空(强制丢弃)
     output logic                       occ_predict_drop,     // ★ 入队前预判: 本包 N 个 cell 会否触发丢弃
+    output logic [CNT_W-1:0]           occ_free_count,       // 当前空闲池 cell 数 (→ QM 统计)
+    output logic [CNT_W-1:0]           occ_q_cell_cnt [QUEUE_NUM], // 每队列当前占用 cell 数 (→ QM 统计)
 
     //------------------------------------------------------------------------
     // 与 LLE 的接口 (分配/回收事件, 计数 ++/--)
@@ -533,5 +535,11 @@ module occupancy_pool_mgr #(
                                | (free_allowed  & (global_used_q == '0));
         end
     end
+
+    //========================================================================
+    // 输出绑定
+    //========================================================================
+    assign occ_free_count = free_count_q;
+    assign occ_q_cell_cnt = q_cell_cnt_q;
 
 endmodule
