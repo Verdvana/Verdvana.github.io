@@ -31,6 +31,20 @@
 | recycle FIFO | 8 deep | 已接收、待追加到 free-tail 的 cell |
 | 多播槽 | 1 frame | 最多 `MAX_MC_CELLS=8` 个 cell |
 
+派生位宽全部由 `CELL_NUM/PORT_NUM/TC_NUM` 推出，各子模块同源，顶层不再单独给数值：
+
+```text
+QUEUE_NUM = PORT_NUM*TC_NUM + 1          // 33
+MC_QID    = QUEUE_NUM-1                   // 32
+ADDR_W    = $clog2(CELL_NUM)              // 13
+QID_W     = $clog2(QUEUE_NUM-1)+1         // 6
+PORT_W    = $clog2(PORT_NUM-1)+1          // 2
+TC_W      = $clog2(TC_NUM)                // 3
+CNT_W     = ADDR_W + 1                    // 14 (可表 0~CELL_NUM)
+ENTRY_W   = ADDR_W + 2                    // 15 (Next-Ptr entry)
+MC_REF_W  = $clog2(PORT_NUM+1)            // 3 (多播 cell 引用数, 最大 = PORT_NUM)
+```
+
 ## 2. 模块层次和职责
 
 ```mermaid
@@ -64,6 +78,26 @@ flowchart LR
 | `occupancy_pool_mgr.sv` | 占用、双池、max、PAUSE/PFC、统计 | 否 |
 | `aging_ctrl.sv` | 每队列计时、RR 选择、flush 握手 | 否 |
 | `csr_stats_init.sv` | 配置采样、统计寄存、初始化 FSM | 否 |
+
+### 2.1 顶层接口分组
+
+`smmu.sv` 的端口按功能分为 6 组（注释中的 G1~G6）。讲 PPT 时按这几组切分最清晰：
+
+| 组 | 名称 | 主要信号 | 方向 (相对 MMU) | 说明 |
+|---|---|---|---|---|
+| G1 | 时钟/复位/初始化 | `clk_core` `rst_core_n` `init_start` `init_done` | in / out | 单时钟域；`init_start` 上升沿触发建链 |
+| G2 | 入队/地址分配 | `enq_req` `enq_queue_id(TC)` `enq_egress_port` `enq_cell_num` `enq_is_mcast` `enq_mcast_bitmap` `enq_sof/eof` → `enq_ready` `enq_predict_drop` `alloc_valid` `alloc_cell_addr` `alloc_drop_ind` `alloc_sram_flag` `alloc_pkt_head/tail` `enq_q_cell_cnt[]` `enq_free_count` | in → out | 1 拍；`enq_queue_id` 只带 TC，完整队列由 `{egress_port,tc}` 合成 |
+| G3 | 出队/地址读取 | `deq_req` `deq_queue_id(TC)` `deq_egress_port` `deq_backpressure` → `deq_ready` `deq_cell_valid` `deq_cell_addr` `deq_pkt_head/tail` | in → out | 1 拍；背靠背 1 cell/cycle |
+| G4 | 地址回收 | `recycle_req` `recycle_cell_addr` `recycle_queue_id(TC)` `recycle_egress_port` `recycle_is_mcast` → `recycle_ack` | in → out | 统一逐 cell 还链，单/多播同接口 |
+| G5 | 流控/告警/配置/统计 | `pause_req` `pfc_req[PORT][TC]` `irq_alarm` `irq_aging` `overflow_alarm` `underflow_alarm`；`cfg_in_*`（标量广播）；`st_out_*` | out / in / out | CSR 直采无总线；配置标量在顶层 fanout 成数组 |
+| G6 | 满/空反馈 | `q_empty[32]` `q_pkt_empty[32]` `q_max_reached[33]` `port_max_reached[4]` `global_max_reached` | out | 供 QM 调度与入队前置门控 |
+
+要点：
+
+- **配置端口是标量、片内统一阈值。** 所有队列/端口/TC 用同一套阈值，顶层用组合把标量 `cfg_in_*` 广播（fanout）成 `_arr` 数组再下发 `csr/occ/aging`。
+- **`enq_predict_drop` 是纯组合、当拍返回。** QM 在 SOF 拍给 `enq_cell_num` 即可读整包能否放下，无需等 1 拍结果，用于入队前置门控。
+- **告警汇聚：** 顶层 `underflow_alarm = occ_underflow_alarm | mcast_underflow`；`overflow_alarm = occ_overflow_alarm`。二者在 `csr_stats_init` 内再聚成 `irq_alarm`。
+- **`q_empty` vs `q_pkt_empty`：** 前者按 cell 占用判空（承载未读完多播时也算非空），后者按“在队完整包数”判空；两者都是 32 位（仅常规队列），多播计入各目的端口承载队列。
 
 ## 3. 链表数据结构
 
@@ -154,13 +188,16 @@ enq_ready = init_done
 
 ```text
 occ_use_static = q_static_used[qid] < cfg_q_min_cell[qid]
-max_hit = q_used >= q_max
-        | port_used >= port_max
+max_hit = q_used      >= q_max
+        | port_used   >= port_max
         | global_used >= global_max
+        | shared_used >= cfg_shared_limit    // ★ 动态共享池独立上限
 drop = no_free | (!occ_use_static & max_hit)
 ```
 
-SOF 还会基于 `enq_cell_num` 做整包预判。若整包不能完全落入静态剩余额度，则要求 free、q、port、global 四项在加上整包 cell 数后均不越界。预判命中时从 SOF 开始整帧丢弃，避免产生半包残链。
+`max_hit_drop` 除了 q/port/global 三层 max，还包含 **动态共享池总额度** `shared_max_hit`（见 §9.2），共四项。
+
+SOF 还会基于 `enq_cell_num` 做整包预判 (`occ_predict_drop`)。若整包不能完全落入静态剩余额度 `pred_s_rem`，则要求 free、q、port、global 以及共享池五项在加上整包 cell 数后均不越界，其中共享池只约束超出静态额度的部分 `(pred_cell_num - pred_s_rem)`。预判命中时从 SOF 开始整帧丢弃，避免产生半包残链。
 
 ### 4.2 整帧丢弃 FSM
 
@@ -291,15 +328,18 @@ deq_pend_same_q = 上拍读 pending & 本拍仍出同 qid
 ], "head": { "text": "同一长队列连续走链：返回路径一拍，预取读在后台流水" } }
 ```
 
-### 5.5 `deq_pkt_tail_next`
+### 5.5 T1 返回信号（勘误）
 
-该输出在 T1 表示“本次返回的 cell 不是尾，但预取到的下一 cell 是尾”：
+`dequeue_ctrl.sv` 的 T1 只寄存并返回四个信号，**没有** `deq_pkt_tail_next` 端口：
 
 ```text
-deq_pkt_tail_next = deq_fire & next_pkt_tail & !current_pkt_tail
+deq_cell_valid <= deq_fire
+deq_cell_addr  <= lle_qhead            // 队头地址, T0 当拍组合可读
+deq_pkt_head   <= lle_qhead_pkt_head   // 队头描述符 (预取)
+deq_pkt_tail   <= lle_qhead_pkt_tail
 ```
 
-QM 可据此提前准备下一拍的包尾处理。
+即“本次返回 cell 是否包尾”由 `deq_pkt_tail` 表达即可。LLE 内部确有 `next_pt`（`mc_cur_pt`/预取节点的 pt）用于自身流水前瞻，但它不作为顶层输出。QM 判断包边界只依赖 `deq_pkt_head/deq_pkt_tail`。
 
 ## 6. 还链
 
@@ -532,18 +572,47 @@ lle_free_evt  = recycle FIFO push
 
 当前静态回收策略是：只要该队列 `q_static_used_q!=0`，任意一次该队列 free 都先减少静态使用量；RTL 并不跟踪“具体哪个 cell 来自静态还是共享”。这是计数抽象，而非 cell 级池标签。
 
-### 9.3 PAUSE/PFC 迟滞
-
-PAUSE：
+**动态共享池独立上限。** occupancy 用一个精确记账区分静态/共享占用：
 
 ```text
-set = port_used >= port_xoff  OR global_used >= global_xoff
-clr = port_used <  port_xon   AND global_used <  global_xon
+total_static_used = Σ q_static_used_q[i]         // 所有队列已用的静态预留额度
+shared_used        = global_used - total_static_used  // 落到动态共享池的 cell 数
+shared_max_hit     = (shared_used >= cfg_shared_limit)
 ```
 
-PFC：每个 `(port,tc)` 直接观察相应单播队列占用，在 `xoff` 置位、`xon` 以下清除，中间区保持。
+`shared_max_hit` 作为 `max_hit_drop` 的第四项参与丢弃判决。它约束的是“超出各队列保底额度、抢占共享池的那部分 cell”，与 q/port/global 三层 max 相互独立。这样即使 global_max 还没到，共享池自身额度耗尽也能挡住抢占型流量，保护各队列的 guaranteed 预留。
+
+### 9.3 PAUSE/PFC 迟滞
+
+PAUSE（`pause_req[PORT_NUM]`，端口聚合 + 全局共同判决，`cfg_pause_en` 总闸）：
+
+```text
+global_xoff = (global_used >= cfg_global_pause_xoff)
+global_xon  = (global_used <  cfg_global_pause_xon)
+set[p] = (port_used[p] >= cfg_port_pause_xoff[p]) | global_xoff   // 端口或全局达到 xoff
+clr[p] = (port_used[p] <  cfg_port_pause_xon[p])  & global_xon    // 端口且全局回落 xon
+// xon~xoff 中间区保持原值 (迟滞)
+```
+
+PFC（`pfc_req[PORT_NUM][TC_NUM]`，每 `(port,tc)` 独立，`cfg_pfc_en` 总闸）：每个 `(port,tc)` 直接观察相应单播队列占用 `per_tc_used[p][tc] = q_cell_cnt_q[p*TC_NUM+tc]`，在 `xoff` 置位、`xon` 以下清除，中间区保持。
 
 多播只计 MC_QID，因此其物理 cell 占用不会进入 per-port PAUSE/PFC 阈值，只会通过 global 水位产生影响。
+
+### 9.4 统计与告警
+
+occupancy 产出并经 `csr_stats_init` 寄存一拍后输出的统计（`st_out_*`，`STAT_W=32`，饱和计数）：
+
+| 统计 | 含义 |
+|---|---|
+| `st_global_used` / `st_free_count` | 全局占用 / 空闲计数 |
+| `st_per_queue_used[33]` / `st_per_port_used[4]` | 每队列 / 每端口占用 |
+| `st_q_static_used[33]` | 每队列静态池占用 |
+| `st_q_max_reached_status[33]` | 到 max 状态镜像 |
+| `st_tail_drop_cnt[33]` | 命中 max/池空 丢包计数 (按 cell) |
+| `st_q_max_assert_cnt[33]` | 队列 max 由 0→1 置位次数 |
+| `st_pause_tx_cnt[4]` | 每端口 PAUSE 上升沿计数 |
+
+告警：`overflow_alarm = global_used > CELL_NUM`；`underflow_alarm = 守恒破坏 | 分配时 free 空 | 回收时 global 空`。守恒式 `free_count + global_used == CELL_NUM`。顶层再并入 `mcast_underflow`，`csr_stats_init` 聚成 `irq_alarm`；`irq_aging` 来自 `aging_ctrl`。
 
 ## 10. 老化
 
@@ -708,7 +777,31 @@ B、C 同理
 - aging flush 在 recycle FIFO full、持续 enq、持续长链 deq 下的饥饿与最终完成。
 - 软件 force 位持续多拍，确认是否按期望只产生一次或重复 flush。
 
-## 14. 源码索引
+## 14. PPT 讲解建议大纲
+
+面向 15~25 页幻灯片，按“是什么 → 怎么连 → 怎么走 → 边界与验证”推进：
+
+1. **封面 + 一句话定位**：SMMU = QM 下方的共享 SRAM 地址管理器（不是 IOMMU）。放 §1 结论先行的要点与规模表。
+2. **整体架构图**：§2 的 mermaid flowchart，强调 LLE 是 Next-Ptr SRAM 唯一访问者。
+3. **顶层接口全景**：§2.1 的 G1~G6 分组表，一页看清 MMU 对 QM/CSR/MAC 的所有信号。
+4. **为什么用链表**：对比“固定分区 vs 链表+共享池”，讲清链表的原理、使用理由与必要性——把整片 SRAM 打散成 256B cell 放进同一 free 池，用 `next` 指针把物理不连续的 cell 串成逻辑队列，按需共享、动态伸缩、回收即还池；在 4 端口×8 TC=32 队列 + 多播、流量突发不均衡的场景下，是高利用率 + 低丢包的关键。
+5. **链表数据结构**：§3.1 权威状态 + entry 格式 + 两级预取的动机（隐藏 SRAM 1 拍读延迟）。
+6. **上电初始化**：§3.2 建链 FSM 与结束态，说明 `init_done` 门控业务。
+7. **入队与挂链**：§4 队列号合成、占用判决、整帧丢弃 FSM、空/非空挂链、T0/T1 时序图。
+8. **出队与走链**：§5 队头推进、`cnt>=3` 读 SRAM 的原因、连续同队列旁路时序图。
+9. **还链两阶段**：§6 recycle FIFO 接收/落链、`recycle_ack` 语义、时序图。
+10. **多播（核心亮点）**：§7 单槽零复制、逻辑插入位置、逐端口私有读、逐 cell 引用还链，配 §11.2 完整事务。
+11. **仲裁与并发**：§8 资源拆分表 + 并发矩阵 + 包级入队锁。
+12. **占用/双池/流控（两条并行判决路径）**：§9。一张“同一份占用计数 → 两套阈值 → 两组输出”图：① 丢弃判决（→ QM）看 `q_min` 保底够不够、不够借共享池(≤`shared_limit`)、再配合 QM 请求整包 `cell_num` 做整包预判，输出 `occ_drop`/`occ_predict_drop`；② PAUSE/PFC（→ MAC）用另一套水位阈值，越 XOFF 发、回落 XON 撤销、中间迟滞，输出 `pause_req`/`pfc_req`。
+13. **老化**：§10 计时喂狗、RR 仲裁、LLE flush FSM、多播老化风险。
+14. **完整事务走查**：§11 单播 3-cell 全流程，作为“串起所有环节”的收束页。
+15. **风险与验证**：§12 约束风险点 + §13 SVA/覆盖点，展示对实现边界的把握。
+16. **收尾**：源码索引（§15）与 Q&A。
+
+
+演示技巧：WaveDrom 时序图和 Mermaid 状态图可先渲染成图片贴入 PPT；每个子模块用“输入-做什么-输出”三行讲清；多播、仲裁、双池判决三块留足时间，是评审最关注的差异化设计。
+
+## 15. 源码索引
 
 - 顶层和互连：`rtl/smmu.sv`
 - 入队判决、整帧丢弃、T1 返回：`rtl/enqueue_ctrl.sv`
