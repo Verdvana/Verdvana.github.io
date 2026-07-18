@@ -330,15 +330,21 @@
   - init_start 上升沿 → 拉 `init_build_req` (脉冲) + `clr_ptr_cnt` → 命 LLE 建空闲链。
   - LLE 建链 FSM (`ST_IDLE→ST_BUILD→ST_DONE`)：逐 cell 写 `next = idx+1`，最后一 cell next 自指。
   - 建链完成 `init_build_done` → `init_done=1` (保持)，各 Ctrl 才接收请求。
-- **建议配图**：两个状态机联动图 (CSR Init FSM ↔ LLE Build FSM)，标注 init_build_req / done 握手。
-- **建议表格：初始状态**
+- **建议配图 1**：两个状态机联动图 (CSR Init FSM ↔ LLE Build FSM)，标注 init_build_req / done 握手。
+- **建议配图 2（寄存器 + SRAM 值变化举例，交给 AI 生成 PNG，须附文首"AI 生成配图统一风格锚点"）**：
+  展示建链过程中 Next-Ptr SRAM 与 free 链寄存器如何被逐 cell 写成一条顺序链。
+  > *A clean flat-vector "linked-list build" state illustration for a slide. LEFT: a vertical table titled "Next-Ptr SRAM" with 8 rows addressed 0..7, each row a box showing field "next"; during build each cell's next is written to (addr+1), i.e. row0.next=1, row1.next=2, ... row6.next=7, and the last row7.next=7 (self-loop, highlighted). RIGHT: three small register boxes labeled "free_head_q = 0", "free_head_next_q = 1", "free_head_next2_q = 2", plus "free_tail_q = 7", "free_cnt_q = 8". A downward "build index" pointer sweeps rows 0→7 in deep-blue (#3253DC); written rows filled sky-blue (#6CA0F6), current row highlighted cyan (#00C2DE), the self-loop last row marked with a small red (#E4002B) loop arrow. Caption: "power-up: every cell.next = next cell, free chain 0→1→…→7". White background, dark-gray (#2E2E38) labels and arrows, thin 1px rounded boxes, sans-serif, monospace for signal names, minimalist corporate style, 16:9, no photo, no 3D.*
+- **建议表格：初始状态 (以 CELL_NUM=8 举例)**
 
-  | 寄存器 | 初值 | 说明 |
+  | 寄存器 | 初值 (示例) | 说明 |
   |---|---|---|
-  | free_head | 0 | 空闲链头 |
-  | free_tail | CELL_NUM-1 | 空闲链尾 |
-  | free_cnt | CELL_NUM | 全部空闲 |
-  | q_cell_cnt[*] | 0 | 各队列清空 |
+  | free_head_q | 0 | 空闲链头 (下一个要分配的 cell) |
+  | free_head_next_q | 1 | 预取第 2 个空闲 cell |
+  | free_head_next2_q | 2 | 预取第 3 个空闲 cell |
+  | free_tail_q | 7 (=CELL_NUM-1) | 空闲链尾 |
+  | free_cnt_q | 8 (=CELL_NUM) | 全部空闲 |
+  | q_head/tail/cnt[*] | 0 | 各队列清空 |
+  | SRAM[i].next | i+1 (末 cell 自指) | 建链结果, 顺序串成一条 free 链 |
 
 ---
 
@@ -348,8 +354,16 @@
   - **T0**：收 QM `enq_req` → 合成 full_qid → 组合查 Occupancy (occ_query_vld) 当拍返回判决 → 若接收，取 `lle_free_head` 作分配地址、发 1 拍 `lle_alloc_fire`。
   - **T1**：寄存输出 `alloc_valid / alloc_cell_addr / alloc_drop_ind / alloc_pkt_head/tail`。
   - 握手：`enq_ready = init_done & lle_alloc_ready`；deq 抢占 SRAM 时 ready=0，QM 自动重试。
-- **建议配图**：T0/T1 两拍时序波形
+- **建议配图 1**：T0/T1 两拍时序波形
   - 信号：clk, enq_req, occ_query_vld, occ_accept, lle_alloc_fire, alloc_valid, alloc_cell_addr。
+- **建议配图 2（挂链时寄存器 + SRAM 值变化举例，交给 AI 生成 PNG，须附文首"AI 生成配图统一风格锚点"）**：
+  只针对**一条队列 Q5** 与 **free 链**（不画其它队列）。以"向 Q5 连续挂 3 个 cell A、B、C"为例，用**四列**展示：第 1 列为"入队前初始状态"，后 3 列分别为 Cycle 1/2/3 挂 A/B/C 后的状态。每列展示 Q5 的链寄存器 (head/tail/cnt)、free 链头寄存器 (free_head)、以及 Next-Ptr SRAM 相关行的值。突出 **tail 不在当拍写 SRAM、而是暂存在 `q_tail_q` 寄存器，relink 推迟到下一个 cell 入队那拍**。
+  > *A clean flat-vector state-evolution table diagram titled "Enqueue: hanging cells A,B,C onto ONE queue Q5 (and the free chain)", corporate slide style, arranged as FOUR columns left-to-right: Column0 "Init (before enqueue)", Column1 "Cycle1: enqueue A", Column2 "Cycle2: enqueue B", Column3 "Cycle3: enqueue C". Only queue Q5 and the free chain are shown — do NOT draw any other queue. Each column shows the same three grouped items stacked vertically: (a) Q5 link registers box = { q_head_q, q_tail_q, q_cell_cnt_q }; (b) free-chain register box = { free_head_q }; (c) a small "Next-Ptr SRAM" mini-table listing only the relevant rows (A, B, C) with their "next" field. Values per column: Init → Q5 empty (q_head_q=-, q_tail_q=-, cnt=0), free_head_q=A, SRAM rows A/B/C.next all unwritten. Cycle1 (enqueue A, empty queue) → q_head_q=A, q_tail_q=A, cnt=1, free_head_q advances to B, and NO SRAM write this cycle (put a green (#3DBB6B) callout "empty queue: no old tail → nothing written to SRAM"). Cycle2 (enqueue B) → q_tail_q updates A→B (in register only), cnt=2, free_head_q advances to C, and NOW write SRAM row A.next=B (relink previous tail, highlight this write). Cycle3 (enqueue C) → q_tail_q updates B→C, cnt=3, and write SRAM row B.next=C. Use deep-blue (#3253DC) for the SRAM table, sky-blue (#6CA0F6) for register boxes, cyan (#00C2DE) to highlight the just-changed value/row in each column, a persistent green (#3DBB6B) note at the bottom "tail is kept in register q_tail_q; the SRAM relink (old_tail.next = new_cell) is deferred to the NEXT enqueue cycle". White background, dark-gray (#2E2E38) text and arrows, thin 1px rounded boxes, monospace signal names, minimalist corporate style, 16:9, no photo, no 3D.*
+- **正文补充 —— 为什么 tail 不在当拍写 SRAM (放专用寄存器 q_tail_q)**：
+  - 挂链要做两件事：把新 cell 记为队尾、并把"旧队尾的 next"指向新 cell (relink)。
+  - 旧队尾的 next 要写进 SRAM，但**当拍分配新 cell 时并不知道再下一个 cell 是谁**，而且 SRAM 每拍只有 1 个写口，还要留给别的事务。
+  - 做法：队尾地址 `q_tail_q`、尾部头尾标志 `q_tail_ph_q/pt_q` 全部**先存寄存器**；真正的 relink (写 `SRAM[旧tail].next = 新cell`) 推迟到**下一个 cell 入队那一拍**顺便完成 (`npr_w_addr = q_tail_q`)。
+  - 好处：① 空队列挂第 1 个 cell 时根本不用写 SRAM (没有旧 tail)；② 每拍最多一次 SRAM 写，避免写口冲突；③ tail 在寄存器里组合可读，出队/统计都能当拍拿到，无需读 SRAM。
 - **建议表格：入队判决输入/输出**
 
   | 信号 | 方向 | 含义 |
@@ -359,6 +373,15 @@
   | enq_predict_drop | out | 入队前整包预判 |
   | alloc_cell_addr | out | 分配地址 |
   | alloc_drop_ind | out | 丢包指示 |
+
+- **建议表格：挂链到 Q5 的寄存器/SRAM 值演进 (初始 + A→B→C，共四列对应配图)**
+
+  | 状态 | 动作 | q_head_q | q_tail_q | q_cell_cnt | free_head_q | 本拍 SRAM 写 |
+  |---|---|---|---|---|---|---|
+  | 初始 | 入队前 (空队列) | — | — | 0 | A | — |
+  | Cycle 1 | 挂 A (空队列) | A | A | 1 | B | 无 (无旧 tail) |
+  | Cycle 2 | 挂 B | A | B | 2 | C | SRAM[A].next=B |
+  | Cycle 3 | 挂 C | A | C | 3 | D | SRAM[B].next=C |
 
 ---
 
@@ -388,7 +411,10 @@
   - **T1**：输出 `deq_cell_valid / deq_cell_addr / deq_pkt_head/tail`。
   - `deq_fire = deq_req & deq_ready & ~lle_q_empty & ~port_bp`。
   - 队头推进 + 预取由 LLE 流水完成；`deq_backpressure[port]` 暂停该端口对应队列。
-- **建议配图**：出队两拍时序 + 队头前进示意 (head→next)
+- **建议配图 1**：出队两拍时序 + 队头前进示意 (head→next)
+- **建议配图 2（出队时寄存器 + SRAM 值变化举例，交给 AI 生成 PNG，须附文首"AI 生成配图统一风格锚点"）**：
+  以"队列 Q5 链为 A→B→C→D (cnt=4)，连续出队"为例，分帧展示队头三级预取寄存器 (head/head_next/head_next2) 如何滑动、以及后台读 SRAM 回填最远一级。突出"队头在寄存器里，出队地址当拍即给，不等 SRAM"。
+  > *A clean flat-vector 3-frame step diagram titled "Dequeue: advancing head on queue Q5 (chain A→B→C→D)", corporate slide style, left-to-right frames. In each frame show a register group { q_head_q, q_head_next_q, q_head_next2_q, q_cell_cnt_q } and a small "Next-Ptr SRAM" read box. Frame1 (before): head=A, next=B, next2=C, cnt=4; a background SRAM read of C.next is issued. Frame2 "pop A": head=B, next=C, next2=D (D just came back from SRAM), cnt=3, output deq_addr=A; new background read D.next issued. Frame3 "pop B": head=C, next=D, next2=? (chain end soon), cnt=2, output deq_addr=B. Use sky-blue (#6CA0F6) for the three prefetch registers, cyan (#00C2DE) to highlight the sliding value each frame, deep-blue (#3253DC) for SRAM read, a green (#3DBB6B) callout "head is in a register → dequeue address available same cycle, SRAM read only refills the far level in background". White background, dark-gray (#2E2E38) text/arrows, thin 1px rounded boxes, monospace signal names, minimalist, 16:9, no photo, no 3D.*
 - **建议表格：出队握手条件**
 
   | 条件 | 说明 |
@@ -396,6 +422,14 @@
   | deq_req & deq_ready | 请求有效且已初始化 |
   | ~lle_q_empty | 队列非空 |
   | ~port_bp | 该端口未背压 |
+
+- **建议表格：Q5 连续出队的队头预取寄存器演进 (链 A→B→C→D)**
+
+  | 拍 | 动作 | q_head_q | q_head_next_q | q_head_next2_q | 后台 SRAM 读 | deq_addr(T1) |
+  |---|---|---|---|---|---|---|
+  | 1 | 出 A | A | B | C | 读 C.next(→D) | — |
+  | 2 | 出 B | B | C | D | 读 D.next | A |
+  | 3 | 出 C | C | D | (链尾) | — | B |
 
 ---
 
@@ -407,13 +441,26 @@
   - 单播：直接 push 回 free 链，occ 用其 queue_id `--`。
   - 多播：按 cell 引用计数 (ref-count)，每次还链 `--`，减到 0 才真正 push，occ 用 MC_QID。
   - occupancy 的 free 事件由 LLE 在真正 push 那拍产生 (与 free_cnt 同拍)。
-- **建议配图**：单播还链 vs 多播 ref-count 还链对比图
+- **建议配图 1**：单播还链 vs 多播 ref-count 还链对比图
+- **建议配图 2（还链时寄存器 + SRAM 值变化举例，交给 AI 生成 PNG，须附文首"AI 生成配图统一风格锚点"）**：
+  以"把 cell X 还回 free 链"为例，展示两阶段：① X 先进 recycle FIFO；② FIFO pop 时写 `SRAM[旧free_tail].next = X`、并把 `free_tail_q` 更新为 X。与入队"tail 暂存寄存器、下拍 relink"完全对称。
+  > *A clean flat-vector 2-stage step diagram titled "Recycle: returning cell X to the free chain", corporate slide style, left-to-right. Stage1 "accept": a "recycle FIFO" (depth-8 boxes) receives cell X into its tail; register "free_tail_q = T" unchanged yet; a note "free_cnt++ on push (counts as available immediately)". Stage2 "append to free tail": FIFO head X popped; a "Next-Ptr SRAM" row shows write SRAM[T].next = X (relink old free tail), and register free_tail_q updates T→X. Use sky-blue (#6CA0F6) for FIFO and registers, deep-blue (#3253DC) for SRAM, cyan (#00C2DE) to highlight the changed values (free_tail_q T→X and SRAM[T].next=X), a green (#3DBB6B) callout "symmetric to enqueue: old tail kept in register, SRAM relink deferred to the append cycle". White background, dark-gray (#2E2E38) text/arrows, thin 1px rounded boxes, monospace signal names, minimalist, 16:9, no photo, no 3D.*
+- **正文补充 —— 还链与入队对称的 tail 寄存器处理**：
+  - free 链的尾 `free_tail_q` 同样存在寄存器里；还链 pop 那拍才写 `SRAM[free_tail_q].next = X` 并更新 `free_tail_q ← X`。
+  - 这和入队侧"队尾 relink 推迟到下一拍"是同一手法：**tail 放寄存器、SRAM 写延迟到确有后继那拍**，保证每拍至多一次 SRAM 写、且空链追加时无需读旧 tail 的 SRAM。
 - **建议表格：还链路径**
 
   | 类型 | ref 处理 | push 时机 | occ 计数 |
   |---|---|---|---|
   | 单播 | 无 | 立即 | queue_id |
   | 多播 | 每次 -1 | 减到 0 | MC_QID |
+
+- **建议表格：还 cell X 的两阶段寄存器/SRAM 演进 (原 free_tail=T)**
+
+  | 阶段 | 动作 | recycle FIFO | free_tail_q | SRAM 写 |
+  |---|---|---|---|---|
+  | 1 接收 | X 入 FIFO, free_cnt++ | 尾部压入 X | T (不变) | 无 |
+  | 2 落链 | FIFO pop X | 弹出 X | T → X | SRAM[T].next=X |
 
 ---
 

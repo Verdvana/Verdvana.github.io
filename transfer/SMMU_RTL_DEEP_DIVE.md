@@ -271,6 +271,48 @@ q_cell_cnt++
 
 该旁路形成流式预取链，支持连续每拍分配一个 cell。
 
+```wavedrom
+{ "signal": [
+  { "name": "clk_core",          "wave": "p....." },
+  { "name": "enq_grant (入队)",   "wave": "01110." },
+
+  {},
+  ["free 三级预取寄存器 (时钟沿更新)",
+    { "name": "free_head_q",       "wave": "3.456.", "data": ["A","B","C","D"] },
+    { "name": "free_head_next_q",  "wave": "4.567.", "data": ["B","C","D","E"] },
+    { "name": "free_head_next2_q", "wave": "5.678.", "data": ["C","D","E","F"] }
+  ],
+
+  {},
+  ["SRAM 读口 (同步读: 本拍发命令, 下一拍返回)",
+    { "name": "npr_r_en (发读)",    "wave": "01110." },
+    { "name": "npr_r_addr (读谁)",  "wave": "x345x.", "data": ["C","D","E"], "node": ".abc.." },
+    { "name": "npr_r_data (返回)",  "wave": "xx345x", "data": ["D","E","F"], "node": "..xyz." }
+  ],
+
+  {},
+  ["旁路控制",
+    { "name": "enq_pend_q",        "wave": "01110." },
+    { "name": "enq_bypass",        "wave": "0.110." }
+  ],
+
+  {},
+  ["外部返回 (T1)",
+    { "name": "alloc_valid",       "wave": "01110." },
+    { "name": "alloc_addr",        "wave": "x3456.", "data": ["A","B","C","D"] }
+  ]
+],
+"edge": [
+  "a~>x 读C.next→返回D",
+  "b~>y 读D.next→返回E",
+  "c~>z 读E.next→返回F"
+],
+"config": { "hscale": 1 },
+"head": { "text": "背靠背入队：free-head 流式预取 + enq_bypass" }
+}
+
+```
+
 ## 5. 出队与走链
 
 ### 5.1 外部出队条件
