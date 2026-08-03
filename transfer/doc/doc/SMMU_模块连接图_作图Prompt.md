@@ -37,59 +37,37 @@ Suggested internal placement:
 - Right-bottom: aging_ctrl
 - Bottom: csr_stats_init (spanning the config/stats connections)
 
-=== EXTERNAL INTERFACE ARROWS (QM / EPS / MAC / SMMU top-level ports) ===
-QM --> enqueue_ctrl : "enq_req / enq_queue_id / enq_egress_port / enq_cell_num / enq_is_mcast / enq_mcast_bitmap / enq_sof / enq_eof"
-enqueue_ctrl --> QM : "enq_ready / enq_predict_drop / alloc_valid / alloc_cell_addr / alloc_drop_ind / alloc_pkt_head / alloc_pkt_tail / enq_q_cell_cnt / enq_free_count"
-QM --> dequeue_ctrl : "deq_req / deq_queue_id / deq_egress_port / deq_backpressure"
-dequeue_ctrl --> QM : "deq_ready / deq_cell_valid / deq_cell_addr / deq_pkt_head / deq_pkt_tail"
-EPS --> recycle_ctrl : "recycle_req / recycle_cell_addr / recycle_queue_id / recycle_egress_port / recycle_is_mcast"
+=== EXTERNAL INTERFACE ARROWS (KEY signals only — keep labels short) ===
+QM --> enqueue_ctrl : "enq_req"
+enqueue_ctrl --> QM : "alloc_valid / alloc_cell_addr"
+QM --> dequeue_ctrl : "deq_req"
+dequeue_ctrl --> QM : "deq_cell_addr"
+EPS --> recycle_ctrl : "recycle_req / recycle_cell_addr"
 recycle_ctrl --> EPS : "recycle_ack"
-occupancy_pool_mgr --> QM : "q_max_reached / port_max_reached / global_max_reached"
-lle --> QM : "q_empty / q_pkt_empty"
-occupancy_pool_mgr --> MAC : "pause_req (802.3x) / pfc_req (802.1Qbb)"
-[SMMU top-level ports] --> csr_stats_init : "init_start / cfg_in_* (thresholds, PAUSE/PFC/aging config)"
-csr_stats_init --> [SMMU top-level ports] : "init_done / irq_alarm / irq_aging / st_out_* (statistics)"
+occupancy_pool_mgr --> QM : "q/port/global_max_reached"
+occupancy_pool_mgr --> MAC : "pause_req / pfc_req"
+[SMMU top-level ports] --> csr_stats_init : "init_start / cfg_in_*"
+csr_stats_init --> [SMMU top-level ports] : "init_done / irq / st_out_*"
 (Note: CSR-related signals are top-level ports of SMMU — route them straight to the SMMU boundary edge, NOT to a separate external block.)
 
-=== INTERNAL INTER-MODULE ARROWS (with signal names + direction) ===
-[enqueue_ctrl <-> occupancy_pool_mgr]
-enqueue_ctrl --> occupancy_pool_mgr : "occ_query_vld / occ_query_queue_id / occ_query_egress_port / occ_query_cell_num"
-occupancy_pool_mgr --> enqueue_ctrl : "occ_accept / occ_drop / occ_use_static / occ_no_free / occ_predict_drop / occ_free_count / occ_q_cell_cnt"
+=== INTERNAL INTER-MODULE ARROWS (KEY signals only — 1 short label per arrow) ===
+enqueue_ctrl --> occupancy_pool_mgr : "occ_query"
+occupancy_pool_mgr --> enqueue_ctrl : "occ_accept / occ_drop"
+enqueue_ctrl --> lle : "alloc_fire"
+lle --> enqueue_ctrl : "free_head / alloc_ready"
+dequeue_ctrl --> lle : "deq_fire"
+lle --> dequeue_ctrl : "qhead / q_empty"
+recycle_ctrl --> lle : "free_req / free_addr"
+lle --> recycle_ctrl : "free_done"
+lle --> occupancy_pool_mgr : "alloc_evt / free_evt (++/--)"
+aging_ctrl --> lle : "age_flush_req"
+lle --> aging_ctrl : "q_occupied / age_flush_done"
+csr_stats_init --> occupancy_pool_mgr : "cfg_*"
+occupancy_pool_mgr --> csr_stats_init : "st_* / alarm"
+csr_stats_init --> aging_ctrl : "cfg_aging_*"
+csr_stats_init --> lle : "init_build_req"
 
-[enqueue_ctrl <-> lle]  (allocation)
-lle --> enqueue_ctrl : "lle_free_head / lle_free_empty / lle_alloc_ready / mc_busy"
-enqueue_ctrl --> lle : "lle_alloc_fire / lle_alloc_queue_id / lle_set_pkt_head / lle_set_pkt_tail / lle_alloc_is_mcast / lle_alloc_mcast_bitmap / lle_alloc_mcast_tc"
-
-[dequeue_ctrl <-> lle]  (read/dequeue)
-dequeue_ctrl --> lle : "lle_deq_queue_id / lle_deq_fire"
-lle --> dequeue_ctrl : "lle_qhead / lle_qhead_pkt_head / lle_qhead_pkt_tail / lle_q_empty"
-
-[recycle_ctrl <-> lle]  (free / return to list)
-recycle_ctrl --> lle : "lle_free_req / lle_free_addr / lle_free_queue_id / lle_free_is_mcast"
-lle --> recycle_ctrl : "lle_free_grant / lle_free_done"
-
-[lle -> occupancy_pool_mgr]  (occupancy events)
-lle --> occupancy_pool_mgr : "lle_alloc_evt / evt_queue_id / evt_egress_port  (per-queue/port ++)"
-lle --> occupancy_pool_mgr : "lle_free_evt / evt_free_queue_id / evt_free_egress_port  (per-queue/port --)"
-
-[lle <-> aging_ctrl]  (aging flush)
-lle --> aging_ctrl : "q_occupied_vec / deq_fire_evt / deq_fire_qid"
-aging_ctrl --> lle : "age_flush_req / age_flush_qid"
-lle --> aging_ctrl : "age_flush_busy / age_flush_done"
-
-[csr_stats_init -> occupancy_pool_mgr]  (config fanout)
-csr_stats_init --> occupancy_pool_mgr : "cfg_q_min_cell / cfg_q_max_cell / cfg_port_max / cfg_global_max / cfg_pause_en / cfg_pfc_* / cfg_*_pause_*"
-occupancy_pool_mgr --> csr_stats_init : "st_* statistics / overflow_alarm / underflow_alarm"
-
-[csr_stats_init -> aging_ctrl]
-csr_stats_init --> aging_ctrl : "cfg_aging_en / cfg_aging_timeout / cfg_age_force"
-aging_ctrl --> csr_stats_init : "aging_irq"
-
-[csr_stats_init -> lle]  (init build)
-csr_stats_init --> lle : "init_build_req / clr_ptr_cnt"
-lle --> csr_stats_init : "init_build_done"
-
-Also show a small internal SRAM icon inside "lle" labeled "Next-Ptr SRAM (1-cycle read)".
+Also show a small internal SRAM icon inside "lle" labeled "Next-Ptr SRAM".
 
 === COLOR SCHEME (use these exact hues, gradient/flat both OK) ===
 Use a modern blue palette (matching the reference swatches):
