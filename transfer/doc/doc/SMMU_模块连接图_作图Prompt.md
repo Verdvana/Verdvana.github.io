@@ -33,7 +33,8 @@ MODULES (boxes). Use a 4-column x 3-row grid. Sizes are relative:
   External actor boxes (medium, plain grey outline, blue text):
     - "QM"   at COL-A row-1 (top-left)
     - "EPS"  at COL-A row-2 (mid-left)
-    - "MAC"  at COL-A row-3 (bottom-left)
+    (Do NOT draw a MAC box. The pause/pfc signals just leave the SMMU boundary as an
+     output port — see below.)
   SMMU boundary: one big rounded rectangle covering COL-B..COL-D (all 3 rows),
     titled "SMMU". All 7 sub-modules are INSIDE this boundary.
   Sub-modules inside SMMU (rounded rectangles, blue fill):
@@ -55,16 +56,19 @@ QM                 --> enqueue_ctrl       : "enq_req"
 enqueue_ctrl       --> QM                 : "alloc_cell_addr"
 QM                 --> dequeue_ctrl       : "deq_req"
 dequeue_ctrl       --> QM                 : "deq_cell_addr"
-occupancy_pool_mgr --> QM                 : "max_reached"
 EPS                --> recycle_ctrl       : "recycle_req/addr"
 recycle_ctrl       --> EPS                : "recycle_ack"
-occupancy_pool_mgr --> MAC                : "pause_req/pfc_req"
+occupancy_pool_mgr --> "FLOW-CTRL (top-level out)" : "pause_req/pfc_req"
+   (Do NOT draw a MAC block or write the word "MAC". Just draw the pause/pfc arrow going
+    OUT of the SMMU boundary edge to a short output pin/port. It is an output only.)
 
---- CSR / init / stats: connect ALL of them to csr_stats_init box only (single occurrence) ---
-QM                 --> csr_stats_init     : "init_start/cfg_in"
-csr_stats_init     --> QM                 : "init_done/irq/st_out"
-   (Route these two lines from the QM box to the csr_stats_init box border. These are the
-    ONLY init/cfg/stat lines in the figure. Do NOT repeat init_start or cfg_in anywhere else.)
+--- CSR / init / stats: connect DIRECTLY to the SMMU top-level boundary edge (NOT via QM) ---
+   Draw two SEPARATE ports/pins on the LEFT edge of the SMMU boundary box labeled
+   "CSR/CFG" (input) and "STATS/IRQ" (output). These are TOP-LEVEL SMMU ports; the lines
+   go straight into/out of the SMMU boundary edge and terminate on the csr_stats_init box.
+   Do NOT connect them to QM/EPS/MAC. These two lines are the ONLY init/cfg/stat lines.
+"CSR/CFG (top-level)"   --> csr_stats_init : "init_start/cfg_in"
+csr_stats_init          --> "STATS/IRQ (top-level)" : "init_done/irq/st_out"
 
 --- Internal sub-module <-> sub-module ---
 enqueue_ctrl       --> occupancy_pool_mgr : "occ_query"
@@ -83,8 +87,10 @@ occupancy_pool_mgr --> csr_stats_init     : "st/alarm"
 csr_stats_init     --> aging_ctrl         : "cfg_aging"
 csr_stats_init     --> lle                : "init_build"
 
-COUNT CHECK: there are exactly 25 arrows total (8 external + 2 csr-external + 15 internal).
-Draw exactly these 25 arrows, no more, no fewer, and every arrow connects two named boxes.
+COUNT CHECK: there are exactly 24 arrows total. Every arrow connects two named boxes,
+OR connects a box to a labeled top-level SMMU boundary output/input port (used only for
+the pause/pfc output and the 2 CSR lines). There must be NO "max_reached" arrow and NO
+"MAC" block anywhere.
 
 ========================================================================
 COLOR SCHEME (modern blue palette, matching reference swatches):
@@ -92,7 +98,7 @@ COLOR SCHEME (modern blue palette, matching reference swatches):
 - Cyan-blue  #17B8E0 : DATAPATH arrows (enq_req, alloc_cell_addr, deq_req, deq_cell_addr,
                        recycle_req/addr, recycle_ack, alloc_fire, free_head, deq_fire,
                        qhead/q_empty, free_req/addr, free_done, alloc/free_evt)
-- Light blue #6B9BF2 : CONTROL/CONFIG arrows (occ_query, accept/drop, max_reached,
+- Light blue #6B9BF2 : CONTROL/CONFIG arrows (occ_query, accept/drop,
                        pause_req/pfc_req, init_start/cfg_in, init_done/irq/st_out,
                        age_flush_req, q_occupied, cfg, st/alarm, cfg_aging, init_build)
 - Sub-module fill: very light blue #EAF1FF with #6B9BF2 border
@@ -108,7 +114,7 @@ Legend at bottom-right (inside its own small box):
 
 ---
 
-## 二、25 条连线清单（供你逐条核对，防止悬空 / 重复）
+## 二、24 条连线清单（供你逐条核对，防止悬空 / 重复）
 
 | # | 起点模块 | 方向 | 终点模块 | 信号(唯一) | 类别 |
 |---|----------|------|----------|-----------|------|
@@ -116,29 +122,28 @@ Legend at bottom-right (inside its own small box):
 | 2 | enqueue_ctrl | → | QM | alloc_cell_addr | 数据 |
 | 3 | QM | → | dequeue_ctrl | deq_req | 数据 |
 | 4 | dequeue_ctrl | → | QM | deq_cell_addr | 数据 |
-| 5 | occupancy_pool_mgr | → | QM | max_reached | 控制 |
-| 6 | EPS | → | recycle_ctrl | recycle_req/addr | 数据 |
-| 7 | recycle_ctrl | → | EPS | recycle_ack | 数据 |
-| 8 | occupancy_pool_mgr | → | MAC | pause_req/pfc_req | 控制 |
-| 9 | QM | → | csr_stats_init | init_start/cfg_in | 控制 |
-| 10 | csr_stats_init | → | QM | init_done/irq/st_out | 控制 |
-| 11 | enqueue_ctrl | → | occupancy_pool_mgr | occ_query | 控制 |
-| 12 | occupancy_pool_mgr | → | enqueue_ctrl | accept/drop | 控制 |
-| 13 | enqueue_ctrl | → | lle | alloc_fire | 数据 |
-| 14 | lle | → | enqueue_ctrl | free_head | 数据 |
-| 15 | dequeue_ctrl | → | lle | deq_fire | 数据 |
-| 16 | lle | → | dequeue_ctrl | qhead/q_empty | 数据 |
-| 17 | recycle_ctrl | → | lle | free_req/addr | 数据 |
-| 18 | lle | → | recycle_ctrl | free_done | 数据 |
-| 19 | lle | → | occupancy_pool_mgr | alloc/free_evt | 数据 |
-| 20 | aging_ctrl | → | lle | age_flush_req | 控制 |
-| 21 | lle | → | aging_ctrl | q_occupied | 控制 |
-| 22 | csr_stats_init | → | occupancy_pool_mgr | cfg | 控制 |
-| 23 | occupancy_pool_mgr | → | csr_stats_init | st/alarm | 控制 |
-| 24 | csr_stats_init | → | aging_ctrl | cfg_aging | 控制 |
-| 25 | csr_stats_init | → | lle | init_build | 控制 |
+| 5 | EPS | → | recycle_ctrl | recycle_req/addr | 数据 |
+| 6 | recycle_ctrl | → | EPS | recycle_ack | 数据 |
+| 7 | occupancy_pool_mgr | → | SMMU 顶层输出端口 | pause_req/pfc_req | 控制 |
+| 8 | SMMU 顶层端口(CSR/CFG) | → | csr_stats_init | init_start/cfg_in | 控制 |
+| 9 | csr_stats_init | → | SMMU 顶层端口(STATS/IRQ) | init_done/irq/st_out | 控制 |
+| 10 | enqueue_ctrl | → | occupancy_pool_mgr | occ_query | 控制 |
+| 11 | occupancy_pool_mgr | → | enqueue_ctrl | accept/drop | 控制 |
+| 12 | enqueue_ctrl | → | lle | alloc_fire | 数据 |
+| 13 | lle | → | enqueue_ctrl | free_head | 数据 |
+| 14 | dequeue_ctrl | → | lle | deq_fire | 数据 |
+| 15 | lle | → | dequeue_ctrl | qhead/q_empty | 数据 |
+| 16 | recycle_ctrl | → | lle | free_req/addr | 数据 |
+| 17 | lle | → | recycle_ctrl | free_done | 数据 |
+| 18 | lle | → | occupancy_pool_mgr | alloc/free_evt | 数据 |
+| 19 | aging_ctrl | → | lle | age_flush_req | 控制 |
+| 20 | lle | → | aging_ctrl | q_occupied | 控制 |
+| 21 | csr_stats_init | → | occupancy_pool_mgr | cfg | 控制 |
+| 22 | occupancy_pool_mgr | → | csr_stats_init | st/alarm | 控制 |
+| 23 | csr_stats_init | → | aging_ctrl | cfg_aging | 控制 |
+| 24 | csr_stats_init | → | lle | init_build | 控制 |
 
-> `init_start` / `cfg_in` 只在第 9 行出现一次；`init_done/st_out` 只在第 10 行出现一次。
+> 已删除 `max_reached` 连线；`init_start`/`cfg_in` 只在第 8 行出现一次，`init_done/st_out` 只在第 9 行出现一次，且**直连 SMMU 顶层端口，不经 QM**。
 
 ---
 
@@ -170,7 +175,11 @@ digraph SMMU {
   // external actors
   QM  [fillcolor="#DDE6FF", label="QM"];
   EPS [fillcolor="#DDE6FF", label="EPS"];
-  MAC [fillcolor="#DDE6FF", label="MAC"];
+
+  // SMMU top-level ports (直连顶层边框)
+  CSR_CFG   [shape=cds, fillcolor="#DDE6FF", label="CSR/CFG\n(top-level)"];
+  STATS_IRQ [shape=cds, fillcolor="#DDE6FF", label="STATS/IRQ\n(top-level)"];
+  FLOWCTRL  [shape=cds, fillcolor="#DDE6FF", label="pause/pfc\n(top-level out)"];
 
   // SMMU boundary as a cluster
   subgraph cluster_smmu {
@@ -199,10 +208,9 @@ digraph SMMU {
 
   // control/config/stats (light blue)
   edge [color="#6B9BF2"];
-  occupancy_pool_mgr -> QM        [label="max_reached"];
-  occupancy_pool_mgr -> MAC       [label="pause_req/pfc_req"];
-  QM -> csr_stats_init            [label="init_start/cfg_in"];
-  csr_stats_init -> QM            [label="init_done/irq/st_out"];
+  occupancy_pool_mgr -> FLOWCTRL  [label="pause_req/pfc_req"];
+  CSR_CFG -> csr_stats_init       [label="init_start/cfg_in"];
+  csr_stats_init -> STATS_IRQ     [label="init_done/irq/st_out"];
   enqueue_ctrl -> occupancy_pool_mgr [label="occ_query"];
   occupancy_pool_mgr -> enqueue_ctrl [label="accept/drop"];
   aging_ctrl -> lle               [label="age_flush_req"];
@@ -218,9 +226,10 @@ digraph SMMU {
 
 ## 五、模块关系一句话总览（帮你理解，不进图片）
 
-- **QM**：入队 `enqueue_ctrl` 拿地址、出队 `dequeue_ctrl` 读地址；CSR 配置/初始化/统计也经 QM 侧顶层端口进出（图中只画一次）。
+- **QM**：入队 `enqueue_ctrl` 拿地址、出队 `dequeue_ctrl` 读地址。
 - **EPS**：经 `recycle_ctrl` 逐 cell 回收地址。
+- **CSR 配置/初始化/统计**：直接连到 **SMMU 顶层端口**（CSR/CFG 进、STATS/IRQ 出），**不经过 QM**，全图只画一进一出两条线。
 - **LLE**：核心枢纽，独占 Next-Ptr SRAM，处理 alloc/dequeue/free，并向 `occupancy_pool_mgr` 发占用事件。
-- **occupancy_pool_mgr**：双池水位判决，回吐 accept/drop，对外产生 `max_reached` 与 `pause/pfc`。
+- **occupancy_pool_mgr**：双池水位判决，回吐 accept/drop 给 enqueue，并把 `pause_req/pfc_req` 作为 **SMMU 顶层输出端口**接出（图中不画 MAC 块，也删除了 `max_reached`）。
 - **aging_ctrl**：超时触发 `age_flush_req` 让 LLE 冲刷老化队列。
 - **csr_stats_init**：无总线，采配置 fanout 给 occ/aging/lle，管理初始化建链与统计中断。
