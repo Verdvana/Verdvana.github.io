@@ -1,0 +1,953 @@
+{"kind":"deck","id":"pr/bh0erw","name":"Deck"}
+{"kind":"layout","layoutId":"/ppt/slideMasters/slideMaster1.xml","name":"","type":"master"}
+{"kind":"layout","layoutId":"/ppt/slideLayouts/slideLayout1.xml","name":"DEFAULT"}
+{"kind":"slide","id":"sl/y90nupkv","slide":1,"title":"SMART MMU (SMMU)","textShapes":9}
+{"kind":"shape","id":"sh/k3yl0zql","slide":1,"name":"Shape 0","bbox":[0,0,375,540]}
+{"kind":"textbox","id":"sh/7qp4be9c","slide":1,"name":"Text 1","text":"SMART MMU (SMMU)\nDesign Module Overview","textPreview":"SMART MMU (SMMU) | Design Module Overview","textChars":39,"textLines":2,"bbox":[72,109.17,258,129.02]}
+{"kind":"textbox","id":"sh/65g3298r","slide":1,"name":"Text 2","text":"Flexible Shared SRAM Address Management Module","textPreview":"Flexible Shared SRAM Address Management Module","textChars":46,"textLines":1,"bbox":[72,237.56,258,61.87]}
+{"kind":"textbox","id":"sh/ts7md4r2","slide":1,"name":"Text 3","text":"Project: 4-Port 2.5G/1G/100M Ethernet Switch","textPreview":"Project: 4-Port 2.5G/1G/100M Ethernet Switch","textChars":44,"textLines":1,"bbox":[45,344.44,285,21.6]}
+{"kind":"textbox","id":"sh/sryl4zqx","slide":1,"name":"Text 4","text":"Clock Domain: clk_core, 300 MHz Single Clock Domain","textPreview":"Clock Domain: clk_core, 300 MHz Single Clock Domain","textChars":51,"textLines":1,"bbox":[45,366.04,285,21.6]}
+{"kind":"textbox","id":"sh/fu94fe98","slide":1,"name":"Text 5","text":"Version: RTL B2 Multicast Stitching Edition","textPreview":"Version: RTL B2 Multicast Stitching Edition","textChars":43,"textLines":1,"bbox":[45,387.63,285,21.6]}
+{"kind":"textbox","id":"sh/utg3698n","slide":1,"name":"Text 6","text":"Date: July 16, 2026","textPreview":"Date: July 16, 2026","textChars":19,"textLines":1,"bbox":[45,409.23,285,21.6]}
+{"kind":"textbox","id":"sh/wn6dc7eh","slide":1,"name":"Text 7","text":"CONFIDENTIAL TECHNICAL REVIEW","textPreview":"CONFIDENTIAL TECHNICAL REVIEW","textChars":29,"textLines":1,"bbox":[45,499.5,156.69,10.5]}
+{"kind":"shape","id":"sh/hofulsf2","slide":1,"name":"Shape 8","bbox":[375,0,585,540]}
+{"kind":"textbox","id":"sh/ul4vaxgb","slide":1,"name":"Text 9","text":"Simplified Block Diagram of the Main Packet-Processing Path","textPreview":"Simplified Block Diagram of the Main Packet-Processing Path","textChars":59,"textLines":1,"bbox":[570,80.06,195,48]}
+{"kind":"shape","id":"sh/vmdcj2xw","slide":1,"name":"Shape 10","bbox":[405,123.19,525,300]}
+{"kind":"textbox","id":"sh/5sfepcfe","slide":1,"name":"Text 11","text":"QM–SMMU interaction: SMMU manages addresses only and does not move payload data.","textPreview":"QM–SMMU interaction: SMMU manages addresses only and does not move payload data.","textChars":80,"textLines":1,"bbox":[488.42,445.69,358.16,24]}
+{"kind":"image","id":"im/xofe5sve","slide":1,"name":"Image 0","bbox":[0,0,960,540]}
+{"kind":"image","id":"im/wn6xcnut","slide":1,"name":"Image 1","bbox":[405,123.19,525,300]}
+{"kind":"notes","id":"nt/y90nupkv","slide":1,"text":""}
+{"kind":"slide","id":"sl/hwbqtkby","slide":2,"title":"AGENDA","textShapes":23}
+{"kind":"shape","id":"sh/ozy1ofad","slide":2,"name":"Shape 0","bbox":[0,0,960,60]}
+{"kind":"textbox","id":"sh/b29kza94","slide":2,"name":"Text 1","text":"AGENDA","textPreview":"AGENDA","textChars":6,"textLines":1,"bbox":[45,13.69,174.66,32.62]}
+{"kind":"shape","id":"sh/a10jqpsj","slide":2,"name":"Shape 2","bbox":[45,105,420,60]}
+{"kind":"shape","id":"sh/x4r21kru","slide":2,"name":"Shape 3","bbox":[45,105,3,60]}
+{"kind":"textbox","id":"sh/w3i1sfa9","slide":2,"name":"Text 4","text":"01","textPreview":"01","textChars":2,"textLines":1,"bbox":[67.5,124.69,30,20.62]}
+{"kind":"textbox","id":"sh/r65knqtk","slide":2,"name":"Text 5","text":"Design Context and Positioning","textPreview":"Design Context and Positioning","textChars":30,"textLines":1,"bbox":[112.5,124.69,105,20.62]}
+{"kind":"shape","id":"sh/q5wjelsz","slide":2,"name":"Shape 6","bbox":[495,105,420,60]}
+{"kind":"shape","id":"sh/ove9o7yd","slide":2,"name":"Shape 7","bbox":[495,105,3,60]}
+{"kind":"textbox","id":"sh/9wnqhczy","slide":2,"name":"Text 8","text":"02","textPreview":"02","textChars":2,"textLines":1,"bbox":[517.5,124.69,30,20.62]}
+{"kind":"textbox","id":"sh/mtwrmxg7","slide":2,"name":"Text 9","text":"Top-Level Architecture and Module Partitioning","textPreview":"Top-Level Architecture and Module Partitioning","textChars":46,"textLines":1,"bbox":[562.5,124.69,150,48]}
+{"kind":"shape","id":"sh/nu58f2hs","slide":2,"name":"Shape 10","bbox":[45,180,420,60]}
+{"kind":"shape","id":"sh/wjy9sry9","slide":2,"name":"Shape 11","bbox":[45,180,3,60]}
+{"kind":"textbox","id":"sh/xk7qlczu","slide":2,"name":"Text 12","text":"03","textPreview":"03","textChars":2,"textLines":1,"bbox":[67.5,199.69,30,20.62]}
+{"kind":"textbox","id":"sh/ahwrqhgj","slide":2,"name":"Text 13","text":"Core Data Structures (Cells / Linked Lists / Dual Pools)","textPreview":"Core Data Structures (Cells / Linked Lists / Dual Pools)","textChars":56,"textLines":1,"bbox":[112.5,199.69,216.67,32]}
+{"kind":"shape","id":"sh/bip8jmho","slide":2,"name":"Shape 14","bbox":[495,180,420,60]}
+{"kind":"shape","id":"sh/cnupgny5","slide":2,"name":"Shape 15","bbox":[495,180,3,60]}
+{"kind":"textbox","id":"sh/do3q9szq","slide":2,"name":"Text 16","text":"04","textPreview":"04","textChars":2,"textLines":1,"bbox":[517.5,199.69,30,20.62]}
+{"kind":"textbox","id":"sh/t8byxkn2","slide":2,"name":"Text 17","text":"Six Core Workflows (Initialization / Enqueue / Dequeue, etc.)","textPreview":"Six Core Workflows (Initialization / Enqueue / Dequeue, etc.)","textChars":61,"textLines":1,"bbox":[562.5,199.69,232.49,32]}
+{"kind":"shape","id":"sh/s72xofmh","slide":2,"name":"Shape 18","bbox":[45,255,420,60]}
+{"kind":"shape","id":"sh/76twva5c","slide":2,"name":"Shape 19","bbox":[45,255,3,60]}
+{"kind":"textbox","id":"sh/65kfmpor","slide":2,"name":"Text 20","text":"05","textPreview":"05","textChars":2,"textLines":1,"bbox":[67.5,274.69,30,20.62]}
+{"kind":"textbox","id":"sh/hcvy14ne","slide":2,"name":"Text 21","text":"Key Modules (LLE / Occupancy, etc.)","textPreview":"Key Modules (LLE / Occupancy, etc.)","textChars":35,"textLines":1,"bbox":[112.5,274.69,260.03,20.62]}
+{"kind":"shape","id":"sh/gbmxszmt","slide":2,"name":"Shape 22","bbox":[495,255,420,60]}
+{"kind":"shape","id":"sh/fadgzu58","slide":2,"name":"Shape 23","bbox":[495,255,3,60]}
+{"kind":"textbox","id":"sh/u94fqp4n","slide":2,"name":"Text 24","text":"06","textPreview":"06","textChars":2,"textLines":1,"bbox":[517.5,274.69,30,20.62]}
+{"kind":"textbox","id":"sh/p0vy54na","slide":2,"name":"Text 25","text":"Multicast Logic Stitching","textPreview":"Multicast Logic Stitching","textChars":25,"textLines":1,"bbox":[562.5,274.69,147.51,32]}
+{"kind":"shape","id":"sh/4zmxwzmp","slide":2,"name":"Shape 26","bbox":[45,330,420,60]}
+{"kind":"shape","id":"sh/mlgvq147","slide":2,"name":"Shape 27","bbox":[45,330,3,60]}
+{"kind":"textbox","id":"sh/nmpcj6ls","slide":2,"name":"Text 28","text":"07","textPreview":"07","textChars":2,"textLines":1,"bbox":[67.5,349.69,30,20.62]}
+{"kind":"textbox","id":"sh/onydsbmd","slide":2,"name":"Text 29","text":"Flow Control and Alerts (PAUSE / PFC)","textPreview":"Flow Control and Alerts (PAUSE / PFC)","textChars":37,"textLines":1,"bbox":[112.5,349.69,182.23,32]}
+{"kind":"shape","id":"sh/9o7ulg3y","slide":2,"name":"Shape 30","bbox":[495,330,420,60]}
+{"kind":"shape","id":"sh/a9gvulkj","slide":2,"name":"Shape 31","bbox":[495,330,3,60]}
+{"kind":"textbox","id":"sh/ba9cn6l4","slide":2,"name":"Text 32","text":"08","textPreview":"08","textChars":2,"textLines":1,"bbox":[517.5,349.69,30,20.62]}
+{"kind":"textbox","id":"sh/wbidwb29","slide":2,"name":"Text 33","text":"Timing and Performance","textPreview":"Timing and Performance","textChars":22,"textLines":1,"bbox":[562.5,349.69,75,20.62]}
+{"kind":"shape","id":"sh/xcrupg3u","slide":2,"name":"Shape 34","bbox":[45,405,420,60]}
+{"kind":"shape","id":"sh/id0vylkf","slide":2,"name":"Shape 35","bbox":[45,405,3,60]}
+{"kind":"textbox","id":"sh/je9crql0","slide":2,"name":"Text 36","text":"09","textPreview":"09","textChars":2,"textLines":1,"bbox":[67.5,424.69,30,20.62]}
+{"kind":"textbox","id":"sh/ru5cbqd4","slide":2,"name":"Text 37","text":"Parameterization and Configurability","textPreview":"Parameterization and Configurability","textChars":36,"textLines":1,"bbox":[112.5,424.69,120,20.62]}
+{"kind":"shape","id":"sh/69wbilcj","slide":2,"name":"Shape 38","bbox":[495,405,420,60]}
+{"kind":"shape","id":"sh/tw7ud0va","slide":2,"name":"Shape 39","bbox":[495,405,3,60]}
+{"kind":"textbox","id":"sh/svedkvup","slide":2,"name":"Text 40","text":"10","textPreview":"10","textChars":2,"textLines":1,"bbox":[517.5,424.69,30,20.62]}
+{"kind":"textbox","id":"sh/fypcfqdg","slide":2,"name":"Text 41","text":"Summary and Outlook","textPreview":"Summary and Outlook","textChars":19,"textLines":1,"bbox":[562.5,424.69,75,20.62]}
+{"kind":"textbox","id":"sh/exgvmlcv","slide":2,"name":"Text 42","text":"SMMU Design Review","textPreview":"SMMU Design Review","textChars":18,"textLines":1,"bbox":[45,512.25,90.02,10.5]}
+{"kind":"textbox","id":"sh/107uh0v6","slide":2,"name":"Text 43","text":"Page 02","textPreview":"Page 02","textChars":7,"textLines":1,"bbox":[881.47,512.25,33.53,10.5]}
+{"kind":"image","id":"im/fidcv2to","slide":2,"name":"Image 0","bbox":[0,0,960,540]}
+{"kind":"notes","id":"nt/hwbqtkby","slide":2,"text":""}
+{"kind":"slide","id":"sl/ofy9wn61","slide":3,"title":"Design Context — MMU in the Switch ASIC","textShapes":23}
+{"kind":"shape","id":"sh/d0jax03i","slide":3,"name":"Shape 0","bbox":[0,0,960,60]}
+{"kind":"textbox","id":"sh/298ryl4v","slide":3,"name":"Text 1","text":"Design Context — MMU in the Switch ASIC","textPreview":"Design Context — MMU in the Switch ASIC","textChars":39,"textLines":1,"bbox":[45,13.69,437.32,32.62]}
+{"kind":"shape","id":"sh/3ah8rqlg","slide":3,"name":"Shape 2","bbox":[45,78,300,135]}
+{"kind":"shape","id":"sh/obq90bml","slide":3,"name":"Shape 3","bbox":[45,78,3,135]}
+{"kind":"textbox","id":"sh/pcjqtg36","slide":3,"name":"Text 4","text":"Core Responsibilities and Positioning","textPreview":"Core Responsibilities and Positioning","textChars":37,"textLines":1,"bbox":[60,93,270,20.62]}
+{"kind":"textbox","id":"sh/m5cra54z","slide":3,"name":"Text 5","text":"The MMU is the address-management submodule of the QM (Queue Manager). It centrally allocates addresses and organizes linked lists for the 2 MB shared data SRAM at a granularity of 256-byte cells.","textPreview":"The MMU is the address-management submodule of the QM (Queue Manager). It centrally allocates addresses and organizes linked lists for th...","textChars":196,"textLines":1,"bbox":[60,124.87,270,69.63]}
+{"kind":"shape","id":"sh/n6ls3alk","slide":3,"name":"Shape 6","bbox":[45,235.5,300,196.87]}
+{"kind":"shape","id":"sh/n2l4fq98","slide":3,"name":"Shape 7","bbox":[45,235.5,3,196.87]}
+{"kind":"textbox","id":"sh/m1c3mlsn","slide":3,"name":"Text 8","text":"Capacity Derivation","textPreview":"Capacity Derivation","textChars":19,"textLines":1,"bbox":[60,250.5,270,20.62]}
+{"kind":"shape","id":"sh/943mhgre","slide":3,"name":"Shape 9","bbox":[60,282.38,270,150]}
+{"kind":"shape","id":"sh/83ulovat","slide":3,"name":"Shape 10","bbox":[60.38,282.38,115.07,29.62]}
+{"kind":"textbox","id":"sh/v6l4jq94","slide":3,"name":"Text 11","text":"Item","textPreview":"Item","textChars":4,"textLines":1,"bbox":[60.38,282.38,115.07,29.62]}
+{"kind":"shape","id":"sh/a5c3ql8z","slide":3,"name":"Shape 12","bbox":[175.44,282.38,54.6,29.62]}
+{"kind":"textbox","id":"sh/x8nml0ra","slide":3,"name":"Text 13","text":"Value","textPreview":"Value","textChars":5,"textLines":1,"bbox":[175.44,282.38,54.6,29.62]}
+{"kind":"shape","id":"sh/w7ulsvqp","slide":3,"name":"Shape 14","bbox":[230.04,282.38,99.58,29.62]}
+{"kind":"textbox","id":"sh/ja54na9g","slide":3,"name":"Text 15","text":"Description","textPreview":"Description","textChars":11,"textLines":1,"bbox":[230.04,282.38,99.58,29.62]}
+{"kind":"textbox","id":"sh/i9w3u58v","slide":3,"name":"Text 16","text":"Shared Data SRAM","textPreview":"Shared Data SRAM","textChars":16,"textLines":1,"bbox":[60.38,312,115.07,30]}
+{"kind":"textbox","id":"sh/e10f2twf","slide":3,"name":"Text 17","text":"2 MB","textPreview":"2 MB","textChars":4,"textLines":1,"bbox":[175.44,312,54.6,30]}
+{"kind":"textbox","id":"sh/f29gbyx0","slide":3,"name":"Text 18","text":"Packet payload buffer","textPreview":"Packet payload buffer","textChars":21,"textLines":1,"bbox":[230.04,312,99.58,30]}
+{"kind":"textbox","id":"sh/03ix43e5","slide":3,"name":"Text 19","text":"Cell Granularity","textPreview":"Cell Granularity","textChars":16,"textLines":1,"bbox":[60.38,342,115.07,30]}
+{"kind":"textbox","id":"sh/14ryd8fq","slide":3,"name":"Text 20","text":"256 B","textPreview":"256 B","textChars":5,"textLines":1,"bbox":[175.44,342,54.6,30]}
+{"kind":"textbox","id":"sh/6d0fytg3","slide":3,"name":"Text 21","text":"Minimum management unit","textPreview":"Minimum management unit","textChars":23,"textLines":1,"bbox":[230.04,342,99.58,30]}
+{"kind":"textbox","id":"sh/re9g7yxo","slide":3,"name":"Text 22","text":"Total Cells","textPreview":"Total Cells","textChars":11,"textLines":1,"bbox":[60.38,372,115.07,30]}
+{"kind":"textbox","id":"sh/sfix03y9","slide":3,"name":"Text 23","text":"8192","textPreview":"8192","textChars":4,"textLines":1,"bbox":[175.44,372,54.6,30]}
+{"kind":"textbox","id":"sh/tgry9ofu","slide":3,"name":"Text 24","text":"2MB / 256B","textPreview":"2MB / 256B","textChars":10,"textLines":1,"bbox":[230.04,372,99.58,30]}
+{"kind":"textbox","id":"sh/a9kfadwn","slide":3,"name":"Text 25","text":"Address Width","textPreview":"Address Width","textChars":13,"textLines":1,"bbox":[60.38,402,115.07,30]}
+{"kind":"textbox","id":"sh/batgjixs","slide":3,"name":"Text 26","text":"13 bit","textPreview":"13 bit","textChars":6,"textLines":1,"bbox":[175.44,402,54.6,30]}
+{"kind":"textbox","id":"sh/l4fi9cza","slide":3,"name":"Text 27","text":"$clog2(8192)","textPreview":"$clog2(8192)","textChars":12,"textLines":1,"bbox":[230.04,402,99.58,30]}
+{"kind":"textbox","id":"sh/k3m1g7yp","slide":3,"name":"Text 28","text":"Data Plane (Payload) vs. Address Plane Comparison","textPreview":"Data Plane (Payload) vs. Address Plane Comparison","textChars":49,"textLines":1,"bbox":[498.73,78,292.55,28.8]}
+{"kind":"shape","id":"sh/z2d07mh4","slide":3,"name":"Shape 29","bbox":[375,107.62,540,360]}
+{"kind":"textbox","id":"sh/x0vi5czy","slide":3,"name":"Text 30","text":"QM/EPS moves the data; SMMU only allocates and reclaims 256-byte cell addresses (pointers) and manages their linked lists.","textPreview":"QM/EPS moves the data; SMMU only allocates and reclaims 256-byte cell addresses (pointers) and manages their linked lists.","textChars":122,"textLines":1,"bbox":[437.89,467.62,414.21,37.39]}
+{"kind":"textbox","id":"sh/czmhc7id","slide":3,"name":"Text 31","text":"SMMU Design Review","textPreview":"SMMU Design Review","textChars":18,"textLines":1,"bbox":[45,512.25,90.02,10.5]}
+{"kind":"textbox","id":"sh/byd032h8","slide":3,"name":"Text 32","text":"Page 03","textPreview":"Page 03","textChars":7,"textLines":1,"bbox":[881.47,512.25,33.53,10.5]}
+{"kind":"image","id":"im/hg7apkj6","slide":3,"name":"Image 0","bbox":[0,0,960,540]}
+{"kind":"image","id":"im/e90b690z","slide":3,"name":"Image 1","bbox":[375,107.62,540,360]}
+{"kind":"notes","id":"nt/ofy9wn61","slide":3,"text":""}
+{"kind":"slide","id":"sl/jyx0ra1s","slide":4,"title":"Core Design Constraints","textShapes":15}
+{"kind":"shape","id":"sh/0ba143al","slide":4,"name":"Shape 0","bbox":[0,0,960,60]}
+{"kind":"textbox","id":"sh/rm1k7yt4","slide":4,"name":"Text 1","text":"Core Design Constraints","textPreview":"Core Design Constraints","textChars":23,"textLines":1,"bbox":[45,13.69,448.03,32.62]}
+{"kind":"shape","id":"sh/ql8jytsj","slide":4,"name":"Shape 2","bbox":[45,90,275,176.25]}
+{"kind":"shape","id":"sh/doj29oba","slide":4,"name":"Shape 3","bbox":[45,90,3,176.25]}
+{"kind":"textbox","id":"sh/3ihk3et8","slide":4,"name":"Text 4","text":"1. Maximum Performance","textPreview":"1. Maximum Performance","textChars":22,"textLines":1,"bbox":[63.75,138,237.5,18.38]}
+{"kind":"textbox","id":"sh/ih8ju9sn","slide":4,"name":"Text 5","text":"Enqueue and dequeue complete in exactly one cycle (request at T0, result at T1), sustaining back-to-back throughput of one cell per cycle.","textPreview":"Enqueue and dequeue complete in exactly one cycle (request at T0, result at T1), sustaining back-to-back throughput of one cell per cycle.","textChars":138,"textLines":1,"bbox":[63.75,163.87,237.5,43.2]}
+{"kind":"shape","id":"sh/kbm987y5","slide":4,"name":"Shape 6","bbox":[342.5,90,275,176.25]}
+{"kind":"shape","id":"sh/5cva1cfq","slide":4,"name":"Shape 7","bbox":[342.5,90,3,176.25]}
+{"kind":"textbox","id":"sh/jadsz2xk","slide":4,"name":"Text 8","text":"2. Unicast and Multicast","textPreview":"2. Unicast and Multicast","textChars":24,"textLines":1,"bbox":[361.25,138,237.5,18.38]}
+{"kind":"textbox","id":"sh/w72947yt","slide":4,"name":"Text 9","text":"Supports both unicast and multicast. Multicast uses one shared data copy across multiple ports and reclaims storage automatically through reference counting.","textPreview":"Supports both unicast and multicast. Multicast uses one shared data copy across multiple ports and reclaims storage automatically through...","textChars":157,"textLines":1,"bbox":[361.25,163.87,237.5,57.6]}
+{"kind":"shape","id":"sh/x8vaxsfe","slide":4,"name":"Shape 10","bbox":[640,90,275,176.25]}
+{"kind":"shape","id":"sh/a5kr2xg3","slide":4,"name":"Shape 11","bbox":[640,90,3,176.25]}
+{"kind":"textbox","id":"sh/g36tgryd","slide":4,"name":"Text 12","text":"3. Flow Control","textPreview":"3. Flow Control","textChars":15,"textLines":1,"bbox":[658.75,138,237.5,18.38]}
+{"kind":"textbox","id":"sh/h4fa9wfy","slide":4,"name":"Text 13","text":"Supports PAUSE (802.3x) and PFC (802.1Qbb), with per-queue, per-port, and global max/near-full feedback for enqueue gating.","textPreview":"Supports PAUSE (802.3x) and PFC (802.1Qbb), with per-queue, per-port, and global max/near-full feedback for enqueue gating.","textChars":123,"textLines":1,"bbox":[658.75,163.87,237.5,43.2]}
+{"kind":"shape","id":"sh/p0batw72","slide":4,"name":"Shape 14","bbox":[45,288.75,275,176.25]}
+{"kind":"shape","id":"sh/oz29krqh","slide":4,"name":"Shape 15","bbox":[45,288.75,3,176.25]}
+{"kind":"textbox","id":"sh/2xkrih8b","slide":4,"name":"Text 16","text":"4. Storage Optimization","textPreview":"4. Storage Optimization","textChars":23,"textLines":1,"bbox":[63.75,336.75,237.5,18.38]}
+{"kind":"textbox","id":"sh/1wbapc7q","slide":4,"name":"Text 17","text":"Linked-list pointers reside in Next-Ptr SRAM. Two-stage prefetch registers absorb the one-cycle read latency and keep the pipeline running without stalls.","textPreview":"Linked-list pointers reside in Next-Ptr SRAM. Two-stage prefetch registers absorb the one-cycle read latency and keep the pipeline runnin...","textChars":154,"textLines":1,"bbox":[63.75,362.62,237.5,57.6]}
+{"kind":"shape","id":"sh/gv29g7q5","slide":4,"name":"Shape 18","bbox":[342.5,288.75,275,176.25]}
+{"kind":"shape","id":"sh/fu9sn2p0","slide":4,"name":"Shape 19","bbox":[342.5,288.75,3,176.25]}
+{"kind":"textbox","id":"sh/tsrqlc7u","slide":4,"name":"Text 20","text":"5. Dual Buffer Pools","textPreview":"5. Dual Buffer Pools","textChars":20,"textLines":1,"bbox":[361.25,336.75,237.5,18.38]}
+{"kind":"textbox","id":"sh/sri9s7q9","slide":4,"name":"Text 21","text":"A statically reserved pool (per-queue guarantee) plus a dynamically shared pool balances QoS fairness with buffer utilization.","textPreview":"A statically reserved pool (per-queue guarantee) plus a dynamically shared pool balances QoS fairness with buffer utilization.","textChars":126,"textLines":1,"bbox":[361.25,362.62,237.5,43.2]}
+{"kind":"shape","id":"sh/ilwf69kv","slide":4,"name":"Shape 22","bbox":[640,288.75,275,176.25]}
+{"kind":"shape","id":"sh/jm5gze1g","slide":4,"name":"Shape 23","bbox":[640,288.75,3,176.25]}
+{"kind":"textbox","id":"sh/5ony1oj6","slide":4,"name":"Text 24","text":"6. Configuration Plane","textPreview":"6. Configuration Plane","textChars":22,"textLines":1,"bbox":[658.75,336.75,237.5,18.38]}
+{"kind":"textbox","id":"sh/axcf29kj","slide":4,"name":"Text 25","text":"CSRs bypass a slow bus. Configuration signals are sampled directly in the clk_core domain for immediate updates and simpler integration.","textPreview":"CSRs bypass a slow bus. Configuration signals are sampled directly in the clk_core domain for immediate updates and simpler integration.","textChars":136,"textLines":1,"bbox":[658.75,362.62,237.5,43.2]}
+{"kind":"textbox","id":"sh/vy5gbe14","slide":4,"name":"Text 26","text":"SMMU Design Review","textPreview":"SMMU Design Review","textChars":18,"textLines":1,"bbox":[45,512.25,90.02,10.5]}
+{"kind":"textbox","id":"sh/wzex4z2p","slide":4,"name":"Text 27","text":"Page 04","textPreview":"Page 04","textChars":7,"textLines":1,"bbox":[881.47,512.25,33.53,10.5]}
+{"kind":"image","id":"im/upwbex4j","slide":4,"name":"Image 0","bbox":[0,0,960,540]}
+{"kind":"image","id":"im/xw3ax8nq","slide":4,"name":"Image 1","bbox":[63.75,108.75,237.5,18]}
+{"kind":"image","id":"im/wvut43ml","slide":4,"name":"Image 2","bbox":[361.25,108.75,237.5,18]}
+{"kind":"image","id":"im/0r2dcb6t","slide":4,"name":"Image 3","bbox":[658.75,108.75,237.5,18]}
+{"kind":"image","id":"im/lsbelgne","slide":4,"name":"Image 4","bbox":[63.75,307.5,237.5,18]}
+{"kind":"image","id":"im/ypkva1o3","slide":4,"name":"Image 5","bbox":[361.25,307.5,237.5,18]}
+{"kind":"image","id":"im/zqtwj65o","slide":4,"name":"Image 6","bbox":[658.75,307.5,237.5,18]}
+{"kind":"notes","id":"nt/jyx0ra1s","slide":4,"text":""}
+{"kind":"slide","id":"sl/i107q5of","slide":5,"title":"smmu.sv Top Level","textShapes":39}
+{"kind":"shape","id":"sh/cf2tcr61","slide":5,"name":"Shape 0","bbox":[0,0,960,60]}
+{"kind":"textbox","id":"sh/z2tcnm5s","slide":5,"name":"Text 1","text":"smmu.sv Top Level","textPreview":"smmu.sv Top Level","textChars":17,"textLines":1,"bbox":[45,13.69,270.7,32.62]}
+{"kind":"shape","id":"sh/yhkbe1o7","slide":5,"name":"Shape 2","bbox":[45,82.5,525,337.5]}
+{"kind":"textbox","id":"sh/032tgr6d","slide":5,"name":"Text 3","text":"Core:","textPreview":"Core:","textChars":5,"textLines":1,"bbox":[59.25,437.25,56.25,14.4]}
+{"kind":"textbox","id":"sh/n6dcr65o","slide":5,"name":"Text 4","text":"Seven modules center on","textPreview":"Seven modules center on","textChars":23,"textLines":1,"bbox":[115.5,437.25,131.26,15.36]}
+{"kind":"textbox","id":"sh/m5kbi1oj","slide":5,"name":"Text 5","text":"LLE (Link-List Engine)","textPreview":"LLE (Link-List Engine)","textChars":22,"textLines":1,"bbox":[246.76,437.25,119.37,12.38]}
+{"kind":"textbox","id":"sh/w32dkbuh","slide":5,"name":"Text 6","text":"and link via","textPreview":"and link via","textChars":12,"textLines":1,"bbox":[366.13,437.25,73.75,15.36]}
+{"kind":"textbox","id":"sh/x4vedgvm","slide":5,"name":"Text 7","text":"occ_query","textPreview":"occ_query","textChars":9,"textLines":1,"bbox":[439.88,437.25,51.91,12.38]}
+{"kind":"textbox","id":"sh/ahkvi1cb","slide":5,"name":"Text 8","text":",","textPreview":",","textChars":1,"textLines":1,"bbox":[491.79,437.25,11.25,15.36]}
+{"kind":"textbox","id":"sh/v2twb6dw","slide":5,"name":"Text 9","text":"alloc_fire","textPreview":"alloc_fire","textChars":10,"textLines":1,"bbox":[503.04,437.25,45.02,12.38]}
+{"kind":"shape","id":"sh/k7mxovud","slide":5,"name":"Text 10","bbox":[548.06,437.25,14.38,12.38]}
+{"kind":"textbox","id":"sh/58vehgvy","slide":5,"name":"Text 11","text":"to decouple control and storage planes.","textPreview":"to decouple control and storage planes.","textChars":39,"textLines":1,"bbox":[59.25,454.13,191.25,15.36]}
+{"kind":"shape","id":"sh/i54fmlc7","slide":5,"name":"Shape 12","bbox":[600,82.5,315,306.18]}
+{"kind":"shape","id":"sh/j6dwfqds","slide":5,"name":"Shape 13","bbox":[600.38,82.5,93.53,25.5]}
+{"kind":"textbox","id":"sh/sb6xsvu9","slide":5,"name":"Text 14","text":"Submodule","textPreview":"Submodule","textChars":9,"textLines":1,"bbox":[600.38,82.5,93.53,25.5]}
+{"kind":"shape","id":"sh/tcfel0vu","slide":5,"name":"Shape 15","bbox":[693.9,82.5,38.24,25.5]}
+{"kind":"textbox","id":"sh/hgrmpwj2","slide":5,"name":"Text 16","text":"Plane","textPreview":"Plane","textChars":5,"textLines":1,"bbox":[693.9,82.5,38.24,25.5]}
+{"kind":"shape","id":"sh/gfi5grih","slide":5,"name":"Shape 17","bbox":[732.14,82.5,182.48,25.5]}
+{"kind":"textbox","id":"sh/fe94nm1w","slide":5,"name":"Text 18","text":"Primary Responsibility","textPreview":"Primary Responsibility","textChars":22,"textLines":1,"bbox":[732.14,82.5,182.48,25.5]}
+{"kind":"textbox","id":"sh/ud0ne10b","slide":5,"name":"Text 19","text":"LLE","textPreview":"LLE","textChars":3,"textLines":1,"bbox":[609.75,122.32,18.42,11.25]}
+{"kind":"textbox","id":"sh/pkr6tgjy","slide":5,"name":"Text 20","text":"M","textPreview":"M","textChars":1,"textLines":1,"bbox":[693.9,108,38.24,40.04]}
+{"kind":"textbox","id":"sh/4ji5kbid","slide":5,"name":"Text 21","text":"Linked-list engine; sole accessor of Next-Ptr SRAM","textPreview":"Linked-list engine; sole accessor of Next-Ptr SRAM","textChars":50,"textLines":1,"bbox":[732.14,108,182.48,40.04]}
+{"kind":"textbox","id":"sh/3i94r61s","slide":5,"name":"Text 22","text":"enqueue_ctrl","textPreview":"enqueue_ctrl","textChars":12,"textLines":1,"bbox":[609.75,162.36,60.69,11.25]}
+{"kind":"textbox","id":"sh/2h0ni107","slide":5,"name":"Text 23","text":"Ctrl","textPreview":"Ctrl","textChars":4,"textLines":1,"bbox":[693.9,148.04,38.24,40.04]}
+{"kind":"textbox","id":"sh/5o7mhcju","slide":5,"name":"Text 24","text":"One-cycle enqueue command; whole-frame drop FSM","textPreview":"One-cycle enqueue command; whole-frame drop FSM","textChars":47,"textLines":1,"bbox":[732.14,148.04,182.48,40.04]}
+{"kind":"textbox","id":"sh/kny587i9","slide":5,"name":"Text 25","text":"dequeue_ctrl","textPreview":"dequeue_ctrl","textChars":12,"textLines":1,"bbox":[609.75,202.41,60.69,11.25]}
+{"kind":"textbox","id":"sh/atcjidg7","slide":5,"name":"Text 26","text":"Ctrl","textPreview":"Ctrl","textChars":4,"textLines":1,"bbox":[693.9,188.09,38.24,40.04]}
+{"kind":"textbox","id":"sh/vu5kbihc","slide":5,"name":"Text 27","text":"One-cycle dequeue command; backpressure check","textPreview":"One-cycle dequeue command; backpressure check","textChars":45,"textLines":1,"bbox":[732.14,188.09,182.48,40.04]}
+{"kind":"textbox","id":"sh/wve1knyx","slide":5,"name":"Text 28","text":"recycle_ctrl","textPreview":"recycle_ctrl","textChars":12,"textLines":1,"bbox":[609.75,242.45,54.21,11.25]}
+{"kind":"textbox","id":"sh/xwn2dszi","slide":5,"name":"Text 29","text":"Ctrl","textPreview":"Ctrl","textChars":4,"textLines":1,"bbox":[693.9,228.13,38.24,40.04]}
+{"kind":"textbox","id":"sh/ihw3mxg3","slide":5,"name":"Text 30","text":"Thin pass-through for returning cells to the free list","textPreview":"Thin pass-through for returning cells to the free list","textChars":54,"textLines":1,"bbox":[732.14,228.13,182.48,40.04]}
+{"kind":"textbox","id":"sh/ji5kf2ho","slide":5,"name":"Text 31","text":"occupancy_mgr","textPreview":"occupancy_mgr","textChars":13,"textLines":1,"bbox":[609.75,282.49,74.78,11.25]}
+{"kind":"textbox","id":"sh/kjelony9","slide":5,"name":"Text 32","text":"Cnt","textPreview":"Cnt","textChars":3,"textLines":1,"bbox":[693.9,268.17,38.24,40.04]}
+{"kind":"textbox","id":"sh/5kn2hszu","slide":5,"name":"Text 33","text":"Occupancy counters + dual-pool decision + PAUSE/PFC","textPreview":"Occupancy counters + dual-pool decision + PAUSE/PFC","textChars":51,"textLines":1,"bbox":[732.14,268.17,182.48,40.04]}
+{"kind":"textbox","id":"sh/e1sjatgz","slide":5,"name":"Text 34","text":"aging_ctrl","textPreview":"aging_ctrl","textChars":10,"textLines":1,"bbox":[609.75,322.54,46.59,11.25]}
+{"kind":"textbox","id":"sh/zmlk3yhk","slide":5,"name":"Text 35","text":"Ctrl","textPreview":"Ctrl","textChars":4,"textLines":1,"bbox":[693.9,308.21,38.24,40.04]}
+{"kind":"textbox","id":"sh/fid07u98","slide":5,"name":"Text 36","text":"Queue aging flush to prevent zombie queues","textPreview":"Queue aging flush to prevent zombie queues","textChars":42,"textLines":1,"bbox":[732.14,308.21,182.48,40.04]}
+{"kind":"textbox","id":"sh/ehkzepsn","slide":5,"name":"Text 37","text":"csr_stats_init","textPreview":"csr_stats_init","textChars":14,"textLines":1,"bbox":[609.75,362.58,62.87,11.25]}
+{"kind":"textbox","id":"sh/1kvi94re","slide":5,"name":"Text 38","text":"Cfg","textPreview":"Cfg","textChars":3,"textLines":1,"bbox":[693.9,348.26,38.24,40.04]}
+{"kind":"textbox","id":"sh/gjmhgzqt","slide":5,"name":"Text 39","text":"Configuration sampling + initialization FSM (free-list construction)","textPreview":"Configuration sampling + initialization FSM (free-list construction)","textChars":68,"textLines":1,"bbox":[732.14,348.26,182.48,40.04]}
+{"kind":"textbox","id":"sh/2l4zip8j","slide":5,"name":"Text 40","text":"Inter-Module Interface Conventions:","textPreview":"Inter-Module Interface Conventions:","textChars":35,"textLines":1,"bbox":[610.5,404.8,86.92,11.62]}
+{"kind":"textbox","id":"sh/povid4ra","slide":5,"name":"Text 41","text":"All control modules allocate and release addresses through the LLE","textPreview":"All control modules allocate and release addresses through the LLE","textChars":66,"textLines":1,"bbox":[615,425.43,300,15.6]}
+{"kind":"textbox","id":"sh/onmhkzqp","slide":5,"name":"Text 42","text":"The Occupancy module provides real-time watermarks for enqueue gating","textPreview":"The Occupancy module provides real-time watermarks for enqueue gating","textChars":69,"textLines":1,"bbox":[615,441.02,300,15.6]}
+{"kind":"textbox","id":"sh/bqx0fe9g","slide":5,"name":"Text 43","text":"The Init FSM builds the linked list in Next-Ptr SRAM after power-up","textPreview":"The Init FSM builds the linked list in Next-Ptr SRAM after power-up","textChars":67,"textLines":1,"bbox":[615,456.62,300,15.6]}
+{"kind":"textbox","id":"sh/qp4jm98v","slide":5,"name":"Text 44","text":"SMMU Design Review","textPreview":"SMMU Design Review","textChars":18,"textLines":1,"bbox":[45,512.25,90.02,10.5]}
+{"kind":"textbox","id":"sh/8f6hcj6t","slide":5,"name":"Text 45","text":"Page 05","textPreview":"Page 05","textChars":7,"textLines":1,"bbox":[881.47,512.25,33.53,10.5]}
+{"kind":"image","id":"im/i10fulg3","slide":5,"name":"Image 0","bbox":[0,0,960,540]}
+{"kind":"image","id":"im/54re5gzu","slide":5,"name":"Image 1","bbox":[45,82.5,525,337.5]}
+{"kind":"image","id":"im/43ixwvy9","slide":5,"name":"Image 2","bbox":[600,405.18,10.5,10.5]}
+{"kind":"notes","id":"nt/i107q5of","slide":5,"text":""}
+{"kind":"slide","id":"sl/x8f69ofe","slide":6,"title":"Parameterized Design","textShapes":42}
+{"kind":"shape","id":"sh/zi98nu94","slide":6,"name":"Shape 0","bbox":[0,0,960,60]}
+{"kind":"textbox","id":"sh/87ipkzal","slide":6,"name":"Text 1","text":"Parameterized Design","textPreview":"Parameterized Design","textChars":20,"textLines":1,"bbox":[45,13.69,336.06,32.62]}
+{"kind":"shape","id":"sh/98rqt4r6","slide":6,"name":"Shape 2","bbox":[45,90,870,33.22]}
+{"kind":"shape","id":"sh/ml07i9sv","slide":6,"name":"Shape 3","bbox":[45,90,3,33.22]}
+{"kind":"textbox","id":"sh/7m98ru9g","slide":6,"name":"Text 4","text":"All widths are derived consistently from CELL_NUM, PORT_NUM, and TC_NUM across all submodules, ensuring design consistency and scalability.","textPreview":"All widths are derived consistently from CELL_NUM, PORT_NUM, and TC_NUM across all submodules, ensuring design consistency and scalability.","textChars":139,"textLines":1,"bbox":[45,90,870,33.22]}
+{"kind":"shape","id":"sh/oryp8fah","slide":6,"name":"Shape 5","bbox":[45,145.72,423.75,226.87]}
+{"kind":"textbox","id":"sh/pc76hkr2","slide":6,"name":"Text 6","text":"Top-Level Parameters","textPreview":"Top-Level Parameters","textChars":20,"textLines":1,"bbox":[60,160.72,393.75,20.62]}
+{"kind":"shape","id":"sh/h4bupgn6","slide":6,"name":"Shape 7","bbox":[60.38,192.6,113.06,29.62]}
+{"kind":"textbox","id":"sh/w32twb6l","slide":6,"name":"Text 8","text":"Parameter","textPreview":"Parameter","textChars":9,"textLines":1,"bbox":[60.38,192.6,113.06,29.62]}
+{"kind":"shape","id":"sh/v2tcn650","slide":6,"name":"Shape 9","bbox":[173.44,192.6,79.48,29.62]}
+{"kind":"textbox","id":"sh/u1kbu1ov","slide":6,"name":"Text 10","text":"Default","textPreview":"Default","textChars":7,"textLines":1,"bbox":[173.44,192.6,79.48,29.62]}
+{"kind":"shape","id":"sh/5svutgni","slide":6,"name":"Shape 11","bbox":[252.91,192.6,200.46,29.62]}
+{"kind":"textbox","id":"sh/47mt0b6x","slide":6,"name":"Text 12","text":"Description","textPreview":"Description","textChars":11,"textLines":1,"bbox":[252.91,192.6,200.46,29.62]}
+{"kind":"textbox","id":"sh/j6dcr65c","slide":6,"name":"Text 13","text":"CELL_NUM","textPreview":"CELL_NUM","textChars":8,"textLines":1,"bbox":[60.38,222.22,113.06,30]}
+{"kind":"textbox","id":"sh/i54bylor","slide":6,"name":"Text 14","text":"8192","textPreview":"8192","textChars":4,"textLines":1,"bbox":[173.44,222.22,79.48,30]}
+{"kind":"textbox","id":"sh/twfux0ne","slide":6,"name":"Text 15","text":"Total cells (2 MB / 256 B)","textPreview":"Total cells (2 MB / 256 B)","textChars":26,"textLines":1,"bbox":[252.91,222.22,200.46,30]}
+{"kind":"textbox","id":"sh/svmt4v6t","slide":6,"name":"Text 16","text":"PORT_NUM","textPreview":"PORT_NUM","textChars":8,"textLines":1,"bbox":[60.38,252.22,113.06,30]}
+{"kind":"textbox","id":"sh/cbe5g3ih","slide":6,"name":"Text 17","text":"4","textPreview":"4","textChars":1,"textLines":1,"bbox":[173.44,252.22,79.48,30]}
+{"kind":"textbox","id":"sh/dcnm98zm","slide":6,"name":"Text 18","text":"Number of physical egress ports","textPreview":"Number of physical egress ports","textChars":31,"textLines":1,"bbox":[252.91,252.22,200.46,30]}
+{"kind":"textbox","id":"sh/qpwnet0b","slide":6,"name":"Text 19","text":"TC_NUM","textPreview":"TC_NUM","textChars":6,"textLines":1,"bbox":[60.38,282.22,113.06,30]}
+{"kind":"textbox","id":"sh/bq547yhw","slide":6,"name":"Text 20","text":"8","textPreview":"8","textChars":1,"textLines":1,"bbox":[173.44,282.22,79.48,30]}
+{"kind":"textbox","id":"sh/0fy5k3id","slide":6,"name":"Text 21","text":"Traffic classes per port","textPreview":"Traffic classes per port","textChars":24,"textLines":1,"bbox":[252.91,282.22,200.46,30]}
+{"kind":"textbox","id":"sh/lg76d8zy","slide":6,"name":"Text 22","text":"REF_W","textPreview":"REF_W","textChars":5,"textLines":1,"bbox":[60.38,312.22,113.06,30]}
+{"kind":"textbox","id":"sh/ydgnit07","slide":6,"name":"Text 23","text":"3","textPreview":"3","textChars":1,"textLines":1,"bbox":[173.44,312.22,79.48,30]}
+{"kind":"textbox","id":"sh/zep4byhs","slide":6,"name":"Text 24","text":"Multicast ref_count width","textPreview":"Multicast ref_count width","textChars":25,"textLines":1,"bbox":[252.91,312.22,200.46,30]}
+{"kind":"textbox","id":"sh/gju58ji9","slide":6,"name":"Text 25","text":"STAT_W","textPreview":"STAT_W","textChars":6,"textLines":1,"bbox":[60.38,342.22,113.06,30]}
+{"kind":"textbox","id":"sh/1k3mhozu","slide":6,"name":"Text 26","text":"32","textPreview":"32","textChars":2,"textLines":1,"bbox":[173.44,342.22,79.48,30]}
+{"kind":"textbox","id":"sh/jet8nm1c","slide":6,"name":"Text 27","text":"Statistics counter width","textPreview":"Statistics counter width","textChars":24,"textLines":1,"bbox":[252.91,342.22,200.46,30]}
+{"kind":"shape","id":"sh/idk7ehkr","slide":6,"name":"Shape 28","bbox":[491.25,145.72,423.75,226.87]}
+{"kind":"textbox","id":"sh/50bqpcj2","slide":6,"name":"Text 29","text":"Derived Constants (Localparams)","textPreview":"Derived Constants (Localparams)","textChars":31,"textLines":1,"bbox":[506.25,160.72,393.75,20.62]}
+{"kind":"shape","id":"sh/4f2pgr2h","slide":6,"name":"Shape 30","bbox":[506.62,192.6,129.65,29.62]}
+{"kind":"textbox","id":"sh/va98j210","slide":6,"name":"Text 31","text":"Derived Value","textPreview":"Derived Value","textChars":13,"textLines":1,"bbox":[506.62,192.6,129.65,29.62]}
+{"kind":"shape","id":"sh/u907axkf","slide":6,"name":"Shape 32","bbox":[636.28,192.6,162.39,29.62]}
+{"kind":"textbox","id":"sh/hcrqlcj6","slide":6,"name":"Text 33","text":"Expression","textPreview":"Expression","textChars":10,"textLines":1,"bbox":[636.28,192.6,162.39,29.62]}
+{"kind":"shape","id":"sh/wbipc72l","slide":6,"name":"Shape 34","bbox":[798.66,192.6,100.96,29.62]}
+{"kind":"textbox","id":"sh/7698f214","slide":6,"name":"Text 35","text":"Value (Default)","textPreview":"Value (Default)","textChars":15,"textLines":1,"bbox":[798.66,192.6,100.96,29.62]}
+{"kind":"textbox","id":"sh/m5076xkj","slide":6,"name":"Text 36","text":"QUEUE_NUM","textPreview":"QUEUE_NUM","textChars":9,"textLines":1,"bbox":[506.62,222.22,129.65,30]}
+{"kind":"textbox","id":"sh/2dkbalg3","slide":6,"name":"Text 37","text":"PORT*TC+1","textPreview":"PORT*TC+1","textChars":9,"textLines":1,"bbox":[636.28,222.22,162.39,30]}
+{"kind":"textbox","id":"sh/netcjqxo","slide":6,"name":"Text 38","text":"33","textPreview":"33","textChars":2,"textLines":1,"bbox":[798.66,222.22,100.96,30]}
+{"kind":"textbox","id":"sh/of2tcvy9","slide":6,"name":"Text 39","text":"ADDR_W","textPreview":"ADDR_W","textChars":6,"textLines":1,"bbox":[506.62,252.22,129.65,30]}
+{"kind":"textbox","id":"sh/pgbul0fu","slide":6,"name":"Text 40","text":"$clog2(CELL)","textPreview":"$clog2(CELL)","textChars":12,"textLines":1,"bbox":[636.28,252.22,162.39,30]}
+{"kind":"textbox","id":"sh/ep0b6lg7","slide":6,"name":"Text 41","text":"13","textPreview":"13","textChars":2,"textLines":1,"bbox":[798.66,252.22,100.96,30]}
+{"kind":"textbox","id":"sh/fq9cfqxc","slide":6,"name":"Text 42","text":"QID_W","textPreview":"QID_W","textChars":5,"textLines":1,"bbox":[506.62,282.22,129.65,30]}
+{"kind":"textbox","id":"sh/0r2t8vyx","slide":6,"name":"Text 43","text":"$clog2(QN-1)+1","textPreview":"$clog2(QN-1)+1","textChars":14,"textLines":1,"bbox":[636.28,282.22,162.39,30]}
+{"kind":"textbox","id":"sh/1sbuh0fi","slide":6,"name":"Text 44","text":"6","textPreview":"6","textChars":1,"textLines":1,"bbox":[798.66,282.22,100.96,30]}
+{"kind":"textbox","id":"sh/ql0b21gv","slide":6,"name":"Text 45","text":"PORT_W","textPreview":"PORT_W","textChars":6,"textLines":1,"bbox":[506.62,312.22,129.65,30]}
+{"kind":"textbox","id":"sh/rm9sb6xg","slide":6,"name":"Text 46","text":"$clog2(PN-1)+1","textPreview":"$clog2(PN-1)+1","textChars":14,"textLines":1,"bbox":[636.28,312.22,162.39,30]}
+{"kind":"textbox","id":"sh/9gfeh4zy","slide":6,"name":"Text 47","text":"2","textPreview":"2","textChars":1,"textLines":1,"bbox":[798.66,312.22,100.96,30]}
+{"kind":"textbox","id":"sh/8f6x8jid","slide":6,"name":"Text 48","text":"CNT_W","textPreview":"CNT_W","textChars":5,"textLines":1,"bbox":[506.62,342.22,129.65,30]}
+{"kind":"textbox","id":"sh/7exwfehs","slide":6,"name":"Text 49","text":"ADDR_W+1","textPreview":"ADDR_W+1","textChars":8,"textLines":1,"bbox":[636.28,342.22,162.39,30]}
+{"kind":"textbox","id":"sh/mdof6907","slide":6,"name":"Text 50","text":"14","textPreview":"14","textChars":2,"textLines":1,"bbox":[798.66,342.22,100.96,30]}
+{"kind":"textbox","id":"sh/lcfed4z2","slide":6,"name":"Text 51","text":"SMMU Design Review","textPreview":"SMMU Design Review","textChars":18,"textLines":1,"bbox":[45,512.25,90.02,10.5]}
+{"kind":"textbox","id":"sh/kb6d4zih","slide":6,"name":"Text 52","text":"Page 06","textPreview":"Page 06","textChars":7,"textLines":1,"bbox":[881.47,512.25,33.53,10.5]}
+{"kind":"image","id":"im/4ra94vi9","slide":6,"name":"Image 0","bbox":[0,0,960,540]}
+{"kind":"notes","id":"nt/x8f69ofe","slide":6,"text":""}
+{"kind":"slide","id":"sl/gnmp4jqx","slide":7,"title":"Linked Lists vs. Static Partitioning","textShapes":17}
+{"kind":"shape","id":"sh/dcbud0ra","slide":7,"name":"Shape 0","bbox":[0,0,960,60]}
+{"kind":"textbox","id":"sh/ydkbm5sv","slide":7,"name":"Text 1","text":"Linked Lists vs. Static Partitioning","textPreview":"Linked Lists vs. Static Partitioning","textChars":36,"textLines":1,"bbox":[45,13.69,368.02,25.85]}
+{"kind":"shape","id":"sh/zedcfa9g","slide":7,"name":"Shape 2","bbox":[45,82.5,420,122.46]}
+{"kind":"shape","id":"sh/kzmdova1","slide":7,"name":"Shape 3","bbox":[45,82.5,3,122.46]}
+{"kind":"textbox","id":"sh/l0vuh0rm","slide":7,"name":"Text 4","text":"Static Partitioning","textPreview":"Static Partitioning","textChars":19,"textLines":1,"bbox":[63.75,97.5,381,20.62]}
+{"kind":"textbox","id":"sh/eh0ba1sr","slide":7,"name":"Text 5","text":"Low utilization: idle cells cannot be borrowed across queues.","textPreview":"Low utilization: idle cells cannot be borrowed across queues.","textChars":61,"textLines":1,"bbox":[63.75,129.38,381,19.2]}
+{"kind":"textbox","id":"sh/fi9c369c","slide":7,"name":"Text 6","text":"Inflexible: changing queue quotas requires repartitioning physical addresses.","textPreview":"Inflexible: changing queue quotas requires repartitioning physical addresses.","textChars":77,"textLines":1,"bbox":[63.75,154.57,381,19.2]}
+{"kind":"textbox","id":"sh/baxkjqlk","slide":7,"name":"Text 7","text":"Fragmentation: scattered free space cannot be utilized.","textPreview":"Fragmentation: scattered free space cannot be utilized.","textChars":55,"textLines":1,"bbox":[63.75,179.77,381,19.2]}
+{"kind":"shape","id":"sh/a9ojq5kz","slide":7,"name":"Shape 8","bbox":[493.5,82.5,421.5,122.46]}
+{"kind":"shape","id":"sh/xcz2l03q","slide":7,"name":"Shape 9","bbox":[493.5,82.5,3,122.46]}
+{"kind":"textbox","id":"sh/cbq1sv25","slide":7,"name":"Text 10","text":"•","textPreview":"•","textChars":1,"textLines":1,"bbox":[63.75,129.38,4.2,19.2]}
+{"kind":"textbox","id":"sh/n6x0fqlo","slide":7,"name":"Text 11","text":"•","textPreview":"•","textChars":1,"textLines":1,"bbox":[63.75,154.57,4.2,19.2]}
+{"kind":"textbox","id":"sh/25ojml43","slide":7,"name":"Text 12","text":"•","textPreview":"•","textChars":1,"textLines":1,"bbox":[63.75,179.77,4.2,19.2]}
+{"kind":"textbox","id":"sh/p8fih03e","slide":7,"name":"Text 13","text":"Linked-List Approach","textPreview":"Linked-List Approach","textChars":20,"textLines":1,"bbox":[513.75,97.5,382.5,20.62]}
+{"kind":"textbox","id":"sh/o761ov2t","slide":7,"name":"Text 14","text":"Fully shared: any cell can be assigned to any queue, approaching 100% utilization.","textPreview":"Fully shared: any cell can be assigned to any queue, approaching 100% utilization.","textChars":82,"textLines":1,"bbox":[513.75,129.38,382.5,19.2]}
+{"kind":"textbox","id":"sh/f2d0b6lc","slide":7,"name":"Text 15","text":"O(1) complexity: enqueue and dequeue update only head and tail pointers.","textPreview":"O(1) complexity: enqueue and dequeue update only head and tail pointers.","textChars":72,"textLines":1,"bbox":[513.75,154.57,382.5,19.2]}
+{"kind":"textbox","id":"sh/eh4jil4r","slide":7,"name":"Text 16","text":"Native dual pools: reserved guarantees plus dynamic sharing.","textPreview":"Native dual pools: reserved guarantees plus dynamic sharing.","textChars":60,"textLines":1,"bbox":[513.75,179.77,382.5,19.2]}
+{"kind":"shape","id":"sh/id4ju1oz","slide":7,"name":"Shape 17","bbox":[45,227.46,870,255]}
+{"kind":"textbox","id":"sh/jedkn654","slide":7,"name":"Text 18","text":"•","textPreview":"•","textChars":1,"textLines":1,"bbox":[513.75,129.38,4.2,19.2]}
+{"kind":"textbox","id":"sh/4fm1wb6p","slide":7,"name":"Text 19","text":"•","textPreview":"•","textChars":1,"textLines":1,"bbox":[513.75,154.57,4.2,19.2]}
+{"kind":"textbox","id":"sh/50v2pgna","slide":7,"name":"Text 20","text":"•","textPreview":"•","textChars":1,"textLines":1,"bbox":[513.75,179.77,4.2,19.2]}
+{"kind":"textbox","id":"sh/r2dkrq5g","slide":7,"name":"Text 21","text":"SMMU Design Review","textPreview":"SMMU Design Review","textChars":18,"textLines":1,"bbox":[45,512.25,90.02,10.5]}
+{"kind":"textbox","id":"sh/s3ml0v61","slide":7,"name":"Text 22","text":"Page 07","textPreview":"Page 07","textChars":7,"textLines":1,"bbox":[881.47,512.25,33.53,10.5]}
+{"kind":"image","id":"im/ix4nytoz","slide":7,"name":"Image 0","bbox":[0,0,960,540]}
+{"kind":"image","id":"im/l4rmh4n6","slide":7,"name":"Image 1","bbox":[45,234.96,870,240]}
+{"kind":"notes","id":"nt/gnmp4jqx","slide":7,"text":""}
+{"kind":"slide","id":"sl/fu1gfa1s","slide":8,"title":"LLE Linked List","textShapes":27}
+{"kind":"shape","id":"sh/g72x4zyd","slide":8,"name":"Shape 0","bbox":[0,0,960,60]}
+{"kind":"textbox","id":"sh/ri9g7uhw","slide":8,"name":"Text 1","text":"LLE Linked List","textPreview":"LLE Linked List","textChars":15,"textLines":1,"bbox":[45,13.69,266.65,32.62]}
+{"kind":"shape","id":"sh/6h0fypgb","slide":8,"name":"Shape 2","bbox":[45,75,430.5,237.23]}
+{"kind":"shape","id":"sh/tkby9kzm","slide":8,"name":"Shape 3","bbox":[45,75,3,237.23]}
+{"kind":"textbox","id":"sh/je9g3ahk","slide":8,"name":"Text 4","text":"Physical Implementation: Next-Ptr SRAM","textPreview":"Physical Implementation: Next-Ptr SRAM","textChars":38,"textLines":1,"bbox":[87.75,84,199.85,35.2]}
+{"kind":"textbox","id":"sh/id0fu50z","slide":8,"name":"Text 5","text":"The linked list is stored in Next-Ptr SRAM, which records the successor pointer for every cell.","textPreview":"The linked list is stored in Next-Ptr SRAM, which records the successor pointer for every cell.","textChars":95,"textLines":1,"bbox":[60,115.13,400.5,21.97]}
+{"kind":"shape","id":"sh/o7ydoret","slide":8,"name":"Shape 6","bbox":[60.38,143.1,121.14,26.62]}
+{"kind":"textbox","id":"sh/98rehwve","slide":8,"name":"Text 7","text":"Parameter","textPreview":"Parameter","textChars":9,"textLines":1,"bbox":[60.38,143.1,121.14,26.62]}
+{"kind":"shape","id":"sh/m5gvmhwn","slide":8,"name":"Shape 8","bbox":[181.51,143.1,278.61,26.62]}
+{"kind":"textbox","id":"sh/n6pwfmd8","slide":8,"name":"Text 9","text":"Specification","textPreview":"Specification","textChars":13,"textLines":1,"bbox":[181.51,143.1,278.61,26.62]}
+{"kind":"textbox","id":"sh/0jydkreh","slide":8,"name":"Text 10","text":"Memory Depth","textPreview":"Memory Depth","textChars":12,"textLines":1,"bbox":[60.38,169.72,121.14,27]}
+{"kind":"textbox","id":"sh/1k7edwv2","slide":8,"name":"Text 11","text":"8192 (CELL_NUM)","textPreview":"8192 (CELL_NUM)","textChars":15,"textLines":1,"bbox":[181.51,169.72,278.61,27]}
+{"kind":"textbox","id":"sh/ehgvihwr","slide":8,"name":"Text 12","text":"Data Width","textPreview":"Data Width","textChars":10,"textLines":1,"bbox":[60.38,196.72,121.14,27]}
+{"kind":"textbox","id":"sh/zipwbmdc","slide":8,"name":"Text 13","text":"13 bit (ADDR_W)","textPreview":"13 bit (ADDR_W)","textChars":15,"textLines":1,"bbox":[181.51,196.72,278.61,27]}
+{"kind":"textbox","id":"sh/kfixwbe1","slide":8,"name":"Text 14","text":"Interface Type","textPreview":"Interface Type","textChars":14,"textLines":1,"bbox":[60.38,223.72,121.14,27]}
+{"kind":"textbox","id":"sh/lgbepgvm","slide":8,"name":"Text 15","text":"1R1W (independent read/write ports)","textPreview":"1R1W (independent read/write ports)","textChars":35,"textLines":1,"bbox":[181.51,223.72,278.61,27]}
+{"kind":"textbox","id":"sh/tw7e9gnq","slide":8,"name":"Text 16","text":"Read Latency","textPreview":"Read Latency","textChars":12,"textLines":1,"bbox":[60.38,250.72,121.14,27]}
+{"kind":"textbox","id":"sh/svydgb65","slide":8,"name":"Text 17","text":"1 cycle (absorbed by prefetch registers)","textPreview":"1 cycle (absorbed by prefetch registers)","textChars":40,"textLines":1,"bbox":[181.51,250.72,278.61,27]}
+{"kind":"shape","id":"sh/7u5w765k","slide":8,"name":"Shape 18","bbox":[484.5,75,430.5,237.23]}
+{"kind":"shape","id":"sh/6twve1oz","slide":8,"name":"Shape 19","bbox":[484.5,75,3,237.23]}
+{"kind":"textbox","id":"sh/kredcr6t","slide":8,"name":"Text 20","text":"Head/Tail Pointer Registers","textPreview":"Head/Tail Pointer Registers","textChars":27,"textLines":1,"bbox":[527.25,84,115.5,22.13]}
+{"kind":"textbox","id":"sh/jq5w365o","slide":8,"name":"Text 21","text":"q_head[33]: points to the first cell address of each queue.","textPreview":"q_head[33]: points to the first cell address of each queue.","textChars":59,"textLines":1,"bbox":[499.5,115.13,400.5,21.97]}
+{"kind":"textbox","id":"sh/i5wva1o3","slide":8,"name":"Text 22","text":"q_tail[33]: points to the last cell address of each queue.","textPreview":"q_tail[33]: points to the last cell address of each queue.","textChars":58,"textLines":1,"bbox":[499.5,143.1,400.5,21.97]}
+{"kind":"textbox","id":"sh/x4ne1wni","slide":8,"name":"Text 23","text":"free_head / free_tail: maintain the head and tail of the free-address pool.","textPreview":"free_head / free_tail: maintain the head and tail of the free-address pool.","textChars":75,"textLines":1,"bbox":[499.5,171.07,400.5,21.97]}
+{"kind":"textbox","id":"sh/w3ed8r6x","slide":8,"name":"Text 24","text":"All pointers are implemented as registers for single-cycle access and update.","textPreview":"All pointers are implemented as registers for single-cycle access and update.","textChars":77,"textLines":1,"bbox":[499.5,199.04,400.5,21.6]}
+{"kind":"shape","id":"sh/m9sb2x4v","slide":8,"name":"Shape 25","bbox":[45,321.23,870,173.77]}
+{"kind":"shape","id":"sh/na1sb2lg","slide":8,"name":"Shape 26","bbox":[45,321.23,3,173.77]}
+{"kind":"textbox","id":"sh/9w3uds36","slide":8,"name":"Text 27","text":"Operations and Free-List Maintenance","textPreview":"Operations and Free-List Maintenance","textChars":36,"textLines":1,"bbox":[85.5,330.23,176.02,35.2]}
+{"kind":"textbox","id":"sh/y5sbed4j","slide":8,"name":"Text 28","text":"Enqueue","textPreview":"Enqueue","textChars":7,"textLines":1,"bbox":[60,365.1,86,18.43]}
+{"kind":"textbox","id":"sh/z61s7il4","slide":8,"name":"Text 29","text":"Pop an address from free_head, append it after the target queue's q_tail, and update that queue's tail pointer.","textPreview":"Pop an address from free_head, append it after the target queue's q_tail, and update that queue's tail pointer.","textChars":111,"textLines":1,"bbox":[60,388.95,270,58.75]}
+{"kind":"textbox","id":"sh/07atgnmp","slide":8,"name":"Text 30","text":"Dequeue","textPreview":"Dequeue","textChars":7,"textLines":1,"bbox":[345,365.1,86,18.43]}
+{"kind":"textbox","id":"sh/l8ja9s3a","slide":8,"name":"Text 31","text":"Pop the address at q_head and update the head with next_ptr read from SRAM. On reclamation, append the released address to free_tail.","textPreview":"Pop the address at q_head and update the head with next_ptr read from SRAM. On reclamation, append the released address to free_tail.","textChars":133,"textLines":1,"bbox":[345,388.95,270,58.75]}
+{"kind":"textbox","id":"sh/q18bad4n","slide":8,"name":"Text 32","text":"Free List","textPreview":"Free List","textChars":9,"textLines":1,"bbox":[630,365.1,97.34,18.43]}
+{"kind":"textbox","id":"sh/b2hs3il8","slide":8,"name":"Text 33","text":"At initialization, all 8,192 unused cells form one long singly linked list, enabling O(1) address allocation.","textPreview":"At initialization, all 8,192 unused cells form one long singly linked list, enabling O(1) address allocation.","textChars":109,"textLines":1,"bbox":[630,388.95,270,43.2]}
+{"kind":"textbox","id":"sh/3u18fepo","slide":8,"name":"Text 34","text":"SMMU Design Review","textPreview":"SMMU Design Review","textChars":18,"textLines":1,"bbox":[45,512.25,90.02,10.5]}
+{"kind":"textbox","id":"sh/2ts769o3","slide":8,"name":"Text 35","text":"Page 08","textPreview":"Page 08","textChars":7,"textLines":1,"bbox":[881.47,512.25,33.53,10.5]}
+{"kind":"image","id":"im/6lk3ml4f","slide":8,"name":"Image 0","bbox":[0,0,960,540]}
+{"kind":"image","id":"im/7mt4fq5k","slide":8,"name":"Image 1","bbox":[60,86.81,18.75,16.5]}
+{"kind":"image","id":"im/grmlsvmh","slide":8,"name":"Image 2","bbox":[499.5,86.81,18.75,16.5]}
+{"kind":"image","id":"im/hcvml0n2","slide":8,"name":"Image 3","bbox":[60,333.04,16.5,16.5]}
+{"kind":"notes","id":"nt/fu1gfa1s","slide":8,"text":""}
+{"kind":"slide","id":"sl/udsvah03","slide":9,"title":"Dual-Pool Buffer Management","textShapes":10}
+{"kind":"shape","id":"sh/0b65obm9","slide":9,"name":"Shape 0","bbox":[0,0,960,60]}
+{"kind":"textbox","id":"sh/nex4jq5k","slide":9,"name":"Text 1","text":"Dual-Pool Buffer Management","textPreview":"Dual-Pool Buffer Management","textChars":27,"textLines":1,"bbox":[45,13.69,430.69,32.62]}
+{"kind":"shape","id":"sh/mdonql4z","slide":9,"name":"Shape 2","bbox":[45,90,315,169.87]}
+{"kind":"shape","id":"sh/9gzml0nq","slide":9,"name":"Shape 3","bbox":[45,90,3,169.87]}
+{"kind":"textbox","id":"sh/ofq5svm5","slide":9,"name":"Text 4","text":"Mechanism","textPreview":"Mechanism","textChars":9,"textLines":1,"bbox":[63.75,105,277.5,20.62]}
+{"kind":"textbox","id":"sh/bih4na5w","slide":9,"name":"Text 5","text":"Reserved Pool: guarantees capacity for each queue so basic forwarding remains available under congestion and QoS starvation is prevented.","textPreview":"Reserved Pool: guarantees capacity for each queue so basic forwarding remains available under congestion and QoS starvation is prevented.","textChars":137,"textLines":1,"bbox":[63.75,136.87,277.5,54]}
+{"kind":"textbox","id":"sh/ah8nu54b","slide":9,"name":"Text 6","text":"Shared Pool: all active queues dynamically compete for the remaining buffer, greatly improving absorption of burst traffic.","textPreview":"Shared Pool: all active queues dynamically compete for the remaining buffer, greatly improving absorption of burst traffic.","textChars":123,"textLines":1,"bbox":[63.75,198.38,277.5,46.08]}
+{"kind":"shape","id":"sh/oza1gfyh","slide":9,"name":"Shape 7","bbox":[45,264.38,315,156.13]}
+{"kind":"textbox","id":"sh/p0ji9kf2","slide":9,"name":"Text 8","text":"Allocation Decision Logic","textPreview":"Allocation Decision Logic","textChars":25,"textLines":1,"bbox":[63.75,279.38,277.5,16.5]}
+{"kind":"textbox","id":"sh/2xsjepgb","slide":9,"name":"Text 9","text":"// Prefer reserved capacity\nuse_reserved = (q_usage < q_min);\n // Request shared capacity after the reserve is exhausted\nuse_shared = (q_usage >= q_min) && \n(shared_usage < shared_limit);","textPreview":"// Prefer reserved capacity | use_reserved = (q_usage < q_min); |  // Request shared capacity after the reserve is exhausted | use_shared...","textChars":187,"textLines":5,"bbox":[63.75,307.13,277.5,113.38]}
+{"kind":"textbox","id":"sh/3y107axw","slide":9,"name":"Text 10","text":"Dual-Pool Watermarks and Thresholds","textPreview":"Dual-Pool Watermarks and Thresholds","textChars":35,"textLines":1,"bbox":[571.5,90,162,28.8]}
+{"kind":"shape","id":"sh/cnu1kzyd","slide":9,"name":"Shape 11","bbox":[390,119.62,525,345]}
+{"kind":"textbox","id":"sh/qlcjipgn","slide":9,"name":"Text 12","text":"Configurable q_min (guarantee) and shared_limit (shared cap) enable fine-grained buffer-resource scheduling.","textPreview":"Configurable q_min (guarantee) and shared_limit (shared cap) enable fine-grained buffer-resource scheduling.","textChars":108,"textLines":1,"bbox":[468.15,464.62,368.7,37.39]}
+{"kind":"textbox","id":"sh/bml0buxs","slide":9,"name":"Text 13","text":"SMMU Design Review","textPreview":"SMMU Design Review","textChars":18,"textLines":1,"bbox":[45,512.25,90.02,10.5]}
+{"kind":"textbox","id":"sh/0ru1ozyp","slide":9,"name":"Text 14","text":"Page 09","textPreview":"Page 09","textChars":7,"textLines":1,"bbox":[881.47,512.25,33.53,10.5]}
+{"kind":"image","id":"im/yho7mlc7","slide":9,"name":"Image 0","bbox":[0,0,960,540]}
+{"kind":"image","id":"im/md47elwz","slide":9,"name":"Image 1","bbox":[390,119.62,525,345]}
+{"kind":"notes","id":"nt/udsvah03","slide":9,"text":""}
+{"kind":"slide","id":"sl/m90b6t0r","slide":10,"title":"Process (1) — Power-Up Init FSM","textShapes":23}
+{"kind":"shape","id":"sh/cbu58j2h","slide":10,"name":"Shape 0","bbox":[0,0,960,60]}
+{"kind":"textbox","id":"sh/zelojyl8","slide":10,"name":"Text 1","text":"Process (1) — Power-Up Init FSM","textPreview":"Process (1) — Power-Up Init FSM","textChars":31,"textLines":1,"bbox":[45,13.69,381.3,32.62]}
+{"kind":"shape","id":"sh/ydcnatkn","slide":10,"name":"Shape 2","bbox":[45,82.5,315,135]}
+{"kind":"shape","id":"sh/l036l83y","slide":10,"name":"Shape 3","bbox":[45,82.5,3,135]}
+{"kind":"textbox","id":"sh/kzu5c32t","slide":10,"name":"Text 4","text":"Init FSM State Transitions","textPreview":"Init FSM State Transitions","textChars":26,"textLines":1,"bbox":[63.75,97.5,277.5,20.62]}
+{"kind":"textbox","id":"sh/725onyl4","slide":10,"name":"Text 5","text":"•","textPreview":"•","textChars":1,"textLines":1,"bbox":[63.75,129.75,7.07,12.38]}
+{"kind":"textbox","id":"sh/m1cnetkj","slide":10,"name":"Text 6","text":"IS_IDLE: wait for reset release or init_start↑.","textPreview":"IS_IDLE: wait for reset release or init_start↑.","textChars":47,"textLines":1,"bbox":[70.82,129.75,217.1,16.38]}
+{"kind":"textbox","id":"sh/r6pcv6lw","slide":10,"name":"Text 10","text":"•","textPreview":"•","textChars":1,"textLines":1,"bbox":[63.75,157.13,7.07,12.38]}
+{"kind":"textbox","id":"sh/0bit8b2d","slide":10,"name":"Text 11","text":"IS_BUILD: LLE builds the free list, one link per cycle.\n","textPreview":"IS_BUILD: LLE builds the free list, one link per cycle. |","textChars":56,"textLines":2,"bbox":[70.82,158.21,274.18,53.25]}
+{"kind":"textbox","id":"sh/fapcz6ls","slide":10,"name":"Text 14","text":"•","textPreview":"•","textChars":1,"textLines":1,"bbox":[63.75,183.75,7.07,12.38]}
+{"kind":"textbox","id":"sh/ozitcv29","slide":10,"name":"Text 15","text":"IS_DONE","textPreview":"IS_DONE","textChars":7,"textLines":1,"bbox":[70.82,183.75,49.39,15.36]}
+{"kind":"textbox","id":"sh/p0ru503u","slide":10,"name":"Text 16","text":": assert init_done and enter Ready.","textPreview":": assert init_done and enter Ready.","textChars":35,"textLines":1,"bbox":[120.21,183.75,187.14,31.72]}
+{"kind":"shape","id":"sh/atwbelcn","slide":10,"name":"Shape 20","bbox":[44.32,233.34,315,180]}
+{"kind":"shape","id":"sh/lk7ut0va","slide":10,"name":"Shape 21","bbox":[45,232.5,3,180]}
+{"kind":"textbox","id":"sh/kjytkvup","slide":10,"name":"Text 22","text":"Automatic List Construction in the LLE","textPreview":"Automatic List Construction in the LLE","textChars":38,"textLines":1,"bbox":[63.75,247.5,277.5,20.62]}
+{"kind":"textbox","id":"sh/jypcrqd4","slide":10,"name":"Text 23","text":"•","textPreview":"•","textChars":1,"textLines":1,"bbox":[63.75,279.75,7.07,12.38]}
+{"kind":"textbox","id":"sh/yxgbilcj","slide":10,"name":"Text 24","text":"Write","textPreview":"Write","textChars":5,"textLines":1,"bbox":[70.82,279.75,45,15.36]}
+{"kind":"textbox","id":"sh/1o3ahwvq","slide":10,"name":"Text 25","text":": write SRAM[idx].next = idx + 1 each cycle.","textPreview":": write SRAM[idx].next = idx + 1 each cycle.","textChars":44,"textLines":1,"bbox":[115.82,279.75,177.55,31.72]}
+{"kind":"textbox","id":"sh/dwjqtcbu","slide":10,"name":"Text 30","text":"•","textPreview":"•","textChars":1,"textLines":1,"bbox":[63.75,315.75,7.07,12.38]}
+{"kind":"textbox","id":"sh/exsrmhsf","slide":10,"name":"Text 31","text":"Self-Loop","textPreview":"Self-Loop","textChars":9,"textLines":1,"bbox":[70.82,315.75,45,15.36]}
+{"kind":"textbox","id":"sh/zyl8vmt0","slide":10,"name":"Text 32","text":": last cell.next points to itself, marking the list end.","textPreview":": last cell.next points to itself, marking the list end.","textChars":56,"textLines":1,"bbox":[115.82,315.75,245.04,16.38]}
+{"kind":"textbox","id":"sh/f2h8jitg","slide":10,"name":"Text 36","text":"•","textPreview":"•","textChars":1,"textLines":1,"bbox":[63.75,351.75,7.07,12.38]}
+{"kind":"textbox","id":"sh/bmpgrah8","slide":10,"name":"Text 37","text":"Reg Sync","textPreview":"Reg Sync","textChars":8,"textLines":1,"bbox":[70.82,351.75,56.25,15.36]}
+{"kind":"textbox","id":"sh/algfy50n","slide":10,"name":"Text 38","text":": init pointers and prefetch; allocate on cycle one.","textPreview":": init pointers and prefetch; allocate on cycle one.","textChars":52,"textLines":1,"bbox":[127.07,351.75,222.82,31.75]}
+{"kind":"textbox","id":"sh/kbix4zyp","slide":10,"name":"Text 44","text":"Automatic Next-Ptr SRAM List Construction","textPreview":"Automatic Next-Ptr SRAM List Construction","textChars":41,"textLines":1,"bbox":[555.37,82.5,194.26,28.8]}
+{"kind":"shape","id":"sh/7e9gzuhg","slide":10,"name":"Shape 45","bbox":[390,112.13,525,345]}
+{"kind":"textbox","id":"sh/4j2xwzet","slide":10,"name":"Text 46","text":"Hardware initialization makes the free list deterministic and brings the system to Ready quickly after power-up.","textPreview":"Hardware initialization makes the free list deterministic and brings the system to Ready quickly after power-up.","textChars":112,"textLines":1,"bbox":[499.94,457.13,305.12,37.39]}
+{"kind":"textbox","id":"sh/pkbep4fe","slide":10,"name":"Text 47","text":"SMMU Design Review","textPreview":"SMMU Design Review","textChars":18,"textLines":1,"bbox":[45,512.25,90.02,10.5]}
+{"kind":"textbox","id":"sh/2hkfu9w3","slide":10,"name":"Text 48","text":"Page 12","textPreview":"Page 12","textChars":7,"textLines":1,"bbox":[881.47,512.25,33.53,10.5]}
+{"kind":"image","id":"im/sva14jet","slide":10,"name":"Image 0","bbox":[0,0,960,540]}
+{"kind":"image","id":"im/fyl0zyx4","slide":10,"name":"Image 1","bbox":[390,112.13,525,345]}
+{"kind":"notes","id":"nt/m90b6t0r","slide":10,"text":""}
+{"kind":"slide","id":"sl/jetc3ut0","slide":11,"title":"Process (2) — Enqueue / Allocation","textShapes":19}
+{"kind":"shape","id":"sh/wbih4b6d","slide":11,"name":"Shape 0","bbox":[0,0,960,60]}
+{"kind":"textbox","id":"sh/n69grmpw","slide":11,"name":"Text 1","text":"Process (2) — Enqueue / Allocation","textPreview":"Process (2) — Enqueue / Allocation","textChars":34,"textLines":1,"bbox":[45,13.69,448.01,32.62]}
+{"kind":"shape","id":"sh/250zy18b","slide":11,"name":"Shape 2","bbox":[45,82.5,315,135]}
+{"kind":"shape","id":"sh/98rytw72","slide":11,"name":"Shape 3","bbox":[45,82.5,3,135]}
+{"kind":"textbox","id":"sh/o7ih0r6h","slide":11,"name":"Text 4","text":"T0/T1 Timing and Handshake","textPreview":"T0/T1 Timing and Handshake","textChars":26,"textLines":1,"bbox":[63.75,97.5,277.5,20.62]}
+{"kind":"textbox","id":"sh/72t03qp0","slide":11,"name":"Text 5","text":"•","textPreview":"•","textChars":1,"textLines":1,"bbox":[63.75,129.75,7.07,12.38]}
+{"kind":"textbox","id":"sh/61kzalof","slide":11,"name":"Text 6","text":"T0","textPreview":"T0","textChars":2,"textLines":1,"bbox":[70.82,129.75,13.13,12.38]}
+{"kind":"textbox","id":"sh/ofqtgnyt","slide":11,"name":"Text 7","text":": accept enq_req; Occupancy returns a same-cycle decision.\n","textPreview":": accept enq_req; Occupancy returns a same-cycle decision. |","textChars":59,"textLines":2,"bbox":[83.95,129.75,240.16,53.25]}
+{"kind":"textbox","id":"sh/epobatgr","slide":11,"name":"Text 13","text":"•","textPreview":"•","textChars":1,"textLines":1,"bbox":[63.75,165.75,7.07,12.38]}
+{"kind":"textbox","id":"sh/zaxs3yhc","slide":11,"name":"Text 14","text":"T1","textPreview":"T1","textChars":2,"textLines":1,"bbox":[70.82,165.75,13.13,12.38]}
+{"kind":"textbox","id":"sh/cn6t83y1","slide":11,"name":"Text 15","text":": register alloc_valid and alloc_cell_addr, providing an exact\n   one-cycle command response.","textPreview":": register alloc_valid and alloc_cell_addr, providing an exact |    one-cycle command response.","textChars":93,"textLines":2,"bbox":[83.95,165.75,253.28,32.77]}
+{"kind":"shape","id":"sh/l43ilgn2","slide":11,"name":"Shape 21","bbox":[45,232.5,315,180]}
+{"kind":"shape","id":"sh/k3uhcb6h","slide":11,"name":"Shape 22","bbox":[45,232.5,3,180]}
+{"kind":"textbox","id":"sh/j2lgjq5w","slide":11,"name":"Text 23","text":"Tail-in-Register Linking","textPreview":"Tail-in-Register Linking","textChars":24,"textLines":1,"bbox":[63.75,247.5,277.5,20.62]}
+{"kind":"textbox","id":"sh/y1czalob","slide":11,"name":"Text 24","text":"•","textPreview":"•","textChars":1,"textLines":1,"bbox":[63.75,279.75,7.07,12.38]}
+{"kind":"textbox","id":"sh/p07ixkn6","slide":11,"name":"Text 25","text":"Relink Delay","textPreview":"Relink Delay","textChars":12,"textLines":1,"bbox":[70.82,279.75,59.39,15.36]}
+{"kind":"textbox","id":"sh/4zyhofml","slide":11,"name":"Text 26","text":": keep q_tail_q in a register; defer\nSRAM[old_tail].next = new_cell until\nthe next enqueue.","textPreview":": keep q_tail_q in a register; defer | SRAM[old_tail].next = new_cell until | the next enqueue.","textChars":91,"textLines":3,"bbox":[130.21,279.75,202.63,49.15]}
+{"kind":"textbox","id":"sh/14ze9c3i","slide":11,"name":"Text 34","text":"•","textPreview":"•","textChars":1,"textLines":1,"bbox":[63.75,333.75,7.07,12.38]}
+{"kind":"textbox","id":"sh/ydcfq1kb","slide":11,"name":"Text 35","text":"Benefits","textPreview":"Benefits","textChars":8,"textLines":1,"bbox":[70.82,333.75,45,15.36]}
+{"kind":"textbox","id":"sh/jylwj6lw","slide":11,"name":"Text 36","text":": no write for empty links; ≤1 write/cycle; tail in reg.","textPreview":": no write for empty links; ≤1 write/cycle; tail in reg.","textChars":56,"textLines":1,"bbox":[115.82,333.75,239.31,81.45]}
+{"kind":"textbox","id":"sh/5sjah872","slide":11,"name":"Text 39","text":"Enqueue Linking (A→B→C): Register and SRAM Evolution","textPreview":"Enqueue Linking (A→B→C): Register and SRAM Evolution","textChars":52,"textLines":1,"bbox":[511.5,82.5,281.99,28.8]}
+{"kind":"shape","id":"sh/4rato36h","slide":11,"name":"Shape 40","bbox":[390,112.13,525,345]}
+{"kind":"textbox","id":"sh/u18bit8f","slide":11,"name":"Text 41","text":"Caching the tail in a register enables efficient list appends and deterministic SRAM access timing.","textPreview":"Caching the tail in a register enables efficient list appends and deterministic SRAM access timing.","textChars":99,"textLines":1,"bbox":[481.87,457.13,341.26,37.39]}
+{"kind":"textbox","id":"sh/h4zado76","slide":11,"name":"Text 42","text":"SMMU Design Review","textPreview":"SMMU Design Review","textChars":18,"textLines":1,"bbox":[45,512.25,90.02,10.5]}
+{"kind":"textbox","id":"sh/g3qtkj6l","slide":11,"name":"Text 43","text":"Page 13","textPreview":"Page 13","textChars":7,"textLines":1,"bbox":[881.47,512.25,33.53,10.5]}
+{"kind":"image","id":"im/k7a58rul","slide":11,"name":"Image 0","bbox":[0,0,960,540]}
+{"kind":"image","id":"im/l8361wv6","slide":11,"name":"图片 47","bbox":[388.95,135.19,523.61,294.38]}
+{"kind":"notes","id":"nt/jetc3ut0","slide":11,"text":""}
+{"kind":"slide","id":"sl/8f2psfyx","slide":12,"title":"Process (2) — Whole-Frame Drop","textShapes":14}
+{"kind":"shape","id":"sh/0f2lgnmp","slide":12,"name":"Shape 0","bbox":[0,0,960,60]}
+{"kind":"textbox","id":"sh/ra943il8","slide":12,"name":"Text 1","text":"Process (2) — Whole-Frame Drop","textPreview":"Process (2) — Whole-Frame Drop","textChars":30,"textLines":1,"bbox":[45,13.69,385.34,32.62]}
+{"kind":"shape","id":"sh/q903ad4n","slide":12,"name":"Shape 2","bbox":[45,105,275,390]}
+{"kind":"shape","id":"sh/dcbm583y","slide":12,"name":"Shape 3","bbox":[45,105,3,390]}
+{"kind":"textbox","id":"sh/sb2lcnmd","slide":12,"name":"Text 4","text":"1. Predictive Watermark Logic","textPreview":"1. Predictive Watermark Logic","textChars":29,"textLines":1,"bbox":[63.75,127.5,235.5,22.13]}
+{"kind":"textbox","id":"sh/b6d4f2lc","slide":12,"name":"Text 5","text":"When the first cell (SOF) of a packet arrives, the system predicts occupancy from packet length instead of deciding cell by cell.","textPreview":"When the first cell (SOF) of a packet arrives, the system predicts occupancy from packet length instead of deciding cell by cell.","textChars":129,"textLines":1,"bbox":[63.75,168.38,235.5,58.75]}
+{"kind":"shape","id":"sh/a543mx4r","slide":12,"name":"Shape 6","bbox":[63.75,226.57,235.5,52.5]}
+{"kind":"textbox","id":"sh/wvupgz6t","slide":12,"name":"Text 7","text":"predict_occ = current_occ + pkt_cell_num;","textPreview":"predict_occ = current_occ + pkt_cell_num;","textChars":41,"textLines":1,"bbox":[63.75,226.57,235.5,52.5]}
+{"kind":"textbox","id":"sh/xw3q94ne","slide":12,"name":"Text 8","text":"This up-front prediction prevents packet truncation caused by buffer exhaustion mid-frame.","textPreview":"This up-front prediction prevents packet truncation caused by buffer exhaustion mid-frame.","textChars":90,"textLines":1,"bbox":[63.75,277.57,235.5,76.61]}
+{"kind":"shape","id":"sh/atc7epon","slide":12,"name":"Shape 9","bbox":[340.5,105,276,390]}
+{"kind":"shape","id":"sh/bulo7u58","slide":12,"name":"Shape 10","bbox":[340.5,105,3,390]}
+{"kind":"textbox","id":"sh/orapcf6h","slide":12,"name":"Text 11","text":"2. Whole-Frame Drop Policy","textPreview":"2. Whole-Frame Drop Policy","textChars":26,"textLines":1,"bbox":[360.25,127.5,236.5,22.13]}
+{"kind":"textbox","id":"sh/9sj65kn2","slide":12,"name":"Text 12","text":"If predicted occupancy exceeds the configured threshold, Early Drop is triggered:","textPreview":"If predicted occupancy exceeds the configured threshold, Early Drop is triggered:","textChars":81,"textLines":1,"bbox":[360.25,168.38,236.5,43.2]}
+{"kind":"textbox","id":"sh/mps7a5or","slide":12,"name":"Text 13","text":"• Accept all or drop all: all cells of a packet receive the same disposition.\n• Resource protection: prevents fragmented packets from consuming valuable SRAM capacity.","textPreview":"• Accept all or drop all: all cells of a packet receive the same disposition. | • Resource protection: prevents fragmented packets from c...","textChars":167,"textLines":2,"bbox":[360.25,226.57,236.5,97.92]}
+{"kind":"shape","id":"sh/nq1o3a5w","slide":12,"name":"Shape 14","bbox":[638,105,277,390]}
+{"kind":"shape","id":"sh/0nap8f6l","slide":12,"name":"Shape 15","bbox":[638,105,3,390]}
+{"kind":"textbox","id":"sh/1oj61kn6","slide":12,"name":"Text 16","text":"3. FSM State Control","textPreview":"3. FSM State Control","textChars":20,"textLines":1,"bbox":[658.75,127.5,237.5,22.13]}
+{"kind":"textbox","id":"sh/hkbm5wzu","slide":12,"name":"Text 17","text":"enqueue_ctrl","textPreview":"enqueue_ctrl","textChars":12,"textLines":1,"bbox":[658.75,172.13,69.39,13.5]}
+{"kind":"textbox","id":"sh/gj25cry9","slide":12,"name":"Text 18","text":"maintains the enqueue state machine:","textPreview":"maintains the enqueue state machine:","textChars":36,"textLines":1,"bbox":[728.13,172.13,123.33,19.58]}
+{"kind":"textbox","id":"sh/fit436ho","slide":12,"name":"Text 19","text":"• IDLE: wait for an SOF request.\n• DROP: prediction fails; discard subsequent cells through EOF.\n• ACCEPT: prediction passes; accept subsequent cells through EOF.","textPreview":"• IDLE: wait for an SOF request. | • DROP: prediction fails; discard subsequent cells through EOF. | • ACCEPT: prediction passes; accept ...","textChars":162,"textLines":3,"bbox":[658.75,204.97,237.5,107.99]}
+{"kind":"textbox","id":"sh/uh0na1g3","slide":12,"name":"Text 20","text":"SMMU Design Review","textPreview":"SMMU Design Review","textChars":18,"textLines":1,"bbox":[45,512.25,90.02,10.5]}
+{"kind":"textbox","id":"sh/tgrm1wzy","slide":12,"name":"Text 21","text":"Page 14","textPreview":"Page 14","textChars":7,"textLines":1,"bbox":[881.47,512.25,33.53,10.5]}
+{"kind":"image","id":"im/bqhs3u5w","slide":12,"name":"Image 0","bbox":[0,0,960,540]}
+{"kind":"notes","id":"nt/8f2psfyx","slide":12,"text":""}
+{"kind":"slide","id":"sl/hgzapcr6","slide":13,"title":"Process (3) — Dequeue Read","textShapes":22}
+{"kind":"shape","id":"sh/bq9orito","slide":13,"name":"Shape 0","bbox":[0,0,960,60]}
+{"kind":"textbox","id":"sh/o3i5w3ad","slide":13,"name":"Text 1","text":"Process (3) — Dequeue Read","textPreview":"Process (3) — Dequeue Read","textChars":26,"textLines":1,"bbox":[45,13.69,309.34,32.62]}
+{"kind":"shape","id":"sh/p4r6p8by","slide":13,"name":"Shape 2","bbox":[45,82.5,315,135]}
+{"kind":"shape","id":"sh/21gnuts7","slide":13,"name":"Shape 3","bbox":[45,82.5,3,135]}
+{"kind":"textbox","id":"sh/32ponyts","slide":13,"name":"Text 4","text":"Dequeue Logic and Handshake","textPreview":"Dequeue Logic and Handshake","textChars":27,"textLines":1,"bbox":[63.75,97.5,277.5,20.62]}
+{"kind":"textbox","id":"sh/gzy5s3a1","slide":13,"name":"Text 5","text":"•","textPreview":"•","textChars":1,"textLines":1,"bbox":[63.75,129.75,7.07,12.38]}
+{"kind":"textbox","id":"sh/1076lobm","slide":13,"name":"Text 6","text":"T0","textPreview":"T0","textChars":2,"textLines":1,"bbox":[70.82,129.75,13.13,12.38]}
+{"kind":"textbox","id":"sh/hcfy9k3u","slide":13,"name":"Text 7","text":": deq_req; check BP/non-empty; address = lle_qhead.","textPreview":": deq_req; check BP/non-empty; address = lle_qhead.","textChars":51,"textLines":1,"bbox":[83.95,129.75,233.76,48.35]}
+{"kind":"textbox","id":"sh/876xwfmx","slide":13,"name":"Text 12","text":"•","textPreview":"•","textChars":1,"textLines":1,"bbox":[63.75,165.75,7.07,12.38]}
+{"kind":"textbox","id":"sh/7mdg3als","slide":13,"name":"Text 13","text":"T1","textPreview":"T1","textChars":2,"textLines":1,"bbox":[70.82,165.75,13.13,12.38]}
+{"kind":"textbox","id":"sh/6l4fu547","slide":13,"name":"Text 14","text":": output deq_cell_valid/deq_cell_addr after exactly one cycle.","textPreview":": output deq_cell_valid/deq_cell_addr after exactly one cycle.","textChars":62,"textLines":1,"bbox":[83.95,165.75,245.88,114.54]}
+{"kind":"shape","id":"sh/3yxgbqdg","slide":13,"name":"Shape 24","bbox":[45,232.5,315,180]}
+{"kind":"shape","id":"sh/8vahgzu5","slide":13,"name":"Shape 25","bbox":[45,232.5,3,180]}
+{"kind":"textbox","id":"sh/9wjyp4bq","slide":13,"name":"Text 26","text":"Three-Stage Prefetch Register Scheme","textPreview":"Three-Stage Prefetch Register Scheme","textChars":36,"textLines":1,"bbox":[63.75,247.5,277.5,20.62]}
+{"kind":"textbox","id":"sh/jqlkfyds","slide":13,"name":"Text 27","text":"•","textPreview":"•","textChars":1,"textLines":1,"bbox":[63.75,279.75,7.07,12.38]}
+{"kind":"textbox","id":"sh/ipcjmtw7","slide":13,"name":"Text 28","text":"Window","textPreview":"Window","textChars":6,"textLines":1,"bbox":[70.82,279.75,45,15.36]}
+{"kind":"textbox","id":"sh/5cn2h8vy","slide":13,"name":"Text 29","text":": head/next/next2 slide forward on each dequeue.","textPreview":": head/next/next2 slide forward on each dequeue.","textChars":48,"textLines":1,"bbox":[115.82,279.75,228.21,31.72]}
+{"kind":"textbox","id":"sh/m5gjyt4r","slide":13,"name":"Text 41","text":"•","textPreview":"•","textChars":1,"textLines":1,"bbox":[63.75,315.75,7.07,12.38]}
+{"kind":"textbox","id":"sh/n6pkrelc","slide":13,"name":"Text 42","text":"Refill","textPreview":"Refill","textChars":6,"textLines":1,"bbox":[70.82,315.75,45,15.36]}
+{"kind":"textbox","id":"sh/8ry10jmx","slide":13,"name":"Text 43","text":": if len≥3, background-read next2.","textPreview":": if len≥3, background-read next2.","textChars":34,"textLines":1,"bbox":[115.82,315.75,225.35,48.35]}
+{"kind":"textbox","id":"sh/50behwr2","slide":13,"name":"Text 47","text":"•","textPreview":"•","textChars":1,"textLines":1,"bbox":[63.75,351.75,7.07,12.38]}
+{"kind":"textbox","id":"sh/4z2d8rah","slide":13,"name":"Text 48","text":"Gain","textPreview":"Gain","textChars":4,"textLines":1,"bbox":[70.82,351.75,22.5,15.36]}
+{"kind":"textbox","id":"sh/jytcfmtw","slide":13,"name":"Text 49","text":": absorbs SRAM latency; line-rate back-to-back dequeue.","textPreview":": absorbs SRAM latency; line-rate back-to-back dequeue.","textChars":55,"textLines":1,"bbox":[93.32,351.75,234.77,16.38]}
+{"kind":"textbox","id":"sh/t4velwry","slide":13,"name":"Text 51","text":"Queue-Head Sliding Window","textPreview":"Queue-Head Sliding Window","textChars":25,"textLines":1,"bbox":[571.5,82.5,162,28.8]}
+{"kind":"shape","id":"sh/s3mdcrad","slide":13,"name":"Shape 52","bbox":[390,112.13,525,345]}
+{"kind":"textbox","id":"sh/614va1sn","slide":13,"name":"Text 53","text":"The head address is always visible in a register, so the dequeue address is available immediately without waiting for an SRAM read response.","textPreview":"The head address is always visible in a register, so the dequeue address is available immediately without waiting for an SRAM read response.","textChars":140,"textLines":1,"bbox":[482.16,457.13,340.68,37.39]}
+{"kind":"textbox","id":"sh/1svepgra","slide":13,"name":"Text 54","text":"SMMU Design Review","textPreview":"SMMU Design Review","textChars":18,"textLines":1,"bbox":[45,512.25,90.02,10.5]}
+{"kind":"textbox","id":"sh/g7mdgbap","slide":13,"name":"Text 55","text":"Page 15","textPreview":"Page 15","textChars":7,"textLines":1,"bbox":[881.47,512.25,33.53,10.5]}
+{"kind":"image","id":"im/ryhw3mx0","slide":13,"name":"Image 0","bbox":[2.16,0,960,540]}
+{"kind":"image","id":"im/qx8fuhwf","slide":13,"name":"Image 1","bbox":[390,112.13,525,345]}
+{"kind":"notes","id":"nt/hgzapcr6","slide":13,"text":""}
+{"kind":"slide","id":"sl/6lsnupw7","slide":14,"title":"Key Design — Two-Stage Prefetch","textShapes":10}
+{"kind":"shape","id":"sh/wbydknq1","slide":14,"name":"Shape 0","bbox":[0,0,960,60]}
+{"kind":"textbox","id":"sh/jepwf2pc","slide":14,"name":"Text 1","text":"Key Design — Two-Stage Prefetch","textPreview":"Key Design — Two-Stage Prefetch","textChars":31,"textLines":1,"bbox":[45,13.69,444.02,32.62]}
+{"kind":"shape","id":"sh/idgvmx8r","slide":14,"name":"Shape 2","bbox":[45,77.25,315,135]}
+{"kind":"shape","id":"sh/5grehs7i","slide":14,"name":"Shape 3","bbox":[45,77.25,3,135]}
+{"kind":"textbox","id":"sh/kfidonqx","slide":14,"name":"Text 4","text":"Design Challenge","textPreview":"Design Challenge","textChars":16,"textLines":1,"bbox":[63.75,92.25,277.5,20.62]}
+{"kind":"textbox","id":"sh/zi5c3y98","slide":14,"name":"Text 5","text":"Next-Ptr SRAM has a one-cycle read latency. During continuous dequeue, waiting for the next pointer would create pipeline bubbles and prevent full throughput.","textPreview":"Next-Ptr SRAM has a one-cycle read latency. During continuous dequeue, waiting for the next pointer would create pipeline bubbles and pre...","textChars":158,"textLines":1,"bbox":[63.75,124.13,277.5,57.59]}
+{"kind":"shape","id":"sh/ehwvat8n","slide":14,"name":"Shape 6","bbox":[45,234.75,315,180]}
+{"kind":"shape","id":"sh/c3e1gjyd","slide":14,"name":"Shape 7","bbox":[45,234.75,3,180]}
+{"kind":"textbox","id":"sh/x4ni9ofy","slide":14,"name":"Text 8","text":"Solution","textPreview":"Solution","textChars":8,"textLines":1,"bbox":[63.75,249.75,277.5,20.62]}
+{"kind":"textbox","id":"sh/a1wze9g7","slide":14,"name":"Text 9","text":"Prefetch Reg 0 and Prefetch Reg 1 form a two-stage prefetch pipeline:","textPreview":"Prefetch Reg 0 and Prefetch Reg 1 form a two-stage prefetch pipeline:","textChars":69,"textLines":1,"bbox":[63.75,281.62,277.5,38.39]}
+{"kind":"textbox","id":"sh/b2507exs","slide":14,"name":"Text 10","text":"• Issue read requests for subsequent cell addresses in advance.\n• Cache returned pointers in registers to absorb SRAM latency completely.\n• Sustain back-to-back dequeue performance.","textPreview":"• Issue read requests for subsequent cell addresses in advance. | • Cache returned pointers in registers to absorb SRAM latency completel...","textChars":181,"textLines":3,"bbox":[63.75,320.02,277.5,95.97]}
+{"kind":"textbox","id":"sh/kre1k3y9","slide":14,"name":"Text 11","text":"LLE Prefetch Pipeline Architecture","textPreview":"LLE Prefetch Pipeline Architecture","textChars":34,"textLines":1,"bbox":[577.13,77.25,150.75,28.8]}
+{"kind":"shape","id":"sh/ls7idofu","slide":14,"name":"Shape 12","bbox":[390,106.87,525,360]}
+{"kind":"textbox","id":"sh/z650byxo","slide":14,"name":"Text 13","text":"The two registers ensure that the LLE always has the next valid address available.","textPreview":"The two registers ensure that the LLE always has the next valid address available.","textChars":82,"textLines":1,"bbox":[494.99,466.87,315.01,37.39]}
+{"kind":"textbox","id":"sh/0buh8zy5","slide":14,"name":"Text 14","text":"SMMU Design Review","textPreview":"SMMU Design Review","textChars":18,"textLines":1,"bbox":[45,512.25,90.02,10.5]}
+{"kind":"textbox","id":"sh/1w3i14fq","slide":14,"name":"Text 15","text":"Page 15","textPreview":"Page 15","textChars":7,"textLines":1,"bbox":[881.47,512.25,33.53,10.5]}
+{"kind":"image","id":"im/mhgf6t4n","slide":14,"name":"Image 0","bbox":[0,0,960,540]}
+{"kind":"image","id":"im/7ipgzel8","slide":14,"name":"Image 1","bbox":[390,106.87,525,360]}
+{"kind":"notes","id":"nt/6lsnupw7","slide":14,"text":""}
+{"kind":"slide","id":"sl/vaxsvy10","slide":15,"title":"Process (4) — Cell Reclamation","textShapes":38}
+{"kind":"shape","id":"sh/k3y5ov21","slide":15,"name":"Shape 0","bbox":[0,0,960,60]}
+{"kind":"textbox","id":"sh/76p4jqls","slide":15,"name":"Text 1","text":"Process (4) — Cell Reclamation","textPreview":"Process (4) — Cell Reclamation","textChars":30,"textLines":1,"bbox":[45,13.69,359.99,32.62]}
+{"kind":"shape","id":"sh/65gnqlk7","slide":15,"name":"Shape 2","bbox":[45,82.5,315,152.62]}
+{"kind":"shape","id":"sh/t87ml0ji","slide":15,"name":"Shape 3","bbox":[45,82.5,3,152.62]}
+{"kind":"textbox","id":"sh/s7y5sv2x","slide":15,"name":"Text 4","text":"Reclamation Paths","textPreview":"Reclamation Paths","textChars":17,"textLines":1,"bbox":[63.75,97.5,277.5,20.62]}
+{"kind":"textbox","id":"sh/na5476l8","slide":15,"name":"Text 5","text":"•","textPreview":"•","textChars":1,"textLines":1,"bbox":[63.75,129.75,7.07,12.38]}
+{"kind":"textbox","id":"sh/m9c3e1kn","slide":15,"name":"Text 6","text":"Unicast","textPreview":"Unicast","textChars":7,"textLines":1,"bbox":[70.82,129.75,45,15.36]}
+{"kind":"textbox","id":"sh/wrm9kvep","slide":15,"name":"Text 7","text":": push directly to the free list and decrement the","textPreview":": push directly to the free list and decrement the","textChars":50,"textLines":1,"bbox":[115.82,129.75,206.28,16.38]}
+{"kind":"textbox","id":"sh/hsvat0fa","slide":15,"name":"Text 8","text":"queue count.","textPreview":"queue count.","textChars":12,"textLines":1,"bbox":[63.75,147.75,22.5,16.38]}
+{"kind":"textbox","id":"sh/upkrilwj","slide":15,"name":"Text 9","text":"•","textPreview":"•","textChars":1,"textLines":1,"bbox":[63.75,165.75,7.07,12.38]}
+{"kind":"textbox","id":"sh/vqdsrqx4","slide":15,"name":"Text 10","text":"Multicast","textPreview":"Multicast","textChars":9,"textLines":1,"bbox":[70.82,165.75,45,15.36]}
+{"kind":"textbox","id":"sh/4vm9ovel","slide":15,"name":"Text 11","text":": decrement the reference count on each return;","textPreview":": decrement the reference count on each return;","textChars":47,"textLines":1,"bbox":[115.82,165.75,217.53,16.38]}
+{"kind":"textbox","id":"sh/5wvax0f6","slide":15,"name":"Text 12","text":"push only when the count reaches zero.","textPreview":"push only when the count reaches zero.","textChars":38,"textLines":1,"bbox":[63.75,183.75,197.53,16.38]}
+{"kind":"textbox","id":"sh/it4rm5wv","slide":15,"name":"Text 13","text":"•","textPreview":"•","textChars":1,"textLines":1,"bbox":[63.75,201.75,7.07,12.38]}
+{"kind":"textbox","id":"sh/judsvqxg","slide":15,"name":"Text 14","text":"Thin Path","textPreview":"Thin Path","textChars":9,"textLines":1,"bbox":[70.82,201.75,56.25,15.36]}
+{"kind":"textbox","id":"sh/0z29cbyh","slide":15,"name":"Text 15","text":":","textPreview":":","textChars":1,"textLines":1,"bbox":[127.07,201.75,11.25,16.38]}
+{"kind":"textbox","id":"sh/l0bqlgf2","slide":15,"name":"Text 16","text":"recycle_ctrl","textPreview":"recycle_ctrl","textChars":12,"textLines":1,"bbox":[138.32,201.75,56.89,12.38]}
+{"kind":"textbox","id":"sh/1kjyt83e","slide":15,"name":"Text 17","text":"is a type-independent interface;","textPreview":"is a type-independent interface;","textChars":32,"textLines":1,"bbox":[195.21,201.75,138.13,16.38]}
+{"kind":"textbox","id":"sh/gjax03m9","slide":15,"name":"Text 18","text":"the LLE handles the difference internally.","textPreview":"the LLE handles the difference internally.","textChars":42,"textLines":1,"bbox":[63.75,219.75,101.89,16.38]}
+{"kind":"shape","id":"sh/fi1grylo","slide":15,"name":"Shape 19","bbox":[45,250.13,315,180]}
+{"kind":"shape","id":"sh/ehsfyt43","slide":15,"name":"Shape 20","bbox":[45,250.13,3,180]}
+{"kind":"textbox","id":"sh/p8jyx83q","slide":15,"name":"Text 21","text":"Two-Stage Symmetric Reclamation","textPreview":"Two-Stage Symmetric Reclamation","textChars":31,"textLines":1,"bbox":[63.75,265.13,277.5,20.62]}
+{"kind":"textbox","id":"sh/o7ah4nm5","slide":15,"name":"Text 22","text":"•","textPreview":"•","textChars":1,"textLines":1,"bbox":[63.75,297.38,7.07,12.38]}
+{"kind":"textbox","id":"sh/361gvilk","slide":15,"name":"Text 23","text":"Stage 1","textPreview":"Stage 1","textChars":7,"textLines":1,"bbox":[70.82,297.38,31.89,15.36]}
+{"kind":"textbox","id":"sh/25sf2d4z","slide":15,"name":"Text 24","text":": address → FIFO;","textPreview":": address → FIFO;","textChars":17,"textLines":1,"bbox":[102.7,297.38,118.75,16.38]}
+{"kind":"textbox","id":"sh/dc3y1s3m","slide":15,"name":"Text 25","text":"free_cnt","textPreview":"free_cnt","textChars":8,"textLines":1,"bbox":[221.45,297.38,40.65,12.38]}
+{"kind":"textbox","id":"sh/cbuh8nmh","slide":15,"name":"Text 26","text":"++ now","textPreview":"++ now","textChars":6,"textLines":1,"bbox":[262.1,297.38,70.63,16.38]}
+{"kind":"textbox","id":"sh/uh4v2pkj","slide":15,"name":"Text 27","text":"(logically free).","textPreview":"(logically free).","textChars":17,"textLines":1,"bbox":[63.75,315.38,67.5,16.38]}
+{"kind":"textbox","id":"sh/vixcvu14","slide":15,"name":"Text 28","text":"•","textPreview":"•","textChars":1,"textLines":1,"bbox":[63.75,333.38,7.07,12.38]}
+{"kind":"textbox","id":"sh/wj6d4z2p","slide":15,"name":"Text 29","text":"Stage 2","textPreview":"Stage 2","textChars":7,"textLines":1,"bbox":[70.82,333.38,31.89,15.36]}
+{"kind":"textbox","id":"sh/hkfexkja","slide":15,"name":"Text 30","text":": on FIFO pop, write","textPreview":": on FIFO pop, write","textChars":20,"textLines":1,"bbox":[102.7,333.38,98.77,16.38]}
+{"kind":"textbox","id":"sh/ilov6pkv","slide":15,"name":"Text 31","text":"SRAM[old_tail].next = X","textPreview":"SRAM[old_tail].next = X","textChars":23,"textLines":1,"bbox":[201.47,333.38,109.1,16.38]}
+{"kind":"textbox","id":"sh/jmxwzu1g","slide":15,"name":"Text 32","text":"→","textPreview":"→","textChars":1,"textLines":1,"bbox":[310.58,333.38,25.63,16.38]}
+{"kind":"shape","id":"sh/4n6d8z21","slide":15,"name":"Text 33","bbox":[63.75,351.38,14.38,12.38]}
+{"kind":"textbox","id":"sh/5ofe14j6","slide":15,"name":"Text 34","text":"free_tail_q","textPreview":"free_tail_q","textChars":11,"textLines":1,"bbox":[78.13,351.38,52.54,12.38]}
+{"kind":"textbox","id":"sh/6p8va9kr","slide":15,"name":"Text 35","text":".","textPreview":".","textChars":1,"textLines":1,"bbox":[130.67,351.38,11.25,16.38]}
+{"kind":"textbox","id":"sh/rqhw3e1c","slide":15,"name":"Text 36","text":"•","textPreview":"•","textChars":1,"textLines":1,"bbox":[63.75,369.38,7.07,12.38]}
+{"kind":"textbox","id":"sh/f6dcnetg","slide":15,"name":"Text 37","text":"Sym.","textPreview":"Sym.","textChars":4,"textLines":1,"bbox":[70.82,369.38,33.75,15.36]}
+{"kind":"textbox","id":"sh/e54ve9cv","slide":15,"name":"Text 38","text":": same Tail-in-Register method as enqueue;","textPreview":": same Tail-in-Register method as enqueue;","textChars":42,"textLines":1,"bbox":[104.57,369.38,217.52,16.38]}
+{"kind":"textbox","id":"sh/18vup4bm","slide":15,"name":"Text 39","text":"keeps SRAM writes ordered.","textPreview":"keeps SRAM writes ordered.","textChars":26,"textLines":1,"bbox":[63.75,387.38,218.76,16.38]}
+{"kind":"textbox","id":"sh/07mdgzu1","slide":15,"name":"Text 40","text":"Two-Stage Address Reclamation","textPreview":"Two-Stage Address Reclamation","textChars":29,"textLines":1,"bbox":[571.5,82.5,162,28.8]}
+{"kind":"shape","id":"sh/nadwrets","slide":15,"name":"Shape 41","bbox":[390,112.13,525,345]}
+{"kind":"textbox","id":"sh/pwfetobi","slide":15,"name":"Text 42","text":"Reclamation and enqueue share the same tail-register handling, greatly simplifying SRAM access arbitration.","textPreview":"Reclamation and enqueue share the same tail-register handling, greatly simplifying SRAM access arbitration.","textChars":107,"textLines":1,"bbox":[476.91,457.13,351.18,37.39]}
+{"kind":"textbox","id":"sh/ovmdkjud","slide":15,"name":"Text 43","text":"SMMU Design Review","textPreview":"SMMU Design Review","textChars":18,"textLines":1,"bbox":[45,512.25,90.02,10.5]}
+{"kind":"textbox","id":"sh/3etcfut8","slide":15,"name":"Text 44","text":"Page 16","textPreview":"Page 16","textChars":7,"textLines":1,"bbox":[881.47,512.25,33.53,10.5]}
+{"kind":"image","id":"im/h4zy50v2","slide":15,"name":"Image 0","bbox":[0,0,960,540]}
+{"kind":"image","id":"im/ji5kbixk","slide":15,"name":"Image 1","bbox":[390,112.13,525,345]}
+{"kind":"notes","id":"nt/vaxsvy10","slide":15,"text":""}
+{"kind":"slide","id":"sl/gny5sjyp","slide":16,"title":"LLE Arbitration and SRAM TDM","textShapes":24}
+{"kind":"shape","id":"sh/9kby1g7m","slide":16,"name":"Shape 0","bbox":[0,0,960,60]}
+{"kind":"textbox","id":"sh/ytkf2h8j","slide":16,"name":"Text 1","text":"LLE Arbitration and SRAM TDM","textPreview":"LLE Arbitration and SRAM TDM","textChars":28,"textLines":1,"bbox":[45,13.69,461.33,32.62]}
+{"kind":"shape","id":"sh/zutgvm94","slide":16,"name":"Shape 2","bbox":[45,82.5,870,32.85]}
+{"kind":"shape","id":"sh/kv2h4rqp","slide":16,"name":"Shape 3","bbox":[45,82.5,3,32.85]}
+{"kind":"textbox","id":"sh/lwbyxwra","slide":16,"name":"Text 4","text":"As the sole module accessing Next-Ptr SRAM, the LLE (Link-List Engine) coordinates requests from multiple control planes through efficient arbitration.","textPreview":"As the sole module accessing Next-Ptr SRAM, the LLE (Link-List Engine) coordinates requests from multiple control planes through efficien...","textChars":151,"textLines":1,"bbox":[60,93.75,840,21.6]}
+{"kind":"shape","id":"sh/ip4zel83","slide":16,"name":"Shape 5","bbox":[45,130.35,423.75,205.13]}
+{"kind":"textbox","id":"sh/3qdg7qpo","slide":16,"name":"Text 6","text":"Arbitration Priority","textPreview":"Arbitration Priority","textChars":20,"textLines":1,"bbox":[60,145.35,393.75,20.62]}
+{"kind":"shape","id":"sh/fm1gzq5o","slide":16,"name":"Shape 7","bbox":[60.38,177.22,53.83,29.62]}
+{"kind":"textbox","id":"sh/e1sf65o3","slide":16,"name":"Text 8","text":"Priority","textPreview":"Priority","textChars":8,"textLines":1,"bbox":[60.38,177.22,53.83,29.62]}
+{"kind":"shape","id":"sh/1ojy10ne","slide":16,"name":"Shape 9","bbox":[114.21,177.22,94.76,29.62]}
+{"kind":"textbox","id":"sh/gnax8v6t","slide":16,"name":"Text 10","text":"Operation","textPreview":"Operation","textChars":9,"textLines":1,"bbox":[114.21,177.22,94.76,29.62]}
+{"kind":"shape","id":"sh/nqlg3a5k","slide":16,"name":"Shape 11","bbox":[208.96,177.22,244.41,29.62]}
+{"kind":"textbox","id":"sh/2pcfa5oz","slide":16,"name":"Text 12","text":"Design Rationale","textPreview":"Design Rationale","textChars":16,"textLines":1,"bbox":[208.96,177.22,244.41,29.62]}
+{"kind":"shape","id":"sh/ps3y5knq","slide":16,"name":"Shape 13","bbox":[68.25,213.22,23.5,27.75]}
+{"kind":"textbox","id":"sh/oruhcf65","slide":16,"name":"Text 14","text":"H","textPreview":"H","textChars":1,"textLines":1,"bbox":[68.25,213.22,23.5,27.75]}
+{"kind":"textbox","id":"sh/bulg7u5g","slide":16,"name":"Text 15","text":"Dequeue","textPreview":"Dequeue","textChars":7,"textLines":1,"bbox":[122.08,221.85,75.26,11.62]}
+{"kind":"textbox","id":"sh/atczepob","slide":16,"name":"Text 16","text":"Prevents address-read stalls at the transmitter and preserves line-rate forwarding.","textPreview":"Prevents address-read stalls at the transmitter and preserves line-rate forwarding.","textChars":83,"textLines":1,"bbox":[208.96,206.85,244.41,42]}
+{"kind":"shape","id":"sh/mpgj6t8j","slide":16,"name":"Shape 17","bbox":[68.25,255.22,23.5,27.75]}
+{"kind":"textbox","id":"sh/7qp0zepo","slide":16,"name":"Text 18","text":"M","textPreview":"M","textChars":1,"textLines":1,"bbox":[68.25,255.22,23.5,27.75]}
+{"kind":"textbox","id":"sh/8by18jq9","slide":16,"name":"Text 19","text":"Aging Flush","textPreview":"Aging Flush","textChars":11,"textLines":1,"bbox":[122.08,257.85,50.75,24.75]}
+{"kind":"textbox","id":"sh/9c7i1o7u","slide":16,"name":"Text 20","text":"Promptly clears zombie queues and releases occupied buffer resources.","textPreview":"Promptly clears zombie queues and releases occupied buffer resources.","textChars":69,"textLines":1,"bbox":[208.96,248.85,244.41,42]}
+{"kind":"shape","id":"sh/ylwj2987","slide":16,"name":"Shape 21","bbox":[68.25,298.35,23.5,27.75]}
+{"kind":"textbox","id":"sh/zm50veps","slide":16,"name":"Text 22","text":"L","textPreview":"L","textChars":1,"textLines":1,"bbox":[68.25,298.35,23.5,27.75]}
+{"kind":"textbox","id":"sh/kne14jqd","slide":16,"name":"Text 23","text":"Enqueue","textPreview":"Enqueue","textChars":7,"textLines":1,"bbox":[122.08,306.97,75.25,11.62]}
+{"kind":"textbox","id":"sh/lo7ixo7y","slide":16,"name":"Text 24","text":"Uses idle slots for writes; packet-level enqueue locking preserves atomicity.","textPreview":"Uses idle slots for writes; packet-level enqueue locking preserves atomicity.","textChars":77,"textLines":1,"bbox":[208.96,290.85,244.41,44.25]}
+{"kind":"shape","id":"sh/ih0jedob","slide":16,"name":"Shape 25","bbox":[491.25,130.35,423.75,205.13]}
+{"kind":"textbox","id":"sh/ji9k7ypw","slide":16,"name":"Text 26","text":"SRAM Time-Division Multiplexing","textPreview":"SRAM Time-Division Multiplexing","textChars":31,"textLines":1,"bbox":[506.25,145.35,393.75,20.62]}
+{"kind":"textbox","id":"sh/sb2l47at","slide":16,"name":"Text 27","text":"Single-Port SRAM","textPreview":"Single-Port SRAM","textChars":16,"textLines":1,"bbox":[525,180.97,95.62,17.28]}
+{"kind":"textbox","id":"sh/rat4b298","slide":16,"name":"Text 28","text":": TDM arbitration makes a single-port SRAM appear to support multiple concurrent requesters.","textPreview":": TDM arbitration makes a single-port SRAM appear to support multiple concurrent requesters.","textChars":92,"textLines":1,"bbox":[613.23,180.31,385.62,36.86]}
+{"kind":"textbox","id":"sh/58bm9sr2","slide":16,"name":"Text 29","text":"Conflict","textPreview":"Conflict","textChars":8,"textLines":1,"bbox":[525,228.97,45,17.28]}
+{"kind":"textbox","id":"sh/47il0nah","slide":16,"name":"Text 30","text":": simultaneous requests are resolved by priority, and losing requests retry in the next cycle.","textPreview":": simultaneous requests are resolved by priority, and losing requests retry in the next cycle.","textChars":94,"textLines":1,"bbox":[566.65,228.26,390,36.86]}
+{"kind":"textbox","id":"sh/i503ydsr","slide":16,"name":"Text 31","text":"Pipeline","textPreview":"Pipeline","textChars":8,"textLines":1,"bbox":[525,276.97,56.25,17.28]}
+{"kind":"textbox","id":"sh/p4vmlwrm","slide":16,"name":"Text 32","text":": the arbitration result directly drives the SRAM address lines; prefetch registers enable seamless switching.","textPreview":": the arbitration result directly drives the SRAM address lines; prefetch registers enable seamless switching.","textChars":110,"textLines":1,"bbox":[576.24,276,383.76,36.86]}
+{"kind":"shape","id":"sh/o3m5crq1","slide":16,"name":"Shape 33","bbox":[45,350.47,870,135]}
+{"kind":"textbox","id":"sh/xoju5wr2","slide":16,"name":"Text 34","text":"SMMU Design Review","textPreview":"SMMU Design Review","textChars":18,"textLines":1,"bbox":[45,512.25,90.02,10.5]}
+{"kind":"textbox","id":"sh/alsbahsb","slide":16,"name":"Text 35","text":"Page 17","textPreview":"Page 17","textChars":7,"textLines":1,"bbox":[881.47,512.25,33.53,10.5]}
+{"kind":"image","id":"im/8bel472h","slide":16,"name":"Image 0","bbox":[0,0,960,540]}
+{"kind":"image","id":"im/z6l4r2l0","slide":16,"name":"Image 1","bbox":[506.25,180.97,11.25,11.25]}
+{"kind":"image","id":"im/y5c3yx4f","slide":16,"name":"Image 2","bbox":[506.25,228.97,11.25,11.25]}
+{"kind":"image","id":"im/l83mts36","slide":16,"name":"Image 3","bbox":[506.25,276.97,11.25,11.25]}
+{"kind":"image","id":"im/07ul0nml","slide":16,"name":"Image 4","bbox":[255,357.97,450,120]}
+{"kind":"notes","id":"nt/gny5sjyp","slide":16,"text":""}
+{"kind":"slide","id":"sl/14bup87q","slide":17,"title":"Flow Control (1) — PAUSE/PFC Hysteresis","textShapes":10}
+{"kind":"shape","id":"sh/gbedwfmx","slide":17,"name":"Shape 0","bbox":[0,0,960,60]}
+{"kind":"textbox","id":"sh/rm5czq50","slide":17,"name":"Text 1","text":"Flow Control (1) — PAUSE/PFC Hysteresis","textPreview":"Flow Control (1) — PAUSE/PFC Hysteresis","textChars":39,"textLines":1,"bbox":[45,13.69,462.25,32.62]}
+{"kind":"shape","id":"sh/6lwvql4v","slide":17,"name":"Shape 2","bbox":[45,77.25,315,177.05]}
+{"kind":"shape","id":"sh/t8ne10n6","slide":17,"name":"Shape 3","bbox":[45,77.25,3,177.05]}
+{"kind":"textbox","id":"sh/snedsvml","slide":17,"name":"Text 4","text":"Decision Logic","textPreview":"Decision Logic","textChars":14,"textLines":1,"bbox":[63.75,92.25,277.5,20.62]}
+{"kind":"textbox","id":"sh/jilcvq54","slide":17,"name":"Text 5","text":"XOFF (Stop): assert PAUSE when buffer occupancy rises above the high threshold, instructing the peer to stop transmitting.","textPreview":"XOFF (Stop): assert PAUSE when buffer occupancy rises above the high threshold, instructing the peer to stop transmitting.","textChars":122,"textLines":1,"bbox":[63.75,124.13,277.5,57.59]}
+{"kind":"textbox","id":"sh/ihcvml4j","slide":17,"name":"Text 6","text":"XON (Resume): deassert PAUSE only after occupancy falls below the low threshold, allowing the peer to resume.","textPreview":"XON (Resume): deassert PAUSE only after occupancy falls below the low threshold, allowing the peer to resume.","textChars":109,"textLines":1,"bbox":[63.75,189.21,277.5,57.59]}
+{"kind":"shape","id":"sh/4by9or6l","slide":17,"name":"Shape 7","bbox":[45,264.8,315,135]}
+{"kind":"shape","id":"sh/pc7qhwn6","slide":17,"name":"Shape 8","bbox":[45,264.8,3,135]}
+{"kind":"textbox","id":"sh/29grm1of","slide":17,"name":"Text 9","text":"Benefits of Hysteresis","textPreview":"Benefits of Hysteresis","textChars":22,"textLines":1,"bbox":[63.75,279.8,277.5,20.62]}
+{"kind":"textbox","id":"sh/3ap8fm50","slide":17,"name":"Text 10","text":"Setting XOFF > XON creates a hysteresis band between the thresholds. This prevents frequent oscillation near the threshold and stabilizes the control plane.","textPreview":"Setting XOFF > XON creates a hysteresis band between the thresholds. This prevents frequent oscillation near the threshold and stabilizes...","textChars":156,"textLines":1,"bbox":[63.75,311.67,277.5,76.78]}
+{"kind":"textbox","id":"sh/gnepkr69","slide":17,"name":"Text 11","text":"PAUSE/PFC Hysteresis Control","textPreview":"PAUSE/PFC Hysteresis Control","textChars":28,"textLines":1,"bbox":[551.74,77.25,201.52,18.38]}
+{"kind":"shape","id":"sh/honqdwnu","slide":17,"name":"Shape 12","bbox":[390,106.87,525,360]}
+{"kind":"textbox","id":"sh/fm58bm54","slide":17,"name":"Text 13","text":"The hysteresis band absorbs traffic fluctuations, reduces control-frame frequency, and improves link efficiency.","textPreview":"The hysteresis band absorbs traffic fluctuations, reduces control-frame frequency, and improves link efficiency.","textChars":112,"textLines":1,"bbox":[484.5,466.87,336,37.39]}
+{"kind":"textbox","id":"sh/0ji9wb6t","slide":17,"name":"Text 14","text":"SMMU Design Review","textPreview":"SMMU Design Review","textChars":18,"textLines":1,"bbox":[45,512.25,90.02,10.5]}
+{"kind":"textbox","id":"sh/14rqpgne","slide":17,"name":"Text 15","text":"Page 18","textPreview":"Page 18","textChars":7,"textLines":1,"bbox":[881.47,512.25,33.53,10.5]}
+{"kind":"image","id":"im/ux8bqtof","slide":17,"name":"Image 0","bbox":[0,0,960,540]}
+{"kind":"image","id":"im/fy1czy50","slide":17,"name":"Image 1","bbox":[390,106.87,525,360]}
+{"kind":"notes","id":"nt/14bup87q","slide":17,"text":""}
+{"kind":"slide","id":"sl/y5wne50z","slide":18,"title":"Flow Control (2) — Feedback","textShapes":36}
+{"kind":"shape","id":"sh/hsn2l4bu","slide":18,"name":"Shape 0","bbox":[0,0,960,60]}
+{"kind":"textbox","id":"sh/itw3upcf","slide":18,"name":"Text 1","text":"Flow Control (2) — Feedback","textPreview":"Flow Control (2) — Feedback","textChars":27,"textLines":1,"bbox":[45,13.69,361.34,32.62]}
+{"kind":"shape","id":"sh/je5knut0","slide":18,"name":"Shape 2","bbox":[45,82.5,472.5,75]}
+{"kind":"shape","id":"sh/4felwzu5","slide":18,"name":"Shape 3","bbox":[45,82.5,3,75]}
+{"kind":"textbox","id":"sh/5gnmp4bq","slide":18,"name":"Text 4","text":"1. Queue-Level Feedback","textPreview":"1. Queue-Level Feedback","textChars":23,"textLines":1,"bbox":[57,91.5,448.5,18.38]}
+{"kind":"textbox","id":"sh/6hw3y9sb","slide":18,"name":"Text 5","text":"q_max_reached[33]","textPreview":"q_max_reached[33]","textChars":17,"textLines":1,"bbox":[57,117.75,92.82,11.62]}
+{"kind":"textbox","id":"sh/rip4retw","slide":18,"name":"Text 6","text":": high queue level; QM applies WRED or gating.","textPreview":": high queue level; QM applies WRED or gating.","textChars":46,"textLines":1,"bbox":[149.82,117.75,341.25,14.4]}
+{"kind":"textbox","id":"sh/fapkr6pw","slide":18,"name":"Text 7","text":"Prevents queue monopolization.","textPreview":"Prevents queue monopolization.","textChars":30,"textLines":1,"bbox":[57,133.5,178.5,14.4]}
+{"kind":"shape","id":"sh/upg3i18r","slide":18,"name":"Shape 8","bbox":[45,166.5,472.5,75]}
+{"kind":"shape","id":"sh/1cr2tg72","slide":18,"name":"Shape 9","bbox":[45,166.5,3,75]}
+{"kind":"textbox","id":"sh/gbylkbqh","slide":18,"name":"Text 10","text":"2. Port-Level Feedback","textPreview":"2. Port-Level Feedback","textChars":22,"textLines":1,"bbox":[57,175.5,448.5,18.38]}
+{"kind":"textbox","id":"sh/7mpknmp0","slide":18,"name":"Text 11","text":"port_max_reached[4]","textPreview":"port_max_reached[4]","textChars":19,"textLines":1,"bbox":[57,201.75,99.23,11.62]}
+{"kind":"textbox","id":"sh/6lg3e18f","slide":18,"name":"Text 12","text":": aggregate port level; triggers port PAUSE.","textPreview":": aggregate port level; triggers port PAUSE.","textChars":44,"textLines":1,"bbox":[156.23,201.75,345.15,14.4]}
+{"kind":"textbox","id":"sh/to72pw76","slide":18,"name":"Text 13","text":"Backpressures peer.","textPreview":"Backpressures peer.","textChars":19,"textLines":1,"bbox":[57,217.5,73.5,14.4]}
+{"kind":"shape","id":"sh/snylgrql","slide":18,"name":"Shape 14","bbox":[45,250.5,472.5,75]}
+{"kind":"shape","id":"sh/bi94zqp4","slide":18,"name":"Shape 15","bbox":[45,250.5,3,75]}
+{"kind":"textbox","id":"sh/qh03ql8j","slide":18,"name":"Text 16","text":"3. Global-Level Feedback","textPreview":"3. Global-Level Feedback","textChars":24,"textLines":1,"bbox":[57,259.5,448.5,18.38]}
+{"kind":"textbox","id":"sh/md4nipsr","slide":18,"name":"Text 17","text":"global_max_reached","textPreview":"global_max_reached","textChars":18,"textLines":1,"bbox":[57,285.75,97.49,11.62]}
+{"kind":"textbox","id":"sh/nedoru9c","slide":18,"name":"Text 18","text":": critical SRAM level; global PAUSE prevents overflow.","textPreview":": critical SRAM level; global PAUSE prevents overflow.","textChars":54,"textLines":1,"bbox":[154.49,285.75,336.41,14.4]}
+{"kind":"shape","id":"sh/8zm5kzax","slide":18,"name":"Text 19","bbox":[57,301.5,21,11.62]}
+{"kind":"shape","id":"sh/90v6t4ri","slide":18,"name":"Shape 20","bbox":[45,334.5,472.5,75]}
+{"kind":"shape","id":"sh/a14nm9s3","slide":18,"name":"Shape 21","bbox":[45,334.5,3,75]}
+{"kind":"textbox","id":"sh/v2xovu9o","slide":18,"name":"Text 22","text":"Low-Latency Feedback Path","textPreview":"Low-Latency Feedback Path","textChars":25,"textLines":1,"bbox":[57,343.5,448.5,18.38]}
+{"kind":"textbox","id":"sh/w36poza9","slide":18,"name":"Text 23","text":"The Occupancy module drives decisions directly to QM, bypassing complex bus arbitration so flow control takes effect within 1–2 cycles and minimizes packet loss.","textPreview":"The Occupancy module drives decisions directly to QM, bypassing complex bus arbitration so flow control takes effect within 1–2 cycles an...","textChars":161,"textLines":1,"bbox":[57,367.87,448.5,31.5]}
+{"kind":"shape","id":"sh/x4f6x4re","slide":18,"name":"Shape 24","bbox":[540,82.5,375,164.25]}
+{"kind":"textbox","id":"sh/q5kna5sz","slide":18,"name":"Text 25","text":"Key Feedback Signals","textPreview":"Key Feedback Signals","textChars":20,"textLines":1,"bbox":[552,91.5,351,16.5]}
+{"kind":"shape","id":"sh/b6toja94","slide":18,"name":"Shape 26","bbox":[552.38,117,174.86,22.5]}
+{"kind":"textbox","id":"sh/t0zqp8bm","slide":18,"name":"Text 27","text":"Signal","textPreview":"Signal","textChars":6,"textLines":1,"bbox":[552.38,117,174.86,22.5]}
+{"kind":"shape","id":"sh/szq9g3uh","slide":18,"name":"Shape 28","bbox":[727.24,117,49.7,22.5]}
+{"kind":"textbox","id":"sh/7yh8nytw","slide":18,"name":"Text 29","text":"Width","textPreview":"Width","textChars":5,"textLines":1,"bbox":[727.24,117,49.7,22.5]}
+{"kind":"shape","id":"sh/6x8retcb","slide":18,"name":"Shape 30","bbox":[776.94,117,125.69,22.5]}
+{"kind":"textbox","id":"sh/h4jqtsby","slide":18,"name":"Text 31","text":"Consumer","textPreview":"Consumer","textChars":8,"textLines":1,"bbox":[776.94,117,125.69,22.5]}
+{"kind":"textbox","id":"sh/g3a9knud","slide":18,"name":"Text 32","text":"q_max_reached","textPreview":"q_max_reached","textChars":13,"textLines":1,"bbox":[552.38,139.5,174.86,21.38]}
+{"kind":"textbox","id":"sh/f218rits","slide":18,"name":"Text 33","text":"33","textPreview":"33","textChars":2,"textLines":1,"bbox":[727.24,139.5,49.7,21.38]}
+{"kind":"textbox","id":"sh/u1sridc7","slide":18,"name":"Text 34","text":"QM","textPreview":"QM","textChars":2,"textLines":1,"bbox":[776.94,139.5,125.69,21.38]}
+{"kind":"textbox","id":"sh/x8fqhobu","slide":18,"name":"Text 35","text":"port_max_reached","textPreview":"port_max_reached","textChars":16,"textLines":1,"bbox":[552.38,160.87,174.86,21.38]}
+{"kind":"textbox","id":"sh/w7698ju9","slide":18,"name":"Text 36","text":"4","textPreview":"4","textChars":1,"textLines":1,"bbox":[727.24,160.87,49.7,21.38]}
+{"kind":"textbox","id":"sh/0netwrex","slide":18,"name":"Text 37","text":"QM / MAC","textPreview":"QM / MAC","textChars":8,"textLines":1,"bbox":[776.94,160.87,125.69,21.38]}
+{"kind":"textbox","id":"sh/lonupwv2","slide":18,"name":"Text 38","text":"global_max_reached","textPreview":"global_max_reached","textChars":18,"textLines":1,"bbox":[552.38,182.25,174.86,21.38]}
+{"kind":"textbox","id":"sh/ylwbuhwr","slide":18,"name":"Text 39","text":"1","textPreview":"1","textChars":1,"textLines":1,"bbox":[727.24,182.25,49.7,21.38]}
+{"kind":"textbox","id":"sh/zm5cnmdc","slide":18,"name":"Text 40","text":"QM / MAC","textPreview":"QM / MAC","textChars":8,"textLines":1,"bbox":[776.94,182.25,125.69,21.38]}
+{"kind":"textbox","id":"sh/cjutsrel","slide":18,"name":"Text 41","text":"q_empty","textPreview":"q_empty","textChars":7,"textLines":1,"bbox":[552.38,203.62,174.86,21.38]}
+{"kind":"textbox","id":"sh/dk3ulcv6","slide":18,"name":"Text 42","text":"32","textPreview":"32","textChars":2,"textLines":1,"bbox":[727.24,203.62,49.7,21.38]}
+{"kind":"textbox","id":"sh/qxcbqhwf","slide":18,"name":"Text 43","text":"QM Scheduler","textPreview":"QM Scheduler","textChars":12,"textLines":1,"bbox":[776.94,203.62,125.69,21.38]}
+{"kind":"textbox","id":"sh/bylcjmd0","slide":18,"name":"Text 44","text":"q_pkt_empty","textPreview":"q_pkt_empty","textChars":11,"textLines":1,"bbox":[552.38,225,174.86,21.38]}
+{"kind":"textbox","id":"sh/4vuto7ep","slide":18,"name":"Text 45","text":"32","textPreview":"32","textChars":2,"textLines":1,"bbox":[727.24,225,49.7,21.38]}
+{"kind":"textbox","id":"sh/pw3uhcvu","slide":18,"name":"Text 46","text":"QM Scheduler","textPreview":"QM Scheduler","textChars":12,"textLines":1,"bbox":[776.94,225,125.69,21.38]}
+{"kind":"shape","id":"sh/7q1cr2hw","slide":18,"name":"Shape 47","bbox":[540,261.75,375,105]}
+{"kind":"textbox","id":"sh/tsjutcz2","slide":18,"name":"Text 48","text":"A dynamically shared linked-list architecture requires precise three-level flow-control feedback to maintain system stability.","textPreview":"A dynamically shared linked-list architecture requires precise three-level flow-control feedback to maintain system stability.","textChars":126,"textLines":1,"bbox":[540,366.75,375,26.35]}
+{"kind":"textbox","id":"sh/srad07yh","slide":18,"name":"Text 49","text":"SMMU Design Review","textPreview":"SMMU Design Review","textChars":18,"textLines":1,"bbox":[45,512.25,90.02,10.5]}
+{"kind":"textbox","id":"sh/fulcvmhs","slide":18,"name":"Text 50","text":"Page 19","textPreview":"Page 19","textChars":7,"textLines":1,"bbox":[881.47,512.25,33.53,10.5]}
+{"kind":"image","id":"im/lw36xcrq","slide":18,"name":"Image 0","bbox":[0,0,960,540]}
+{"kind":"image","id":"im/ytcn2x8f","slide":18,"name":"Image 1","bbox":[540,261.75,375,105]}
+{"kind":"notes","id":"nt/y5wne50z","slide":18,"text":""}
+{"kind":"slide","id":"sl/nid43ytk","slide":19,"title":"Multicast (1) — Overview","textShapes":12}
+{"kind":"shape","id":"sh/8v2pobax","slide":19,"name":"Shape 0","bbox":[0,0,960,60]}
+{"kind":"textbox","id":"sh/vitozqt8","slide":19,"name":"Text 1","text":"Multicast (1) — Overview","textPreview":"Multicast (1) — Overview","textChars":24,"textLines":1,"bbox":[45,13.69,381.35,25.85]}
+{"kind":"shape","id":"sh/ahk7qls3","slide":19,"name":"Shape 2","bbox":[45,105,275,390]}
+{"kind":"shape","id":"sh/xkbq10be","slide":19,"name":"Shape 3","bbox":[45,105,3,390]}
+{"kind":"textbox","id":"sh/jmd83atk","slide":19,"name":"Text 4","text":"Single-Slot Model","textPreview":"Single-Slot Model","textChars":17,"textLines":1,"bbox":[63.75,187.5,235.5,24]}
+{"kind":"textbox","id":"sh/il47u5sz","slide":19,"name":"Text 5","text":"To simplify hardware implementation, SMMU uses a single-slot processing model.","textPreview":"To simplify hardware implementation, SMMU uses a single-slot processing model.","textChars":78,"textLines":1,"bbox":[63.75,226.5,235.5,43.2]}
+{"kind":"textbox","id":"sh/cri1gnql","slide":19,"name":"Text 6","text":"Only one multicast frame is stitched at a time, keeping state-machine transitions deterministic and efficient.","textPreview":"Only one multicast frame is stitched at a time, keeping state-machine transitions deterministic and efficient.","textChars":110,"textLines":1,"bbox":[63.75,280.95,235.5,64.79]}
+{"kind":"shape","id":"sh/dsri9sr6","slide":19,"name":"Shape 7","bbox":[340.5,105,276,390]}
+{"kind":"shape","id":"sh/qpgjex8f","slide":19,"name":"Shape 8","bbox":[340.5,105,3,390]}
+{"kind":"textbox","id":"sh/0vi1k7qx","slide":19,"name":"Text 9","text":"Zero Copy","textPreview":"Zero Copy","textChars":9,"textLines":1,"bbox":[360.25,187.5,236.5,24]}
+{"kind":"textbox","id":"sh/1gridcr2","slide":19,"name":"Text 10","text":"The primary goal is storage conservation.","textPreview":"The primary goal is storage conservation.","textChars":41,"textLines":1,"bbox":[360.25,226.5,236.5,21.6]}
+{"kind":"textbox","id":"sh/et0jix8r","slide":19,"name":"Text 11","text":"A multicast frame has only one physical copy in Next-Ptr SRAM. Multiple logical pointers read that copy concurrently, substantially reducing buffer consumption.","textPreview":"A multicast frame has only one physical copy in Next-Ptr SRAM. Multiple logical pointers read that copy concurrently, substantially reduc...","textChars":160,"textLines":1,"bbox":[360.25,259.35,236.5,78.34]}
+{"kind":"shape","id":"sh/zu90b29c","slide":19,"name":"Shape 12","bbox":[638,105,277,390]}
+{"kind":"shape","id":"sh/oj21o7qt","slide":19,"name":"Shape 13","bbox":[638,105,3,390]}
+{"kind":"textbox","id":"sh/x07i1cji","slide":19,"name":"Text 14","text":"Logical Stitching","textPreview":"Logical Stitching","textChars":17,"textLines":1,"bbox":[658.75,187.5,237.5,24]}
+{"kind":"textbox","id":"sh/wfy1s7ix","slide":19,"name":"Text 15","text":"Multicast data does not form a separate linked list; it is logically stitched into the unicast flow.","textPreview":"Multicast data does not form a separate linked list; it is logically stitched into the unicast flow.","textChars":100,"textLines":1,"bbox":[658.75,226.5,237.5,43.2]}
+{"kind":"textbox","id":"sh/vep0z21c","slide":19,"name":"Text 16","text":"From QM's perspective, multicast frames transparently interleave with the unicast queue, enabling seamless integration with existing service logic.","textPreview":"From QM's perspective, multicast frames transparently interleave with the unicast queue, enabling seamless integration with existing serv...","textChars":147,"textLines":1,"bbox":[658.75,280.95,237.5,78.34]}
+{"kind":"textbox","id":"sh/adgjqx0r","slide":19,"name":"Text 17","text":"SMMU Design Review","textPreview":"SMMU Design Review","textChars":18,"textLines":1,"bbox":[45,512.25,90.02,10.5]}
+{"kind":"textbox","id":"sh/54ri5wje","slide":19,"name":"Text 18","text":"Page 20","textPreview":"Page 20","textChars":7,"textLines":1,"bbox":[881.47,512.25,33.53,10.5]}
+{"kind":"image","id":"im/ze1or2ls","slide":19,"name":"Image 0","bbox":[0,0,960,540]}
+{"kind":"image","id":"im/kfup07md","slide":19,"name":"Image 1","bbox":[63.75,128.62,36,36]}
+{"kind":"image","id":"im/lg3qtc3y","slide":19,"name":"Image 2","bbox":[360.25,128.62,36,36]}
+{"kind":"image","id":"im/i9w7a14b","slide":19,"name":"Image 3","bbox":[658.75,128.62,36,36]}
+{"kind":"notes","id":"nt/nid43ytk","slide":19,"text":""}
+{"kind":"slide","id":"sl/zyxsni5k","slide":20,"title":"Multicast (2) — State","textShapes":18}
+{"kind":"shape","id":"sh/rq50vmp8","slide":20,"name":"Shape 0","bbox":[0,0,960,60]}
+{"kind":"textbox","id":"sh/4nu1krqh","slide":20,"name":"Text 1","text":"Multicast (2) — State","textPreview":"Multicast (2) — State","textChars":21,"textLines":1,"bbox":[45,13.69,381.35,25.85]}
+{"kind":"shape","id":"sh/po3itc72","slide":20,"name":"Shape 2","bbox":[45,90,450,360]}
+{"kind":"shape","id":"sh/2lczih8r","slide":20,"name":"Shape 3","bbox":[45,90,3,360]}
+{"kind":"textbox","id":"sh/3ml0rmpw","slide":20,"name":"Text 4","text":"Key State Registers","textPreview":"Key State Registers","textChars":19,"textLines":1,"bbox":[63.75,108.75,412.5,22.13]}
+{"kind":"shape","id":"sh/gjuhg7ql","slide":20,"name":"Shape 5","bbox":[63.75,145.87,135,32.25]}
+{"kind":"textbox","id":"sh/hk3ipcr6","slide":20,"name":"Text 6","text":"Register","textPreview":"Register","textChars":8,"textLines":1,"bbox":[63.75,145.87,135,32.64]}
+{"kind":"shape","id":"sh/dkfmp4zy","slide":20,"name":"Shape 7","bbox":[198.75,145.87,277.5,32.25]}
+{"kind":"textbox","id":"sh/cj65wzyd","slide":20,"name":"Text 8","text":"Function","textPreview":"Function","textChars":8,"textLines":1,"bbox":[198.75,145.87,277.5,32.64]}
+{"kind":"textbox","id":"sh/rid4nuhs","slide":20,"name":"Text 9","text":"mc_valid_q","textPreview":"mc_valid_q","textChars":10,"textLines":1,"bbox":[63.75,178.13,135,47.77]}
+{"kind":"textbox","id":"sh/qh4nupg7","slide":20,"name":"Text 10","text":"Multicast-slot valid flag; indicates whether the current B2 slot contains a multicast frame.","textPreview":"Multicast-slot valid flag; indicates whether the current B2 slot contains a multicast frame.","textChars":92,"textLines":1,"bbox":[198.75,178.13,277.5,48.32]}
+{"kind":"textbox","id":"sh/pwvmlkzm","slide":20,"name":"Text 11","text":"mc_dst_bitmap_q","textPreview":"mc_dst_bitmap_q","textChars":15,"textLines":1,"bbox":[63.75,225.89,135,48.14]}
+{"kind":"textbox","id":"sh/4vm5sfy1","slide":20,"name":"Text 12","text":"Destination-port bitmap recording every physical port targeted by the multicast frame.","textPreview":"Destination-port bitmap recording every physical port targeted by the multicast frame.","textChars":86,"textLines":1,"bbox":[198.75,225.89,277.5,48.32]}
+{"kind":"textbox","id":"sh/3ud4juhg","slide":20,"name":"Text 13","text":"mc_cells_q[16]","textPreview":"mc_cells_q[16]","textChars":14,"textLines":1,"bbox":[63.75,274.03,135,48.14]}
+{"kind":"textbox","id":"sh/2t4nqpgb","slide":20,"name":"Text 14","text":"Mirror of the frame's cell-address list, allowing each port to read the complete multicast frame.","textPreview":"Mirror of the frame's cell-address list, allowing each port to read the complete multicast frame.","textChars":97,"textLines":1,"bbox":[198.75,274.03,277.5,48.32]}
+{"kind":"textbox","id":"sh/hsvmhkzq","slide":20,"name":"Text 15","text":"mc_rd_idx_q[4]","textPreview":"mc_rd_idx_q[4]","textChars":14,"textLines":1,"bbox":[63.75,322.17,135,48.14]}
+{"kind":"shape","id":"sh/grm5ofy5","slide":20,"name":"Text 16","bbox":[207.75,333.05,84,11.62]}
+{"kind":"textbox","id":"sh/8b654f61","slide":20,"name":"Text 17","text":"Per-port private read pointers advance independently.","textPreview":"Per-port private read pointers advance independently.","textChars":53,"textLines":1,"bbox":[207.75,333.05,252,26.32]}
+{"kind":"textbox","id":"sh/tcz6dk7m","slide":20,"name":"Text 18","text":"mc_pend_uni_q[4]","textPreview":"mc_pend_uni_q[4]","textChars":16,"textLines":1,"bbox":[63.75,370.31,135,48.14]}
+{"kind":"textbox","id":"sh/69on25ov","slide":20,"name":"Text 19","text":"Per-port pending-unicast flag indicating that the port is still processing a preceding unicast frame.","textPreview":"Per-port pending-unicast flag indicating that the port is still processing a preceding unicast frame.","textChars":101,"textLines":1,"bbox":[198.75,370.31,277.5,48.32]}
+{"kind":"textbox","id":"sh/7ax4bapg","slide":20,"name":"Text 20","text":"Resource Context: Dual-Pool Management","textPreview":"Resource Context: Dual-Pool Management","textChars":38,"textLines":1,"bbox":[645.75,90,148.5,28.8]}
+{"kind":"shape","id":"sh/k7650f6p","slide":20,"name":"Shape 21","bbox":[525,119.62,390,300]}
+{"kind":"textbox","id":"sh/y5ony58z","slide":20,"name":"Text 22","text":"Multicast traffic is also governed by dual-pool watermarks. In B2 mode, a multicast frame consumes only one copy in the shared pool, greatly improving memory utilization.","textPreview":"Multicast traffic is also governed by dual-pool watermarks. In B2 mode, a multicast frame consumes only one copy in the shared pool, grea...","textChars":170,"textLines":1,"bbox":[540,419.62,360,53.85]}
+{"kind":"textbox","id":"sh/j6x47ap4","slide":20,"name":"Text 23","text":"SMMU Design Review","textPreview":"SMMU Design Review","textChars":18,"textLines":1,"bbox":[45,512.25,90.02,10.5]}
+{"kind":"textbox","id":"sh/43q5cz69","slide":20,"name":"Text 24","text":"Page 21","textPreview":"Page 21","textChars":7,"textLines":1,"bbox":[881.47,512.25,33.53,10.5]}
+{"kind":"image","id":"im/qp0nyxwv","slide":20,"name":"Image 0","bbox":[0,0,960,540]}
+{"kind":"image","id":"im/8va1szud","slide":20,"name":"Image 1","bbox":[525,119.62,390,300]}
+{"kind":"notes","id":"nt/zyxsni5k","slide":20,"text":""}
+{"kind":"slide","id":"sl/m1wvqtk3","slide":21,"title":"Multicast (3) — Private Pointers","textShapes":10}
+{"kind":"shape","id":"sh/0f2lon6p","slide":21,"name":"Shape 0","bbox":[0,0,960,60]}
+{"kind":"textbox","id":"sh/ra9kryp8","slide":21,"name":"Text 1","text":"Multicast (3) — Private Pointers","textPreview":"Multicast (3) — Private Pointers","textChars":32,"textLines":1,"bbox":[45,13.69,405.35,25.85]}
+{"kind":"shape","id":"sh/qp03yt8n","slide":21,"name":"Shape 2","bbox":[45,76.5,315,165]}
+{"kind":"shape","id":"sh/dcb2t87y","slide":21,"name":"Shape 3","bbox":[45,76.5,3,165]}
+{"kind":"textbox","id":"sh/sb2lk36t","slide":21,"name":"Text 4","text":"Mechanism","textPreview":"Mechanism","textChars":9,"textLines":1,"bbox":[63.75,91.5,277.5,20.62]}
+{"kind":"textbox","id":"sh/b6d432pc","slide":21,"name":"Text 5","text":"In the B2 multicast model, each destination port has an independent mc_rd_idx_q[p] register.","textPreview":"In the B2 multicast model, each destination port has an independent mc_rd_idx_q[p] register.","textChars":92,"textLines":1,"bbox":[63.75,123.38,277.5,38.39]}
+{"kind":"textbox","id":"sh/al43uxor","slide":21,"name":"Text 6","text":"Port A may be reading cell 2 while backpressured port B is still on cell 1. This decoupling preserves per-port independence.","textPreview":"Port A may be reading cell 2 while backpressured port B is still on cell 1. This decoupling preserves per-port independence.","textChars":124,"textLines":1,"bbox":[63.75,169.27,277.5,57.59]}
+{"kind":"shape","id":"sh/4jax4nqd","slide":21,"name":"Shape 7","bbox":[45,264,315,162.05]}
+{"kind":"shape","id":"sh/5kjydsri","slide":21,"name":"Shape 8","bbox":[45,264,3,162.05]}
+{"kind":"textbox","id":"sh/ixsf2d87","slide":21,"name":"Text 9","text":"Key Benefits","textPreview":"Key Benefits","textChars":12,"textLines":1,"bbox":[63.75,279,277.5,20.62]}
+{"kind":"textbox","id":"sh/jy1gbi9s","slide":21,"name":"Text 10","text":"• One copy, multiple readers: SRAM stores only one packet copy.\n• Zero-copy forwarding: no per-destination duplication, saving internal bandwidth and storage.\n• Independent pacing: a slow port does not block a fast port's read progress.","textPreview":"• One copy, multiple readers: SRAM stores only one packet copy. | • Zero-copy forwarding: no per-destination duplication, saving internal...","textChars":236,"textLines":3,"bbox":[63.75,310.87,277.5,115.17]}
+{"kind":"textbox","id":"sh/wvax03q1","slide":21,"name":"Text 11","text":"B2 Multicast Private-Read-Pointer Model","textPreview":"B2 Multicast Private-Read-Pointer Model","textChars":39,"textLines":1,"bbox":[560.99,76.5,183.01,28.8]}
+{"kind":"shape","id":"sh/hwjy98rm","slide":21,"name":"Shape 12","bbox":[390,106.13,525,360]}
+{"kind":"textbox","id":"sh/vu1w7y9g","slide":21,"name":"Text 13","text":"Per-port private read pointers provide logically concurrent access to a single physical copy.","textPreview":"Per-port private read pointers provide logically concurrent access to a single physical copy.","textChars":93,"textLines":1,"bbox":[474,466.13,357,37.39]}
+{"kind":"textbox","id":"sh/8rqxw3q5","slide":21,"name":"Text 14","text":"SMMU Design Review","textPreview":"SMMU Design Review","textChars":18,"textLines":1,"bbox":[45,512.25,90.02,10.5]}
+{"kind":"textbox","id":"sh/9sze58rq","slide":21,"name":"Text 15","text":"Page 22","textPreview":"Page 22","textChars":7,"textLines":1,"bbox":[881.47,512.25,33.53,10.5]}
+{"kind":"image","id":"im/alonqx03","slide":21,"name":"Image 0","bbox":[0,0,960,540]}
+{"kind":"image","id":"im/b6xoj21o","slide":21,"name":"Image 1","bbox":[390,106.13,525,360]}
+{"kind":"notes","id":"nt/m1wvqtk3","slide":21,"text":""}
+{"kind":"slide","id":"sl/5onypobq","slide":22,"title":"Multicast (4) — Dequeue","textShapes":13}
+{"kind":"shape","id":"sh/7a18rydc","slide":22,"name":"Shape 0","bbox":[0,0,960,60]}
+{"kind":"textbox","id":"sh/k7qpgjul","slide":22,"name":"Text 1","text":"Multicast (4) — Dequeue","textPreview":"Multicast (4) — Dequeue","textChars":23,"textLines":1,"bbox":[45,13.69,429.35,25.85]}
+{"kind":"shape","id":"sh/58zqpov6","slide":22,"name":"Shape 2","bbox":[45,97.5,421.5,397.5]}
+{"kind":"shape","id":"sh/il87etcv","slide":22,"name":"Shape 3","bbox":[45,97.5,3,397.5]}
+{"kind":"textbox","id":"sh/jmh8nyd0","slide":22,"name":"Text 4","text":"Stitching Trigger Conditions","textPreview":"Stitching Trigger Conditions","textChars":28,"textLines":1,"bbox":[67.5,120,375,24]}
+{"kind":"textbox","id":"sh/43u9snu5","slide":22,"name":"Text 5","text":"1. Unicast Frame Dequeue Completes","textPreview":"1. Unicast Frame Dequeue Completes","textChars":34,"textLines":1,"bbox":[67.5,162.75,375,18.38]}
+{"kind":"textbox","id":"sh/p43q1sva","slide":22,"name":"Text 6","text":"When the port's preceding unicast frame is fully transmitted (mc_pend_uni_q[p] == 0), the stitching check is triggered.","textPreview":"When the port's preceding unicast frame is fully transmitted (mc_pend_uni_q[p] == 0), the stitching check is triggered.","textChars":119,"textLines":1,"bbox":[67.5,188.62,375,37.5]}
+{"kind":"textbox","id":"sh/p4z6tcri","slide":22,"name":"Text 7","text":"2. Multicast Slot Is Ready","textPreview":"2. Multicast Slot Is Ready","textChars":26,"textLines":1,"bbox":[67.5,244.87,375,18.38]}
+{"kind":"textbox","id":"sh/436507qx","slide":22,"name":"Text 8","text":"The multicast slot is valid (mc_valid_q == 1) and the port is set in the destination bitmap (mc_dst_bitmap_q[p] == 1).","textPreview":"The multicast slot is valid (mc_valid_q == 1) and the port is set in the destination bitmap (mc_dst_bitmap_q[p] == 1).","textChars":118,"textLines":1,"bbox":[67.5,270.75,375,37.5]}
+{"kind":"textbox","id":"sh/3ixor29c","slide":22,"name":"Text 9","text":"3. Read Pointer Is In Range","textPreview":"3. Read Pointer Is In Range","textChars":27,"textLines":1,"bbox":[67.5,327,375,18.38]}
+{"kind":"textbox","id":"sh/2honyx8r","slide":22,"name":"Text 10","text":"mc_rd_idx_q[p] is below the frame's cell count.","textPreview":"mc_rd_idx_q[p] is below the frame's cell count.","textChars":47,"textLines":1,"bbox":[67.5,352.87,375,18.75]}
+{"kind":"shape","id":"sh/hgf6pcr6","slide":22,"name":"Shape 11","bbox":[495,97.5,420,397.5]}
+{"kind":"textbox","id":"sh/gf65w7ql","slide":22,"name":"Text 12","text":"QM Perspective and Transparent Processing","textPreview":"QM Perspective and Transparent Processing","textChars":41,"textLines":1,"bbox":[517.5,120,375,24]}
+{"kind":"textbox","id":"sh/fexon290","slide":22,"name":"Text 13","text":"Transparency: QM always sees an ordinary unicast queue. Internally, SMMU inserts multicast cells between unicast frames through logical selection.","textPreview":"Transparency: QM always sees an ordinary unicast queue. Internally, SMMU inserts multicast cells between unicast frames through logical s...","textChars":146,"textLines":1,"bbox":[517.5,162.75,375,64.79]}
+{"kind":"textbox","id":"sh/udonux8v","slide":22,"name":"Text 14","text":"Seamless switching: once stitching conditions are met, the LLE switches from the SRAM linked list to the multicast mirror registers mc_cells_q with zero added latency.","textPreview":"Seamless switching: once stitching conditions are met, the LLE switches from the SRAM linked list to the multicast mirror registers mc_ce...","textChars":167,"textLines":1,"bbox":[517.5,242.54,375,55.3]}
+{"kind":"shape","id":"sh/1cj61w7q","slide":22,"name":"Shape 15","bbox":[517.5,301.11,375,135]}
+{"kind":"textbox","id":"sh/krihkz2d","slide":22,"name":"Text 16","text":"SMMU Design Review","textPreview":"SMMU Design Review","textChars":18,"textLines":1,"bbox":[45,512.25,90.02,10.5]}
+{"kind":"textbox","id":"sh/lsrit4jy","slide":22,"name":"Text 17","text":"Page 23","textPreview":"Page 23","textChars":7,"textLines":1,"bbox":[881.47,512.25,33.53,10.5]}
+{"kind":"image","id":"im/dgni9oj6","slide":22,"name":"Image 0","bbox":[0,0,960,540]}
+{"kind":"image","id":"im/sfeh0jil","slide":22,"name":"Image 1","bbox":[517.5,301.11,375,135]}
+{"kind":"notes","id":"nt/5onypobq","slide":22,"text":""}
+{"kind":"slide","id":"sl/c7uhcr6t","slide":23,"title":"Multicast (5) — Ref-Count Reclaim","textShapes":24}
+{"kind":"shape","id":"sh/8zm9k7y5","slide":23,"name":"Shape 0","bbox":[0,0,960,60]}
+{"kind":"textbox","id":"sh/v2d8fmhw","slide":23,"name":"Text 1","text":"Multicast (5) — Ref-Count Reclaim","textPreview":"Multicast (5) — Ref-Count Reclaim","textChars":33,"textLines":1,"bbox":[45,13.69,429.35,25.85]}
+{"kind":"shape","id":"sh/a14rmhgb","slide":23,"name":"Shape 2","bbox":[45,90,423.75,210]}
+{"kind":"shape","id":"sh/xovqhcz2","slide":23,"name":"Shape 3","bbox":[45,90,3,210]}
+{"kind":"textbox","id":"sh/w3m9o7yh","slide":23,"name":"Text 4","text":"Reference-Count Mechanism","textPreview":"Reference-Count Mechanism","textChars":25,"textLines":1,"bbox":[63.75,108.75,386.25,22.13]}
+{"kind":"textbox","id":"sh/jqd8jmhs","slide":23,"name":"Text 5","text":"To support zero-copy multicast, SMMU maintains an independent reference counter for each multicast cell:","textPreview":"To support zero-copy multicast, SMMU maintains an independent reference counter for each multicast cell:","textChars":104,"textLines":1,"bbox":[63.75,145.87,386.25,43.2]}
+{"kind":"shape","id":"sh/ip4rqhgn","slide":23,"name":"Shape 6","bbox":[63.75,200.32,386.25,94.5]}
+{"kind":"textbox","id":"sh/sby90zm1","slide":23,"name":"Text 7","text":"// Initialization:\nref_count = count_ones(mc_dst_bitmap);\n // Port p completes its read:\nref_count = ref_count - 1;","textPreview":"// Initialization: | ref_count = count_ones(mc_dst_bitmap); |  // Port p completes its read: | ref_count = ref_count - 1;","textChars":115,"textLines":4,"bbox":[63.75,200.32,386.25,94.5]}
+{"kind":"shape","id":"sh/tc7at436","slide":23,"name":"Shape 8","bbox":[491.25,90,423.75,210]}
+{"kind":"shape","id":"sh/69gry94v","slide":23,"name":"Shape 9","bbox":[491.25,90,3,210]}
+{"kind":"textbox","id":"sh/rapsrelg","slide":23,"name":"Text 10","text":"Cell-Level Reclamation","textPreview":"Cell-Level Reclamation","textChars":22,"textLines":1,"bbox":[510,108.75,386.25,22.13]}
+{"kind":"textbox","id":"sh/0fi94jmx","slide":23,"name":"Text 11","text":"Resources are reclaimed per cell rather than per frame for finer-grained release:","textPreview":"Resources are reclaimed per cell rather than per frame for finer-grained release:","textChars":81,"textLines":1,"bbox":[510,145.87,386.25,43.2]}
+{"kind":"textbox","id":"sh/1graxo3i","slide":23,"name":"Text 12","text":"1. Port A completes Cell 0:","textPreview":"1. Port A completes Cell 0:","textChars":27,"textLines":1,"bbox":[510,204.07,148.7,19.58]}
+{"kind":"textbox","id":"sh/edgr294r","slide":23,"name":"Text 13","text":"ref_count[0]--","textPreview":"ref_count[0]--","textChars":14,"textLines":1,"bbox":[658.7,204.07,71.37,13.5]}
+{"kind":"textbox","id":"sh/fepsvelc","slide":23,"name":"Text 14","text":".","textPreview":".","textChars":1,"textLines":1,"bbox":[730.07,204.07,12,19.58]}
+{"kind":"textbox","id":"sh/oji9832t","slide":23,"name":"Text 15","text":"2. Port B completes Cell 0:","textPreview":"2. Port B completes Cell 0:","textChars":27,"textLines":1,"bbox":[510,225.67,149.36,19.58]}
+{"kind":"textbox","id":"sh/p4ra1o3e","slide":23,"name":"Text 16","text":"ref_count[0]--","textPreview":"ref_count[0]--","textChars":14,"textLines":1,"bbox":[659.36,225.67,71.37,13.5]}
+{"kind":"textbox","id":"sh/x0nalovi","slide":23,"name":"Text 17","text":".","textPreview":".","textChars":1,"textLines":1,"bbox":[730.73,225.67,12,19.58]}
+{"kind":"textbox","id":"sh/wze9cjud","slide":23,"name":"Text 18","text":"3.","textPreview":"3.","textChars":2,"textLines":1,"bbox":[510,247.27,52.68,19.58]}
+{"kind":"textbox","id":"sh/by58jeds","slide":23,"name":"Text 19","text":"ref_count[0] == 0","textPreview":"ref_count[0] == 0","textChars":17,"textLines":1,"bbox":[562.68,247.27,90.73,13.5]}
+{"kind":"textbox","id":"sh/axwratc7","slide":23,"name":"Text 20","text":".","textPreview":".","textChars":1,"textLines":1,"bbox":[653.41,247.27,176.69,19.58]}
+{"kind":"shape","id":"sh/l47ap8vu","slide":23,"name":"Shape 21","bbox":[45,322.5,870,135]}
+{"kind":"shape","id":"sh/k3y9g3u9","slide":23,"name":"Shape 22","bbox":[45,322.5,3,135]}
+{"kind":"textbox","id":"sh/j2psnydo","slide":23,"name":"Text 23","text":"Whole-Frame Release and Slot Clearing","textPreview":"Whole-Frame Release and Slot Clearing","textChars":37,"textLines":1,"bbox":[63.75,337.5,832.5,20.62]}
+{"kind":"textbox","id":"sh/y1gretc3","slide":23,"name":"Text 24","text":"Closed resource loop: the frame is fully released after every destination port has read and reclaimed every cell.","textPreview":"Closed resource loop: the frame is fully released after every destination port has read and reclaimed every cell.","textChars":113,"textLines":1,"bbox":[63.75,369.38,832.5,21.97]}
+{"kind":"textbox","id":"sh/183qd4vq","slide":23,"name":"Text 25","text":"Slot:","textPreview":"Slot:","textChars":5,"textLines":1,"bbox":[83.25,395.47,48,18.43]}
+{"kind":"textbox","id":"sh/07u94ze5","slide":23,"name":"Text 26","text":"clear","textPreview":"clear","textChars":5,"textLines":1,"bbox":[131.25,395.47,39.33,19.58]}
+{"kind":"textbox","id":"sh/qds7e5sn","slide":23,"name":"Text 27","text":"mc_valid_q","textPreview":"mc_valid_q","textChars":10,"textLines":1,"bbox":[170.58,395.47,60.7,13.5]}
+{"kind":"textbox","id":"sh/re1onat8","slide":23,"name":"Text 28","text":"flag, reset the multicast-slot state machine, and prepare for the next multicast frame.","textPreview":"flag, reset the multicast-slot state machine, and prepare for the next multicast frame.","textChars":87,"textLines":1,"bbox":[231.28,395.47,315.33,19.58]}
+{"kind":"textbox","id":"sh/szapgfat","slide":23,"name":"Text 29","text":"Performance benefit: backpressure on one port cannot hold global buffer resources indefinitely.","textPreview":"Performance benefit: backpressure on one port cannot hold global buffer resources indefinitely.","textChars":95,"textLines":1,"bbox":[63.75,413.32,832.5,21.97]}
+{"kind":"textbox","id":"sh/d0j6pkbe","slide":23,"name":"Text 30","text":"SMMU Design Review","textPreview":"SMMU Design Review","textChars":18,"textLines":1,"bbox":[45,512.25,90.02,10.5]}
+{"kind":"textbox","id":"sh/e1s7ipsz","slide":23,"name":"Text 31","text":"Page 24","textPreview":"Page 24","textChars":7,"textLines":1,"bbox":[881.47,512.25,33.53,10.5]}
+{"kind":"image","id":"im/gni1g7ep","slide":23,"name":"Image 0","bbox":[0,0,960,540]}
+{"kind":"notes","id":"nt/c7uhcr6t","slide":23,"text":""}
+{"kind":"slide","id":"sl/7qto7e10","slide":24,"title":"Aging (1) — Zombie Cleanup","textShapes":20}
+{"kind":"shape","id":"sh/0r6p4nul","slide":24,"name":"Shape 0","bbox":[0,0,960,60]}
+{"kind":"textbox","id":"sh/nux8zidc","slide":24,"name":"Text 1","text":"Aging (1) — Zombie Cleanup","textPreview":"Aging (1) — Zombie Cleanup","textChars":26,"textLines":1,"bbox":[45,13.69,337.34,32.62]}
+{"kind":"shape","id":"sh/2to76dcr","slide":24,"name":"Shape 2","bbox":[45,76.5,315,150]}
+{"kind":"shape","id":"sh/9wzq1svi","slide":24,"name":"Shape 3","bbox":[45,76.5,3,150]}
+{"kind":"textbox","id":"sh/ov6p8nux","slide":24,"name":"Text 4","text":"Design Context","textPreview":"Design Context","textChars":14,"textLines":1,"bbox":[63.75,91.5,277.5,20.62]}
+{"kind":"textbox","id":"sh/3ydonyd8","slide":24,"name":"Text 5","text":"In a switch ASIC, abnormal traffic, a stalled peer, or configuration changes can leave packets buffered without dequeue activity. These zombie queues consume valuable SRAM resources.","textPreview":"In a switch ASIC, abnormal traffic, a stalled peer, or configuration changes can leave packets buffered without dequeue activity. These z...","textChars":182,"textLines":1,"bbox":[63.75,123.38,277.5,69.63]}
+{"kind":"shape","id":"sh/ix47utcn","slide":24,"name":"Shape 6","bbox":[45,241.5,315,165]}
+{"kind":"shape","id":"sh/8veh8ril","slide":24,"name":"Shape 7","bbox":[45,241.5,3,165]}
+{"kind":"textbox","id":"sh/9wni1wjq","slide":24,"name":"Text 8","text":"Scanning Logic","textPreview":"Scanning Logic","textChars":14,"textLines":1,"bbox":[63.75,256.5,277.5,20.62]}
+{"kind":"textbox","id":"sh/mtwz6h0f","slide":24,"name":"Text 9","text":"•","textPreview":"•","textChars":1,"textLines":1,"bbox":[63.75,291,7.54,13.5]}
+{"kind":"textbox","id":"sh/nu50zm10","slide":24,"name":"Text 10","text":"Timer","textPreview":"Timer","textChars":5,"textLines":1,"bbox":[71.29,291,60,16.38]}
+{"kind":"textbox","id":"sh/wzyhcrih","slide":24,"name":"Text 11","text":": SMMU maintains a high-precision aging timer.","textPreview":": SMMU maintains a high-precision aging timer.","textChars":46,"textLines":1,"bbox":[131.29,291,184,17.41]}
+{"kind":"shape","id":"sh/x07i5wj2","slide":24,"name":"Text 12","bbox":[315.28,291,24,13.5]}
+{"kind":"textbox","id":"sh/axgza10b","slide":24,"name":"Text 13","text":"•","textPreview":"•","textChars":1,"textLines":1,"bbox":[63.75,310.2,7.54,13.5]}
+{"kind":"textbox","id":"sh/vyp03m1w","slide":24,"name":"Text 14","text":"Scan","textPreview":"Scan","textChars":4,"textLines":1,"bbox":[71.29,310.2,48,16.38]}
+{"kind":"textbox","id":"sh/c3uh07id","slide":24,"name":"Text 15","text":":","textPreview":":","textChars":1,"textLines":1,"bbox":[119.29,310.2,12,17.41]}
+{"kind":"textbox","id":"sh/d43itcjy","slide":24,"name":"Text 16","text":"aging_ctrl","textPreview":"aging_ctrl","textChars":10,"textLines":1,"bbox":[131.29,310.2,52.03,13.5]}
+{"kind":"textbox","id":"sh/t8v6h47a","slide":24,"name":"Text 17","text":"polls every non-empty queue periodically.","textPreview":"polls every non-empty queue periodically.","textChars":41,"textLines":1,"bbox":[183.32,310.2,147.33,17.41]}
+{"kind":"textbox","id":"sh/s72p8z6p","slide":24,"name":"Text 18","text":"•","textPreview":"•","textChars":1,"textLines":1,"bbox":[63.75,329.39,7.54,13.5]}
+{"kind":"textbox","id":"sh/rmtofup4","slide":24,"name":"Text 19","text":"Detect","textPreview":"Detect","textChars":6,"textLines":1,"bbox":[71.29,329.39,48,16.38]}
+{"kind":"textbox","id":"sh/6lk76poz","slide":24,"name":"Text 20","text":": no dequeue activity by timeout;","textPreview":": no dequeue activity by timeout;","textChars":33,"textLines":1,"bbox":[119.29,329.39,216,17.41]}
+{"kind":"textbox","id":"sh/1cv6l47m","slide":24,"name":"Text 21","text":"mark the queue aged for forced reclaim.","textPreview":"mark the queue aged for forced reclaim.","textChars":39,"textLines":1,"bbox":[63.75,348.59,247.99,17.41]}
+{"kind":"textbox","id":"sh/gbmpcz61","slide":24,"name":"Text 22","text":"Aging-Flush Scan Mechanism","textPreview":"Aging-Flush Scan Mechanism","textChars":26,"textLines":1,"bbox":[537.76,76.5,229.48,18.38]}
+{"kind":"shape","id":"sh/fadojepg","slide":24,"name":"Shape 23","bbox":[390,106.13,525,360]}
+{"kind":"textbox","id":"sh/pgf6po7i","slide":24,"name":"Text 24","text":"Active scanning ensures that deadlocked queues cannot hold shared-buffer resources indefinitely.","textPreview":"Active scanning ensures that deadlocked queues cannot hold shared-buffer resources indefinitely.","textChars":96,"textLines":1,"bbox":[489.75,466.13,325.5,37.39]}
+{"kind":"textbox","id":"sh/of6pgj6x","slide":24,"name":"Text 25","text":"SMMU Design Review","textPreview":"SMMU Design Review","textChars":18,"textLines":1,"bbox":[45,512.25,90.02,10.5]}
+{"kind":"textbox","id":"sh/mlg3al4f","slide":24,"name":"Text 26","text":"Page 25","textPreview":"Page 25","textChars":7,"textLines":1,"bbox":[881.47,512.25,33.53,10.5]}
+{"kind":"image","id":"im/obqp47q1","slide":24,"name":"Image 0","bbox":[0,0,960,540]}
+{"kind":"image","id":"im/nahovmpg","slide":24,"name":"Image 1","bbox":[390,106.13,525,360]}
+{"kind":"notes","id":"nt/7qto7e10","slide":24,"text":""}
+{"kind":"slide","id":"sl/69wfm9o7","slide":25,"title":"Aging (2) — Forced Reclamation","textShapes":9}
+{"kind":"shape","id":"sh/cfyt4beh","slide":25,"name":"Shape 0","bbox":[0,0,960,60]}
+{"kind":"textbox","id":"sh/napsr6x0","slide":25,"name":"Text 1","text":"Aging (2) — Forced Reclamation","textPreview":"Aging (2) — Forced Reclamation","textChars":30,"textLines":1,"bbox":[45,13.69,337.34,32.62]}
+{"kind":"shape","id":"sh/29wby1wf","slide":25,"name":"Shape 2","bbox":[45,105,420,390]}
+{"kind":"shape","id":"sh/pc7atgf6","slide":25,"name":"Shape 3","bbox":[45,105,3,390]}
+{"kind":"textbox","id":"sh/obyt0bel","slide":25,"name":"Text 4","text":"1. Execution","textPreview":"1. Execution","textChars":12,"textLines":1,"bbox":[67.5,127.5,373.5,24]}
+{"kind":"textbox","id":"sh/fm5snmx4","slide":25,"name":"Text 5","text":"Once a queue is marked as aged, the LLE starts a Forced Dequeue process:","textPreview":"Once a queue is marked as aged, the LLE starts a Forced Dequeue process:","textChars":72,"textLines":1,"bbox":[67.5,170.25,373.5,43.2]}
+{"kind":"textbox","id":"sh/elwbu1wj","slide":25,"name":"Text 6","text":"• Drop packets: aged packets are discarded inside the MMU instead of being sent to an egress port.\n• Return addresses: occupied cell addresses are read out one by one and appended to the free list.\n• Close the resource loop: all capacity held by stale packets re-enters the available pool.","textPreview":"• Drop packets: aged packets are discarded inside the MMU instead of being sent to an egress port. | • Return addresses: occupied cell ad...","textChars":289,"textLines":3,"bbox":[67.5,228.45,373.5,117.5]}
+{"kind":"shape","id":"sh/wza9cbqp","slide":25,"name":"Shape 7","bbox":[493.5,105,421.5,390]}
+{"kind":"shape","id":"sh/h0jalgra","slide":25,"name":"Shape 8","bbox":[493.5,105,3,390]}
+{"kind":"textbox","id":"sh/uxsra18j","slide":25,"name":"Text 9","text":"2. Safety","textPreview":"2. Safety","textChars":9,"textLines":1,"bbox":[517.5,127.5,375,24]}
+{"kind":"textbox","id":"sh/vy1sj694","slide":25,"name":"Text 10","text":"Aging flush is a sensitive resource operation, so SMMU applies multiple safeguards:","textPreview":"Aging flush is a sensitive resource operation, so SMMU applies multiple safeguards:","textChars":83,"textLines":1,"bbox":[517.5,170.25,375,21.6]}
+{"kind":"textbox","id":"sh/8ba98bqt","slide":25,"name":"Text 11","text":"• Enqueue Lock: enqueue to the affected queue is locked during the flush to prevent new address conflicts.\n• Atomic operation: the entire frame is reclaimed atomically to protect linked-list integrity.\n• Lower-priority execution: aging reclamation has medium LLE arbitration priority and does not disrupt normal dequeue traffic.","textPreview":"• Enqueue Lock: enqueue to the affected queue is locked during the flush to prevent new address conflicts. | • Atomic operation: the enti...","textChars":328,"textLines":3,"bbox":[517.5,206.85,375,117.5]}
+{"kind":"textbox","id":"sh/9cjahgry","slide":25,"name":"Text 12","text":"SMMU Design Review","textPreview":"SMMU Design Review","textChars":18,"textLines":1,"bbox":[45,512.25,90.02,10.5]}
+{"kind":"textbox","id":"sh/m98r618n","slide":25,"name":"Text 13","text":"Page 26","textPreview":"Page 26","textChars":7,"textLines":1,"bbox":[881.47,512.25,33.53,10.5]}
+{"kind":"image","id":"im/wbi1o7m9","slide":25,"name":"Image 0","bbox":[0,0,960,540]}
+{"kind":"notes","id":"nt/69wfm9o7","slide":25,"text":""}
+{"kind":"slide","id":"sl/l0bepsfm","slide":26,"title":"CSR and Statistics","textShapes":9}
+{"kind":"shape","id":"sh/vitkzqlc","slide":26,"name":"Shape 0","bbox":[0,0,960,60]}
+{"kind":"textbox","id":"sh/8fil4b21","slide":26,"name":"Text 1","text":"CSR and Statistics","textPreview":"CSR and Statistics","textChars":18,"textLines":1,"bbox":[45,13.69,330.68,32.62]}
+{"kind":"shape","id":"sh/tgr2xg3m","slide":26,"name":"Shape 2","bbox":[45,90,315,120]}
+{"kind":"shape","id":"sh/md0321kv","slide":26,"name":"Shape 3","bbox":[45,90,3,120]}
+{"kind":"textbox","id":"sh/7e9kv6lg","slide":26,"name":"Text 4","text":"CSR Configuration Interface","textPreview":"CSR Configuration Interface","textChars":27,"textLines":1,"bbox":[63.75,105,277.5,20.62]}
+{"kind":"textbox","id":"sh/kbil0r2p","slide":26,"name":"Text 5","text":"The CPU can adjust core parameters in real time, including flow-control thresholds (XOFF/XON), dual-pool reserve ratios, and the aging-timer period, enabling dynamic performance tuning.","textPreview":"The CPU can adjust core parameters in real time, including flow-control thresholds (XOFF/XON), dual-pool reserve ratios, and the aging-ti...","textChars":185,"textLines":1,"bbox":[63.75,136.87,277.5,69.63]}
+{"kind":"shape","id":"sh/lcr2tw3a","slide":26,"name":"Shape 6","bbox":[45,225,315,165]}
+{"kind":"shape","id":"sh/lsja143i","slide":26,"name":"Shape 7","bbox":[45,225,3,165]}
+{"kind":"textbox","id":"sh/krat8z2x","slide":26,"name":"Text 8","text":"Performance Monitoring and Statistics","textPreview":"Performance Monitoring and Statistics","textChars":37,"textLines":1,"bbox":[63.75,240,277.5,20.62]}
+{"kind":"textbox","id":"sh/z61szulc","slide":26,"name":"Text 9","text":"• Real-time counters: accurately track total enqueued/dequeued packets and dropped cells.\n• Watermark tracking: sample peak queue and global buffer occupancy in real time.\n• Exception reporting: interrupt system software on SRAM ECC errors, illegal address accesses, and other faults.","textPreview":"• Real-time counters: accurately track total enqueued/dequeued packets and dropped cells. | • Watermark tracking: sample peak queue and g...","textChars":284,"textLines":3,"bbox":[63.75,271.87,277.5,121.86]}
+{"kind":"textbox","id":"sh/y5sr69kr","slide":26,"name":"Text 10","text":"CSR and Statistics Module Architecture","textPreview":"CSR and Statistics Module Architecture","textChars":38,"textLines":1,"bbox":[575.62,90,153.76,28.8]}
+{"kind":"shape","id":"sh/x4jax436","slide":26,"name":"Shape 11","bbox":[390,119.62,525,342]}
+{"kind":"textbox","id":"sh/b21svulg","slide":26,"name":"Text 12","text":"Strong observability provides solid data support for system debugging and performance tuning.","textPreview":"Strong observability provides solid data support for system debugging and performance tuning.","textChars":93,"textLines":1,"bbox":[495,461.62,315,37.39]}
+{"kind":"textbox","id":"sh/a18r2pkv","slide":26,"name":"Text 13","text":"SMMU Design Review","textPreview":"SMMU Design Review","textChars":18,"textLines":1,"bbox":[45,512.25,90.02,10.5]}
+{"kind":"textbox","id":"sh/p0zatk3a","slide":26,"name":"Text 14","text":"Page 27","textPreview":"Page 27","textChars":7,"textLines":1,"bbox":[881.47,512.25,33.53,10.5]}
+{"kind":"image","id":"im/32xwfmtw","slide":26,"name":"Image 0","bbox":[0,0,960,540]}
+{"kind":"image","id":"im/76tc729o","slide":26,"name":"Image 1","bbox":[390,119.62,525,342]}
+{"kind":"notes","id":"nt/l0bepsfm","slide":26,"text":""}
+{"kind":"slide","id":"sl/4vyxknqp","slide":27,"title":"Reset and Initialization","textShapes":29}
+{"kind":"shape","id":"sh/lofadsni","slide":27,"name":"Shape 0","bbox":[0,0,960,60]}
+{"kind":"textbox","id":"sh/mpor6x43","slide":27,"name":"Text 1","text":"Reset and Initialization","textPreview":"Reset and Initialization","textChars":24,"textLines":1,"bbox":[45,13.69,298.68,32.62]}
+{"kind":"shape","id":"sh/7qxsfi5o","slide":27,"name":"Shape 2","bbox":[45,97.5,280,225]}
+{"kind":"shape","id":"sh/8r698nm9","slide":27,"name":"Shape 3","bbox":[45,97.5,3,225]}
+{"kind":"shape","id":"sh/9sfahsnu","slide":27,"name":"Shape 4","bbox":[60,116.25,37.5,37.5]}
+{"kind":"textbox","id":"sh/vuxsj250","slide":27,"name":"Text 5","text":"1. Reset Deassertion","textPreview":"1. Reset Deassertion","textChars":20,"textLines":1,"bbox":[60,168.75,248,20.62]}
+{"kind":"textbox","id":"sh/ju5gv294","slide":27,"name":"Text 6","text":"After reset release,","textPreview":"After reset release,","textChars":20,"textLines":1,"bbox":[60,203.25,112.5,16.38]}
+{"kind":"textbox","id":"sh/ytwfmx8j","slide":27,"name":"Text 7","text":"csr_stats_init","textPreview":"csr_stats_init","textChars":14,"textLines":1,"bbox":[172.5,203.25,65.65,12.38]}
+{"kind":"textbox","id":"sh/lw7yxcra","slide":27,"name":"Text 8","text":"takes control.","textPreview":"takes control.","textChars":14,"textLines":1,"bbox":[238.15,203.25,59.38,16.38]}
+{"kind":"shape","id":"sh/kvyxo7qp","slide":27,"name":"Text 9","bbox":[60,221.25,78.75,12.38]}
+{"kind":"textbox","id":"sh/bq5gr298","slide":27,"name":"Text 10","text":"All internal state registers are cleared before the automatic initialization sequence begins.","textPreview":"All internal state registers are cleared before the automatic initialization sequence begins.","textChars":93,"textLines":1,"bbox":[60,244.13,248,36]}
+{"kind":"shape","id":"sh/apwfix8n","slide":27,"name":"Shape 11","bbox":[338,97.5,281,225]}
+{"kind":"shape","id":"sh/xsnytcry","slide":27,"name":"Shape 12","bbox":[338,97.5,3,225]}
+{"kind":"shape","id":"sh/wrexk7qt","slide":27,"name":"Shape 13","bbox":[354,116.25,37.5,37.5]}
+{"kind":"textbox","id":"sh/ulgzuh8r","slide":27,"name":"Text 14","text":"2. Automatic Linked-List Construction","textPreview":"2. Automatic Linked-List Construction","textChars":37,"textLines":1,"bbox":[354,168.75,249,20.62]}
+{"kind":"textbox","id":"sh/qhkj2lsz","slide":27,"name":"Text 15","text":"Scan every Next-Ptr SRAM address, one per cycle.","textPreview":"Scan every Next-Ptr SRAM address, one per cycle.","textChars":48,"textLines":1,"bbox":[354,200.62,249,18]}
+{"kind":"textbox","id":"sh/rit0vqtk","slide":27,"name":"Text 16","text":"Write","textPreview":"Write","textChars":5,"textLines":1,"bbox":[354,228.75,36.88,16.38]}
+{"kind":"textbox","id":"sh/sj214va5","slide":27,"name":"Text 17","text":"i","textPreview":"i","textChars":1,"textLines":1,"bbox":[390.88,228.75,2.5,12.38]}
+{"kind":"textbox","id":"sh/dkb2x0bq","slide":27,"name":"Text 18","text":"→","textPreview":"→","textChars":1,"textLines":1,"bbox":[393.38,228.75,62.5,16.38]}
+{"kind":"textbox","id":"sh/elkj65sb","slide":27,"name":"Text 19","text":"i+1","textPreview":"i+1","textChars":3,"textLines":1,"bbox":[455.88,228.75,15.33,12.38]}
+{"kind":"textbox","id":"sh/fmdkzatw","slide":27,"name":"Text 20","text":"; build","textPreview":"; build","textChars":7,"textLines":1,"bbox":[471.21,228.75,128.76,16.38]}
+{"kind":"textbox","id":"sh/0nm18fa1","slide":27,"name":"Text 21","text":"a full-space","textPreview":"a full-space","textChars":12,"textLines":1,"bbox":[354,246.75,115.63,16.38]}
+{"kind":"textbox","id":"sh/1ov210bm","slide":27,"name":"Text 22","text":"free list","textPreview":"free list","textChars":9,"textLines":1,"bbox":[469.63,246.75,38.14,15.36]}
+{"kind":"textbox","id":"sh/up0ju1sr","slide":27,"name":"Text 23","text":".","textPreview":".","textChars":1,"textLines":1,"bbox":[507.77,246.75,11.25,16.38]}
+{"kind":"shape","id":"sh/vq90n6tc","slide":27,"name":"Shape 24","bbox":[633,97.5,282,225]}
+{"kind":"shape","id":"sh/x4fmt4vu","slide":27,"name":"Shape 25","bbox":[633,97.5,3,225]}
+{"kind":"shape","id":"sh/w36l0ju9","slide":27,"name":"Shape 26","bbox":[650,116.25,37.5,37.5]}
+{"kind":"textbox","id":"sh/aho3y9cj","slide":27,"name":"Text 27","text":"3. Ready State","textPreview":"3. Ready State","textChars":14,"textLines":1,"bbox":[650,168.75,250,20.62]}
+{"kind":"textbox","id":"sh/l8zmxov6","slide":27,"name":"Text 28","text":"Set","textPreview":"Set","textChars":3,"textLines":1,"bbox":[650,203.25,36.88,16.38]}
+{"kind":"textbox","id":"sh/k7q54jul","slide":27,"name":"Text 29","text":"free_head","textPreview":"free_head","textChars":9,"textLines":1,"bbox":[686.88,203.25,50.67,12.38]}
+{"kind":"textbox","id":"sh/j6h4ved0","slide":27,"name":"Text 30","text":"= 0;","textPreview":"= 0;","textChars":4,"textLines":1,"bbox":[737.55,203.25,35.01,16.38]}
+{"kind":"textbox","id":"sh/y58329cf","slide":27,"name":"Text 31","text":"free_tail","textPreview":"free_tail","textChars":9,"textLines":1,"bbox":[772.56,203.25,40.03,12.38]}
+{"kind":"textbox","id":"sh/1cvmlkvm","slide":27,"name":"Text 32","text":"= max.","textPreview":"= max.","textChars":6,"textLines":1,"bbox":[812.59,203.25,70.63,16.38]}
+{"kind":"textbox","id":"sh/0bmlsfu1","slide":27,"name":"Text 33","text":"Set","textPreview":"Set","textChars":3,"textLines":1,"bbox":[650,228.75,25.63,16.38]}
+{"kind":"textbox","id":"sh/47up0nep","slide":27,"name":"Text 34","text":"init_done","textPreview":"init_done","textChars":9,"textLines":1,"bbox":[675.63,228.75,45.67,12.38]}
+{"kind":"textbox","id":"sh/5836tsfa","slide":27,"name":"Text 35","text":"→ QM: Ready.","textPreview":"→ QM: Ready.","textChars":12,"textLines":1,"bbox":[721.3,228.75,143.13,16.38]}
+{"kind":"shape","id":"sh/i5c7yxwz","slide":27,"name":"Text 36","bbox":[650,228.75,248.79,30.38]}
+{"kind":"shape","id":"sh/36lor2x4","slide":27,"name":"Shape 37","bbox":[45,352.5,300,135]}
+{"kind":"shape","id":"sh/h4j6psfe","slide":27,"name":"Shape 38","bbox":[367.5,352.5,547.5,135]}
+{"kind":"shape","id":"sh/u1s7udwn","slide":27,"name":"Shape 39","bbox":[367.5,352.5,3,135]}
+{"kind":"textbox","id":"sh/8zaps3eh","slide":27,"name":"Text 40","text":"Design Benefits","textPreview":"Design Benefits","textChars":15,"textLines":1,"bbox":[399.75,368.62,57.76,15.38]}
+{"kind":"textbox","id":"sh/t0j6l8f2","slide":27,"name":"Text 41","text":"Hardware initialization eliminates the need for software to configure SRAM addresses individually, greatly reducing time to Ready after power-up. Deterministic list construction also establishes a reliable baseline for subsequent address management.","textPreview":"Hardware initialization eliminates the need for software to configure SRAM addresses individually, greatly reducing time to Ready after p...","textChars":249,"textLines":1,"bbox":[386.25,393.38,510,49.15]}
+{"kind":"textbox","id":"sh/bah8byh4","slide":27,"name":"Text 42","text":"SMMU Design Review","textPreview":"SMMU Design Review","textChars":18,"textLines":1,"bbox":[45,512.25,90.02,10.5]}
+{"kind":"textbox","id":"sh/a9872d0j","slide":27,"name":"Text 43","text":"Page 28","textPreview":"Page 28","textChars":7,"textLines":1,"bbox":[881.47,512.25,33.53,10.5]}
+{"kind":"image","id":"im/u9k3ilwz","slide":27,"name":"Image 0","bbox":[0,0,960,540]}
+{"kind":"image","id":"im/fatkrqxk","slide":27,"name":"Image 1","bbox":[69.75,126,18,18]}
+{"kind":"image","id":"im/s72lgbet","slide":27,"name":"Image 2","bbox":[361.5,126,22.5,18]}
+{"kind":"image","id":"im/t8b2pgfe","slide":27,"name":"Image 3","bbox":[659.75,126,18,18]}
+{"kind":"image","id":"im/6503e1w3","slide":27,"name":"Image 4","bbox":[45,352.5,300,135]}
+{"kind":"image","id":"im/769kn6xo","slide":27,"name":"Image 5","bbox":[386.25,369.38,13.5,13.5]}
+{"kind":"notes","id":"nt/4vyxknqp","slide":27,"text":""}
+{"kind":"slide","id":"sl/3mdove10","slide":28,"title":"Verification Strategy","textShapes":11}
+{"kind":"shape","id":"sh/ralgf21g","slide":28,"name":"Shape 0","bbox":[0,0,960,60]}
+{"kind":"textbox","id":"sh/0zehcr2x","slide":28,"name":"Text 1","text":"Verification Strategy","textPreview":"Verification Strategy","textChars":21,"textLines":1,"bbox":[45,13.69,350.73,32.62]}
+{"kind":"shape","id":"sh/10nylwji","slide":28,"name":"Shape 2","bbox":[45,82.5,315,112.5]}
+{"kind":"shape","id":"sh/exwzahkr","slide":28,"name":"Shape 3","bbox":[45,82.5,3,112.5]}
+{"kind":"textbox","id":"sh/zy5gjm1c","slide":28,"name":"Text 4","text":"Random Testing and Coverage","textPreview":"Random Testing and Coverage","textChars":27,"textLines":1,"bbox":[63.75,97.5,277.5,20.62]}
+{"kind":"textbox","id":"sh/o3ehgr29","slide":28,"name":"Text 5","text":"A UVM environment exercises extensive random packet lengths, intervals, and backpressure to achieve 100% functional and toggle coverage.","textPreview":"A UVM environment exercises extensive random packet lengths, intervals, and backpressure to achieve 100% functional and toggle coverage.","textChars":136,"textLines":1,"bbox":[63.75,127.13,277.5,54]}
+{"kind":"shape","id":"sh/947ipwje","slide":28,"name":"Shape 6","bbox":[45,210,315,112.5]}
+{"kind":"shape","id":"sh/lg3690fq","slide":28,"name":"Shape 7","bbox":[45,210,3,112.5]}
+{"kind":"textbox","id":"sh/kfu5gfe5","slide":28,"name":"Text 8","text":"Formal Verification","textPreview":"Formal Verification","textChars":19,"textLines":1,"bbox":[63.75,225,277.5,20.62]}
+{"kind":"textbox","id":"sh/je1o7ax0","slide":28,"name":"Text 9","text":"Formal proofs cover core linked-list properties such as no lost addresses and no duplicate allocation, mathematically establishing data-structure correctness.","textPreview":"Formal proofs cover core linked-list properties such as no lost addresses and no duplicate allocation, mathematically establishing data-s...","textChars":158,"textLines":1,"bbox":[63.75,254.62,277.5,49.15]}
+{"kind":"shape","id":"sh/ytsne5wf","slide":28,"name":"Shape 10","bbox":[45,337.5,315,112.5]}
+{"kind":"shape","id":"sh/tk36dkf2","slide":28,"name":"Shape 11","bbox":[45,337.5,3,112.5]}
+{"kind":"textbox","id":"sh/8ju5kfeh","slide":28,"name":"Text 12","text":"Fault Injection and Stress Testing","textPreview":"Fault Injection and Stress Testing","textChars":34,"textLines":1,"bbox":[63.75,352.5,277.5,20.62]}
+{"kind":"textbox","id":"sh/7ilobaxw","slide":28,"name":"Text 13","text":"SRAM ECC errors, illegal command sequences, and other corner cases are injected, while high-load bursts verify the robustness of flow control and whole-frame drop logic.","textPreview":"SRAM ECC errors, illegal command sequences, and other corner cases are injected, while high-load bursts verify the robustness of flow con...","textChars":169,"textLines":1,"bbox":[63.75,382.13,277.5,54]}
+{"kind":"textbox","id":"sh/6hcni5wb","slide":28,"name":"Text 14","text":"SMMU Verification Architecture and Strategy","textPreview":"SMMU Verification Architecture and Strategy","textChars":43,"textLines":1,"bbox":[569.25,82.5,166.5,28.8]}
+{"kind":"shape","id":"sh/9ojm1gfi","slide":28,"name":"Shape 15","bbox":[390,112.13,525,330]}
+{"kind":"textbox","id":"sh/0jex4fq5","slide":28,"name":"Text 16","text":"Multiple verification methods combine to establish a high-reliability defense for the SMMU design.","textPreview":"Multiple verification methods combine to establish a high-reliability defense for the SMMU design.","textChars":98,"textLines":1,"bbox":[512.79,442.13,279.42,37.39]}
+{"kind":"textbox","id":"sh/1knedkrq","slide":28,"name":"Text 17","text":"SMMU Design Review","textPreview":"SMMU Design Review","textChars":18,"textLines":1,"bbox":[45,512.25,90.02,10.5]}
+{"kind":"textbox","id":"sh/ehwf2p8z","slide":28,"name":"Text 18","text":"Page 29","textPreview":"Page 29","textChars":7,"textLines":1,"bbox":[881.47,512.25,33.53,10.5]}
+{"kind":"image","id":"im/cvy58z2d","slide":28,"name":"Image 0","bbox":[0,0,960,540]}
+{"kind":"image","id":"im/3654valg","slide":28,"name":"Image 1","bbox":[390,112.13,525,330]}
+{"kind":"notes","id":"nt/3mdove10","slide":28,"text":""}
+{"kind":"slide","id":"sl/i5o3q10v","slide":29,"title":"Design Highlights","textShapes":11}
+{"kind":"shape","id":"sh/8jup8rad","slide":29,"name":"Shape 0","bbox":[0,0,960,60]}
+{"kind":"textbox","id":"sh/vmlojmto","slide":29,"name":"Text 1","text":"Design Highlights","textPreview":"Design Highlights","textChars":17,"textLines":1,"bbox":[45,13.69,370.65,32.62]}
+{"kind":"shape","id":"sh/ulc7a1s3","slide":29,"name":"Shape 2","bbox":[45,90,423.75,191.25]}
+{"kind":"shape","id":"sh/h8n6lwbu","slide":29,"name":"Shape 3","bbox":[45,90,3,191.25]}
+{"kind":"textbox","id":"sh/bq1o72tk","slide":29,"name":"Text 4","text":"High Performance","textPreview":"High Performance","textChars":16,"textLines":1,"bbox":[100.5,108.75,226.03,24]}
+{"kind":"textbox","id":"sh/apsnyxcz","slide":29,"name":"Text 5","text":"An exact one-cycle command response plus a two-stage prefetch pipeline fully absorbs SRAM latency, sustaining line-rate, bubble-free packet forwarding.","textPreview":"An exact one-cycle command response plus a two-stage prefetch pipeline fully absorbs SRAM latency, sustaining line-rate, bubble-free pack...","textChars":151,"textLines":1,"bbox":[67.5,147.75,378.75,58.75]}
+{"kind":"shape","id":"sh/kf2tw7a1","slide":29,"name":"Shape 6","bbox":[491.25,90,423.75,191.25]}
+{"kind":"shape","id":"sh/5gbupcrm","slide":29,"name":"Shape 7","bbox":[491.25,90,3,191.25]}
+{"kind":"textbox","id":"sh/jetc329g","slide":29,"name":"Text 8","text":"High Efficiency","textPreview":"High Efficiency","textChars":15,"textLines":1,"bbox":[552.75,108.75,201.02,24]}
+{"kind":"textbox","id":"sh/s32t07ax","slide":29,"name":"Text 9","text":"Separating data from addresses and managing buffers through linked lists enables dynamic sharing, substantially improving SRAM density and utilization.","textPreview":"Separating data from addresses and managing buffers through linked lists enables dynamic sharing, substantially improving SRAM density an...","textChars":151,"textLines":1,"bbox":[513.75,147.75,378.75,58.75]}
+{"kind":"shape","id":"sh/t4butcri","slide":29,"name":"Shape 10","bbox":[45,303.75,423.75,191.25]}
+{"kind":"shape","id":"sh/6hkbyhs7","slide":29,"name":"Shape 11","bbox":[45,303.75,3,191.25]}
+{"kind":"textbox","id":"sh/87itonat","slide":29,"name":"Text 12","text":"Flexibility","textPreview":"Flexibility","textChars":11,"textLines":1,"bbox":[112.5,322.5,154.01,24]}
+{"kind":"textbox","id":"sh/98ruxsre","slide":29,"name":"Text 13","text":"Full parameterization supports configurable queue count, buffer depth, and port width, allowing rapid adaptation to switch ASICs with different specifications.","textPreview":"Full parameterization supports configurable queue count, buffer depth, and port width, allowing rapid adaptation to switch ASICs with dif...","textChars":159,"textLines":1,"bbox":[67.5,361.5,378.75,58.75]}
+{"kind":"shape","id":"sh/p4jal432","slide":29,"name":"Shape 14","bbox":[491.25,303.75,423.75,191.25]}
+{"kind":"shape","id":"sh/o3a9sj2h","slide":29,"name":"Shape 15","bbox":[491.25,303.75,3,191.25]}
+{"kind":"textbox","id":"sh/218rq9kr","slide":29,"name":"Text 16","text":"Robustness","textPreview":"Robustness","textChars":10,"textLines":1,"bbox":[552.75,322.5,174.01,24]}
+{"kind":"textbox","id":"sh/x8japo3e","slide":29,"name":"Text 17","text":"Three-level flow-control feedback, whole-frame drop protection, and proactive aging flush keep the system stable under severe congestion and abnormal conditions.","textPreview":"Three-level flow-control feedback, whole-frame drop protection, and proactive aging flush keep the system stable under severe congestion ...","textChars":161,"textLines":1,"bbox":[513.75,361.5,378.75,58.75]}
+{"kind":"textbox","id":"sh/c7a9wj2t","slide":29,"name":"Text 18","text":"SMMU Design Review","textPreview":"SMMU Design Review","textChars":18,"textLines":1,"bbox":[45,512.25,90.02,10.5]}
+{"kind":"textbox","id":"sh/b61snel8","slide":29,"name":"Text 19","text":"Page 30","textPreview":"Page 30","textChars":7,"textLines":1,"bbox":[881.47,512.25,33.53,10.5]}
+{"kind":"image","id":"im/1ovi9gf2","slide":29,"name":"Image 0","bbox":[0,0,960,540]}
+{"kind":"image","id":"im/2pozi1gn","slide":29,"name":"Image 1","bbox":[67.5,108.75,18,24]}
+{"kind":"image","id":"im/nqx0b6x8","slide":29,"name":"Image 2","bbox":[513.75,108.75,24,24]}
+{"kind":"image","id":"im/xwjux43m","slide":29,"name":"Image 3","bbox":[67.5,322.5,30,24]}
+{"kind":"image","id":"im/wvatozm1","slide":29,"name":"Image 4","bbox":[513.75,322.5,24,24]}
+{"kind":"notes","id":"nt/i5o3q10v","slide":29,"text":""}
+{"kind":"slide","id":"sl/wnqh07ex","slide":30,"title":"Conclusion","textShapes":5}
+{"kind":"textbox","id":"sh/o3yl4361","slide":30,"name":"Text 0","text":"Conclusion","textPreview":"Conclusion","textChars":10,"textLines":1,"bbox":[242.68,18.19,474.63,64.87]}
+{"kind":"textbox","id":"sh/bqpkfy5s","slide":30,"name":"Text 1","text":"Thank You","textPreview":"Thank You","textChars":9,"textLines":1,"bbox":[385.5,98.06,189,28.5]}
+{"kind":"textbox","id":"sh/xsr2h8ni","slide":30,"name":"Text 2","text":"Q & A","textPreview":"Q & A","textChars":5,"textLines":1,"bbox":[443,255.56,74,30.75]}
+{"kind":"shape","id":"sh/cril836d","slide":30,"name":"Shape 3","bbox":[307.5,331.31,345,190.5]}
+{"kind":"textbox","id":"sh/ru5k3ep8","slide":30,"name":"Text 4","text":"Core Design Recap: Linked-List-Based Dynamic Buffer Management","textPreview":"Core Design Recap: Linked-List-Based Dynamic Buffer Management","textChars":62,"textLines":1,"bbox":[385.5,346.31,189,22.4]}
+{"kind":"shape","id":"sh/6twju9o3","slide":30,"name":"Shape 5","bbox":[330,371.81,300,150]}
+{"kind":"textbox","id":"sh/p8ze14zi","slide":30,"name":"Text 6","text":"Smart MMU (SMMU) Design Module Overview | 2026","textPreview":"Smart MMU (SMMU) Design Module Overview | 2026","textChars":46,"textLines":1,"bbox":[382.08,495.75,195.83,24]}
+{"kind":"image","id":"im/dobulkzm","slide":30,"name":"Image 0","bbox":[0,0,960,540]}
+{"kind":"image","id":"im/c32tsfi1","slide":30,"name":"Image 1","bbox":[442.5,174.19,75,60]}
+{"kind":"image","id":"im/3y9svqhk","slide":30,"name":"Image 2","bbox":[330,371.81,300,150]}
+{"kind":"notes","id":"nt/wnqh07ex","slide":30,"text":""}
