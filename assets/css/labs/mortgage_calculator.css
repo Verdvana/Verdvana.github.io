@@ -209,6 +209,13 @@
       background: rgba(255,255,255,0.04);
     }
     .table tr:last-child td{ border-bottom: none; }
+    .table-scroll{ overflow-x:auto; }
+    .prepay-table{ min-width:760px; }
+    .prepay-table th:nth-child(1){ width:17%; }
+    .prepay-table th:nth-child(2){ width:18%; }
+    .prepay-table th:nth-child(3){ width:23%; }
+    .prepay-table th:nth-child(4){ width:30%; }
+    .prepay-table th:nth-child(5){ width:12%; }
     .td-actions{
       display:flex; gap:8px; align-items:center;
     }

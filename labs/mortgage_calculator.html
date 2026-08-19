@@ -6,7 +6,6 @@ permalink: /labs/mortgage_calculator.html
 extra_css:
   - /assets/css/labs/mortgage_calculator.css
 ---
-
 <div class="lab-page">
 
 
@@ -15,7 +14,7 @@ extra_css:
 <header style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px;">
 <div style="flex:1;">
 <h1 style="margin:0; font-size: 24px; letter-spacing: -0.5px;">房贷计算器（支持利率变更 &amp; 提前还款）</h1>
-<p style="margin:4px 0 0; opacity: 0.5; font-size: 13px;">商贷 / 公积金 · 等额本息 / 等额本金 · 多次利率更新 · 提前还款（缩短年限 / 减少月供）</p>
+<p style="margin:4px 0 0; opacity: 0.5; font-size: 13px;">商贷 / 公积金 · 等额本息 / 等额本金 · 多次利率更新 · 多次提前还款（缩短年限 / 减少月供）</p>
 </div>
 <div style="display:flex; gap:12px; align-items:center; flex-wrap:wrap; justify-content:flex-end;">
 
@@ -164,39 +163,30 @@ extra_css:
 <div class="hd">
 <div class="section-title">
 <div class="dot" style="background:#ffd166; box-shadow: 0 0 0 4px rgba(255,209,102,0.18);"></div>
-<h2>提前还款（可选）</h2>
+<h2>提前还款（可添加多次）</h2>
 </div>
-<div class="badge warn"><span class="b"></span><span>不填则不计算提前还款</span></div>
+<div class="badge warn"><span class="b"></span><span>不添加则按基准方案计算</span></div>
 </div>
 <div class="bd">
-<div class="row">
-<div>
-<label>提前还款年月</label>
-<input id="prepayDate" type="month"/>
-<div class="hint">发生在当期“正常还款后”再冲抵本金。</div>
+<div class="toolbar" style="margin-top:0;">
+<button class="mini" onclick="addPrepayRow()">+ 添加提前还款</button>
+<button class="mini danger" onclick="clearPrepayRows()">清空记录</button>
 </div>
-<div>
-<label>提前还款金额（元）</label>
-<input id="prepayAmount" min="0" placeholder="例如：200000" step="1000" type="number"/>
+<div class="table-scroll">
+<table class="table prepay-table" id="prepayTable">
+<thead>
+<tr>
+<th>还款年月</th>
+<th>金额（元）</th>
+<th>冲抵方式</th>
+<th>策略</th>
+<th>操作</th>
+</tr>
+</thead>
+<tbody></tbody>
+</table>
 </div>
-</div>
-<div class="row">
-<div>
-<label>分配方式</label>
-<select id="prepayAlloc">
-<option value="bizFirst">优先冲商贷</option>
-<option value="gjjFirst">优先冲公积金</option>
-<option value="proRata">按剩余本金比例分摊</option>
-</select>
-</div>
-<div>
-<label>提前还款策略</label>
-<select id="prepayMode">
-<option value="shortenTerm">缩短年限（保持月供尽量不变）</option>
-<option value="reducePayment">减少月供（保持期限尽量不变）</option>
-</select>
-</div>
-</div>
+<div class="small">各笔按年月先后执行；同月多笔按列表顺序执行，均发生在当月正常还款后。</div>
 <div class="toolbar">
 <button class="primary" onclick="calculateAll()">开始计算</button>
 <button onclick="fillDemo()">填入示例数据</button>
@@ -250,7 +240,8 @@ extra_css:
 <ul>
 <li>每月按 <span class="code">月利率 = 年利率 / 12</span> 计息。</li>
 <li>利率更新节点以“生效年月”为准，从该月开始应用。</li>
-<li>提前还款发生在当月“正常还款后”，然后冲抵本金（若金额超过剩余本金则按剩余本金计）。</li>
+<li>多次提前还款按年月排序后逐笔执行；同月多笔按录入顺序执行，均发生在当月“正常还款后”。</li>
+<li>每次提前还款都按当时的实际剩余本金重新分配；若金额超过两笔贷款的可还本金，则只冲抵可用余额。</li>
 <li>等额本息：
                 <ul>
 <li>若选择“减少月供”：预还后按剩余期数重新计算月供；利率变化也会重新计算月供。</li>
@@ -375,6 +366,72 @@ extra_css:
     return dedup;
   }
 
+  // ======== 提前还款表：DOM 管理 ========
+  function addPrepayRow(preset=null){
+    const tbody = document.querySelector("#prepayTable tbody");
+    const tr = document.createElement("tr");
+
+    const fields = [
+      {type:"month", value:preset?.date ?? ""},
+      {type:"number", value:preset?.amount ?? "", min:"0", step:"1000", placeholder:"例如：200000"}
+    ];
+    for(const field of fields){
+      const td = document.createElement("td");
+      const input = document.createElement("input");
+      Object.assign(input, field);
+      td.appendChild(input);
+      tr.appendChild(td);
+    }
+
+    const allocTd = document.createElement("td");
+    const alloc = document.createElement("select");
+    alloc.innerHTML = `
+      <option value="bizFirst">优先冲商贷</option>
+      <option value="gjjFirst">优先冲公积金</option>
+      <option value="proRata">按剩余本金比例</option>`;
+    alloc.value = preset?.alloc ?? "bizFirst";
+    allocTd.appendChild(alloc);
+    tr.appendChild(allocTd);
+
+    const modeTd = document.createElement("td");
+    const mode = document.createElement("select");
+    mode.innerHTML = `
+      <option value="shortenTerm">缩短年限（保持月供）</option>
+      <option value="reducePayment">减少月供（保持期限）</option>`;
+    mode.value = preset?.mode ?? "shortenTerm";
+    modeTd.appendChild(mode);
+    tr.appendChild(modeTd);
+
+    const actionTd = document.createElement("td");
+    const del = document.createElement("button");
+    del.className = "mini danger";
+    del.textContent = "删除";
+    del.onclick = () => tr.remove();
+    actionTd.appendChild(del);
+    tr.appendChild(actionTd);
+    tbody.appendChild(tr);
+  }
+
+  function clearPrepayRows(){
+    document.querySelector("#prepayTable tbody").innerHTML = "";
+  }
+
+  function readPrepayRows(){
+    return [...document.querySelectorAll("#prepayTable tbody tr")].map((tr, index) => {
+      const inputs = tr.querySelectorAll("input");
+      const selects = tr.querySelectorAll("select");
+      return {
+        ym: parseMonth(inputs[0].value),
+        dateText: inputs[0].value,
+        amountText: inputs[1].value,
+        amount: Number(inputs[1].value),
+        alloc: selects[0].value,
+        mode: selects[1].value,
+        order: index
+      };
+    }).filter(p => p.dateText !== "" || p.amountText !== "");
+  }
+
   // ======== 核心：还款模拟 ========
   function annuityPayment(balance, annualRate, months){
     if(months<=0) return 0;
@@ -399,11 +456,11 @@ extra_css:
 
   function simulateLoan(params){
     // params:
-    // {principal, startYM, totalMonths, method, initialAnnualRate, rateChanges[], prepay:{ym, amount, mode} or null, keepTermWhenNoPrepay:true}
+    // {principal, startYM, totalMonths, method, initialAnnualRate, rateChanges[], prepays:[{ym, amount, mode}]}
     const {
       principal, startYM, totalMonths, method,
       initialAnnualRate, rateChanges,
-      prepay
+      prepays = []
     } = params;
 
     const getRate = buildRateLookup(initialAnnualRate, rateChanges);
@@ -427,12 +484,16 @@ extra_css:
     }
 
     const schedule = [];
-    let prepayApplied = false;
+    let activeMode = null;
+    const sortedPrepays = prepays
+      .filter(x => x && x.ym && x.amount > 0)
+      .map((x, index) => ({...x, inputOrder:x.order ?? index}))
+      .sort((a,b) => compareYM(a.ym,b.ym) || a.inputOrder-b.inputOrder);
 
     // 辅助：当利率变化时，是否重算月供（等额本息）
     const recalcOnRateChange = () => {
       if(method !== "annuity") return;
-      if(prepay && prepay.mode === "shortenTerm" && prepayApplied){
+      if(activeMode === "shortenTerm"){
         // 缩短年限：保持月供不变
         return;
       }
@@ -491,54 +552,30 @@ extra_css:
         extra: 0
       });
 
-      // 本月正常还款后：检查是否提前还款
-      if(prepay && !prepayApplied && compareYM(ym, prepay.ym) === 0){
+      // 本月正常还款后：按录入顺序应用该月的一笔或多笔提前还款
+      const monthPrepays = sortedPrepays.filter(x => compareYM(x.ym, ym) === 0);
+      for(const prepay of monthPrepays){
         const extra = clamp(prepay.amount, 0, bal);
         bal -= extra;
-        prepayApplied = true;
-        schedule[schedule.length-1].extra = extra;
+        schedule[schedule.length-1].extra += extra;
         schedule[schedule.length-1].balance = bal < 1e-10 ? 0 : bal;
-
-        // 提前还款后，更新计划
-        if(method === "annuity"){
-          if(prepay.mode === "reducePayment"){
-            // 保持剩余期数不变：remainingMonthsPlan 减 1（刚还完本月）后重新算
-            // remainingMonthsPlan 会在下面统一处理，所以这里不动，等更新后重算
-          }else{
-            // shortenTerm: 保持payment不变（已由逻辑处理）
-          }
-        }else{
-          // equalPrincipal
-          if(prepay.mode === "reducePayment"){
-            // 重新计算每月本金=剩余本金/剩余期数
-            // 等到更新 remainingMonthsPlan 后再算，这里先不算
-          }else{
-            // shortenTerm: principalFixed 不变
-          }
-        }
+        activeMode = prepay.mode;
       }
 
-      // 更新剩余期数（对 reducePayment 来说必须控制期数；对 shortenTerm 只是统计用）
+      // 更新合同剩余期数；“减少月供”始终以原合同到期日为边界
       remainingMonthsPlan = Math.max(0, remainingMonthsPlan - 1);
 
-      // 提前还款后需要重新定计划（reducePayment）
-      if(prepayApplied && prepay && compareYM(ym, prepay.ym) === 0){
-        if(prepay.mode === "reducePayment"){
+      // 同月最后一笔提前还款的策略决定下一期计划
+      if(monthPrepays.length){
+        const finalMode = monthPrepays[monthPrepays.length-1].mode;
+        if(finalMode === "reducePayment"){
           if(method === "annuity"){
             payment = annuityPayment(bal, getRate(addMonths(ym,1)), remainingMonthsPlan);
-            // 注意：重算通常从下期开始，因此用下个月利率预估（更贴近实际）
           }else{
             principalFixed = (remainingMonthsPlan>0)? (bal / remainingMonthsPlan) : bal;
           }
         }else{
-          // shortenTerm: 对 equalPrincipal 需要调整 remainingMonthsPlan 为“预计还清月数”
-          if(method === "equalPrincipal"){
-            if(principalFixed > 1e-12){
-              remainingMonthsPlan = Math.ceil(bal / principalFixed);
-            }
-          }else{
-            // annuity shortenTerm: remainingMonthsPlan 不再强约束，继续模拟直到 bal=0；这里保持为“剩余计划期数”也无妨
-          }
+          // 缩短年限：沿用当前月供或每月本金，循环会在余额归零时结束
         }
       }
 
@@ -647,78 +684,51 @@ extra_css:
     if((biz.amount||0) <= 0 && (gjj.amount||0) <= 0){
       errs.push("请至少填写一笔贷款金额（商贷或公积金）。");
     }
+    const rawPrepays = readPrepayRows();
+    rawPrepays.forEach((p, index) => {
+      if(!p.ym) errs.push(`第 ${index+1} 笔提前还款的年月无效`);
+      if(!isFinite(p.amount) || p.amount <= 0) errs.push(`第 ${index+1} 笔提前还款金额需 > 0`);
+    });
     if(errs.length){
       renderError(errs);
       return;
     }
 
+    const simulate = (loan, prepays=[]) => (loan.amount>0) ? simulateLoan({
+      principal: loan.amount,
+      startYM: loan.start,
+      totalMonths: Math.round(loan.years*12),
+      method: loan.method,
+      initialAnnualRate: loan.rate/100,
+      rateChanges: loan.changes,
+      prepays
+    }) : emptySim(loan.start);
+
     // 基准（无提前还款）
-    const baseBiz = (biz.amount>0)? simulateLoan({
-      principal: biz.amount,
-      startYM: biz.start,
-      totalMonths: Math.round(biz.years*12),
-      method: biz.method,
-      initialAnnualRate: biz.rate/100,
-      rateChanges: biz.changes,
-      prepay: null
-    }) : emptySim(biz.start);
+    const baseBiz = simulate(biz);
+    const baseGjj = simulate(gjj);
 
-    const baseGjj = (gjj.amount>0)? simulateLoan({
-      principal: gjj.amount,
-      startYM: gjj.start,
-      totalMonths: Math.round(gjj.years*12),
-      method: gjj.method,
-      initialAnnualRate: gjj.rate/100,
-      rateChanges: gjj.changes,
-      prepay: null
-    }) : emptySim(gjj.start);
-
-    // 提前还款参数
-    const preYM = parseMonth(document.getElementById("prepayDate").value);
-    const preAmt = Number(document.getElementById("prepayAmount").value || 0);
-    const alloc = document.getElementById("prepayAlloc").value;
-    const mode = document.getElementById("prepayMode").value;
-
-    let afterBiz = baseBiz, afterGjj = baseGjj;
-    let prepayEnabled = preYM && preAmt>0;
-
-    if(prepayEnabled){
-      // 先跑一遍“在当月还款后余额”以便分配
-      // 如果目标月份不在 schedule 内（比如比起始月早/或已结清），则视为不可用：提前还款无效
-      const bizBal = (biz.amount>0)? getBalanceAt(baseBiz.schedule, preYM) : 0;
-      const gjjBal = (gjj.amount>0)? getBalanceAt(baseGjj.schedule, preYM) : 0;
-
-      // 若该月不在还款期内
-      if((biz.amount>0 && bizBal===null) && (gjj.amount>0 && gjjBal===null)){
-        prepayEnabled = false;
-      }else{
-        const bizBalUse = (bizBal===null)? 0 : bizBal;
-        const gjjBalUse = (gjjBal===null)? 0 : gjjBal;
-        const split = splitPrepay(alloc, preAmt, bizBalUse, gjjBalUse);
-
-        afterBiz = (biz.amount>0)? simulateLoan({
-          principal: biz.amount,
-          startYM: biz.start,
-          totalMonths: Math.round(biz.years*12),
-          method: biz.method,
-          initialAnnualRate: biz.rate/100,
-          rateChanges: biz.changes,
-          prepay: { ym: preYM, amount: split.bizExtra, mode }
-        }) : emptySim(biz.start);
-
-        afterGjj = (gjj.amount>0)? simulateLoan({
-          principal: gjj.amount,
-          startYM: gjj.start,
-          totalMonths: Math.round(gjj.years*12),
-          method: gjj.method,
-          initialAnnualRate: gjj.rate/100,
-          rateChanges: gjj.changes,
-          prepay: { ym: preYM, amount: split.gjjExtra, mode }
-        }) : emptySim(gjj.start);
-      }
+    // 每笔提前还款都基于此前所有事件执行后的余额重新分配
+    const sortedPrepays = [...rawPrepays].sort((a,b) => compareYM(a.ym,b.ym) || a.order-b.order);
+    const bizPrepays = [];
+    const gjjPrepays = [];
+    const appliedPrepays = [];
+    for(const event of sortedPrepays){
+      const currentBiz = simulate(biz, bizPrepays);
+      const currentGjj = simulate(gjj, gjjPrepays);
+      const bizBal = getBalanceAt(currentBiz.schedule, event.ym) ?? 0;
+      const gjjBal = getBalanceAt(currentGjj.schedule, event.ym) ?? 0;
+      const split = splitPrepay(event.alloc, event.amount, bizBal, gjjBal);
+      if(split.bizExtra > 1e-6) bizPrepays.push({ym:event.ym, amount:split.bizExtra, mode:event.mode, order:event.order});
+      if(split.gjjExtra > 1e-6) gjjPrepays.push({ym:event.ym, amount:split.gjjExtra, mode:event.mode, order:event.order});
+      appliedPrepays.push({...event, ...split, appliedAmount:split.bizExtra+split.gjjExtra});
     }
 
-    renderResults({biz, gjj, baseBiz, baseGjj, afterBiz, afterGjj, prepayEnabled, preYM, preAmt, alloc, mode});
+    const afterBiz = simulate(biz, bizPrepays);
+    const afterGjj = simulate(gjj, gjjPrepays);
+    const prepayEnabled = appliedPrepays.some(x => x.appliedAmount > 1e-6);
+
+    renderResults({biz, gjj, baseBiz, baseGjj, afterBiz, afterGjj, prepayEnabled, prepays:appliedPrepays});
     buildCSV({biz, gjj, baseBiz, baseGjj, afterBiz, afterGjj, prepayEnabled});
   }
 
@@ -748,7 +758,7 @@ extra_css:
   }
 
   function renderResults(ctx){
-    const {biz, gjj, baseBiz, baseGjj, afterBiz, afterGjj, prepayEnabled, preYM, preAmt, alloc, mode} = ctx;
+    const {biz, gjj, baseBiz, baseGjj, afterBiz, afterGjj, prepayEnabled, prepays} = ctx;
 
     // 合计 KPI
     const basePay = (baseBiz.firstPay||0) + (baseGjj.firstPay||0);
@@ -762,7 +772,7 @@ extra_css:
     document.getElementById("kpiAfterInt").textContent = prepayEnabled ? `${fmtMoney(afterInt)} 元` : "（未启用）";
     document.getElementById("kpiBasePayS").textContent = `商贷+公积金 · 以首期月供为代表（利率变更后月供可能变化）`;
     document.getElementById("kpiBaseIntS").textContent = `总利息=全期利息合计`;
-    document.getElementById("kpiAfterPayS").textContent = prepayEnabled ? `策略：${mode==="shortenTerm"?"缩短年限":"减少月供"} · 分配：${allocText(alloc)}` : "填写提前还款年月与金额即可启用";
+    document.getElementById("kpiAfterPayS").textContent = prepayEnabled ? `已执行 ${prepays.filter(x=>x.appliedAmount>1e-6).length} 笔提前还款` : "添加提前还款记录即可启用";
     document.getElementById("kpiAfterIntS").textContent = prepayEnabled ? `少付利息：${fmtMoney(baseInt-afterInt)} 元` : "—";
 
     // 逐笔摘要
@@ -798,7 +808,7 @@ extra_css:
             <div class="box">
               <div class="t">提前还款后周期变化</div>
               <div class="v">${prepayEnabled ? termDiffStr : "（未启用）"}</div>
-              <div class="s">${prepayEnabled ? `提前还款：${monthToStr(preYM)} · ${fmtMoney(preAmt)} 元` : "填写提前还款即可计算缩短年限或减少月供"}</div>
+              <div class="s">${prepayEnabled ? `共执行 ${prepays.filter(x=>x.appliedAmount>1e-6).length} 笔 · 实际冲抵 ${fmtMoney(prepays.reduce((s,x)=>s+x.appliedAmount,0))} 元` : "添加提前还款即可计算缩短年限或减少月供"}</div>
             </div>
             <div class="box">
               <div class="t">总利息变化</div>
@@ -815,6 +825,23 @@ extra_css:
       </div>
     `);
 
+    if(prepays.length){
+      const rows = prepays.map((p, i) => `
+        <tr>
+          <td>${i+1}</td><td>${monthToStr(p.ym)}</td><td>${fmtMoney(p.amount)}</td>
+          <td>${allocText(p.alloc)}</td><td>${p.mode==="shortenTerm"?"缩短年限":"减少月供"}</td>
+          <td>${fmtMoney(p.bizExtra)}</td><td>${fmtMoney(p.gjjExtra)}</td><td>${fmtMoney(p.appliedAmount)}</td>
+        </tr>`).join("");
+      blocks.splice(1, 0, `
+        <div class="card" style="box-shadow:none; margin-bottom:12px;">
+          <div class="hd"><div class="section-title"><div class="dot" style="background:#ffd166;"></div><h2>提前还款执行明细</h2></div></div>
+          <div class="bd"><div class="table-scroll"><table class="table" style="min-width:760px; margin-top:0;">
+            <thead><tr><th>#</th><th>年月</th><th>计划金额</th><th>冲抵方式</th><th>策略</th><th>商贷</th><th>公积金</th><th>实际冲抵</th></tr></thead>
+            <tbody>${rows}</tbody>
+          </table></div></div>
+        </div>`);
+    }
+
     document.getElementById("summaryBlocks").innerHTML = blocks.join("\n");
 
     // debug
@@ -826,7 +853,7 @@ extra_css:
       after: prepayEnabled ? {
         biz: pickSim(afterBiz), gjj: pickSim(afterGjj),
         totalInterest: afterInt, firstPay: afterPay,
-        prepay: {date: monthToStr(preYM), amount: preAmt, alloc, mode}
+        prepays: prepays.map(p => ({date:monthToStr(p.ym), requested:p.amount, applied:p.appliedAmount, biz:p.bizExtra, gjj:p.gjjExtra, alloc:p.alloc, mode:p.mode}))
       } : null
     };
     document.getElementById("debugOut").textContent = JSON.stringify(dbg, null, 2);
@@ -874,11 +901,11 @@ extra_css:
     // “减少月供”展示：提前还款后，从下一期开始的典型月供（取 schedule 中 prepay 后的第一期）
     let nextPayDrop = null;
     if(prepayEnabled){
-      // 找到提前还款月的索引
-      const pre = parseMonth(document.getElementById("prepayDate").value);
-      if(pre){
-        const idxBase = baseSim.schedule.findIndex(r=>compareYM(r.ym, pre)===0);
-        const idxAfter = afterSim.schedule.findIndex(r=>compareYM(r.ym, pre)===0);
+      // 以该笔贷款实际发生的第一次提前还款为代表，展示其下一期月供变化
+      const firstExtraRow = afterSim.schedule.find(r => r.extra > 1e-6);
+      if(firstExtraRow){
+        const idxBase = baseSim.schedule.findIndex(r=>compareYM(r.ym, firstExtraRow.ym)===0);
+        const idxAfter = afterSim.schedule.findIndex(r=>compareYM(r.ym, firstExtraRow.ym)===0);
         if(idxBase>=0 && idxAfter>=0){
           const baseNext = baseSim.schedule[idxBase+1]?.payment;
           const afterNext = afterSim.schedule[idxAfter+1]?.payment;
@@ -1043,17 +1070,17 @@ extra_css:
     clearRateRows("gjj");
     addRateRow("gjj", {date:"2028-01", rate:"3.25"});
 
-    document.getElementById("prepayDate").value = "2030-06";
-    document.getElementById("prepayAmount").value = 200000;
-    document.getElementById("prepayAlloc").value = "proRata";
-    document.getElementById("prepayMode").value = "shortenTerm";
+    clearPrepayRows();
+    addPrepayRow({date:"2030-06", amount:200000, alloc:"proRata", mode:"shortenTerm"});
+    addPrepayRow({date:"2033-10", amount:100000, alloc:"bizFirst", mode:"reducePayment"});
   }
 
   
   
 
 
-// 初始化：默认不加节点
+// 初始化：给提前还款保留一条空白记录，利率更新节点默认不添加
+  addPrepayRow();
   // addRateRow('biz'); addRateRow('gjj'); // 如你想默认一行可取消注释
 </script>
 </main>
