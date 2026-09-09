@@ -94,8 +94,26 @@ extra_css:
                 </select>
               </div>
               <div>
-                <label>单帧净载荷 (Byte)</label>
+                <label>单码净载荷 (Byte)</label>
                 <input type="number" id="cfgChunk" min="16" step="1" value="0"/>
+              </div>
+            </div>
+            <div class="ot-field-row">
+              <div>
+                <label>多码并排（空间复用）</label>
+                <select id="cfgGrid">
+                  <option value="1">1 × 1 · 单码</option>
+                  <option value="2" selected>2 × 2 · 4 码（4× 吞吐）</option>
+                  <option value="3">3 × 3 · 9 码（9× 吞吐）</option>
+                  <option value="4">4 × 4 · 16 码（需高清摄像头）</option>
+                </select>
+              </div>
+              <div>
+                <label>传输前压缩</label>
+                <select id="cfgCompress">
+                  <option value="auto" selected>自动（deflate，有效才用）</option>
+                  <option value="off">关闭</option>
+                </select>
               </div>
             </div>
             <div>
@@ -116,7 +134,9 @@ extra_css:
             <label class="ot-check"><input type="checkbox" id="cfgLoop" checked/> 循环播放（推荐）</label>
             <label class="ot-check"><input type="checkbox" id="cfgPrerender" checked/> 预渲染全部帧（高帧率必开）</label>
             <div class="ot-rows">
-              <div class="ot-row"><span class="k">单帧上限</span><span class="v" id="txCap">—</span></div>
+              <div class="ot-row"><span class="k">单码上限</span><span class="v" id="txCap">—</span></div>
+              <div class="ot-row"><span class="k">每帧总载荷</span><span class="v" id="txGroupCap">—</span></div>
+              <div class="ot-row"><span class="k">压缩</span><span class="v" id="txComp">—</span></div>
               <div class="ot-row"><span class="k">分片总数</span><span class="v" id="txTotal">—</span></div>
               <div class="ot-row"><span class="k">理论速率</span><span class="v" id="txRate">—</span></div>
               <div class="ot-row"><span class="k">单圈时长</span><span class="v" id="txCycle">—</span></div>
@@ -165,9 +185,14 @@ extra_css:
               摄像头 API 需要 <code>https</code> 或 <code>localhost</code> 环境；若解码困难，请降低二维码版本、降低帧率、提高纠错等级或增大模块像素。
             </div>
             <div class="ot-note">
-              <b>想更快？</b>提速优先级：① 提高二维码版本（单帧载荷 v12→v27 可从 267 B 涨到 1445 B）；
-              ② 纠错降到 L；③ 帧率提到 15~30（超过屏幕刷新率的部分会被跳过，反而丢帧）；
-              ④ 接收端解析分辨率用 640 px 保证解码帧率跟得上。极速档下 10 KB 数据单圈仅 8 帧、约 0.4 秒。
+              <b>想更快？</b>不靠提帧率的三大手段（已内置）：
+              ① <b>多码并排</b>——一屏放 2×2/3×3 个码，单帧吞吐直接 ×4/×9；
+              ② <b>Worker 并行解码</b>——接收端多线程同时解各分区，解码不再是瓶颈；
+              ③ <b>传输前 deflate 压缩</b>——文本/日志/未压缩数据可再省 50~80%。
+            </div>
+            <div class="ot-note warn">
+              多码并排会让每个码变小，务必：接收端<b>解析分辨率选 1080 px</b>、发送端全屏播放、
+              摄像头正对屏幕且让整个码阵完整入框。若识别率下降，先降到 2×2 或提高模块像素。
             </div>
           </div>
         </div>
@@ -200,9 +225,10 @@ extra_css:
                 <label>解析分辨率</label>
                 <select id="rxScale">
                   <option value="480">480 px（最快）</option>
-                  <option value="640" selected>640 px</option>
+                  <option value="640">640 px</option>
                   <option value="800">800 px</option>
-                  <option value="1080">1080 px（最准）</option>
+                  <option value="1080" selected>1080 px（多码必选）</option>
+                  <option value="1440">1440 px</option>
                 </select>
               </div>
               <div>
@@ -210,6 +236,27 @@ extra_css:
                 <select id="rxCrop">
                   <option value="full" selected>整幅画面</option>
                   <option value="center">中心正方形</option>
+                </select>
+              </div>
+            </div>
+            <div class="ot-field-row">
+              <div>
+                <label>解码网格（配合发送端多码）</label>
+                <select id="rxGridSel">
+                  <option value="auto" selected>自动（含整幅回退）</option>
+                  <option value="1">1 × 1</option>
+                  <option value="2">2 × 2</option>
+                  <option value="3">3 × 3</option>
+                  <option value="4">4 × 4</option>
+                </select>
+              </div>
+              <div>
+                <label>解码线程（Worker）</label>
+                <select id="rxWorkers">
+                  <option value="0">主线程（兼容模式）</option>
+                  <option value="2">2 线程</option>
+                  <option value="4" selected>4 线程</option>
+                  <option value="8">8 线程</option>
                 </select>
               </div>
             </div>
@@ -236,7 +283,8 @@ extra_css:
             <div class="ot-kpis">
               <div class="ot-kpi"><div class="n acc" id="kpiPct">0%</div><div class="l">完成度</div></div>
               <div class="ot-kpi"><div class="n" id="kpiGot">0 / 0</div><div class="l">已收分片</div></div>
-              <div class="ot-kpi"><div class="n" id="kpiFps">0</div><div class="l">解码帧率</div></div>
+              <div class="ot-kpi"><div class="n" id="kpiFps">0</div><div class="l">采样帧率</div></div>
+              <div class="ot-kpi"><div class="n" id="kpiCps">0</div><div class="l">解码码/秒</div></div>
               <div class="ot-kpi"><div class="n" id="kpiSpeed">0 B/s</div><div class="l">有效速率</div></div>
               <div class="ot-kpi"><div class="n" id="kpiDup">0</div><div class="l">重复帧</div></div>
               <div class="ot-kpi"><div class="n" id="kpiErr">0</div><div class="l">坏帧</div></div>
@@ -247,6 +295,7 @@ extra_css:
               <div class="ot-row"><span class="k">文件名</span><span class="v" id="rxName">—</span></div>
               <div class="ot-row"><span class="k">大小</span><span class="v" id="rxSize">—</span></div>
               <div class="ot-row"><span class="k">缺失分片</span><span class="v" id="rxMissing">—</span></div>
+              <div class="ot-row"><span class="k">解码器</span><span class="v" id="rxEngine">—</span></div>
               <div class="ot-row"><span class="k">校验</span><span class="v" id="rxVerify">—</span></div>
             </div>
             <div class="ot-bar">
@@ -327,7 +376,8 @@ extra_css:
           <ul>
             <li><b>发送端（调制器）</b>：文件 → <code>ArrayBuffer</code> → 定长分片 → 加协议头与 CRC32 → 转成二维码可承载字符串 → 逐帧渲染到 Canvas 循环播放。</li>
             <li><b>信道</b>：屏幕光 → 空气 → 摄像头 CMOS，单向、无反馈、有丢帧，因此采用「循环轮播 + 幂等接收」来代替重传。</li>
-            <li><b>接收端（解调器）</b>：摄像头视频流 → Canvas 抽帧 → jsQR 解码 → 校验 CRC → 按序号写入分片表 → 全部到齐后拼接、校验整文件 CRC32 → 生成 Blob 下载。</li>
+            <li><b>接收端（解调器）</b>：摄像头视频流 → Canvas 抽帧 → 按网格切块 → Worker 池并行 jsQR 解码 →
+            校验 CRC → 按序号写入分片表 → 全部到齐后拼接、校验 CRC32 →（若 META 标记压缩则 inflate）→ 生成 Blob 下载。</li>
           </ul>
 
           <h4>帧格式（共 12 字节公共头）</h4>
@@ -354,8 +404,9 @@ extra_css:
           </table>
 
           <h4>META Body</h4>
-          <p>UTF-8 JSON：<code>{ "n": 文件名, "s": 字节数, "t": MIME, "c": 整文件CRC32(hex), "k": 分片大小, "T": 分片总数 }</code>，
-          默认每 48 个数据帧插一次，保证接收端任何时刻入场都能很快拿到文件元信息。</p>
+          <p>UTF-8 JSON：<code>{ "n": 文件名, "s": 上链字节数, "t": MIME, "c": 上链数据CRC32(hex),
+          "k": 分片大小, "T": 分片总数, "z": 是否 deflate, "r": 解压后原始长度, "g": 多码网格 }</code>。
+          首帧即发 META，之后默认每 48 帧补发一次，接收端任何时刻入场都能立刻拿到元信息与解码提示（网格数、是否压缩）。</p>
 
           <h4>可靠性设计</h4>
           <ul>
@@ -365,24 +416,38 @@ extra_css:
             <li><b>Binary 载荷</b>：直接使用 QR Byte 模式承载 8bit 原始字节，比 Base64 少 33% 体积；接收端读取 jsQR 的 <code>binaryData</code>。若设备解码不稳，可切到 Base64 模式。</li>
           </ul>
 
+          <h4>提速三板斧（本工具的核心设计）</h4>
+          <p>光学信道吞吐 = <code>单帧信息量 × 帧率 × 帧成功率</code>。帧率被屏幕刷新率与摄像头曝光双重限制，
+          很难超过 20~30，所以主要从另外两个维度下手：</p>
+          <ul>
+            <li><b>① 多码并排（空间复用）</b>：一屏同时显示 g×g 个独立二维码，单帧信息量直接 ×g²。
+            分区之间填中灰分隔带（既不像模块也不像静默区），接收端按同样网格切块、每块单独解码。2×2 即 4 倍，3×3 即 9 倍。</li>
+            <li><b>② Worker 并行解码（打破解码瓶颈）</b>：jsQR 是纯 JS 单线程，1080p 全幅每帧要几十毫秒，
+            这通常才是「实测速率上不去」的真凶。本工具起 2/4/8 个 Worker，各分块用
+            <code>postMessage(buf, [buf])</code> 零拷贝转移过去并行解码；上一帧未解完则跳过当前帧，避免任务堆积。</li>
+            <li><b>③ 传输前 deflate 压缩（减少要传的量）</b>：用浏览器原生
+            <code>CompressionStream('deflate-raw')</code>，压缩后小于原始 97% 才启用（图片/压缩包压不动就原样发），
+            META 用 <code>z/r</code> 标记，接收端自动 inflate。文本/日志/未压缩数据常见省 50~80%。</li>
+          </ul>
+
           <h4>吞吐估算与预设档位</h4>
-          <p>有效速率 ≈ <code>单帧净载荷 × 实际帧率 × 帧成功率</code>。单帧净载荷 = QR Byte 容量 − 20 B 协议头，
-          因此<b>提高二维码版本比提高帧率划算得多</b>（版本翻倍容量约 4 倍，而帧率受屏幕刷新率与摄像头曝光双重限制）。</p>
+          <p>单码净载荷 = QR Byte 容量 − 20 B 协议头；<b>每帧载荷 = 单码净载荷 × g²</b>。</p>
           <table class="ot-table">
-            <thead><tr><th>预设</th><th>版本/纠错</th><th>单帧载荷</th><th>帧率</th><th>理论速率</th><th>10 KB 单圈</th></tr></thead>
+            <thead><tr><th>预设</th><th>版本/纠错</th><th>多码</th><th>单码载荷</th><th>每帧载荷</th><th>帧率</th><th>理论速率</th></tr></thead>
             <tbody>
-              <tr><td>保守 · 远距离</td><td>v8 / Q</td><td>88 B</td><td>5</td><td>0.43 KB/s</td><td>~23 s</td></tr>
-              <tr><td>均衡</td><td>v14 / M</td><td>342 B</td><td>10</td><td>3.34 KB/s</td><td>~3.0 s</td></tr>
-              <tr><td>高速 · 近距离</td><td>v20 / L</td><td>838 B</td><td>15</td><td>12.3 KB/s</td><td>~0.8 s</td></tr>
-              <tr><td>极速 · 贴屏</td><td>v27 / L</td><td>1445 B</td><td>24</td><td>33.9 KB/s</td><td>~0.3 s</td></tr>
+              <tr><td>保守 · 远距离</td><td>v8 / Q</td><td>1×1</td><td>88 B</td><td>88 B</td><td>5</td><td>0.43 KB/s</td></tr>
+              <tr><td>均衡</td><td>v14 / M</td><td>2×2</td><td>342 B</td><td>1368 B</td><td>10</td><td>13.4 KB/s</td></tr>
+              <tr><td>高速 · 近距离</td><td>v20 / L</td><td>2×2</td><td>838 B</td><td>3352 B</td><td>15</td><td>49.1 KB/s</td></tr>
+              <tr><td>极速 · 贴屏</td><td>v20 / L</td><td>3×3</td><td>838 B</td><td>7542 B</td><td>20</td><td>147.3 KB/s</td></tr>
             </tbody>
           </table>
-          <p>表中为理论上限（无丢帧）。真实链路按 60%~90% 帧成功率折算；页面「实测帧率 / 有效速率」显示的是当前实际值。</p>
+          <p>表中为理论上限（无丢帧、未计压缩）。真实链路按帧成功率折算，通常能达到理论值的 30%~70%；
+          若数据可压缩还要再乘压缩率。页面「实测发送速率 / 有效速率 / 解码码每秒」显示的是当前真实值。</p>
 
-          <h4>播放器实现要点（为什么快）</h4>
+          <h4>播放器实现要点（为什么不掉帧）</h4>
           <ul>
-            <li><b>帧位图缓存 + 后台预渲染</b>：每帧 QR 只算一次并缓存成离屏 Canvas，播放时仅 <code>drawImage</code>，
-            高帧率下不会因逐帧编码而掉帧（缓存上限约 48 MB，FIFO 淘汰）。</li>
+            <li><b>帧位图缓存 + 后台预渲染</b>：每帧（含多码拼图）只算一次并缓存成离屏 Canvas，播放时仅
+            <code>drawImage</code>，高帧率下不会因逐帧编码而掉帧（缓存上限约 48 MB，FIFO 淘汰）。</li>
             <li><b>requestAnimationFrame 定时</b>：按目标间隔累加时间戳推进，避免 <code>setInterval</code> 的抖动与堆积；
             落后超过 200 ms 自动重同步。</li>
             <li><b>UI 节流</b>：文字标签 ~8 Hz、分片位图 10 Hz 更新，DOM 操作不参与逐帧开销。</li>
@@ -392,11 +457,13 @@ extra_css:
 
           <h4>调参建议</h4>
           <ul>
-            <li>太慢：先升版本（v20 → v27）、纠错降到 L、Binary 模式，再把帧率提到 15~24。</li>
-            <li>糊帧 / 一直不识别：降版本、降帧率、提高模块像素、纠错升到 Q；接收端解析分辨率提到 800/1080。</li>
-            <li>接收端「解码帧率」明显低于发送端「实测帧率」：说明解码是瓶颈，把解析分辨率降到 480/640、
-            扫描区域选「中心正方形」，或降低发送帧率。</li>
-            <li>屏幕反光/摩尔纹：调整屏幕亮度与角度，摄像头稍微离远、避免正对光源。</li>
+            <li><b>要更快</b>：多码 2×2 → 3×3（吞吐 ×2.25）；升二维码版本；纠错降到 L；Worker 开 4~8；
+            可压缩数据保持「自动压缩」。</li>
+            <li><b>多码识别不稳</b>：接收端解析分辨率提到 1080/1440、发送端全屏播放并让码阵完整入框、
+            提高模块像素；仍不稳就降回 2×2 或 1×1。</li>
+            <li><b>「解码码/秒」远低于「实测帧率 × g²」</b>：解码仍是瓶颈 —— 增加 Worker 线程、降低解析分辨率，
+            或把接收端「解码网格」从「自动」改成与发送端完全一致（可省掉整幅回退那一次解码）。</li>
+            <li><b>糊帧</b>：降帧率、降版本、纠错升到 Q；屏幕反光/摩尔纹则调整角度与亮度、摄像头稍微离远。</li>
           </ul>
 
           <div class="ot-note warn">
@@ -428,13 +495,15 @@ var LIB_QR = [
   'https://unpkg.com/qrcode-generator@1.4.4/qrcode.js',
   'https://unpkg.com/qrcode-generator@1.4.4'
 ];
+var JSQR_URL = 'https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js';
 var LIB_JSQR = [
-  'https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js',
+  JSQR_URL,
   'https://cdn.jsdelivr.net/npm/jsqr@1.4.0',
   'https://unpkg.com/jsqr@1.4.0/dist/jsQR.js',
   'https://unpkg.com/jsqr@1.4.0',
   'https://cdn.jsdelivr.net/gh/cozmo/jsQR@master/dist/jsQR.js'
 ];
+var jsqrLoadedFrom = '';
 
 function loadScript(url){
   return new Promise(function(res, rej){
@@ -445,13 +514,16 @@ function loadScript(url){
     document.head.appendChild(s);
   });
 }
-function loadFirst(urls, check){
+function loadFirst(urls, check, onOk){
   var i = 0;
   function next(){
     if (check()) return Promise.resolve(true);
     if (i >= urls.length) return Promise.resolve(false);
     var u = urls[i++];
-    return loadScript(u).then(function(){ return check() ? true : next(); }, function(){ return next(); });
+    return loadScript(u).then(function(){
+      if (check()){ if (onOk) onOk(u); return true; }
+      return next();
+    }, function(){ return next(); });
   }
   return next();
 }
@@ -515,6 +587,30 @@ function fmtSec(s){
   if (s < 60) return s.toFixed(1) + ' s';
   var m = Math.floor(s / 60);
   return m + ' min ' + Math.round(s - m * 60) + ' s';
+}
+
+/* ---------------- 压缩（deflate-raw，浏览器原生 CompressionStream） ---------------- */
+var HAS_CS = (typeof CompressionStream === 'function' && typeof DecompressionStream === 'function');
+
+function deflateRaw(bytes){
+  if (!HAS_CS) return Promise.resolve(null);
+  try {
+    var cs = new CompressionStream('deflate-raw');
+    var w = cs.writable.getWriter();
+    w.write(bytes); w.close();
+    return new Response(cs.readable).arrayBuffer().then(function(b){ return new Uint8Array(b); },
+      function(){ return null; });
+  } catch(e){ return Promise.resolve(null); }
+}
+function inflateRaw(bytes){
+  if (!HAS_CS) return Promise.resolve(null);
+  try {
+    var ds = new DecompressionStream('deflate-raw');
+    var w = ds.writable.getWriter();
+    w.write(bytes); w.close();
+    return new Response(ds.readable).arrayBuffer().then(function(b){ return new Uint8Array(b); },
+      function(){ return null; });
+  } catch(e){ return Promise.resolve(null); }
 }
 
 /* ---------------- 帧编解码 ---------------- */
@@ -611,6 +707,30 @@ function renderQR(canvas, frame, cfg){
     }
   }
   return { version: used, modules: n, px: px, chars: str.length };
+}
+
+/* 把 g×g 个帧拼成一张大图（空间复用：单帧吞吐 ×g²）
+   分区之间留 1 个模块宽的黑色分隔带，避免相邻码的静默区被误连。 */
+function renderQRGrid(canvas, frames, cfg){
+  var g = cfg.grid || 1;
+  if (g <= 1) return renderQR(canvas, frames[0], cfg);
+  var tile = document.createElement('canvas');
+  var info = renderQR(tile, frames[0], cfg);
+  var gap = Math.max(2, cfg.cell * 2);
+  var px = info.px * g + gap * (g + 1);
+  if (canvas.width !== px){ canvas.width = px; canvas.height = px; }
+  var ctx = canvas.getContext('2d', { willReadFrequently: true });
+  ctx.fillStyle = '#808080';           /* 中灰分隔，既不像模块也不像静默区 */
+  ctx.fillRect(0, 0, px, px);
+  ctx.drawImage(tile, gap, gap);
+  for (var i = 1; i < frames.length && i < g * g; i++){
+    var t2 = document.createElement('canvas');
+    renderQR(t2, frames[i], cfg);
+    var r = Math.floor(i / g), c = i % g;
+    ctx.drawImage(t2, gap + c * (info.px + gap), gap + r * (info.px + gap));
+  }
+  return { version: info.version, modules: info.modules, px: px, tilePx: info.px,
+           chars: info.chars, grid: g, count: Math.min(frames.length, g * g) };
 }
 
 /* ---------------- 接收机（TX/RX/自检共用） ---------------- */
@@ -710,12 +830,13 @@ for (var ti = 0; ti < tabs.length; ti++){
    发送端
    ============================================================ */
 var cfg = { version: 20, ec: 'L', mode: 'binary', chunk: 0, fps: 15, cell: 4,
-            metaEvery: 48, loop: true, prerender: true };
+            metaEvery: 48, loop: true, prerender: true, grid: 2, compress: 'auto' };
 var tx = {
-  bytes: null, name: '', type: '', size: 0, crc: '',
+  raw: null, bytes: null, name: '', type: '', size: 0, crc: '',
+  rawSize: 0, comp: 0,
   session: 0, total: 0, chunk: 0, plan: null, pos: 0,
   playing: false, raf: null, nextAt: 0, cycles: 0,
-  shown: 0, fpsAt: 0, uiAt: 0, gridAt: 0
+  shown: 0, codesShown: 0, fpsAt: 0, uiAt: 0, gridAt: 0
 };
 
 /* 版本下拉（附带该版本 L 级容量，便于按速率选） */
@@ -738,6 +859,8 @@ function readCfg(){
   cfg.metaEvery = Math.max(0, parseInt($('cfgMetaEvery').value, 10) || 0);
   cfg.loop = $('cfgLoop').checked;
   cfg.prerender = $('cfgPrerender').checked;
+  cfg.grid = Math.max(1, Math.min(4, parseInt($('cfgGrid').value, 10) || 1));
+  cfg.compress = $('cfgCompress').value;
   var frameMax = maxFrameBytes(cfg.version, cfg.ec, cfg.mode);
   var autoChunk = Math.max(1, frameMax - FRAME_OVERHEAD);
   var want = parseInt($('cfgChunk').value, 10);
@@ -749,15 +872,20 @@ function readCfg(){
   return { frameMax: frameMax, autoChunk: autoChunk };
 }
 
+function codesPerFrame(){ return cfg.grid * cfg.grid; }
+
 function updateTxEstimate(){
   var info = readCfg();
-  var rate = cfg.chunk * cfg.fps;
+  var per = codesPerFrame();
+  var rate = cfg.chunk * per * cfg.fps;
+  $('txGroupCap').textContent = fmtBytes(cfg.chunk * per) + '（' + per + ' 码 × ' + cfg.chunk + ' B）';
   $('txRate').textContent = fmtBytes(rate) + '/s（理想无丢帧）';
   if (tx.bytes){
     tx.total = Math.ceil(tx.size / cfg.chunk) || 1;
-    $('txTotal').textContent = tx.total + ' 片 × ' + cfg.chunk + ' B';
-    var metaFrames = cfg.metaEvery > 0 ? Math.ceil(tx.total / cfg.metaEvery) : 0;
-    $('txCycle').textContent = fmtSec((tx.total + metaFrames) / cfg.fps);
+    var groups = Math.ceil(tx.total / per);
+    $('txTotal').textContent = tx.total + ' 片 × ' + cfg.chunk + ' B → ' + groups + ' 帧';
+    var metaFrames = cfg.metaEvery > 0 ? Math.ceil(groups / cfg.metaEvery) + 1 : 0;
+    $('txCycle').textContent = fmtSec((groups + metaFrames) / cfg.fps);
   } else {
     $('txTotal').textContent = '—';
     $('txCycle').textContent = '—';
@@ -773,8 +901,13 @@ function updateTxEstimate(){
     rebuildPlan();
   });
 });
-['cfgChunk','cfgMetaEvery'].forEach(function(id){
+['cfgChunk','cfgMetaEvery','cfgGrid'].forEach(function(id){
   $(id).addEventListener('change', function(){ $('txPreset').textContent = '自定义'; rebuildPlan(); });
+});
+$('cfgCompress').addEventListener('change', function(){
+  $('txPreset').textContent = '自定义';
+  if (tx.raw) applyCompression().then(rebuildPlan);
+  else { cfg.compress = this.value; rebuildPlan(); }
 });
 /* 帧率改变无需重建计划，rAF 循环下一帧即生效 */
 $('cfgFps').addEventListener('input', function(){
@@ -797,10 +930,10 @@ $('cfgPrerender').addEventListener('change', function(){
 
 /* 预设 */
 var PRESETS = {
-  safe:     { v: 8,  ec: 'Q', mode: 'binary', fps: 5,  cell: 8, meta: 16, label: '保守 · 远距离' },
-  balanced: { v: 14, ec: 'M', mode: 'binary', fps: 10, cell: 5, meta: 32, label: '均衡' },
-  fast:     { v: 20, ec: 'L', mode: 'binary', fps: 15, cell: 4, meta: 48, label: '高速 · 近距离' },
-  turbo:    { v: 27, ec: 'L', mode: 'binary', fps: 24, cell: 3, meta: 64, label: '极速 · 贴屏' }
+  safe:     { v: 8,  ec: 'Q', mode: 'binary', fps: 5,  cell: 8, meta: 16, grid: 1, label: '保守 · 远距离' },
+  balanced: { v: 14, ec: 'M', mode: 'binary', fps: 10, cell: 5, meta: 32, grid: 2, label: '均衡' },
+  fast:     { v: 20, ec: 'L', mode: 'binary', fps: 15, cell: 4, meta: 48, grid: 2, label: '高速 · 近距离' },
+  turbo:    { v: 20, ec: 'L', mode: 'binary', fps: 20, cell: 3, meta: 64, grid: 3, label: '极速 · 贴屏' }
 };
 var presetBtns = document.querySelectorAll('[data-preset]');
 for (var pi = 0; pi < presetBtns.length; pi++){
@@ -808,6 +941,7 @@ for (var pi = 0; pi < presetBtns.length; pi++){
     var p = PRESETS[this.getAttribute('data-preset')];
     $('cfgVersion').value = p.v; $('cfgEc').value = p.ec; $('cfgMode').value = p.mode;
     $('cfgFps').value = p.fps; $('cfgCell').value = p.cell; $('cfgMetaEvery').value = p.meta;
+    $('cfgGrid').value = p.grid;
     var frameMax = maxFrameBytes(p.v, p.ec, p.mode);
     $('cfgChunk').value = Math.max(1, frameMax - FRAME_OVERHEAD);
     $('txPreset').textContent = p.label;
@@ -827,19 +961,50 @@ $('txFile').addEventListener('change', function(){
   if (this.files && this.files.length) loadTxFile(this.files[0]);
 });
 
+/* 压缩管线：tx.raw 是原始文件字节，tx.bytes 是实际上链的字节（可能是 deflate 后的） */
+function applyCompression(){
+  cfg.compress = $('cfgCompress').value;
+  if (!tx.raw) return Promise.resolve();
+  if (cfg.compress === 'off' || !HAS_CS){
+    tx.bytes = tx.raw; tx.comp = 0;
+    $('txComp').textContent = HAS_CS ? '关闭' : '浏览器不支持（原样发送）';
+  } else {
+    return deflateRaw(tx.raw).then(function(z){
+      /* 只有压缩确实变小才启用，否则原样发送（图片/压缩包通常压不动） */
+      if (z && z.length < tx.raw.length * 0.97){
+        tx.bytes = z; tx.comp = 1;
+        $('txComp').textContent = 'deflate 生效 · ' + fmtBytes(tx.raw.length) + ' → '
+          + fmtBytes(z.length) + '（省 ' + (100 - z.length / tx.raw.length * 100).toFixed(0) + '%）';
+      } else {
+        tx.bytes = tx.raw; tx.comp = 0;
+        $('txComp').textContent = '压缩无收益，原样发送';
+      }
+      tx.size = tx.bytes.length;
+      return;
+    });
+  }
+  tx.size = tx.bytes.length;
+  return Promise.resolve();
+}
+
 function loadTxFile(file){
   stopPlay();
   file.arrayBuffer().then(function(buf){
-    tx.bytes = new Uint8Array(buf);
+    tx.raw = new Uint8Array(buf);
+    tx.rawSize = tx.raw.length;
     tx.name = file.name || 'file.bin';
     tx.type = file.type || 'application/octet-stream';
+    /* CRC 始终针对「上链字节」计算，接收端解压前先校验，解压后再比对原文件长度 */
+    tx.session = (Math.floor(Math.random() * 0xFFFFFFFF) >>> 0) || 1;
+    return applyCompression();
+  }).then(function(){
     tx.size = tx.bytes.length;
     tx.crc = hex8(crc32(tx.bytes));
-    tx.session = (Math.floor(Math.random() * 0xFFFFFFFF) >>> 0) || 1;
     $('txFileInfo').style.display = '';
     $('txName').textContent = tx.name;
     $('txType').textContent = tx.type;
-    $('txSize').textContent = fmtBytes(tx.size) + '（' + tx.size + ' B）';
+    $('txSize').textContent = fmtBytes(tx.rawSize) + '（' + tx.rawSize + ' B）'
+      + (tx.comp ? ' → 上链 ' + fmtBytes(tx.size) : '');
     $('txCrc').textContent = tx.crc;
     rebuildPlan();
     ['btnPlay','btnPause','btnPrev','btnNext','btnFull'].forEach(function(id){ $(id).disabled = false; });
@@ -847,8 +1012,11 @@ function loadTxFile(file){
   });
 }
 
+/* META：z=1 表示载荷经过 deflate-raw；r 为解压后原始长度 */
 function metaJson(){
-  return JSON.stringify({ n: tx.name, s: tx.size, t: tx.type, c: tx.crc, k: cfg.chunk, T: tx.total });
+  return JSON.stringify({ n: tx.name, s: tx.size, t: tx.type, c: tx.crc,
+                          k: cfg.chunk, T: tx.total, z: tx.comp, r: tx.rawSize,
+                          g: cfg.grid });
 }
 function buildDataFrame(seq){
   var start = seq * cfg.chunk, end = Math.min(tx.size, start + cfg.chunk);
@@ -862,24 +1030,29 @@ function buildMetaFrame(){ return buildFrame(T_META, tx.session, utf8enc(metaJso
 /* ---- 帧位图缓存：播放时只 drawImage，不重算 QR（这是提速关键） ---- */
 var qrCache = { key: '', map: null, order: [] };
 function cacheKey(){
-  return [tx.session, cfg.version, cfg.ec, cfg.mode, cfg.chunk, cfg.cell, tx.total].join('|');
+  return [tx.session, cfg.version, cfg.ec, cfg.mode, cfg.chunk, cfg.cell, cfg.grid, tx.total].join('|');
 }
 function invalidateCache(){ qrCache.key = ''; qrCache.map = null; qrCache.order = []; }
-function getFrameBitmap(id){
+
+/* pos 是播放位；plan[pos] 是本帧要放的分片序号数组（[-1] 表示 META 帧） */
+function getFrameBitmap(pos){
   var key = cacheKey();
   if (qrCache.key !== key || !qrCache.map){
     qrCache.key = key; qrCache.map = {}; qrCache.order = [];
   }
-  var hit = qrCache.map[id];
+  var hit = qrCache.map[pos];
   if (hit) return hit;
-  var frame = id < 0 ? buildMetaFrame() : buildDataFrame(id);
+  var ids = tx.plan[pos], frames = [], total = 0, i;
+  for (i = 0; i < ids.length; i++){
+    var f = ids[i] < 0 ? buildMetaFrame() : buildDataFrame(ids[i]);
+    frames.push(f); total += f.length;
+  }
   var off = document.createElement('canvas');
-  var info = renderQR(off, frame, cfg);
-  var rec = { canvas: off, info: info, len: frame.length };
-  qrCache.map[id] = rec;
-  qrCache.order.push(id);
-  /* 位图总量约束在 ~48 MB，超出按 FIFO 淘汰 */
-  var limit = Math.max(64, Math.floor(48e6 / Math.max(1, info.px * info.px * 4)));
+  var info = renderQRGrid(off, frames, cfg);
+  var rec = { canvas: off, info: info, len: total, ids: ids };
+  qrCache.map[pos] = rec;
+  qrCache.order.push(pos);
+  var limit = Math.max(32, Math.floor(48e6 / Math.max(1, info.px * info.px * 4)));
   while (qrCache.order.length > limit) delete qrCache.map[qrCache.order.shift()];
   return rec;
 }
@@ -894,8 +1067,8 @@ function prewarm(){
   function step(){
     if (token !== prewarmToken || !tx.plan) return;
     var budget = 0;
-    while (i < tx.plan.length && budget < 12){
-      try { getFrameBitmap(tx.plan[i]); } catch(e){}
+    while (i < tx.plan.length && budget < 8){
+      try { getFrameBitmap(i); } catch(e){}
       i++; budget++;
     }
     $('txPrewarm').textContent = i >= tx.plan.length
@@ -906,17 +1079,21 @@ function prewarm(){
   step();
 }
 
-/* 播放计划：-1 表示 META 帧 */
+/* 播放计划：每项是一帧要显示的分片序号数组；[-1] 表示 META 帧
+   多码模式下每帧承载 grid² 个分片 */
 function rebuildPlan(){
   updateTxEstimate();
   invalidateCache();
   if (!tx.bytes){ tx.plan = null; $('txPrewarm').textContent = '—'; return; }
-  var plan = [], i;
-  for (i = 0; i < tx.total; i++){
-    if (cfg.metaEvery > 0 && i % cfg.metaEvery === 0) plan.push(-1);
-    plan.push(i);
+  var per = codesPerFrame(), plan = [], i, groupIdx = 0;
+  plan.push([-1]);                              /* 开头先给一帧 META，接收端立刻拿到元信息 */
+  for (i = 0; i < tx.total; i += per){
+    if (cfg.metaEvery > 0 && groupIdx > 0 && groupIdx % cfg.metaEvery === 0) plan.push([-1]);
+    var g = [];
+    for (var j = i; j < Math.min(i + per, tx.total); j++) g.push(j);
+    plan.push(g);
+    groupIdx++;
   }
-  if (cfg.metaEvery > 0) plan.push(-1);
   tx.plan = plan;
   tx.pos = 0; tx.cycles = 0;
   renderCurrent(true);
@@ -927,8 +1104,8 @@ function rebuildPlan(){
 /* force=true 强制刷新文字标签；播放中默认节流，避免 DOM 更新拖慢帧率 */
 function renderCurrent(force){
   if (!tx.plan || !window.qrcode) return;
-  var id = tx.plan[tx.pos], rec;
-  try { rec = getFrameBitmap(id); }
+  var ids = tx.plan[tx.pos], rec;
+  try { rec = getFrameBitmap(tx.pos); }
   catch(err){ $('txState').textContent = '错误：' + err.message; return; }
 
   var canvas = $('txCanvas');
@@ -942,22 +1119,28 @@ function renderCurrent(force){
   canvas.style.maxWidth = rec.info.px + 'px';
 
   tx.shown++;
+  tx.codesShown += ids.length;
   var now = performance.now();
   if (force || now - tx.uiAt >= 120){
     tx.uiAt = now;
-    $('txFrameLabel').textContent = (id < 0 ? 'META 帧' : ('分片 ' + (id + 1) + ' / ' + tx.total))
-      + ' · 播放位 ' + (tx.pos + 1) + '/' + tx.plan.length + ' · 第 ' + (tx.cycles + 1) + ' 圈';
-    $('txQrInfo').textContent = 'v' + rec.info.version + ' ' + cfg.ec + ' · '
-      + rec.info.modules + '×' + rec.info.modules + ' · ' + rec.len + ' B → ' + rec.info.chars + ' 字符';
+    var lbl = ids[0] < 0 ? 'META 帧'
+      : (ids.length > 1 ? ('分片 ' + (ids[0] + 1) + '~' + (ids[ids.length - 1] + 1) + ' / ' + tx.total)
+                        : ('分片 ' + (ids[0] + 1) + ' / ' + tx.total));
+    $('txFrameLabel').textContent = lbl + ' · 播放位 ' + (tx.pos + 1) + '/' + tx.plan.length
+      + ' · 第 ' + (tx.cycles + 1) + ' 圈';
+    $('txQrInfo').textContent = 'v' + rec.info.version + ' ' + cfg.ec
+      + (cfg.grid > 1 ? (' · ' + cfg.grid + '×' + cfg.grid + ' 码') : '')
+      + ' · ' + rec.info.px + 'px · ' + rec.len + ' B/帧';
     $('txBar').style.width = ((tx.pos + 1) / tx.plan.length * 100).toFixed(1) + '%';
   }
   if (force || now - tx.gridAt >= 100){ tx.gridAt = now; drawTxGrid(); }
   if (tx.playing && now - tx.fpsAt >= 1000){
-    var real = tx.shown * 1000 / (now - tx.fpsAt);
+    var el = (now - tx.fpsAt) / 1000;
+    var real = tx.shown / el;
     $('txRealFps').textContent = real.toFixed(1) + ' fps'
       + (real < cfg.fps * 0.85 ? '（受刷新率/性能限制）' : '');
-    $('txRate').textContent = fmtBytes(Math.round(cfg.chunk * Math.min(real, cfg.fps))) + '/s（实测）';
-    tx.fpsAt = now; tx.shown = 0;
+    $('txRate').textContent = fmtBytes(Math.round(cfg.chunk * tx.codesShown / el)) + '/s（实测发送）';
+    tx.fpsAt = now; tx.shown = 0; tx.codesShown = 0;
   }
 }
 
@@ -969,13 +1152,13 @@ function drawTxGrid(){
   var ctx = cv.getContext('2d');
   ctx.clearRect(0, 0, cv.width, cv.height);
   if (!tx.plan) return;
-  var n = tx.total || 1, cur = tx.plan[tx.pos];
+  var n = tx.total || 1, ids = tx.plan[tx.pos] || [];
   var cw = cv.width / n;
   ctx.fillStyle = 'rgba(255,255,255,0.14)';
   ctx.fillRect(0, 0, cv.width, cv.height);
-  if (cur >= 0){
-    ctx.fillStyle = '#7df0c4';
-    ctx.fillRect(cur * cw, 0, Math.max(1.5, cw), cv.height);
+  ctx.fillStyle = '#7df0c4';
+  for (var i = 0; i < ids.length; i++){
+    if (ids[i] >= 0) ctx.fillRect(ids[i] * cw, 0, Math.max(1.5, cw), cv.height);
   }
 }
 
@@ -1039,9 +1222,11 @@ $('btnReset').addEventListener('click', function(){
   stopPlay();
   prewarmToken++;
   invalidateCache();
-  tx.bytes = null; tx.plan = null; tx.pos = 0; tx.cycles = 0; tx.total = 0;
+  tx.raw = null; tx.bytes = null; tx.plan = null; tx.pos = 0; tx.cycles = 0; tx.total = 0;
+  tx.comp = 0; tx.rawSize = 0;
   $('txRealFps').textContent = '—';
   $('txPrewarm').textContent = '—';
+  $('txComp').textContent = '—';
   $('txFileInfo').style.display = 'none';
   $('txFile').value = '';
   $('txCanvas').style.display = 'none';
@@ -1062,8 +1247,101 @@ $('btnReset').addEventListener('click', function(){
 var rx = {
   recv: createReceiver(), stream: null, raf: null, running: false,
   canvas: document.createElement('canvas'),
-  decodeCount: 0, lastFpsAt: 0, fpsWin: 0, startAt: 0, blobUrl: null
+  decodeCount: 0, lastFpsAt: 0, fpsWin: 0, codeWin: 0, startAt: 0, blobUrl: null,
+  busy: 0, gridHint: 0, engine: ''
 };
+
+/* ============================================================
+   Worker 解码池：把画面切成 g×g 块并行解码（突破单线程 jsQR 瓶颈）
+   ============================================================ */
+var WORKER_SRC = [
+  'self.importScripts(' + JSON.stringify(JSQR_URL) + ');',
+  'var fn = self.jsQR || self.jsqr || (self.default && self.default.jsQR);',
+  'self.onmessage = function(e){',
+  '  var d = e.data;',
+  '  var out = [];',
+  '  try {',
+  '    var img = new Uint8ClampedArray(d.buf);',
+  '    var code = fn(img, d.w, d.h, { inversionAttempts: d.inv });',
+  '    if (code){',
+  '      out.push({ data: code.data,',
+  '        binaryData: (code.binaryData && code.binaryData.length) ? code.binaryData : null });',
+  '    }',
+  '  } catch(err){}',
+  '  self.postMessage({ id: d.id, codes: out });',
+  '};'
+].join('\n');
+
+var pool = { workers: [], size: 0, seq: 0, pending: {} };
+
+function poolShutdown(){
+  for (var i = 0; i < pool.workers.length; i++){
+    try { pool.workers[i].terminate(); } catch(e){}
+  }
+  pool.workers = []; pool.size = 0; pool.pending = {};
+}
+function poolInit(n){
+  poolShutdown();
+  if (!n || typeof Worker !== 'function') return 0;
+  var url;
+  try { url = URL.createObjectURL(new Blob([WORKER_SRC], { type: 'text/javascript' })); }
+  catch(e){ return 0; }
+  for (var i = 0; i < n; i++){
+    try {
+      var w = new Worker(url);
+      w.onmessage = function(ev){
+        var d = ev.data, cb = pool.pending[d.id];
+        delete pool.pending[d.id];
+        if (cb) cb(d.codes || []);
+      };
+      w.onerror = function(){ /* 单个 worker 出错则整体回退主线程 */ };
+      w.busy = false;
+      pool.workers.push(w);
+    } catch(e){ break; }
+  }
+  pool.size = pool.workers.length;
+  try { URL.revokeObjectURL(url); } catch(e){}
+  return pool.size;
+}
+function poolFree(){
+  var c = 0;
+  for (var i = 0; i < pool.workers.length; i++) if (!pool.workers[i].busy) c++;
+  return c;
+}
+/* 把一块 ImageData 丢给空闲 worker（转移 buffer，零拷贝） */
+function poolDecode(imgData, inv, cb){
+  var w = null;
+  for (var i = 0; i < pool.workers.length; i++){
+    if (!pool.workers[i].busy){ w = pool.workers[i]; break; }
+  }
+  if (!w) { cb(null); return false; }
+  var id = ++pool.seq;
+  w.busy = true;
+  pool.pending[id] = function(codes){ w.busy = false; cb(codes); };
+  var buf = imgData.data.buffer;
+  try { w.postMessage({ id: id, buf: buf, w: imgData.width, h: imgData.height, inv: inv }, [buf]); }
+  catch(e){ w.busy = false; delete pool.pending[id]; cb(null); return false; }
+  return true;
+}
+
+/* 生成待解码分块：网格切块 + 整幅回退 */
+function makeTiles(ctx, dw, dh, g){
+  var tiles = [];
+  if (g <= 1){ tiles.push(ctx.getImageData(0, 0, dw, dh)); return tiles; }
+  /* 每块向外扩 6% 以容忍拍摄畸变/透视 */
+  var tw = dw / g, th = dh / g, pad = 0.06;
+  for (var r = 0; r < g; r++){
+    for (var c = 0; c < g; c++){
+      var x0 = Math.max(0, Math.floor((c - pad) * tw));
+      var y0 = Math.max(0, Math.floor((r - pad) * th));
+      var x1 = Math.min(dw, Math.ceil((c + 1 + pad) * tw));
+      var y1 = Math.min(dh, Math.ceil((r + 1 + pad) * th));
+      if (x1 - x0 < 40 || y1 - y0 < 40) continue;
+      tiles.push(ctx.getImageData(x0, y0, x1 - x0, y1 - y0));
+    }
+  }
+  return tiles;
+}
 
 function logTo(el, msg, cls){
   var d = document.createElement('div');
@@ -1126,20 +1404,47 @@ function updateRxUI(){
   drawRxGrid();
 }
 
+/* 若 META 标记了压缩，则在完成后解压还原 */
+function finalizePayload(){
+  var res = rx.recv.result, m = rx.recv.meta;
+  if (!res) return Promise.resolve(null);
+  if (!m || !m.z) return Promise.resolve(res);
+  return inflateRaw(res.bytes).then(function(raw){
+    if (!raw){
+      rxLog('解压失败（浏览器不支持 deflate-raw？），将下载压缩后的数据', 'err');
+      return res;
+    }
+    res.bytes = raw;
+    res.inflated = true;
+    res.rawOk = (typeof m.r !== 'number') || (raw.length === m.r);
+    if (!res.rawOk) rxLog('解压后长度 ' + raw.length + ' ≠ META 声明 ' + m.r, 'err');
+    else rxLog('deflate 解压完成 · ' + fmtBytes(raw.length), 'ok');
+    return res;
+  });
+}
+
+var completing = false;
 function onComplete(){
-  var res = rx.recv.result;
-  if (!res) return;
-  var okv = res.verified;
+  var res0 = rx.recv.result;
+  if (!res0 || completing) return;
+  completing = true;
+  var okv = res0.verified;
   $('rxVerify').textContent = okv === null
-    ? ('CRC32 ' + res.crc + '（无 META，未比对）')
-    : (okv ? ('通过 · CRC32 ' + res.crc) : ('失败 · 收到 ' + res.crc + ' / 期望 ' + res.expect));
-  $('rxName').textContent = esc(res.name);
-  $('rxSize').textContent = fmtBytes(res.bytes.length) + '（' + res.bytes.length + ' B）';
-  $('btnDownload').disabled = false;
-  rxLog('接收完成：' + esc(res.name) + ' · ' + fmtBytes(res.bytes.length) + ' · CRC32 ' + res.crc
-    + (okv === false ? ' <b>校验失败</b>' : ''), okv === false ? 'err' : 'ok');
-  buildPreview(res);
+    ? ('CRC32 ' + res0.crc + '（无 META，未比对）')
+    : (okv ? ('通过 · CRC32 ' + res0.crc) : ('失败 · 收到 ' + res0.crc + ' / 期望 ' + res0.expect));
+  rxLog('全部分片到齐 · 传输层 CRC32 ' + res0.crc + (okv === false ? ' <b>校验失败</b>' : ''),
+        okv === false ? 'err' : 'ok');
   stopCam(true);
+  finalizePayload().then(function(res){
+    completing = false;
+    if (!res) return;
+    $('rxName').textContent = esc(res.name);
+    $('rxSize').textContent = fmtBytes(res.bytes.length) + '（' + res.bytes.length + ' B）'
+      + (res.inflated ? ' · 已解压' : '');
+    $('btnDownload').disabled = false;
+    rxLog('接收完成：' + esc(res.name) + ' · ' + fmtBytes(res.bytes.length), 'ok');
+    buildPreview(res);
+  });
 }
 
 function buildPreview(res){
@@ -1178,7 +1483,7 @@ $('btnDownload').addEventListener('click', function(){
 
 $('btnRxReset').addEventListener('click', function(){
   rx.recv.reset();
-  rx.startAt = 0; rx.decodeCount = 0;
+  rx.startAt = 0; rx.decodeCount = 0; rx.gridHint = 0; rx.busy = 0; completing = false;
   $('btnDownload').disabled = true;
   $('rxVerify').textContent = '—';
   $('rxName').textContent = '—';
@@ -1260,12 +1565,32 @@ $('rxScale').addEventListener('change', function(){
   if (rx.running){ stopCam(true); startCam(); }
 });
 
-/* 从 video 抽帧 → jsQR */
+$('rxWorkers').addEventListener('change', function(){
+  var n = parseInt(this.value, 10) || 0;
+  var got = poolInit(n);
+  rx.engine = got > 0 ? (got + ' Worker 并行') : '主线程';
+  $('rxEngine').textContent = rx.engine;
+  rxLog('解码引擎切换为：' + rx.engine, 'ok');
+});
+$('rxGridSel').addEventListener('change', function(){ rx.gridHint = 0; });
+
+/* 当前解码网格：手动优先，其次 META 提示，默认 2（并始终带整幅回退） */
+function activeGrid(){
+  var sel = $('rxGridSel').value;
+  if (sel !== 'auto') return Math.max(1, Math.min(4, parseInt(sel, 10) || 1));
+  var m = rx.recv.meta;
+  if (m && m.g) return Math.max(1, Math.min(4, m.g));
+  if (rx.gridHint) return rx.gridHint;
+  return 2;
+}
+
+/* 从 video 抽帧 → 网格切块 → （Worker 池 / 主线程）并行解码 */
 function scanLoop(){
   if (!rx.running) return;
   rx.raf = requestAnimationFrame(scanLoop);
   var v = $('rxVideo');
   if (!v.videoWidth || !v.videoHeight || v.readyState < 2) return;
+  if (rx.busy > 0) return;      /* 上一帧未解完则跳过，避免任务堆积 */
 
   var want = parseInt($('rxScale').value, 10);
   var crop = $('rxCrop').value;
@@ -1280,34 +1605,58 @@ function scanLoop(){
   if (cv.width !== dw || cv.height !== dh){ cv.width = dw; cv.height = dh; }
   var ctx = cv.getContext('2d', { willReadFrequently: true });
   ctx.drawImage(v, sx, sy, sw, sh, 0, 0, dw, dh);
-  var img = ctx.getImageData(0, 0, dw, dh);
 
-  var attempts = $('rxInvert').checked
-    ? ['attemptBoth', 'invertFirst']
-    : ['attemptBoth', 'dontInvert'];
-  var code = null;
-  for (var i = 0; i < attempts.length && !code; i++){
-    try { code = window.jsQR(img.data, dw, dh, { inversionAttempts: attempts[i] }); }
-    catch(e){ code = null; }
-  }
+  var g = activeGrid();
+  var inv = $('rxInvert').checked ? 'attemptBoth' : 'dontInvert';
+  var tiles = makeTiles(ctx, dw, dh, g);
+  if (g > 1) tiles.push(ctx.getImageData(0, 0, dw, dh));   /* 整幅兜底 */
 
-  /* fps 统计 */
   rx.fpsWin++;
   var now = performance.now();
   if (now - rx.lastFpsAt >= 1000){
     $('kpiFps').textContent = rx.fpsWin;
-    rx.fpsWin = 0; rx.lastFpsAt = now;
+    $('kpiCps').textContent = rx.codeWin;
+    rx.fpsWin = 0; rx.codeWin = 0; rx.lastFpsAt = now;
   }
 
-  if (!code) return;
-  handleCode(code, rxLog);
+  if (pool.size > 0){
+    rx.busy = tiles.length;
+    for (var i = 0; i < tiles.length; i++){
+      (function(t){
+        var sent = poolDecode(t, inv, function(codes){
+          rx.busy--;
+          if (codes && codes.length){
+            for (var k = 0; k < codes.length; k++) acceptCode(codes[k]);
+          }
+          if (rx.busy <= 0){ rx.busy = 0; updateRxUI(); }
+        });
+        if (!sent){ rx.busy--; decodeMain(t, inv); }   /* 无空闲 worker → 本块转主线程 */
+      })(tiles[i]);
+    }
+    if (rx.busy <= 0){ rx.busy = 0; updateRxUI(); }
+  } else {
+    for (var j = 0; j < tiles.length; j++) decodeMain(tiles[j], inv);
+    updateRxUI();
+  }
+}
+
+function decodeMain(t, inv){
+  if (typeof window.jsQR !== 'function') return;
+  var code = null;
+  try { code = window.jsQR(t.data, t.width, t.height, { inversionAttempts: inv }); } catch(e){}
+  if (code) acceptCode(code);
+}
+/* Worker 与主线程的解码结果统一走这里 */
+function acceptCode(code){
+  rx.codeWin++;
+  handleCode(code, rxLog, true);
 }
 
 var lastAcceptLogAt = 0;
-function handleCode(code, logf){
+function handleCode(code, logf, skipUI){
   var bytes = frameBytesFromCode(code);
   if (!bytes){
-    if (performance.now() - lastAcceptLogAt > 1500){
+    if (performance.now() - lastAcceptLogAt > 2500){
       lastAcceptLogAt = performance.now();
       logf('识别到非本协议二维码，已忽略', 'warn');
     }
@@ -1316,11 +1665,18 @@ function handleCode(code, logf){
   var f = parseFrame(bytes);
   var before = rx.recv.total;
   var st = rx.recv.accept(f);
-  if (st === 'bad') logf('帧 CRC 校验失败，已丢弃', 'err');
-  if (st === 'meta') logf('收到 META：' + esc((rx.recv.meta && rx.recv.meta.n) || '?')
-    + ' · ' + fmtBytes(rx.recv.meta && rx.recv.meta.s) + ' · ' + (rx.recv.total || '?') + ' 片', 'ok');
+  if (st === 'bad' && performance.now() - lastAcceptLogAt > 2500){
+    lastAcceptLogAt = performance.now();
+    logf('帧 CRC 校验失败，已丢弃', 'err');
+  }
+  if (st === 'meta'){
+    var m = rx.recv.meta || {};
+    if (m.g) rx.gridHint = m.g;
+    logf('收到 META：' + esc(m.n || '?') + ' · ' + fmtBytes(m.s) + ' · ' + (rx.recv.total || '?') + ' 片'
+      + (m.z ? ' · deflate' : '') + (m.g ? (' · ' + m.g + '×' + m.g + ' 码') : ''), 'ok');
+  }
   if (st === 'new' && before !== rx.recv.total) logf('开始接收，共 ' + rx.recv.total + ' 片', 'ok');
-  updateRxUI();
+  if (!skipUI) updateRxUI();
   if (rx.recv.done && rx.recv.result && $('btnDownload').disabled) onComplete();
 }
 
@@ -1408,41 +1764,62 @@ $('btnTest').addEventListener('click', function(){
   var flat = [];
   rounds.forEach(function(r, ri){ r.forEach(function(id){ flat.push({ id: id, round: ri }); }); });
 
+  /* 自检把多码帧也走一遍：按 grid² 分组渲染，再切块解码 */
+  var per = codesPerFrame();
+  var groups = [];
+  for (var gi = 0; gi < flat.length; ){
+    if (flat[gi].id < 0){ groups.push([flat[gi].id]); gi++; continue; }
+    var grp = [];
+    while (gi < flat.length && grp.length < per && flat[gi].id >= 0){ grp.push(flat[gi].id); gi++; }
+    groups.push(grp);
+  }
+  tsLog('多码：' + cfg.grid + '×' + cfg.grid + '（每帧 ' + per + ' 码）→ 共 ' + groups.length + ' 帧');
+
   var p = 0, t0 = performance.now();
+  var tsCfg = { version: cfg.version, ec: cfg.ec, mode: cfg.mode, cell: 4, grid: cfg.grid };
   function runBatch(){
     var budget = 0;
-    while (p < flat.length && budget < 24){
-      var item = flat[p++]; budget++;
-      var frame;
-      if (item.id < 0) frame = buildFrame(T_META, session, metaBody);
-      else {
-        var st = item.id * chunk, en = Math.min(data.length, st + chunk);
-        var body = new Uint8Array(DATA_SUB + (en - st));
-        wr32(body, 0, item.id); wr32(body, 4, total);
-        body.set(data.subarray(st, en), DATA_SUB);
-        frame = buildFrame(T_DATA, session, body);
+    while (p < groups.length && budget < 8){
+      var ids = groups[p++]; budget++;
+      var frames = [], gi2;
+      for (gi2 = 0; gi2 < ids.length; gi2++){
+        if (ids[gi2] < 0) frames.push(buildFrame(T_META, session, metaBody));
+        else {
+          var st = ids[gi2] * chunk, en = Math.min(data.length, st + chunk);
+          var body = new Uint8Array(DATA_SUB + (en - st));
+          wr32(body, 0, ids[gi2]); wr32(body, 4, total);
+          body.set(data.subarray(st, en), DATA_SUB);
+          frames.push(buildFrame(T_DATA, session, body));
+        }
       }
       stats.frames++;
       var info;
-      try { info = renderQR(cv, frame, { version: cfg.version, ec: cfg.ec, mode: cfg.mode, cell: 4 }); }
-      catch(err){ stats.fail++; tsLog('渲染失败 seq=' + item.id + '：' + esc(err.message), 'err'); continue; }
+      try { info = renderQRGrid(cv, frames, ids[0] < 0 ? { version: cfg.version, ec: cfg.ec, mode: cfg.mode, cell: 4, grid: 1 } : tsCfg); }
+      catch(err){ stats.fail++; tsLog('渲染失败：' + esc(err.message), 'err'); continue; }
       var ctx = cv.getContext('2d', { willReadFrequently: true });
-      var img = ctx.getImageData(0, 0, cv.width, cv.height);
-      var code = null;
-      try { code = window.jsQR(img.data, cv.width, cv.height, { inversionAttempts: 'dontInvert' }); } catch(e){}
-      if (!code){ stats.fail++; tsLog('解码失败 seq=' + item.id + '（v' + info.version + '）', 'err'); continue; }
-      var bytes = frameBytesFromCode(code);
-      if (!bytes){ stats.fail++; tsLog('帧还原失败 seq=' + item.id, 'err'); continue; }
-      var st2 = recv.accept(parseFrame(bytes));
-      if (st2 === 'bad'){ stats.fail++; tsLog('CRC 失败 seq=' + item.id, 'err'); continue; }
-      stats.ok++;
+      var g2 = (ids[0] < 0) ? 1 : cfg.grid;
+      var tiles = makeTiles(ctx, cv.width, cv.height, g2);
+      var okHere = 0;
+      for (var tj = 0; tj < tiles.length; tj++){
+        var code = null;
+        try { code = window.jsQR(tiles[tj].data, tiles[tj].width, tiles[tj].height,
+                                { inversionAttempts: 'dontInvert' }); } catch(e){}
+        if (!code) continue;
+        var bytes = frameBytesFromCode(code);
+        if (!bytes) continue;
+        var stx = recv.accept(parseFrame(bytes));
+        if (stx === 'bad'){ stats.fail++; continue; }
+        if (stx === 'new' || stx === 'meta') okHere++;
+      }
+      if (okHere === 0) stats.fail++;
+      else stats.ok += okHere;
       if (recv.done) break;
     }
     $('tsFrames').textContent = stats.frames;
     $('tsDecoded').textContent = stats.ok;
     $('tsFail').textContent = stats.fail;
 
-    if (recv.done || p >= flat.length){
+    if (recv.done || p >= groups.length){
       var ms = performance.now() - t0;
       if (!recv.done){
         $('tsResult').textContent = '未完成';
@@ -1462,7 +1839,7 @@ $('btnTest').addEventListener('click', function(){
     }
     setTimeout(runBatch, 0);
   }
-  tsLog('开始运行…（共约 ' + flat.length + ' 帧）');
+  tsLog('开始运行…（共约 ' + groups.length + ' 帧）');
   setTimeout(runBatch, 0);
 });
 
@@ -1470,7 +1847,7 @@ $('btnTest').addEventListener('click', function(){
    初始化
    ============================================================ */
 window.addEventListener('resize', function(){ drawTxGrid(); drawRxGrid(); });
-window.addEventListener('beforeunload', function(){ stopCam(true); stopPlay(); });
+window.addEventListener('beforeunload', function(){ stopCam(true); stopPlay(); poolShutdown(); });
 
 updateTxEstimate();
 drawTxGrid();
@@ -1485,12 +1862,20 @@ loadFirst(LIB_QR, function(){ return typeof window.qrcode === 'function'; }).the
     setBadge($('libQr'), 'err', '编码库加载失败');
   }
 });
-loadFirst(LIB_JSQR, function(){ return typeof window.jsQR === 'function'; }).then(function(ok){
+loadFirst(LIB_JSQR, function(){ return typeof window.jsQR === 'function'; },
+  function(u){ jsqrLoadedFrom = u; }).then(function(ok){
   setBadge($('libJsqr'), ok ? 'ok' : 'err', ok ? '解码库就绪' : '解码库加载失败');
   if (!ok){
     $('btnCamStart').disabled = true;
     rxLog('jsQR 加载失败，接收端不可用（请检查网络/CDN）', 'err');
+    return;
   }
+  /* 解码库就绪后再建 Worker 池（worker 内自行 importScripts 同一 CDN） */
+  var n = parseInt($('rxWorkers').value, 10) || 0;
+  var got = poolInit(n);
+  rx.engine = got > 0 ? (got + ' Worker 并行') : '主线程';
+  $('rxEngine').textContent = rx.engine;
+  rxLog('解码引擎：' + rx.engine + ' · 压缩：' + (HAS_CS ? 'deflate-raw 可用' : '不支持'), 'ok');
 });
 
 })();
