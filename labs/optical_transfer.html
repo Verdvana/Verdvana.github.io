@@ -116,6 +116,24 @@ extra_css:
                 </select>
               </div>
             </div>
+            <div class="ot-field-row">
+              <div>
+                <label>编码线程（Worker）</label>
+                <select id="cfgEncWorkers">
+                  <option value="0">主线程（兼容模式）</option>
+                  <option value="2">2 线程</option>
+                  <option value="4">4 线程</option>
+                  <option value="6">6 线程</option>
+                  <option value="8">8 线程</option>
+                  <option value="12">12 线程</option>
+                </select>
+              </div>
+              <div>
+                <label>编码器</label>
+                <input type="text" id="txEngine" value="—" readonly
+                       style="background:rgba(255,255,255,.04);cursor:default"/>
+              </div>
+            </div>
             <div>
               <label>播放帧率 <span class="ot-slider-val" id="cfgFpsVal">15 fps</span>
                 <span style="opacity:.5">（不超过屏幕刷新率）</span></label>
@@ -444,10 +462,28 @@ extra_css:
           <p>表中为理论上限（无丢帧、未计压缩）。真实链路按帧成功率折算，通常能达到理论值的 30%~70%；
           若数据可压缩还要再乘压缩率。页面「实测发送速率 / 有效速率 / 解码码每秒」显示的是当前真实值。</p>
 
+          <h4>发送端也会成为瓶颈：编码 Worker 池</h4>
+          <p>开了多码之后，<b>发送端的 QR 编码反而先撑不住</b>：4×4 每帧要编 16 个 v20 二维码，
+          <code>qrcode-generator</code> 是纯 JS，单个约 10~15 ms，一帧就 150~250 ms —— 正好对应「设 24 fps 只跑出 4 fps」。
+          为此做了三件事：</p>
+          <ul>
+            <li><b>① 编码搬进 Worker 池</b>（默认按 CPU 核数 −1，可 0~12 手动调）：worker 只回传
+            <b>模块矩阵</b>（<code>Uint8Array</code>，v20 仅 9.4 KB）并零拷贝转移，主线程只负责画像素。</li>
+            <li><b>② 绘制改为「小图 + 整数倍放大」</b>：先在 1 像素/模块的小画布上用
+            <code>createImageData</code> 直接写像素，再 <code>drawImage</code> 整数倍放大并关闭插值 ——
+            比逐模块 <code>fillRect</code>（v20 单码 9409 次调用）快一个数量级，且边缘依然锐利。</li>
+            <li><b>③ 滑动窗口缓存 + 等待式播放</b>：4×4 单帧位图可达数 MB，全量缓存会瞬间吃光内存并让缓存形同失效；
+            改为围绕播放位维护一个约 192 MB 的窗口，淘汰时按<b>环形距离</b>最远者先删。
+            播放循环只读缓存：下一帧未就绪就<b>原地等一拍</b>并催编码线程，绝不在主线程硬算
+            —— 硬算会阻塞渲染，反而更慢。</li>
+          </ul>
+          <p>「编码器」一行显示当前线程数；若状态栏出现「等待编码」，说明编码仍跟不上，
+          可加线程、降多码档位或降低版本。</p>
+
           <h4>播放器实现要点（为什么不掉帧）</h4>
           <ul>
             <li><b>帧位图缓存 + 后台预渲染</b>：每帧（含多码拼图）只算一次并缓存成离屏 Canvas，播放时仅
-            <code>drawImage</code>，高帧率下不会因逐帧编码而掉帧（缓存上限约 48 MB，FIFO 淘汰）。</li>
+            <code>drawImage</code>；预渲染由编码 Worker 池并行填充窗口，播放时零编码开销。</li>
             <li><b>requestAnimationFrame 定时</b>：按目标间隔累加时间戳推进，避免 <code>setInterval</code> 的抖动与堆积；
             落后超过 200 ms 自动重同步。</li>
             <li><b>UI 节流</b>：文字标签 ~8 Hz、分片位图 10 Hz 更新，DOM 操作不参与逐帧开销。</li>
@@ -457,7 +493,10 @@ extra_css:
 
           <h4>调参建议</h4>
           <ul>
-            <li><b>要更快</b>：多码 2×2 → 3×3（吞吐 ×2.25）；升二维码版本；纠错降到 L；Worker 开 4~8；
+            <li><b>发送端「实测帧率」远低于目标（如设 24 只跑 4）</b>：编码跟不上 ——
+            把「编码线程」加到 CPU 核数 −1、或把多码从 4×4 降到 3×3/2×2、或降低二维码版本。
+            大文件（几 MB）分片上千，务必开编码线程。</li>
+            <li><b>要更快</b>：多码 2×2 → 3×3（吞吐 ×2.25）；升二维码版本；纠错降到 L；解码 Worker 开 4~8；
             可压缩数据保持「自动压缩」。</li>
             <li><b>多码识别不稳</b>：接收端解析分辨率提到 1080/1440、发送端全屏播放并让码阵完整入框、
             提高模块像素；仍不稳就降回 2×2 或 1×1。</li>
@@ -678,59 +717,97 @@ function maxFrameBytes(v, ec, mode){
   return cap;
 }
 
-/* ---------------- QR 渲染 ---------------- */
+/* ---------------- QR 编码与渲染 ----------------
+   把「编码」与「绘制」彻底分开：
+   - qrModules(str,v,ec) 只算模块矩阵（可在 Worker 里做，纯计算）
+   - drawTiles(canvas,tiles,cfg) 只画像素（先画 1px/模块的小图再整数倍放大，
+     比逐模块 fillRect 快一个数量级）                                        */
 function frameToQrString(frame, mode){
   return mode === 'base64' ? b64enc(frame) : toLatin1(frame);
 }
-function renderQR(canvas, frame, cfg){
-  var str = frameToQrString(frame, cfg.mode);
-  var qr = null, used = cfg.version;
-  for (var v = cfg.version; v <= 40; v++){
+
+/* 返回 { n, version, mods:Uint8Array(n*n) } */
+function qrModules(str, version, ec){
+  var qr = null, used = version;
+  for (var v = version; v <= 40; v++){
     try {
-      var q = window.qrcode(v, cfg.ec);
+      var q = window.qrcode(v, ec);
       q.addData(str, 'Byte');
       q.make();
       qr = q; used = v; break;
     } catch(e){ /* 容量不足，尝试更高版本 */ }
   }
   if (!qr) throw new Error('数据超出 QR 版本 40 容量');
-  var n = qr.getModuleCount(), quiet = 4, cell = cfg.cell;
-  var px = (n + quiet * 2) * cell;
-  if (canvas.width !== px){ canvas.width = px; canvas.height = px; }
-  var ctx = canvas.getContext('2d', { willReadFrequently: true });
-  ctx.fillStyle = '#FFFFFF';
-  ctx.fillRect(0, 0, px, px);
-  ctx.fillStyle = '#000000';
+  var n = qr.getModuleCount(), m = new Uint8Array(n * n);
   for (var r = 0; r < n; r++){
-    for (var c = 0; c < n; c++){
-      if (qr.isDark(r, c)) ctx.fillRect((c + quiet) * cell, (r + quiet) * cell, cell, cell);
-    }
+    for (var c = 0; c < n; c++) if (qr.isDark(r, c)) m[r * n + c] = 1;
   }
-  return { version: used, modules: n, px: px, chars: str.length };
+  return { n: n, version: used, mods: m };
 }
 
-/* 把 g×g 个帧拼成一张大图（空间复用：单帧吞吐 ×g²）
-   分区之间留 1 个模块宽的黑色分隔带，避免相邻码的静默区被误连。 */
-function renderQRGrid(canvas, frames, cfg){
-  var g = cfg.grid || 1;
-  if (g <= 1) return renderQR(canvas, frames[0], cfg);
-  var tile = document.createElement('canvas');
-  var info = renderQR(tile, frames[0], cfg);
-  var gap = Math.max(2, cfg.cell * 2);
-  var px = info.px * g + gap * (g + 1);
+/* 复用的小画布：1 像素 = 1 个模块，之后整数倍放大 */
+var smallCv = null;
+function smallCanvas(side){
+  if (!smallCv) smallCv = document.createElement('canvas');
+  if (smallCv.width !== side){ smallCv.width = side; smallCv.height = side; }
+  return smallCv;
+}
+
+/* tiles: [{n, mods}]；按 cfg.grid 拼成一张图 */
+function drawTiles(canvas, tiles, cfg){
+  var g = Math.max(1, cfg.grid || 1), quiet = 4, cell = cfg.cell;
+  var n = tiles[0].n, side = n + quiet * 2;
+  var tilePx = side * cell;
+  var gap = g > 1 ? Math.max(2, cell * 2) : 0;
+  var px = tilePx * g + gap * (g + 1);
   if (canvas.width !== px){ canvas.width = px; canvas.height = px; }
-  var ctx = canvas.getContext('2d', { willReadFrequently: true });
-  ctx.fillStyle = '#808080';           /* 中灰分隔，既不像模块也不像静默区 */
+  var ctx = canvas.getContext('2d');
+  ctx.imageSmoothingEnabled = false;          /* 整数倍放大必须关插值，保持边缘锐利 */
+  ctx.fillStyle = g > 1 ? '#808080' : '#FFFFFF';   /* 多码时用中灰分隔带 */
   ctx.fillRect(0, 0, px, px);
-  ctx.drawImage(tile, gap, gap);
-  for (var i = 1; i < frames.length && i < g * g; i++){
-    var t2 = document.createElement('canvas');
-    renderQR(t2, frames[i], cfg);
-    var r = Math.floor(i / g), c = i % g;
-    ctx.drawImage(t2, gap + c * (info.px + gap), gap + r * (info.px + gap));
+
+  var sc = smallCanvas(side);
+  var sctx = sc.getContext('2d', { willReadFrequently: true });
+  var cnt = Math.min(tiles.length, g * g);
+  for (var i = 0; i < cnt; i++){
+    var t = tiles[i];
+    if (!t) continue;
+    var im = sctx.createImageData(side, side);
+    var u32 = new Uint32Array(im.data.buffer);
+    u32.fill(0xFFFFFFFF);                     /* 白底（含静默区） */
+    var tn = t.n, mods = t.mods;
+    for (var r = 0; r < tn; r++){
+      var ro = (r + quiet) * side + quiet, mo = r * tn;
+      for (var c = 0; c < tn; c++) if (mods[mo + c]) u32[ro + c] = 0xFF000000;
+    }
+    sctx.putImageData(im, 0, 0);
+    var gr = Math.floor(i / g), gc = i % g;
+    ctx.drawImage(sc, 0, 0, side, side,
+                  gap + gc * (tilePx + gap), gap + gr * (tilePx + gap), tilePx, tilePx);
   }
-  return { version: info.version, modules: info.modules, px: px, tilePx: info.px,
-           chars: info.chars, grid: g, count: Math.min(frames.length, g * g) };
+  return { version: tiles[0].version || cfg.version, modules: n, px: px, tilePx: tilePx,
+           grid: g, count: cnt };
+}
+
+/* 同步渲染单码（自检与无 Worker 回退时使用） */
+function renderQR(canvas, frame, cfg){
+  var str = frameToQrString(frame, cfg.mode);
+  var t = qrModules(str, cfg.version, cfg.ec);
+  var info = drawTiles(canvas, [t], { grid: 1, cell: cfg.cell, version: cfg.version });
+  info.chars = str.length;
+  return info;
+}
+/* 同步渲染多码拼图 */
+function renderQRGrid(canvas, frames, cfg){
+  var g = Math.max(1, cfg.grid || 1), tiles = [], i, chars = 0;
+  for (i = 0; i < frames.length && i < g * g; i++){
+    var s = frameToQrString(frames[i], cfg.mode);
+    chars += s.length;
+    tiles.push(qrModules(s, cfg.version, cfg.ec));
+  }
+  var info = drawTiles(canvas, tiles, cfg);
+  info.chars = chars;
+  return info;
 }
 
 /* ---------------- 接收机（TX/RX/自检共用） ---------------- */
@@ -835,7 +912,7 @@ var tx = {
   raw: null, bytes: null, name: '', type: '', size: 0, crc: '',
   rawSize: 0, comp: 0,
   session: 0, total: 0, chunk: 0, plan: null, pos: 0,
-  playing: false, raf: null, nextAt: 0, cycles: 0,
+  playing: false, raf: null, nextAt: 0, cycles: 0, stall: 0,
   shown: 0, codesShown: 0, fpsAt: 0, uiAt: 0, gridAt: 0
 };
 
@@ -1027,56 +1104,227 @@ function buildDataFrame(seq){
 }
 function buildMetaFrame(){ return buildFrame(T_META, tx.session, utf8enc(metaJson())); }
 
-/* ---- 帧位图缓存：播放时只 drawImage，不重算 QR（这是提速关键） ---- */
-var qrCache = { key: '', map: null, order: [] };
+/* ============================================================
+   编码 Worker 池：QR 编码（纯计算）搬到后台线程并行做
+   —— 4×4 时每帧要编 16 个 v20 码，主线程单线程做不完（实测只有 4 fps）
+   worker 只回传模块矩阵（Uint8Array，n² 字节，v20 仅 9409 B），
+   主线程再用「小图整数倍放大」画出来，开销极小。
+   ============================================================ */
+var ENC_SRC = [
+  'self.importScripts(' + JSON.stringify(LIB_QR[0]) + ');',
+  'var mk = self.qrcode;',
+  'self.onmessage = function(e){',
+  '  var d = e.data, out = [], bufs = [];',
+  '  for (var k = 0; k < d.strs.length; k++){',
+  '    var qr = null, used = d.v;',
+  '    for (var v = d.v; v <= 40; v++){',
+  '      try { var q = mk(v, d.ec); q.addData(d.strs[k], "Byte"); q.make(); qr = q; used = v; break; }',
+  '      catch(err){}',
+  '    }',
+  '    if (!qr){ out.push(null); continue; }',
+  '    var n = qr.getModuleCount(), m = new Uint8Array(n * n);',
+  '    for (var r = 0; r < n; r++){',
+  '      for (var c = 0; c < n; c++) if (qr.isDark(r, c)) m[r * n + c] = 1;',
+  '    }',
+  '    out.push({ n: n, version: used, mods: m });',
+  '    bufs.push(m.buffer);',
+  '  }',
+  '  self.postMessage({ id: d.id, tiles: out }, bufs);',
+  '};'
+].join('\n');
+
+var enc = { workers: [], size: 0, seq: 0, pending: {}, url: '' };
+
+function encShutdown(){
+  for (var i = 0; i < enc.workers.length; i++){
+    try { enc.workers[i].terminate(); } catch(e){}
+  }
+  enc.workers = []; enc.size = 0; enc.pending = {};
+}
+function encInit(n){
+  encShutdown();
+  if (!n || typeof Worker !== 'function') return 0;
+  try { enc.url = URL.createObjectURL(new Blob([ENC_SRC], { type: 'text/javascript' })); }
+  catch(e){ return 0; }
+  for (var i = 0; i < n; i++){
+    try {
+      var w = new Worker(enc.url);
+      w.onmessage = function(ev){
+        var d = ev.data, cb = enc.pending[d.id];
+        delete enc.pending[d.id];
+        if (cb) cb(d.tiles);
+      };
+      w.onerror = function(){};
+      w.busy = false;
+      enc.workers.push(w);
+    } catch(e){ break; }
+  }
+  enc.size = enc.workers.length;
+  return enc.size;
+}
+/* 把一组字符串交给空闲编码 worker；返回 false 表示当前无空闲线程 */
+function encSubmit(strs, cb){
+  var w = null;
+  for (var i = 0; i < enc.workers.length; i++){
+    if (!enc.workers[i].busy){ w = enc.workers[i]; break; }
+  }
+  if (!w) return false;
+  var id = ++enc.seq;
+  w.busy = true;
+  enc.pending[id] = function(tiles){ w.busy = false; cb(tiles); };
+  try { w.postMessage({ id: id, strs: strs, v: cfg.version, ec: cfg.ec }); }
+  catch(e){ w.busy = false; delete enc.pending[id]; return false; }
+  return true;
+}
+
+/* ---- 帧位图缓存（滑动窗口）：播放时只 drawImage ----
+   4×4 单帧位图可达数 MB，不能无脑全量缓存；改为围绕播放位维护一个窗口，
+   淘汰时按「与当前播放位的环形距离」最远者先删。 */
+var qrCache = { key: '', map: null, count: 0, pxEst: 0, inflight: {} };
 function cacheKey(){
   return [tx.session, cfg.version, cfg.ec, cfg.mode, cfg.chunk, cfg.cell, cfg.grid, tx.total].join('|');
 }
-function invalidateCache(){ qrCache.key = ''; qrCache.map = null; qrCache.order = []; }
-
-/* pos 是播放位；plan[pos] 是本帧要放的分片序号数组（[-1] 表示 META 帧） */
-function getFrameBitmap(pos){
+function invalidateCache(){
+  qrCache.key = ''; qrCache.map = null; qrCache.count = 0; qrCache.pxEst = 0; qrCache.inflight = {};
+}
+function ensureCache(){
   var key = cacheKey();
   if (qrCache.key !== key || !qrCache.map){
-    qrCache.key = key; qrCache.map = {}; qrCache.order = [];
+    qrCache.key = key; qrCache.map = {}; qrCache.count = 0; qrCache.inflight = {};
+    /* 估算单帧位图字节，决定窗口大小（总量控制在 ~192 MB 以内，最少 8 帧） */
+    var side = (17 + 4 * cfg.version + 8) * cfg.cell;
+    var px = side * cfg.grid + Math.max(2, cfg.cell * 2) * (cfg.grid + 1);
+    qrCache.pxEst = px;
   }
-  var hit = qrCache.map[pos];
-  if (hit) return hit;
-  var ids = tx.plan[pos], frames = [], total = 0, i;
-  for (i = 0; i < ids.length; i++){
-    var f = ids[i] < 0 ? buildMetaFrame() : buildDataFrame(ids[i]);
-    frames.push(f); total += f.length;
+}
+function windowSize(){
+  var bytes = Math.max(1, qrCache.pxEst * qrCache.pxEst * 4);
+  return Math.max(8, Math.min(600, Math.floor(192e6 / bytes)));
+}
+/* 环形距离：播放是循环的，所以 pos 距离要取模 */
+function ringDist(a, b, n){
+  var d = a - b;
+  if (d < 0) d += n;
+  return d;
+}
+function evict(){
+  var n = tx.plan ? tx.plan.length : 1, lim = windowSize();
+  if (qrCache.count <= lim) return;
+  var keys = Object.keys(qrCache.map);
+  /* 距离当前播放位最远（即最久才会用到）的先淘汰 */
+  keys.sort(function(x, y){
+    return ringDist(+y, tx.pos, n) - ringDist(+x, tx.pos, n);
+  });
+  for (var i = 0; i < keys.length && qrCache.count > lim; i++){
+    var k = keys[i];
+    if (+k === tx.pos) continue;
+    delete qrCache.map[k]; qrCache.count--;
   }
-  var off = document.createElement('canvas');
-  var info = renderQRGrid(off, frames, cfg);
-  var rec = { canvas: off, info: info, len: total, ids: ids };
-  qrCache.map[pos] = rec;
-  qrCache.order.push(pos);
-  var limit = Math.max(32, Math.floor(48e6 / Math.max(1, info.px * info.px * 4)));
-  while (qrCache.order.length > limit) delete qrCache.map[qrCache.order.shift()];
-  return rec;
 }
 
-/* 后台分批预渲染整圈帧，避免播放时逐帧算 QR 造成掉帧 */
+function framesForPos(pos){
+  var ids = tx.plan[pos], out = [];
+  for (var i = 0; i < ids.length; i++){
+    out.push(ids[i] < 0 ? buildMetaFrame() : buildDataFrame(ids[i]));
+  }
+  return out;
+}
+function strsForPos(pos){
+  var fs = framesForPos(pos), s = [], len = 0;
+  for (var i = 0; i < fs.length; i++){
+    s.push(frameToQrString(fs[i], cfg.mode));
+    len += fs[i].length;
+  }
+  return { strs: s, len: len };
+}
+/* 用已算好的模块矩阵落地成缓存记录 */
+function storeTiles(pos, tiles, len){
+  if (!tiles || !tiles.length || !tiles[0]) return null;
+  ensureCache();
+  var off = document.createElement('canvas');
+  var info;
+  try { info = drawTiles(off, tiles, cfg); } catch(e){ return null; }
+  var rec = { canvas: off, info: info, len: len, ids: tx.plan[pos] };
+  if (!qrCache.map[pos]) qrCache.count++;
+  qrCache.map[pos] = rec;
+  evict();
+  return rec;
+}
+/* 同步取（拿不到就主线程现算，保证一定有画面） */
+function getFrameBitmap(pos){
+  ensureCache();
+  var hit = qrCache.map[pos];
+  if (hit) return hit;
+  var d = strsForPos(pos), tiles = [];
+  for (var i = 0; i < d.strs.length; i++) tiles.push(qrModules(d.strs[i], cfg.version, cfg.ec));
+  return storeTiles(pos, tiles, d.len);
+}
+/* 只查缓存，不触发计算（播放循环用） */
+function peekFrameBitmap(pos){
+  ensureCache();
+  return qrCache.map[pos] || null;
+}
+/* 异步请求某帧（编码在 worker）；返回 true 表示已提交 */
+function requestFrame(pos, cb){
+  ensureCache();
+  if (qrCache.map[pos]){ if (cb) cb(qrCache.map[pos]); return true; }
+  if (qrCache.inflight[pos]) return true;
+  if (enc.size <= 0) return false;
+  var d = strsForPos(pos);
+  qrCache.inflight[pos] = 1;
+  var sent = encSubmit(d.strs, function(tiles){
+    delete qrCache.inflight[pos];
+    var rec = storeTiles(pos, tiles, d.len);
+    if (cb) cb(rec);
+  });
+  if (!sent){ delete qrCache.inflight[pos]; return false; }
+  return true;
+}
+
+/* 后台预渲染：从当前播放位开始，把窗口内的帧交给编码 worker 池并行算 */
 var prewarmToken = 0;
 function prewarm(){
   var token = ++prewarmToken;
   if (!tx.plan || !window.qrcode){ $('txPrewarm').textContent = '—'; return; }
   if (!cfg.prerender){ $('txPrewarm').textContent = '已关闭（按需渲染）'; return; }
-  var i = 0, t0 = performance.now();
-  function step(){
+  ensureCache();
+  var n = tx.plan.length, t0 = performance.now(), done = 0;
+  var lim = Math.min(n, windowSize());
+
+  function pump(){
     if (token !== prewarmToken || !tx.plan) return;
-    var budget = 0;
-    while (i < tx.plan.length && budget < 8){
-      try { getFrameBitmap(i); } catch(e){}
-      i++; budget++;
+    var launched = 0;
+    /* 从播放位往后找还没算的帧，喂满所有空闲线程 */
+    for (var k = 0; k < n && launched < 32; k++){
+      var pos = (tx.pos + k) % n;
+      if (qrCache.map[pos] || qrCache.inflight[pos]) continue;
+      if (ringDist(pos, tx.pos, n) >= lim) break;      /* 超出窗口不预算 */
+      if (!requestFrame(pos, function(){ done++; })) break;   /* 线程忙完了 */
+      launched++;
     }
-    $('txPrewarm').textContent = i >= tx.plan.length
-      ? (tx.plan.length + ' 帧就绪 · ' + (performance.now() - t0).toFixed(0) + ' ms')
-      : (i + ' / ' + tx.plan.length + ' …');
-    if (i < tx.plan.length) setTimeout(step, 0);
+    var ready = qrCache.count;
+    $('txPrewarm').textContent = ready >= lim
+      ? (ready + ' 帧就绪（窗口 ' + lim + '/' + n + '）· ' + (performance.now() - t0).toFixed(0) + ' ms')
+      : (ready + ' / ' + lim + ' 帧就绪（共 ' + n + '）…');
+    if (token === prewarmToken) setTimeout(pump, 30);
   }
-  step();
+  if (enc.size > 0) pump();
+  else {
+    /* 无编码 worker：退回主线程分批算（老行为） */
+    var i = 0;
+    (function step(){
+      if (token !== prewarmToken || !tx.plan) return;
+      var budget = 0;
+      while (i < Math.min(n, lim) && budget < 4){
+        try { getFrameBitmap((tx.pos + i) % n); } catch(e){}
+        i++; budget++;
+      }
+      $('txPrewarm').textContent = (i >= Math.min(n, lim))
+        ? (qrCache.count + ' 帧就绪（主线程）· ' + (performance.now() - t0).toFixed(0) + ' ms')
+        : (i + ' / ' + Math.min(n, lim) + '（主线程）…');
+      if (i < Math.min(n, lim)) setTimeout(step, 0);
+    })();
+  }
 }
 
 /* 播放计划：每项是一帧要显示的分片序号数组；[-1] 表示 META 帧
@@ -1101,12 +1349,16 @@ function rebuildPlan(){
   prewarm();
 }
 
-/* force=true 强制刷新文字标签；播放中默认节流，避免 DOM 更新拖慢帧率 */
-function renderCurrent(force){
+/* force=true 强制刷新文字标签；播放中默认节流，避免 DOM 更新拖慢帧率。
+   recIn 由播放循环传入（已从缓存取到），避免重复查找/重复计算 */
+function renderCurrent(force, recIn){
   if (!tx.plan || !window.qrcode) return;
-  var ids = tx.plan[tx.pos], rec;
-  try { rec = getFrameBitmap(tx.pos); }
-  catch(err){ $('txState').textContent = '错误：' + err.message; return; }
+  var ids = tx.plan[tx.pos], rec = recIn;
+  if (!rec){
+    try { rec = getFrameBitmap(tx.pos); }
+    catch(err){ $('txState').textContent = '错误：' + err.message; return; }
+  }
+  if (!rec) return;
 
   var canvas = $('txCanvas');
   if (canvas.width !== rec.info.px){ canvas.width = rec.info.px; canvas.height = rec.info.px; }
@@ -1176,26 +1428,52 @@ function nextFrame(step){
   if (advance(step)) renderCurrent(true);
 }
 
-/* rAF 驱动：按目标间隔累加时间戳，比 setInterval 更稳；
-   目标帧率高于屏幕刷新率时每次刷新推进多帧（但每次刷新只显示最后一帧，故上限为刷新率） */
+/* rAF 驱动：按目标间隔累加时间戳，比 setInterval 更稳。
+   关键：下一帧若尚未编码完成，就「原地等一拍」而不是在主线程硬算 ——
+   主线程硬算会阻塞渲染，把帧率拖到个位数（这正是 4×4 只有 4 fps 的根因）。 */
 function playLoop(ts){
   if (!tx.playing) return;
   tx.raf = requestAnimationFrame(playLoop);
   var interval = 1000 / cfg.fps;
   if (!tx.nextAt) tx.nextAt = ts;
   if (ts + 1 < tx.nextAt) return;
+
+  var n = tx.plan.length, next = tx.pos + 1;
+  if (next >= n){
+    if (!cfg.loop){ stopPlay(); $('txState').textContent = '单圈播放完成'; return; }
+    next = 0;
+  }
+  var rec = peekFrameBitmap(next);
+  if (!rec){
+    requestFrame(next);              /* 催一下编码线程 */
+    tx.stall++;
+    tx.nextAt = ts + interval;       /* 等一拍，不推进时间轴（避免追帧风暴） */
+    if (tx.stall === 8){
+      $('txState').textContent = '播放中 · 等待编码（可降多码/版本，或加编码线程）';
+    }
+    if (enc.size <= 0){              /* 没有编码线程时只能主线程算，至少别停 */
+      rec = getFrameBitmap(next);
+      if (!rec) return;
+    } else return;
+  }
+  if (tx.stall > 0){
+    tx.stall = 0;
+    if (tx.playing) $('txState').textContent = '播放中 · 目标 ' + cfg.fps + ' fps';
+  }
   var steps = 0;
   while (ts + 1 >= tx.nextAt && steps < 4){ tx.nextAt += interval; steps++; }
   if (ts - tx.nextAt > 200) tx.nextAt = ts + interval;   /* 落后太多则重同步 */
-  if (advance(1)) renderCurrent(false);
+  if (next === 0 && tx.pos !== 0) tx.cycles++;
+  tx.pos = next;
+  renderCurrent(false, rec);
 }
 
 function startPlay(){
   if (!tx.plan) return;
   readCfg();
-  if (cfg.prerender) prewarm();
+  prewarm();
   tx.playing = true;
-  tx.nextAt = 0; tx.shown = 0; tx.fpsAt = performance.now();
+  tx.nextAt = 0; tx.shown = 0; tx.stall = 0; tx.fpsAt = performance.now();
   $('btnPlay').disabled = true; $('btnPause').disabled = false;
   $('txState').textContent = '播放中 · 目标 ' + cfg.fps + ' fps';
   tx.raf = requestAnimationFrame(playLoop);
@@ -1223,7 +1501,7 @@ $('btnReset').addEventListener('click', function(){
   prewarmToken++;
   invalidateCache();
   tx.raw = null; tx.bytes = null; tx.plan = null; tx.pos = 0; tx.cycles = 0; tx.total = 0;
-  tx.comp = 0; tx.rawSize = 0;
+  tx.comp = 0; tx.rawSize = 0; tx.stall = 0;
   $('txRealFps').textContent = '—';
   $('txPrewarm').textContent = '—';
   $('txComp').textContent = '—';
@@ -1847,7 +2125,29 @@ $('btnTest').addEventListener('click', function(){
    初始化
    ============================================================ */
 window.addEventListener('resize', function(){ drawTxGrid(); drawRxGrid(); });
-window.addEventListener('beforeunload', function(){ stopCam(true); stopPlay(); poolShutdown(); });
+window.addEventListener('beforeunload', function(){
+  stopCam(true); stopPlay(); poolShutdown(); encShutdown();
+});
+
+/* 默认编码线程数：留一个核给渲染/UI，夹在 2~12 */
+function defaultEncWorkers(){
+  var hc = navigator.hardwareConcurrency || 4;
+  return Math.max(2, Math.min(12, hc - 1));
+}
+(function(){
+  var d = defaultEncWorkers(), sel = $('cfgEncWorkers'), best = '2';
+  for (var i = 0; i < sel.options.length; i++){
+    var v = parseInt(sel.options[i].value, 10);
+    if (v > 0 && v <= d) best = sel.options[i].value;
+  }
+  sel.value = best;
+})();
+$('cfgEncWorkers').addEventListener('change', function(){
+  var got = encInit(parseInt(this.value, 10) || 0);
+  $('txEngine').value = got > 0 ? (got + ' Worker 并行编码') : '主线程编码';
+  invalidateCache();
+  if (tx.plan){ renderCurrent(true); prewarm(); }
+});
 
 updateTxEstimate();
 drawTxGrid();
@@ -1855,12 +2155,16 @@ drawRxGrid();
 updateRxUI();
 
 loadFirst(LIB_QR, function(){ return typeof window.qrcode === 'function'; }).then(function(ok){
-  if (ok){
-    setBadge($('libQr'), 'ok', '编码库就绪');
-    if (tx.plan){ renderCurrent(true); prewarm(); }
-  } else {
+  if (!ok){
     setBadge($('libQr'), 'err', '编码库加载失败');
+    $('txEngine').value = '不可用';
+    return;
   }
+  /* 起编码 Worker 池：QR 编码才是发送端的真正瓶颈（4×4 每帧要编 16 个码） */
+  var got = encInit(parseInt($('cfgEncWorkers').value, 10) || 0);
+  setBadge($('libQr'), 'ok', got > 0 ? ('编码库就绪 · ' + got + ' 线程') : '编码库就绪');
+  $('txEngine').value = got > 0 ? (got + ' Worker 并行编码') : '主线程编码';
+  if (tx.plan){ renderCurrent(true); prewarm(); }
 });
 loadFirst(LIB_JSQR, function(){ return typeof window.jsQR === 'function'; },
   function(u){ jsqrLoadedFrom = u; }).then(function(ok){
