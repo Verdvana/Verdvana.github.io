@@ -63,3 +63,11 @@
   thumb: /assets/labs/thumbs/neural_network_visualization.jpg
   tags: [Neural Networks]
   order: 2
+
+- slug: optical_transfer
+  title: 光学通信系统
+  desc: >
+    屏幕到摄像头的单向光学传输：发送端将任意文件分片编码为循环播放的二维码，接收端摄像头扫描后经双层 CRC32 校验无损还原源文件。
+  thumb: /assets/labs/thumbs/optical_transfer.jpg
+  tags: [Communication]
+  order: 8

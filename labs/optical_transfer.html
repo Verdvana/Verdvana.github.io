@@ -1,0 +1,1363 @@
+---
+layout: modern
+title: "光学通信系统 · 二维码文件传输"
+description: "纯浏览器实现的屏幕到摄像头光学通信系统：发送端将任意文件切片编码为循环播放的二维码，接收端用摄像头扫描并无损还原源文件。"
+keywords: "二维码传输, 光学通信, 摄像头解码, 文件传输, jsQR, 离线传输"
+back_button: true
+permalink: /labs/optical_transfer.html
+extra_css:
+  - /assets/css/labs/optical_transfer.css
+---
+
+<div class="lab-page">
+<main class="main" id="mainContent">
+<div class="wrap">
+
+  <!-- ============ Header ============ -->
+  <header class="ot-head">
+    <div style="flex:1;min-width:260px;">
+      <h1>光学通信系统 · 二维码文件传输</h1>
+      <p>发送端把任意文件切片成循环播放的二维码，接收端用摄像头扫描还原 —— 全程纯前端、零网络、单向物理隔离传输</p>
+    </div>
+    <div class="ot-libstate">
+      <span class="ot-badge" id="libQr"><i class="fa-solid fa-circle-notch fa-spin"></i> 编码库</span>
+      <span class="ot-badge" id="libJsqr"><i class="fa-solid fa-circle-notch fa-spin"></i> 解码库</span>
+    </div>
+  </header>
+
+  <!-- ============ Tabs ============ -->
+  <div class="ot-tabs">
+    <button class="ot-tab active" data-tab="tx"><i class="fa-solid fa-tower-broadcast"></i> 发送端</button>
+    <button class="ot-tab" data-tab="rx"><i class="fa-solid fa-camera"></i> 接收端</button>
+    <button class="ot-tab" data-tab="test"><i class="fa-solid fa-flask-vial"></i> 回环自检</button>
+    <button class="ot-tab" data-tab="doc"><i class="fa-solid fa-book"></i> 协议说明</button>
+  </div>
+
+  <!-- ============================================================
+       发送端
+       ============================================================ -->
+  <div class="ot-panel active" id="panel-tx">
+    <div class="ot-cols">
+
+      <!-- 左列：控制 -->
+      <div class="ot-stack">
+        <div class="ot-card">
+          <div class="hd"><span class="ot-dot"></span><h3>1 · 选择文件</h3></div>
+          <div class="bd">
+            <div class="ot-drop" id="txDrop">
+              <i class="fa-solid fa-file-arrow-up"></i>
+              <div class="t">点击选择，或拖拽文件到此处</div>
+              <div class="s">支持文本 / 图片 / 压缩包 / 视频等任意二进制文件</div>
+            </div>
+            <input type="file" id="txFile" style="display:none"/>
+            <div class="ot-rows" id="txFileInfo" style="display:none">
+              <div class="ot-row"><span class="k">文件名</span><span class="v" id="txName">—</span></div>
+              <div class="ot-row"><span class="k">类型</span><span class="v" id="txType">—</span></div>
+              <div class="ot-row"><span class="k">大小</span><span class="v" id="txSize">—</span></div>
+              <div class="ot-row"><span class="k">CRC32</span><span class="v" id="txCrc">—</span></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="ot-card">
+          <div class="hd"><span class="ot-dot g"></span><h3>2 · 链路参数</h3>
+            <span class="hd-extra" id="txPreset">均衡</span>
+          </div>
+          <div class="bd">
+            <div class="ot-bar">
+              <button class="ot-btn mini" data-preset="safe">保守 · 远距离</button>
+              <button class="ot-btn mini" data-preset="balanced">均衡</button>
+              <button class="ot-btn mini" data-preset="fast">高速 · 近距离</button>
+            </div>
+            <div class="ot-field-row">
+              <div>
+                <label>二维码版本（尺寸）</label>
+                <select id="cfgVersion"></select>
+              </div>
+              <div>
+                <label>纠错等级</label>
+                <select id="cfgEc">
+                  <option value="L">L · 7%</option>
+                  <option value="M" selected>M · 15%</option>
+                  <option value="Q">Q · 25%</option>
+                  <option value="H">H · 30%</option>
+                </select>
+              </div>
+            </div>
+            <div class="ot-field-row">
+              <div>
+                <label>载荷编码</label>
+                <select id="cfgMode">
+                  <option value="binary" selected>Binary（8bit 字节，效率最高）</option>
+                  <option value="base64">Base64（兼容性最好）</option>
+                </select>
+              </div>
+              <div>
+                <label>单帧净载荷 (Byte)</label>
+                <input type="number" id="cfgChunk" min="16" step="1" value="0"/>
+              </div>
+            </div>
+            <div>
+              <label>播放帧率 <span class="ot-slider-val" id="cfgFpsVal">8 fps</span></label>
+              <input type="range" id="cfgFps" min="1" max="24" step="1" value="8"/>
+            </div>
+            <div class="ot-field-row">
+              <div>
+                <label>模块像素 <span class="ot-slider-val" id="cfgCellVal">6 px</span></label>
+                <input type="range" id="cfgCell" min="2" max="14" step="1" value="6"/>
+              </div>
+              <div>
+                <label>元数据插入间隔（帧）</label>
+                <input type="number" id="cfgMetaEvery" min="0" max="500" step="1" value="24"/>
+              </div>
+            </div>
+            <label class="ot-check"><input type="checkbox" id="cfgLoop" checked/> 循环播放（推荐）</label>
+            <div class="ot-rows">
+              <div class="ot-row"><span class="k">单帧上限</span><span class="v" id="txCap">—</span></div>
+              <div class="ot-row"><span class="k">分片总数</span><span class="v" id="txTotal">—</span></div>
+              <div class="ot-row"><span class="k">理论速率</span><span class="v" id="txRate">—</span></div>
+              <div class="ot-row"><span class="k">单圈时长</span><span class="v" id="txCycle">—</span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 右列：播放 -->
+      <div class="ot-stack">
+        <div class="ot-card">
+          <div class="hd"><span class="ot-dot w"></span><h3>3 · 播放二维码</h3>
+            <span class="hd-extra" id="txState">待机</span>
+          </div>
+          <div class="bd">
+            <div class="ot-bar">
+              <button class="ot-btn primary" id="btnPlay" disabled><i class="fa-solid fa-play"></i> 开始播放</button>
+              <button class="ot-btn" id="btnPause" disabled><i class="fa-solid fa-pause"></i> 暂停</button>
+              <button class="ot-btn" id="btnPrev" disabled><i class="fa-solid fa-backward-step"></i></button>
+              <button class="ot-btn" id="btnNext" disabled><i class="fa-solid fa-forward-step"></i></button>
+              <button class="ot-btn" id="btnFull" disabled><i class="fa-solid fa-expand"></i> 全屏</button>
+              <button class="ot-btn danger" id="btnReset"><i class="fa-solid fa-rotate-left"></i> 重置</button>
+            </div>
+            <div class="ot-stage empty" id="txStage">
+              <span id="txStagePlaceholder">选择文件后在此显示二维码</span>
+              <canvas id="txCanvas" style="display:none"></canvas>
+            </div>
+            <div class="ot-stage-foot">
+              <span id="txFrameLabel">帧 —/—</span>
+              <span id="txQrInfo">—</span>
+            </div>
+            <div class="ot-progress-outer"><div class="ot-progress-inner" id="txBar"></div></div>
+            <canvas id="txGrid" height="10"></canvas>
+          </div>
+        </div>
+        <div class="ot-card">
+          <div class="hd"><span class="ot-dot"></span><h3>使用提示</h3></div>
+          <div class="bd">
+            <div class="ot-note">
+              建议流程：① 本机 A 打开“发送端”选择文件并全屏播放；② 手机/本机 B 打开“接收端”开启摄像头对准屏幕；
+              ③ 保持画面清晰、二维码完整入框，等待进度到 100% 后下载文件。
+            </div>
+            <div class="ot-note warn">
+              摄像头 API 需要 <code>https</code> 或 <code>localhost</code> 环境；若解码困难，请降低二维码版本、降低帧率、提高纠错等级或增大模块像素。
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============================================================
+       接收端
+       ============================================================ -->
+  <div class="ot-panel" id="panel-rx">
+    <div class="ot-cols">
+
+      <div class="ot-stack">
+        <div class="ot-card">
+          <div class="hd"><span class="ot-dot"></span><h3>摄像头</h3>
+            <span class="hd-extra" id="rxCamState">未开启</span>
+          </div>
+          <div class="bd">
+            <div class="ot-video-box idle" id="rxBox">
+              <video id="rxVideo" playsinline muted></video>
+              <div class="hint" id="rxHint" style="display:none">扫描中…</div>
+            </div>
+            <div>
+              <label>摄像头设备</label>
+              <select id="rxDevice"><option value="">默认（后置优先）</option></select>
+            </div>
+            <div class="ot-field-row">
+              <div>
+                <label>解析分辨率</label>
+                <select id="rxScale">
+                  <option value="480">480 px（最快）</option>
+                  <option value="640" selected>640 px</option>
+                  <option value="800">800 px</option>
+                  <option value="1080">1080 px（最准）</option>
+                </select>
+              </div>
+              <div>
+                <label>扫描区域</label>
+                <select id="rxCrop">
+                  <option value="full" selected>整幅画面</option>
+                  <option value="center">中心正方形</option>
+                </select>
+              </div>
+            </div>
+            <label class="ot-check"><input type="checkbox" id="rxInvert"/> 尝试反色（深色主题屏幕）</label>
+            <div class="ot-bar">
+              <button class="ot-btn ok" id="btnCamStart"><i class="fa-solid fa-video"></i> 开启摄像头</button>
+              <button class="ot-btn" id="btnCamStop" disabled><i class="fa-solid fa-video-slash"></i> 停止</button>
+              <button class="ot-btn danger" id="btnRxReset"><i class="fa-solid fa-eraser"></i> 清空接收</button>
+            </div>
+            <div>
+              <label>或从二维码图片文件解码（可多选）</label>
+              <input type="file" id="rxImgFile" accept="image/*" multiple/>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="ot-stack">
+        <div class="ot-card">
+          <div class="hd"><span class="ot-dot g"></span><h3>接收进度</h3>
+            <span class="hd-extra" id="rxSession">会话 —</span>
+          </div>
+          <div class="bd">
+            <div class="ot-kpis">
+              <div class="ot-kpi"><div class="n acc" id="kpiPct">0%</div><div class="l">完成度</div></div>
+              <div class="ot-kpi"><div class="n" id="kpiGot">0 / 0</div><div class="l">已收分片</div></div>
+              <div class="ot-kpi"><div class="n" id="kpiFps">0</div><div class="l">解码帧率</div></div>
+              <div class="ot-kpi"><div class="n" id="kpiSpeed">0 B/s</div><div class="l">有效速率</div></div>
+              <div class="ot-kpi"><div class="n" id="kpiDup">0</div><div class="l">重复帧</div></div>
+              <div class="ot-kpi"><div class="n" id="kpiErr">0</div><div class="l">坏帧</div></div>
+            </div>
+            <div class="ot-progress-outer"><div class="ot-progress-inner" id="rxBar"></div></div>
+            <canvas id="rxGrid" height="10"></canvas>
+            <div class="ot-rows">
+              <div class="ot-row"><span class="k">文件名</span><span class="v" id="rxName">—</span></div>
+              <div class="ot-row"><span class="k">大小</span><span class="v" id="rxSize">—</span></div>
+              <div class="ot-row"><span class="k">缺失分片</span><span class="v" id="rxMissing">—</span></div>
+              <div class="ot-row"><span class="k">校验</span><span class="v" id="rxVerify">—</span></div>
+            </div>
+            <div class="ot-bar">
+              <button class="ot-btn primary" id="btnDownload" disabled><i class="fa-solid fa-download"></i> 下载还原文件</button>
+            </div>
+            <div class="ot-preview" id="rxPreview"></div>
+          </div>
+        </div>
+        <div class="ot-card">
+          <div class="hd"><span class="ot-dot w"></span><h3>日志</h3>
+            <span class="hd-extra"><button class="ot-btn mini" id="btnClearLog">清空</button></span>
+          </div>
+          <div class="bd"><div class="ot-log" id="rxLog"></div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============================================================
+       回环自检
+       ============================================================ -->
+  <div class="ot-panel" id="panel-test">
+    <div class="ot-cols">
+      <div class="ot-stack">
+        <div class="ot-card">
+          <div class="hd"><span class="ot-dot"></span><h3>回环自检</h3></div>
+          <div class="bd">
+            <div class="ot-note">
+              不使用摄像头，直接把发送端渲染出的二维码位图喂给解码器，验证 <b>分片 → 编码 → 渲染 → 解码 → 重组 → CRC 校验</b> 全链路正确性。
+            </div>
+            <div class="ot-field-row">
+              <div>
+                <label>测试数据</label>
+                <select id="tsSource">
+                  <option value="random" selected>随机字节（自动生成）</option>
+                  <option value="file">发送端已选文件</option>
+                </select>
+              </div>
+              <div>
+                <label>随机数据大小 (KB)</label>
+                <input type="number" id="tsSize" min="1" max="512" value="24"/>
+              </div>
+            </div>
+            <label class="ot-check"><input type="checkbox" id="tsDrop" checked/> 模拟丢帧（丢弃 20% 帧后再补发一轮）</label>
+            <div class="ot-bar">
+              <button class="ot-btn ok" id="btnTest"><i class="fa-solid fa-play"></i> 运行自检</button>
+            </div>
+            <div class="ot-kpis">
+              <div class="ot-kpi"><div class="n" id="tsFrames">0</div><div class="l">总帧数</div></div>
+              <div class="ot-kpi"><div class="n" id="tsDecoded">0</div><div class="l">解码成功</div></div>
+              <div class="ot-kpi"><div class="n" id="tsFail">0</div><div class="l">解码失败</div></div>
+              <div class="ot-kpi"><div class="n acc" id="tsResult">—</div><div class="l">结论</div></div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="ot-stack">
+        <div class="ot-card">
+          <div class="hd"><span class="ot-dot g"></span><h3>自检日志</h3></div>
+          <div class="bd">
+            <div class="ot-log" id="tsLog" style="max-height:420px"></div>
+            <canvas id="tsCanvas" style="display:none"></canvas>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============================================================
+       协议说明
+       ============================================================ -->
+  <div class="ot-panel" id="panel-doc">
+    <div class="ot-card">
+      <div class="hd"><span class="ot-dot"></span><h3>OQTP · Optical QR Transfer Protocol v1</h3></div>
+      <div class="bd">
+        <div class="ot-doc">
+          <h4>系统结构</h4>
+          <ul>
+            <li><b>发送端（调制器）</b>：文件 → <code>ArrayBuffer</code> → 定长分片 → 加协议头与 CRC32 → 转成二维码可承载字符串 → 逐帧渲染到 Canvas 循环播放。</li>
+            <li><b>信道</b>：屏幕光 → 空气 → 摄像头 CMOS，单向、无反馈、有丢帧，因此采用「循环轮播 + 幂等接收」来代替重传。</li>
+            <li><b>接收端（解调器）</b>：摄像头视频流 → Canvas 抽帧 → jsQR 解码 → 校验 CRC → 按序号写入分片表 → 全部到齐后拼接、校验整文件 CRC32 → 生成 Blob 下载。</li>
+          </ul>
+
+          <h4>帧格式（共 12 字节公共头）</h4>
+          <table class="ot-table">
+            <thead><tr><th>字段</th><th>偏移</th><th>长度</th><th>说明</th></tr></thead>
+            <tbody>
+              <tr><td>MAGIC</td><td>0</td><td>2</td><td>0x4F 0x51（'O','Q'）</td></tr>
+              <tr><td>VER</td><td>2</td><td>1</td><td>协议版本 = 1</td></tr>
+              <tr><td>TYPE</td><td>3</td><td>1</td><td>1 = DATA，2 = META</td></tr>
+              <tr><td>SESSION</td><td>4</td><td>4</td><td>会话号（大端），区分不同文件</td></tr>
+              <tr><td>CRC32</td><td>8</td><td>4</td><td>Body 的 CRC32（大端）</td></tr>
+              <tr><td>BODY</td><td>12</td><td>n</td><td>见下</td></tr>
+            </tbody>
+          </table>
+
+          <h4>DATA Body（8 字节子头 + 载荷）</h4>
+          <table class="ot-table">
+            <thead><tr><th>字段</th><th>偏移</th><th>长度</th><th>说明</th></tr></thead>
+            <tbody>
+              <tr><td>SEQ</td><td>0</td><td>4</td><td>分片序号，从 0 开始</td></tr>
+              <tr><td>TOTAL</td><td>4</td><td>4</td><td>分片总数（每帧都带，接收端可中途入场）</td></tr>
+              <tr><td>PAYLOAD</td><td>8</td><td>n</td><td>文件原始字节切片</td></tr>
+            </tbody>
+          </table>
+
+          <h4>META Body</h4>
+          <p>UTF-8 JSON：<code>{ "n": 文件名, "s": 字节数, "t": MIME, "c": 整文件CRC32(hex), "k": 分片大小, "T": 分片总数 }</code>，
+          默认每 24 个数据帧插一次，保证接收端任何时刻入场都能很快拿到文件元信息。</p>
+
+          <h4>可靠性设计</h4>
+          <ul>
+            <li><b>无重传的 ARQ 替代</b>：发送端无限循环轮播，接收端幂等去重；缺失的分片会在下一圈自然补齐。</li>
+            <li><b>双层 CRC32</b>：帧级 CRC 拦截摄像头误码/半帧撕裂；文件级 CRC 最终确认整文件无损。</li>
+            <li><b>QR 自带 Reed-Solomon 纠错</b>：L/M/Q/H 对应 7%/15%/25%/30% 码字可恢复，等级越高单帧容量越小但抗污损越强。</li>
+            <li><b>Binary 载荷</b>：直接使用 QR Byte 模式承载 8bit 原始字节，比 Base64 少 33% 体积；接收端读取 jsQR 的 <code>binaryData</code>。若设备解码不稳，可切到 Base64 模式。</li>
+          </ul>
+
+          <h4>吞吐估算</h4>
+          <p>有效速率 ≈ <code>单帧净载荷 × 帧率 × 帧成功率</code>。例如 QR 版本 12 / 纠错 M / Binary 单帧约 ~280 B 净载荷，
+          10 fps、成功率 80% 时约 2.2 KB/s，即 1 分钟约 130 KB。传大文件请先压缩，并优先提高二维码版本而不是帧率
+          （摄像头曝光时间受限，帧率过高更容易糊帧）。</p>
+
+          <h4>调参建议</h4>
+          <ul>
+            <li>糊帧 / 一直不识别：降版本（如 20 → 10）、降帧率（如 12 → 6）、提高模块像素、纠错升到 Q。</li>
+            <li>识别很稳但太慢：升版本、纠错降到 L、帧率升到 10~15、Binary 模式。</li>
+            <li>屏幕反光/摩尔纹：调整屏幕亮度与角度，或让摄像头稍微离远一点、避免正对光源。</li>
+          </ul>
+
+          <div class="ot-note warn">
+            本工具在浏览器本地完成全部计算，不上传任何数据。发送端与接收端可以是同一台机器的两个窗口（用「回环自检」验证），
+            也可以是完全物理隔离的两台设备 —— 这正是「光学单向通信」的意义。
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div><!-- /.wrap -->
+</main>
+</div><!-- /.lab-page -->
+
+<script>
+/* ============================================================
+   Optical QR Transfer Protocol (OQTP v1) — 纯前端实现
+   ============================================================ */
+(function(){
+'use strict';
+
+var $ = function(id){ return document.getElementById(id); };
+
+/* ---------------- 外部库加载（多 CDN 回退） ---------------- */
+var LIB_QR = [
+  'https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.js',
+  'https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4',
+  'https://unpkg.com/qrcode-generator@1.4.4/qrcode.js',
+  'https://unpkg.com/qrcode-generator@1.4.4'
+];
+var LIB_JSQR = [
+  'https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js',
+  'https://cdn.jsdelivr.net/npm/jsqr@1.4.0',
+  'https://unpkg.com/jsqr@1.4.0/dist/jsQR.js',
+  'https://unpkg.com/jsqr@1.4.0',
+  'https://cdn.jsdelivr.net/gh/cozmo/jsQR@master/dist/jsQR.js'
+];
+
+function loadScript(url){
+  return new Promise(function(res, rej){
+    var s = document.createElement('script');
+    s.src = url; s.async = true;
+    s.onload = function(){ res(); };
+    s.onerror = function(){ rej(new Error('load fail ' + url)); };
+    document.head.appendChild(s);
+  });
+}
+function loadFirst(urls, check){
+  var i = 0;
+  function next(){
+    if (check()) return Promise.resolve(true);
+    if (i >= urls.length) return Promise.resolve(false);
+    var u = urls[i++];
+    return loadScript(u).then(function(){ return check() ? true : next(); }, function(){ return next(); });
+  }
+  return next();
+}
+function setBadge(el, state, text){
+  el.className = 'ot-badge' + (state ? ' ' + state : '');
+  var icon = state === 'ok' ? 'fa-circle-check' : (state === 'err' ? 'fa-circle-xmark' : 'fa-circle-notch fa-spin');
+  el.innerHTML = '<i class="fa-solid ' + icon + '"></i> ' + text;
+}
+
+/* ---------------- 基础工具 ---------------- */
+var CRC_TABLE = (function(){
+  var t = new Uint32Array(256);
+  for (var n = 0; n < 256; n++){
+    var c = n;
+    for (var k = 0; k < 8; k++) c = (c & 1) ? (0xEDB88320 ^ (c >>> 1)) : (c >>> 1);
+    t[n] = c >>> 0;
+  }
+  return t;
+})();
+function crc32(bytes, start, end){
+  if (start === undefined) start = 0;
+  if (end === undefined) end = bytes.length;
+  var c = 0xFFFFFFFF;
+  for (var i = start; i < end; i++) c = CRC_TABLE[(c ^ bytes[i]) & 0xFF] ^ (c >>> 8);
+  return (c ^ 0xFFFFFFFF) >>> 0;
+}
+function hex8(n){ return ('00000000' + (n >>> 0).toString(16)).slice(-8).toUpperCase(); }
+function wr32(buf, off, v){
+  buf[off] = (v >>> 24) & 0xFF; buf[off+1] = (v >>> 16) & 0xFF;
+  buf[off+2] = (v >>> 8) & 0xFF; buf[off+3] = v & 0xFF;
+}
+function rd32(buf, off){
+  return ((buf[off] << 24) | (buf[off+1] << 16) | (buf[off+2] << 8) | buf[off+3]) >>> 0;
+}
+function toLatin1(bytes){
+  var CH = 8192, out = '';
+  for (var i = 0; i < bytes.length; i += CH){
+    out += String.fromCharCode.apply(null, bytes.subarray(i, Math.min(i + CH, bytes.length)));
+  }
+  return out;
+}
+function fromLatin1(str){
+  var b = new Uint8Array(str.length);
+  for (var i = 0; i < str.length; i++) b[i] = str.charCodeAt(i) & 0xFF;
+  return b;
+}
+function b64enc(bytes){ return btoa(toLatin1(bytes)); }
+function b64dec(str){
+  try { return fromLatin1(atob(str.replace(/\s+/g, ''))); } catch(e){ return null; }
+}
+function utf8enc(str){ return new TextEncoder().encode(str); }
+function utf8dec(bytes){ return new TextDecoder('utf-8', {fatal:false}).decode(bytes); }
+function fmtBytes(n){
+  if (n === null || n === undefined) return '—';
+  if (n < 1024) return n + ' B';
+  if (n < 1048576) return (n / 1024).toFixed(1) + ' KB';
+  return (n / 1048576).toFixed(2) + ' MB';
+}
+function fmtSec(s){
+  if (!isFinite(s)) return '—';
+  if (s < 60) return s.toFixed(1) + ' s';
+  var m = Math.floor(s / 60);
+  return m + ' min ' + Math.round(s - m * 60) + ' s';
+}
+
+/* ---------------- 帧编解码 ---------------- */
+var MAGIC0 = 0x4F, MAGIC1 = 0x51, PVER = 1, T_DATA = 1, T_META = 2, HEAD = 12, DATA_SUB = 8;
+var FRAME_OVERHEAD = HEAD + DATA_SUB; /* 20 */
+
+function buildFrame(type, session, body){
+  var f = new Uint8Array(HEAD + body.length);
+  f[0] = MAGIC0; f[1] = MAGIC1; f[2] = PVER; f[3] = type;
+  wr32(f, 4, session);
+  f.set(body, HEAD);
+  wr32(f, 8, crc32(f, HEAD, f.length));
+  return f;
+}
+function parseFrame(bytes){
+  if (!bytes || bytes.length < HEAD) return null;
+  if (bytes[0] !== MAGIC0 || bytes[1] !== MAGIC1 || bytes[2] !== PVER) return null;
+  var type = bytes[3], session = rd32(bytes, 4), crc = rd32(bytes, 8);
+  if (crc32(bytes, HEAD, bytes.length) !== crc) return { bad: true };
+  var body = bytes.subarray(HEAD);
+  if (type === T_DATA){
+    if (body.length < DATA_SUB) return { bad: true };
+    return { type: T_DATA, session: session, seq: rd32(body, 0), total: rd32(body, 4), payload: body.subarray(DATA_SUB) };
+  }
+  if (type === T_META){
+    try { return { type: T_META, session: session, meta: JSON.parse(utf8dec(body)) }; }
+    catch(e){ return { bad: true }; }
+  }
+  return { bad: true };
+}
+/* 从二维码解码结果（可能是二进制或 base64 文本）还原帧字节 */
+function frameBytesFromCode(code){
+  var cand = [];
+  if (code.binaryData && code.binaryData.length) cand.push(new Uint8Array(code.binaryData));
+  if (typeof code.data === 'string' && code.data.length){
+    var raw = fromLatin1(code.data);
+    cand.push(raw);
+    var d = b64dec(code.data);
+    if (d) cand.push(d);
+  }
+  for (var i = 0; i < cand.length; i++){
+    var b = cand[i];
+    if (b.length >= HEAD && b[0] === MAGIC0 && b[1] === MAGIC1 && b[2] === PVER) return b;
+  }
+  /* binaryData 本身是 base64 ASCII 的情况 */
+  for (var j = 0; j < cand.length; j++){
+    var s = toLatin1(cand[j]);
+    var dd = b64dec(s);
+    if (dd && dd.length >= HEAD && dd[0] === MAGIC0 && dd[1] === MAGIC1 && dd[2] === PVER) return dd;
+  }
+  return null;
+}
+
+/* ---------------- QR Byte 模式容量表（版本 1..40，单位字节） ---------------- */
+var CAP = {
+  L:[17,32,53,78,106,134,154,192,230,271,321,367,425,458,520,586,644,718,792,858,929,1003,1091,1171,1273,1367,1465,1528,1628,1732,1840,1952,2068,2188,2303,2431,2563,2699,2809,2953],
+  M:[14,26,42,62,84,106,122,152,180,213,251,287,331,362,412,450,504,560,624,666,711,779,857,911,997,1059,1125,1190,1264,1370,1452,1538,1628,1722,1809,1911,1989,2099,2213,2331],
+  Q:[11,20,32,46,60,74,86,108,130,151,177,203,241,258,292,322,364,394,442,482,509,565,611,661,715,751,805,868,908,982,1030,1112,1168,1228,1283,1351,1423,1499,1579,1663],
+  H:[7,14,24,34,44,58,64,84,98,119,137,155,177,194,220,250,280,310,338,382,403,439,461,511,535,593,625,658,698,742,790,842,898,958,983,1051,1093,1139,1219,1273]
+};
+function capacityBytes(v, ec){ return CAP[ec][v - 1] || 0; }
+function maxFrameBytes(v, ec, mode){
+  var cap = capacityBytes(v, ec);
+  if (mode === 'base64') return Math.max(0, Math.floor(cap / 4) * 3);
+  return cap;
+}
+
+/* ---------------- QR 渲染 ---------------- */
+function frameToQrString(frame, mode){
+  return mode === 'base64' ? b64enc(frame) : toLatin1(frame);
+}
+function renderQR(canvas, frame, cfg){
+  var str = frameToQrString(frame, cfg.mode);
+  var qr = null, used = cfg.version;
+  for (var v = cfg.version; v <= 40; v++){
+    try {
+      var q = window.qrcode(v, cfg.ec);
+      q.addData(str, 'Byte');
+      q.make();
+      qr = q; used = v; break;
+    } catch(e){ /* 容量不足，尝试更高版本 */ }
+  }
+  if (!qr) throw new Error('数据超出 QR 版本 40 容量');
+  var n = qr.getModuleCount(), quiet = 4, cell = cfg.cell;
+  var px = (n + quiet * 2) * cell;
+  if (canvas.width !== px){ canvas.width = px; canvas.height = px; }
+  var ctx = canvas.getContext('2d', { willReadFrequently: true });
+  ctx.fillStyle = '#FFFFFF';
+  ctx.fillRect(0, 0, px, px);
+  ctx.fillStyle = '#000000';
+  for (var r = 0; r < n; r++){
+    for (var c = 0; c < n; c++){
+      if (qr.isDark(r, c)) ctx.fillRect((c + quiet) * cell, (r + quiet) * cell, cell, cell);
+    }
+  }
+  return { version: used, modules: n, px: px, chars: str.length };
+}
+
+/* ---------------- 接收机（TX/RX/自检共用） ---------------- */
+function createReceiver(){
+  return {
+    session: null, meta: null, total: 0,
+    chunks: null, flags: null, got: 0,
+    bytesGot: 0, dup: 0, bad: 0, done: false, result: null,
+
+    reset: function(){
+      this.session = null; this.meta = null; this.total = 0;
+      this.chunks = null; this.flags = null; this.got = 0;
+      this.bytesGot = 0; this.dup = 0; this.bad = 0; this.done = false; this.result = null;
+    },
+    _initTotal: function(total){
+      if (this.total === total && this.chunks) return;
+      this.total = total;
+      this.chunks = new Array(total);
+      this.flags = new Uint8Array(total);
+      this.got = 0; this.bytesGot = 0;
+    },
+    accept: function(f){
+      if (!f) return 'none';
+      if (f.bad){ this.bad++; return 'bad'; }
+      if (this.session === null) this.session = f.session;
+      else if (this.session !== f.session){
+        this.reset();
+        this.session = f.session;
+      }
+      if (f.type === T_META){
+        this.meta = f.meta;
+        if (f.meta && f.meta.T) this._initTotal(f.meta.T);
+        return 'meta';
+      }
+      if (f.type === T_DATA){
+        if (!f.total || f.total < 1) { this.bad++; return 'bad'; }
+        this._initTotal(f.total);
+        if (f.seq >= this.total){ this.bad++; return 'bad'; }
+        if (this.flags[f.seq]){ this.dup++; return 'dup'; }
+        this.flags[f.seq] = 1;
+        this.chunks[f.seq] = new Uint8Array(f.payload);
+        this.got++; this.bytesGot += f.payload.length;
+        if (this.got === this.total) this.finish();
+        return 'new';
+      }
+      return 'bad';
+    },
+    missing: function(){
+      var out = [];
+      if (!this.flags) return out;
+      for (var i = 0; i < this.total; i++) if (!this.flags[i]) out.push(i);
+      return out;
+    },
+    finish: function(){
+      var i, len = 0;
+      for (i = 0; i < this.total; i++){
+        if (!this.chunks[i]) return false;
+        len += this.chunks[i].length;
+      }
+      var all = new Uint8Array(len), off = 0;
+      for (i = 0; i < this.total; i++){ all.set(this.chunks[i], off); off += this.chunks[i].length; }
+      var m = this.meta;
+      if (m && typeof m.s === 'number' && m.s >= 0 && m.s < all.length) all = all.subarray(0, m.s);
+      var crc = hex8(crc32(all));
+      this.result = {
+        bytes: all,
+        name: (m && m.n) ? m.n : ('received_' + hex8(this.session || 0) + '.bin'),
+        type: (m && m.t) ? m.t : 'application/octet-stream',
+        crc: crc,
+        expect: (m && m.c) ? String(m.c).toUpperCase() : null,
+        verified: (m && m.c) ? (String(m.c).toUpperCase() === crc) : null
+      };
+      this.done = true;
+      return true;
+    }
+  };
+}
+
+/* ============================================================
+   Tabs
+   ============================================================ */
+var tabs = document.querySelectorAll('.ot-tab');
+for (var ti = 0; ti < tabs.length; ti++){
+  tabs[ti].addEventListener('click', function(){
+    var name = this.getAttribute('data-tab');
+    for (var i = 0; i < tabs.length; i++) tabs[i].classList.remove('active');
+    this.classList.add('active');
+    var panels = document.querySelectorAll('.ot-panel');
+    for (var j = 0; j < panels.length; j++) panels[j].classList.remove('active');
+    $('panel-' + name).classList.add('active');
+    if (name === 'tx') drawTxGrid();
+    if (name === 'rx') drawRxGrid();
+  });
+}
+
+/* ============================================================
+   发送端
+   ============================================================ */
+var cfg = { version: 12, ec: 'M', mode: 'binary', chunk: 0, fps: 8, cell: 6, metaEvery: 24, loop: true };
+var tx = {
+  bytes: null, name: '', type: '', size: 0, crc: '',
+  session: 0, total: 0, chunk: 0, plan: null, pos: 0,
+  playing: false, timer: null, cycles: 0
+};
+
+/* 版本下拉 */
+(function(){
+  var sel = $('cfgVersion'), html = '';
+  for (var v = 1; v <= 40; v++){
+    var n = 17 + 4 * v;
+    html += '<option value="' + v + '"' + (v === 12 ? ' selected' : '') + '>v' + v + ' · ' + n + '×' + n + '</option>';
+  }
+  sel.innerHTML = html;
+})();
+
+function readCfg(){
+  cfg.version = parseInt($('cfgVersion').value, 10);
+  cfg.ec = $('cfgEc').value;
+  cfg.mode = $('cfgMode').value;
+  cfg.fps = parseInt($('cfgFps').value, 10);
+  cfg.cell = parseInt($('cfgCell').value, 10);
+  cfg.metaEvery = Math.max(0, parseInt($('cfgMetaEvery').value, 10) || 0);
+  cfg.loop = $('cfgLoop').checked;
+  var frameMax = maxFrameBytes(cfg.version, cfg.ec, cfg.mode);
+  var autoChunk = Math.max(1, frameMax - FRAME_OVERHEAD);
+  var want = parseInt($('cfgChunk').value, 10);
+  if (!want || want < 1 || want > autoChunk){ want = autoChunk; $('cfgChunk').value = autoChunk; }
+  cfg.chunk = want;
+  $('cfgFpsVal').textContent = cfg.fps + ' fps';
+  $('cfgCellVal').textContent = cfg.cell + ' px';
+  $('txCap').textContent = frameMax + ' B（协议头 ' + FRAME_OVERHEAD + ' B）';
+  return { frameMax: frameMax, autoChunk: autoChunk };
+}
+
+function updateTxEstimate(){
+  var info = readCfg();
+  var rate = cfg.chunk * cfg.fps;
+  $('txRate').textContent = fmtBytes(rate) + '/s（理想无丢帧）';
+  if (tx.bytes){
+    tx.total = Math.ceil(tx.size / cfg.chunk) || 1;
+    $('txTotal').textContent = tx.total + ' 片 × ' + cfg.chunk + ' B';
+    var metaFrames = cfg.metaEvery > 0 ? Math.ceil(tx.total / cfg.metaEvery) : 0;
+    $('txCycle').textContent = fmtSec((tx.total + metaFrames) / cfg.fps);
+  } else {
+    $('txTotal').textContent = '—';
+    $('txCycle').textContent = '—';
+  }
+  return info;
+}
+
+['cfgVersion','cfgEc','cfgMode'].forEach(function(id){
+  $(id).addEventListener('change', function(){
+    var frameMax = maxFrameBytes(parseInt($('cfgVersion').value,10), $('cfgEc').value, $('cfgMode').value);
+    $('cfgChunk').value = Math.max(1, frameMax - FRAME_OVERHEAD);
+    $('txPreset').textContent = '自定义';
+    rebuildPlan();
+  });
+});
+['cfgChunk','cfgMetaEvery'].forEach(function(id){
+  $(id).addEventListener('change', function(){ $('txPreset').textContent = '自定义'; rebuildPlan(); });
+});
+$('cfgFps').addEventListener('input', function(){
+  updateTxEstimate();
+  if (tx.playing){ stopPlay(); startPlay(); }
+});
+$('cfgCell').addEventListener('input', function(){
+  readCfg();
+  if (tx.plan) renderCurrent();
+});
+$('cfgLoop').addEventListener('change', function(){ cfg.loop = this.checked; });
+
+/* 预设 */
+var PRESETS = {
+  safe:     { v: 8,  ec: 'Q', mode: 'binary', fps: 5,  cell: 8, meta: 16, label: '保守 · 远距离' },
+  balanced: { v: 12, ec: 'M', mode: 'binary', fps: 8,  cell: 6, meta: 24, label: '均衡' },
+  fast:     { v: 20, ec: 'L', mode: 'binary', fps: 12, cell: 4, meta: 40, label: '高速 · 近距离' }
+};
+var presetBtns = document.querySelectorAll('[data-preset]');
+for (var pi = 0; pi < presetBtns.length; pi++){
+  presetBtns[pi].addEventListener('click', function(){
+    var p = PRESETS[this.getAttribute('data-preset')];
+    $('cfgVersion').value = p.v; $('cfgEc').value = p.ec; $('cfgMode').value = p.mode;
+    $('cfgFps').value = p.fps; $('cfgCell').value = p.cell; $('cfgMetaEvery').value = p.meta;
+    var frameMax = maxFrameBytes(p.v, p.ec, p.mode);
+    $('cfgChunk').value = Math.max(1, frameMax - FRAME_OVERHEAD);
+    $('txPreset').textContent = p.label;
+    rebuildPlan();
+  });
+}
+
+/* 文件选择 */
+$('txDrop').addEventListener('click', function(){ $('txFile').click(); });
+$('txDrop').addEventListener('dragover', function(e){ e.preventDefault(); this.classList.add('dragover'); });
+$('txDrop').addEventListener('dragleave', function(){ this.classList.remove('dragover'); });
+$('txDrop').addEventListener('drop', function(e){
+  e.preventDefault(); this.classList.remove('dragover');
+  if (e.dataTransfer.files && e.dataTransfer.files.length) loadTxFile(e.dataTransfer.files[0]);
+});
+$('txFile').addEventListener('change', function(){
+  if (this.files && this.files.length) loadTxFile(this.files[0]);
+});
+
+function loadTxFile(file){
+  stopPlay();
+  file.arrayBuffer().then(function(buf){
+    tx.bytes = new Uint8Array(buf);
+    tx.name = file.name || 'file.bin';
+    tx.type = file.type || 'application/octet-stream';
+    tx.size = tx.bytes.length;
+    tx.crc = hex8(crc32(tx.bytes));
+    tx.session = (Math.floor(Math.random() * 0xFFFFFFFF) >>> 0) || 1;
+    $('txFileInfo').style.display = '';
+    $('txName').textContent = tx.name;
+    $('txType').textContent = tx.type;
+    $('txSize').textContent = fmtBytes(tx.size) + '（' + tx.size + ' B）';
+    $('txCrc').textContent = tx.crc;
+    rebuildPlan();
+    ['btnPlay','btnPause','btnPrev','btnNext','btnFull'].forEach(function(id){ $(id).disabled = false; });
+    $('btnPause').disabled = true;
+  });
+}
+
+function metaJson(){
+  return JSON.stringify({ n: tx.name, s: tx.size, t: tx.type, c: tx.crc, k: cfg.chunk, T: tx.total });
+}
+function buildDataFrame(seq){
+  var start = seq * cfg.chunk, end = Math.min(tx.size, start + cfg.chunk);
+  var body = new Uint8Array(DATA_SUB + (end - start));
+  wr32(body, 0, seq); wr32(body, 4, tx.total);
+  body.set(tx.bytes.subarray(start, end), DATA_SUB);
+  return buildFrame(T_DATA, tx.session, body);
+}
+function buildMetaFrame(){ return buildFrame(T_META, tx.session, utf8enc(metaJson())); }
+
+/* 播放计划：-1 表示 META 帧 */
+function rebuildPlan(){
+  updateTxEstimate();
+  if (!tx.bytes){ tx.plan = null; return; }
+  var plan = [], i;
+  for (i = 0; i < tx.total; i++){
+    if (cfg.metaEvery > 0 && i % cfg.metaEvery === 0) plan.push(-1);
+    plan.push(i);
+  }
+  if (cfg.metaEvery > 0) plan.push(-1);
+  tx.plan = plan;
+  tx.pos = 0; tx.cycles = 0;
+  renderCurrent();
+  drawTxGrid();
+}
+
+function renderCurrent(){
+  if (!tx.plan || !window.qrcode) return;
+  var id = tx.plan[tx.pos];
+  var frame = id < 0 ? buildMetaFrame() : buildDataFrame(id);
+  var canvas = $('txCanvas');
+  var info;
+  try { info = renderQR(canvas, frame, cfg); }
+  catch(err){ $('txState').textContent = '错误：' + err.message; return; }
+  canvas.style.display = 'block';
+  canvas.style.maxWidth = info.px + 'px';
+  $('txStagePlaceholder').style.display = 'none';
+  $('txStage').classList.remove('empty');
+  $('txFrameLabel').textContent = (id < 0 ? 'META 帧' : ('分片 ' + (id + 1) + ' / ' + tx.total))
+    + ' · 播放位 ' + (tx.pos + 1) + '/' + tx.plan.length + ' · 第 ' + (tx.cycles + 1) + ' 圈';
+  $('txQrInfo').textContent = 'v' + info.version + ' ' + cfg.ec + ' · ' + info.modules + '×' + info.modules
+    + ' · ' + frame.length + ' B → ' + info.chars + ' 字符';
+  var pct = ((tx.pos + 1) / tx.plan.length * 100);
+  $('txBar').style.width = pct.toFixed(1) + '%';
+  drawTxGrid();
+}
+
+function drawTxGrid(){
+  var cv = $('txGrid');
+  if (!cv) return;
+  var w = cv.clientWidth || cv.parentNode.clientWidth || 300;
+  cv.width = Math.max(60, w); cv.height = 10;
+  var ctx = cv.getContext('2d');
+  ctx.clearRect(0, 0, cv.width, cv.height);
+  if (!tx.plan) return;
+  var n = tx.total || 1, cur = tx.plan[tx.pos];
+  var cw = cv.width / n;
+  ctx.fillStyle = 'rgba(255,255,255,0.14)';
+  ctx.fillRect(0, 0, cv.width, cv.height);
+  if (cur >= 0){
+    ctx.fillStyle = '#7df0c4';
+    ctx.fillRect(cur * cw, 0, Math.max(1.5, cw), cv.height);
+  }
+}
+
+function nextFrame(step){
+  if (!tx.plan) return;
+  tx.pos += step;
+  if (tx.pos >= tx.plan.length){
+    if (cfg.loop){ tx.pos = 0; tx.cycles++; }
+    else { tx.pos = tx.plan.length - 1; stopPlay(); $('txState').textContent = '单圈播放完成'; }
+  }
+  if (tx.pos < 0) tx.pos = tx.plan.length - 1;
+  renderCurrent();
+}
+
+function startPlay(){
+  if (!tx.plan) return;
+  readCfg();
+  tx.playing = true;
+  $('btnPlay').disabled = true; $('btnPause').disabled = false;
+  $('txState').textContent = '播放中 · ' + cfg.fps + ' fps';
+  var interval = Math.max(20, Math.round(1000 / cfg.fps));
+  tx.timer = setInterval(function(){ nextFrame(1); }, interval);
+}
+function stopPlay(){
+  tx.playing = false;
+  if (tx.timer){ clearInterval(tx.timer); tx.timer = null; }
+  $('btnPlay').disabled = !tx.plan;
+  $('btnPause').disabled = true;
+  if ($('txState').textContent.indexOf('播放中') === 0) $('txState').textContent = '已暂停';
+}
+$('btnPlay').addEventListener('click', startPlay);
+$('btnPause').addEventListener('click', stopPlay);
+$('btnNext').addEventListener('click', function(){ nextFrame(1); });
+$('btnPrev').addEventListener('click', function(){ nextFrame(-1); });
+$('btnFull').addEventListener('click', function(){
+  var el = $('txStage');
+  if (document.fullscreenElement) document.exitFullscreen();
+  else if (el.requestFullscreen) el.requestFullscreen();
+  else if (el.webkitRequestFullscreen) el.webkitRequestFullscreen();
+});
+$('btnReset').addEventListener('click', function(){
+  stopPlay();
+  tx.bytes = null; tx.plan = null; tx.pos = 0; tx.cycles = 0; tx.total = 0;
+  $('txFileInfo').style.display = 'none';
+  $('txFile').value = '';
+  $('txCanvas').style.display = 'none';
+  $('txStagePlaceholder').style.display = '';
+  $('txStage').classList.add('empty');
+  $('txFrameLabel').textContent = '帧 —/—';
+  $('txQrInfo').textContent = '—';
+  $('txBar').style.width = '0';
+  $('txState').textContent = '待机';
+  ['btnPlay','btnPause','btnPrev','btnNext','btnFull'].forEach(function(id){ $(id).disabled = true; });
+  updateTxEstimate();
+  drawTxGrid();
+});
+
+/* ============================================================
+   接收端
+   ============================================================ */
+var rx = {
+  recv: createReceiver(), stream: null, raf: null, running: false,
+  canvas: document.createElement('canvas'),
+  decodeCount: 0, lastFpsAt: 0, fpsWin: 0, startAt: 0, blobUrl: null
+};
+
+function logTo(el, msg, cls){
+  var d = document.createElement('div');
+  var t = new Date();
+  var hh = ('0' + t.getHours()).slice(-2) + ':' + ('0' + t.getMinutes()).slice(-2) + ':' + ('0' + t.getSeconds()).slice(-2);
+  d.innerHTML = '<span class="t">[' + hh + ']</span> <span class="' + (cls || '') + '">' + msg + '</span>';
+  el.appendChild(d);
+  el.scrollTop = el.scrollHeight;
+  while (el.childNodes.length > 300) el.removeChild(el.firstChild);
+}
+function rxLog(msg, cls){ logTo($('rxLog'), msg, cls); }
+function esc(s){ return String(s).replace(/[&<>"]/g, function(c){ return ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'})[c]; }); }
+
+$('btnClearLog').addEventListener('click', function(){ $('rxLog').innerHTML = ''; });
+
+function drawRxGrid(){
+  var cv = $('rxGrid');
+  if (!cv) return;
+  var w = cv.clientWidth || cv.parentNode.clientWidth || 300;
+  cv.width = Math.max(60, w); cv.height = 10;
+  var ctx = cv.getContext('2d');
+  ctx.fillStyle = 'rgba(255,255,255,0.12)';
+  ctx.fillRect(0, 0, cv.width, cv.height);
+  var r = rx.recv;
+  if (!r.total || !r.flags) return;
+  var cw = cv.width / r.total;
+  ctx.fillStyle = '#7df0c4';
+  for (var i = 0; i < r.total; i++){
+    if (r.flags[i]) ctx.fillRect(i * cw, 0, Math.max(0.6, cw), cv.height);
+  }
+}
+
+function updateRxUI(){
+  var r = rx.recv;
+  var pct = r.total ? (r.got / r.total * 100) : 0;
+  $('kpiPct').textContent = pct.toFixed(1) + '%';
+  $('kpiGot').textContent = r.got + ' / ' + (r.total || '—');
+  $('kpiDup').textContent = r.dup;
+  $('kpiErr').textContent = r.bad;
+  $('rxBar').style.width = pct.toFixed(1) + '%';
+  $('rxSession').textContent = r.session === null ? '会话 —' : ('会话 ' + hex8(r.session));
+  if (r.meta){
+    $('rxName').textContent = esc(r.meta.n || '—');
+    $('rxSize').textContent = fmtBytes(r.meta.s) + '（' + r.meta.s + ' B）';
+  } else if (r.total){
+    $('rxName').textContent = '（等待 META 帧）';
+    $('rxSize').textContent = '已收 ' + fmtBytes(r.bytesGot);
+  }
+  var miss = r.total ? r.total - r.got : 0;
+  if (!r.total) $('rxMissing').textContent = '—';
+  else if (miss === 0) $('rxMissing').textContent = '无';
+  else {
+    var m = r.missing().slice(0, 14).join(', ');
+    $('rxMissing').textContent = miss + ' 片：' + m + (miss > 14 ? ' …' : '');
+  }
+  if (rx.startAt){
+    var sec = (performance.now() - rx.startAt) / 1000;
+    $('kpiSpeed').textContent = fmtBytes(sec > 0 ? Math.round(r.bytesGot / sec) : 0) + '/s';
+  }
+  drawRxGrid();
+}
+
+function onComplete(){
+  var res = rx.recv.result;
+  if (!res) return;
+  var okv = res.verified;
+  $('rxVerify').textContent = okv === null
+    ? ('CRC32 ' + res.crc + '（无 META，未比对）')
+    : (okv ? ('通过 · CRC32 ' + res.crc) : ('失败 · 收到 ' + res.crc + ' / 期望 ' + res.expect));
+  $('rxName').textContent = esc(res.name);
+  $('rxSize').textContent = fmtBytes(res.bytes.length) + '（' + res.bytes.length + ' B）';
+  $('btnDownload').disabled = false;
+  rxLog('接收完成：' + esc(res.name) + ' · ' + fmtBytes(res.bytes.length) + ' · CRC32 ' + res.crc
+    + (okv === false ? ' <b>校验失败</b>' : ''), okv === false ? 'err' : 'ok');
+  buildPreview(res);
+  stopCam(true);
+}
+
+function buildPreview(res){
+  var box = $('rxPreview');
+  box.innerHTML = '';
+  if (rx.blobUrl) URL.revokeObjectURL(rx.blobUrl);
+  var blob = new Blob([res.bytes], { type: res.type || 'application/octet-stream' });
+  rx.blobUrl = URL.createObjectURL(blob);
+  var t = res.type || '';
+  var name = (res.name || '').toLowerCase();
+  if (t.indexOf('image/') === 0 || /\.(png|jpe?g|gif|webp|bmp|svg)$/.test(name)){
+    var img = document.createElement('img');
+    img.src = rx.blobUrl; box.appendChild(img);
+  } else if (t.indexOf('video/') === 0 || /\.(mp4|webm|mov)$/.test(name)){
+    var v = document.createElement('video');
+    v.src = rx.blobUrl; v.controls = true; v.style.width = '100%'; v.style.borderRadius = '10px';
+    box.appendChild(v);
+  } else if (t.indexOf('text') === 0 || t.indexOf('json') >= 0 || /\.(txt|md|csv|json|log|xml|ya?ml|sv|v|c|h|py|js|css|html)$/.test(name)){
+    var pre = document.createElement('div');
+    pre.className = 'ot-code';
+    pre.textContent = utf8dec(res.bytes.subarray(0, 4096)) + (res.bytes.length > 4096 ? '\n…（预览前 4 KB）' : '');
+    box.appendChild(pre);
+  }
+}
+
+$('btnDownload').addEventListener('click', function(){
+  var res = rx.recv.result;
+  if (!res) return;
+  var blob = new Blob([res.bytes], { type: res.type || 'application/octet-stream' });
+  var url = URL.createObjectURL(blob);
+  var a = document.createElement('a');
+  a.href = url; a.download = res.name || 'received.bin';
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  setTimeout(function(){ URL.revokeObjectURL(url); }, 4000);
+});
+
+$('btnRxReset').addEventListener('click', function(){
+  rx.recv.reset();
+  rx.startAt = 0; rx.decodeCount = 0;
+  $('btnDownload').disabled = true;
+  $('rxVerify').textContent = '—';
+  $('rxName').textContent = '—';
+  $('rxSize').textContent = '—';
+  $('rxMissing').textContent = '—';
+  $('rxPreview').innerHTML = '';
+  $('kpiSpeed').textContent = '0 B/s';
+  $('kpiFps').textContent = '0';
+  updateRxUI();
+  rxLog('接收缓冲已清空', 'warn');
+});
+
+/* ---- 摄像头 ---- */
+function listDevices(){
+  if (!navigator.mediaDevices || !navigator.mediaDevices.enumerateDevices) return;
+  navigator.mediaDevices.enumerateDevices().then(function(list){
+    var sel = $('rxDevice'), cur = sel.value;
+    var html = '<option value="">默认（后置优先）</option>';
+    list.forEach(function(d, i){
+      if (d.kind === 'videoinput'){
+        html += '<option value="' + d.deviceId + '">' + esc(d.label || ('摄像头 ' + (i + 1))) + '</option>';
+      }
+    });
+    sel.innerHTML = html; sel.value = cur;
+  });
+}
+
+function startCam(){
+  if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia){
+    rxLog('当前环境不支持 getUserMedia（需要 https 或 localhost）', 'err');
+    return;
+  }
+  var devId = $('rxDevice').value;
+  var want = parseInt($('rxScale').value, 10);
+  var video = { width: { ideal: Math.max(1280, want) }, height: { ideal: Math.max(720, Math.round(want * 0.75)) } };
+  if (devId) video.deviceId = { exact: devId };
+  else video.facingMode = { ideal: 'environment' };
+  navigator.mediaDevices.getUserMedia({ video: video, audio: false }).then(function(stream){
+    rx.stream = stream;
+    var v = $('rxVideo');
+    v.srcObject = stream;
+    v.play();
+    $('rxBox').classList.remove('idle');
+    $('rxHint').style.display = '';
+    $('rxCamState').textContent = '已开启';
+    $('btnCamStart').disabled = true; $('btnCamStop').disabled = false;
+    rx.running = true;
+    rx.startAt = performance.now();
+    rx.lastFpsAt = performance.now(); rx.fpsWin = 0;
+    var s = stream.getVideoTracks()[0].getSettings();
+    rxLog('摄像头已开启 · ' + (s.width || '?') + '×' + (s.height || '?'), 'ok');
+    listDevices();
+    scanLoop();
+  }).catch(function(err){
+    rxLog('摄像头开启失败：' + esc(err.name + ' ' + err.message), 'err');
+  });
+}
+function stopCam(silent){
+  rx.running = false;
+  if (rx.raf){ cancelAnimationFrame(rx.raf); rx.raf = null; }
+  if (rx.stream){
+    rx.stream.getTracks().forEach(function(t){ t.stop(); });
+    rx.stream = null;
+  }
+  $('rxVideo').srcObject = null;
+  $('rxBox').classList.add('idle');
+  $('rxHint').style.display = 'none';
+  $('rxCamState').textContent = '未开启';
+  $('btnCamStart').disabled = false;
+  $('btnCamStop').disabled = true;
+  if (!silent) rxLog('摄像头已停止', 'warn');
+}
+$('btnCamStart').addEventListener('click', startCam);
+$('btnCamStop').addEventListener('click', function(){ stopCam(false); });
+$('rxDevice').addEventListener('change', function(){
+  if (rx.running){ stopCam(true); startCam(); }
+});
+$('rxScale').addEventListener('change', function(){
+  if (rx.running){ stopCam(true); startCam(); }
+});
+
+/* 从 video 抽帧 → jsQR */
+function scanLoop(){
+  if (!rx.running) return;
+  rx.raf = requestAnimationFrame(scanLoop);
+  var v = $('rxVideo');
+  if (!v.videoWidth || !v.videoHeight || v.readyState < 2) return;
+
+  var want = parseInt($('rxScale').value, 10);
+  var crop = $('rxCrop').value;
+  var sx = 0, sy = 0, sw = v.videoWidth, sh = v.videoHeight;
+  if (crop === 'center'){
+    var side = Math.min(sw, sh);
+    sx = (sw - side) / 2; sy = (sh - side) / 2; sw = side; sh = side;
+  }
+  var scale = Math.min(1, want / Math.max(sw, sh));
+  var dw = Math.max(64, Math.round(sw * scale)), dh = Math.max(64, Math.round(sh * scale));
+  var cv = rx.canvas;
+  if (cv.width !== dw || cv.height !== dh){ cv.width = dw; cv.height = dh; }
+  var ctx = cv.getContext('2d', { willReadFrequently: true });
+  ctx.drawImage(v, sx, sy, sw, sh, 0, 0, dw, dh);
+  var img = ctx.getImageData(0, 0, dw, dh);
+
+  var attempts = $('rxInvert').checked
+    ? ['attemptBoth', 'invertFirst']
+    : ['attemptBoth', 'dontInvert'];
+  var code = null;
+  for (var i = 0; i < attempts.length && !code; i++){
+    try { code = window.jsQR(img.data, dw, dh, { inversionAttempts: attempts[i] }); }
+    catch(e){ code = null; }
+  }
+
+  /* fps 统计 */
+  rx.fpsWin++;
+  var now = performance.now();
+  if (now - rx.lastFpsAt >= 1000){
+    $('kpiFps').textContent = rx.fpsWin;
+    rx.fpsWin = 0; rx.lastFpsAt = now;
+  }
+
+  if (!code) return;
+  handleCode(code, rxLog);
+}
+
+var lastAcceptLogAt = 0;
+function handleCode(code, logf){
+  var bytes = frameBytesFromCode(code);
+  if (!bytes){
+    if (performance.now() - lastAcceptLogAt > 1500){
+      lastAcceptLogAt = performance.now();
+      logf('识别到非本协议二维码，已忽略', 'warn');
+    }
+    return;
+  }
+  var f = parseFrame(bytes);
+  var before = rx.recv.total;
+  var st = rx.recv.accept(f);
+  if (st === 'bad') logf('帧 CRC 校验失败，已丢弃', 'err');
+  if (st === 'meta') logf('收到 META：' + esc((rx.recv.meta && rx.recv.meta.n) || '?')
+    + ' · ' + fmtBytes(rx.recv.meta && rx.recv.meta.s) + ' · ' + (rx.recv.total || '?') + ' 片', 'ok');
+  if (st === 'new' && before !== rx.recv.total) logf('开始接收，共 ' + rx.recv.total + ' 片', 'ok');
+  updateRxUI();
+  if (rx.recv.done && rx.recv.result && $('btnDownload').disabled) onComplete();
+}
+
+/* 从图片文件解码 */
+$('rxImgFile').addEventListener('change', function(){
+  var files = Array.prototype.slice.call(this.files || []);
+  if (!files.length) return;
+  if (!rx.startAt) rx.startAt = performance.now();
+  var idx = 0;
+  function step(){
+    if (idx >= files.length){ rxLog('图片批量解码完成（' + files.length + ' 张）', 'ok'); return; }
+    var file = files[idx++];
+    var url = URL.createObjectURL(file);
+    var im = new Image();
+    im.onload = function(){
+      var cv = document.createElement('canvas');
+      cv.width = im.naturalWidth; cv.height = im.naturalHeight;
+      var ctx = cv.getContext('2d', { willReadFrequently: true });
+      ctx.drawImage(im, 0, 0);
+      var d = ctx.getImageData(0, 0, cv.width, cv.height);
+      var code = null;
+      try { code = window.jsQR(d.data, cv.width, cv.height, { inversionAttempts: 'attemptBoth' }); } catch(e){}
+      if (code) handleCode(code, rxLog);
+      else rxLog('图片未识别到二维码：' + esc(file.name), 'warn');
+      URL.revokeObjectURL(url);
+      step();
+    };
+    im.onerror = function(){ URL.revokeObjectURL(url); rxLog('图片读取失败：' + esc(file.name), 'err'); step(); };
+    im.src = url;
+  }
+  step();
+  this.value = '';
+});
+
+/* ============================================================
+   回环自检
+   ============================================================ */
+function tsLog(msg, cls){ logTo($('tsLog'), msg, cls); }
+
+$('btnTest').addEventListener('click', function(){
+  if (!window.qrcode || !window.jsQR){ tsLog('依赖库尚未加载完成，请稍后重试', 'err'); return; }
+  var btn = this;
+  btn.disabled = true;
+  $('tsLog').innerHTML = '';
+  readCfg();
+
+  /* 准备数据 */
+  var src = $('tsSource').value, data, name, mime;
+  if (src === 'file'){
+    if (!tx.bytes){ tsLog('发送端尚未选择文件', 'err'); btn.disabled = false; return; }
+    data = tx.bytes; name = tx.name; mime = tx.type;
+  } else {
+    var kb = Math.max(1, Math.min(512, parseInt($('tsSize').value, 10) || 24));
+    data = new Uint8Array(kb * 1024);
+    for (var i = 0; i < data.length; i++) data[i] = (Math.random() * 256) | 0;
+    name = 'selftest_' + kb + 'KB.bin'; mime = 'application/octet-stream';
+  }
+  var srcCrc = hex8(crc32(data));
+  var session = (Math.floor(Math.random() * 0xFFFFFFFF) >>> 0) || 1;
+  var chunk = cfg.chunk;
+  var total = Math.ceil(data.length / chunk) || 1;
+  var metaBody = utf8enc(JSON.stringify({ n: name, s: data.length, t: mime, c: srcCrc, k: chunk, T: total }));
+
+  tsLog('数据 ' + fmtBytes(data.length) + ' · CRC32 ' + srcCrc);
+  tsLog('参数 v' + cfg.version + ' ' + cfg.ec + ' ' + cfg.mode + ' · 分片 ' + chunk + ' B × ' + total);
+
+  /* 帧序列：META + 全部 DATA */
+  var seqList = [-1];
+  for (var s = 0; s < total; s++) seqList.push(s);
+
+  /* 丢帧模拟：第一轮丢 20%，第二轮补齐 */
+  var rounds = [];
+  if ($('tsDrop').checked){
+    var r1 = seqList.filter(function(){ return Math.random() > 0.2; });
+    if (r1.indexOf(-1) < 0) r1.unshift(-1);
+    rounds.push(r1);
+    rounds.push(seqList.slice());
+  } else {
+    rounds.push(seqList.slice());
+  }
+
+  var recv = createReceiver();
+  var cv = $('tsCanvas');
+  var stats = { frames: 0, ok: 0, fail: 0 };
+  var flat = [];
+  rounds.forEach(function(r, ri){ r.forEach(function(id){ flat.push({ id: id, round: ri }); }); });
+
+  var p = 0, t0 = performance.now();
+  function runBatch(){
+    var budget = 0;
+    while (p < flat.length && budget < 24){
+      var item = flat[p++]; budget++;
+      var frame;
+      if (item.id < 0) frame = buildFrame(T_META, session, metaBody);
+      else {
+        var st = item.id * chunk, en = Math.min(data.length, st + chunk);
+        var body = new Uint8Array(DATA_SUB + (en - st));
+        wr32(body, 0, item.id); wr32(body, 4, total);
+        body.set(data.subarray(st, en), DATA_SUB);
+        frame = buildFrame(T_DATA, session, body);
+      }
+      stats.frames++;
+      var info;
+      try { info = renderQR(cv, frame, { version: cfg.version, ec: cfg.ec, mode: cfg.mode, cell: 4 }); }
+      catch(err){ stats.fail++; tsLog('渲染失败 seq=' + item.id + '：' + esc(err.message), 'err'); continue; }
+      var ctx = cv.getContext('2d', { willReadFrequently: true });
+      var img = ctx.getImageData(0, 0, cv.width, cv.height);
+      var code = null;
+      try { code = window.jsQR(img.data, cv.width, cv.height, { inversionAttempts: 'dontInvert' }); } catch(e){}
+      if (!code){ stats.fail++; tsLog('解码失败 seq=' + item.id + '（v' + info.version + '）', 'err'); continue; }
+      var bytes = frameBytesFromCode(code);
+      if (!bytes){ stats.fail++; tsLog('帧还原失败 seq=' + item.id, 'err'); continue; }
+      var st2 = recv.accept(parseFrame(bytes));
+      if (st2 === 'bad'){ stats.fail++; tsLog('CRC 失败 seq=' + item.id, 'err'); continue; }
+      stats.ok++;
+      if (recv.done) break;
+    }
+    $('tsFrames').textContent = stats.frames;
+    $('tsDecoded').textContent = stats.ok;
+    $('tsFail').textContent = stats.fail;
+
+    if (recv.done || p >= flat.length){
+      var ms = performance.now() - t0;
+      if (!recv.done){
+        $('tsResult').textContent = '未完成';
+        tsLog('失败：仍缺 ' + (recv.total - recv.got) + ' 片（' + ms.toFixed(0) + ' ms）', 'err');
+      } else {
+        var res = recv.result;
+        var pass = res.verified === true && res.bytes.length === data.length;
+        $('tsResult').textContent = pass ? '通过' : '失败';
+        tsLog('重组完成 · ' + fmtBytes(res.bytes.length) + ' · CRC32 ' + res.crc + ' / 源 ' + srcCrc, pass ? 'ok' : 'err');
+        tsLog((pass ? '✅ 全链路自检通过' : '❌ 自检失败')
+          + ' · 帧 ' + stats.frames + '（成功 ' + stats.ok + ' / 失败 ' + stats.fail + '）· 耗时 ' + ms.toFixed(0) + ' ms',
+          pass ? 'ok' : 'err');
+        if (pass) tsLog('等效吞吐（纯计算，不含摄像头）：' + fmtBytes(Math.round(data.length / (ms / 1000))) + '/s');
+      }
+      btn.disabled = false;
+      return;
+    }
+    setTimeout(runBatch, 0);
+  }
+  tsLog('开始运行…（共约 ' + flat.length + ' 帧）');
+  setTimeout(runBatch, 0);
+});
+
+/* ============================================================
+   初始化
+   ============================================================ */
+window.addEventListener('resize', function(){ drawTxGrid(); drawRxGrid(); });
+window.addEventListener('beforeunload', function(){ stopCam(true); stopPlay(); });
+
+updateTxEstimate();
+drawTxGrid();
+drawRxGrid();
+updateRxUI();
+
+loadFirst(LIB_QR, function(){ return typeof window.qrcode === 'function'; }).then(function(ok){
+  if (ok){
+    setBadge($('libQr'), 'ok', '编码库就绪');
+    if (tx.plan) renderCurrent();
+  } else {
+    setBadge($('libQr'), 'err', '编码库加载失败');
+  }
+});
+loadFirst(LIB_JSQR, function(){ return typeof window.jsQR === 'function'; }).then(function(ok){
+  setBadge($('libJsqr'), ok ? 'ok' : 'err', ok ? '解码库就绪' : '解码库加载失败');
+  if (!ok){
+    $('btnCamStart').disabled = true;
+    rxLog('jsQR 加载失败，接收端不可用（请检查网络/CDN）', 'err');
+  }
+});
+
+})();
+</script>
