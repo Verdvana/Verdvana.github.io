@@ -61,13 +61,14 @@ extra_css:
 
         <div class="ot-card">
           <div class="hd"><span class="ot-dot g"></span><h3>2 · 链路参数</h3>
-            <span class="hd-extra" id="txPreset">均衡</span>
+            <span class="hd-extra" id="txPreset">高速 · 近距离</span>
           </div>
           <div class="bd">
             <div class="ot-bar">
               <button class="ot-btn mini" data-preset="safe">保守 · 远距离</button>
               <button class="ot-btn mini" data-preset="balanced">均衡</button>
               <button class="ot-btn mini" data-preset="fast">高速 · 近距离</button>
+              <button class="ot-btn mini" data-preset="turbo">极速 · 贴屏</button>
             </div>
             <div class="ot-field-row">
               <div>
@@ -77,8 +78,8 @@ extra_css:
               <div>
                 <label>纠错等级</label>
                 <select id="cfgEc">
-                  <option value="L">L · 7%</option>
-                  <option value="M" selected>M · 15%</option>
+                  <option value="L" selected>L · 7%（容量最大）</option>
+                  <option value="M">M · 15%</option>
                   <option value="Q">Q · 25%</option>
                   <option value="H">H · 30%</option>
                 </select>
@@ -98,25 +99,29 @@ extra_css:
               </div>
             </div>
             <div>
-              <label>播放帧率 <span class="ot-slider-val" id="cfgFpsVal">8 fps</span></label>
-              <input type="range" id="cfgFps" min="1" max="24" step="1" value="8"/>
+              <label>播放帧率 <span class="ot-slider-val" id="cfgFpsVal">15 fps</span>
+                <span style="opacity:.5">（不超过屏幕刷新率）</span></label>
+              <input type="range" id="cfgFps" min="1" max="60" step="1" value="15"/>
             </div>
             <div class="ot-field-row">
               <div>
-                <label>模块像素 <span class="ot-slider-val" id="cfgCellVal">6 px</span></label>
-                <input type="range" id="cfgCell" min="2" max="14" step="1" value="6"/>
+                <label>模块像素 <span class="ot-slider-val" id="cfgCellVal">4 px</span></label>
+                <input type="range" id="cfgCell" min="2" max="14" step="1" value="4"/>
               </div>
               <div>
                 <label>元数据插入间隔（帧）</label>
-                <input type="number" id="cfgMetaEvery" min="0" max="500" step="1" value="24"/>
+                <input type="number" id="cfgMetaEvery" min="0" max="500" step="1" value="48"/>
               </div>
             </div>
             <label class="ot-check"><input type="checkbox" id="cfgLoop" checked/> 循环播放（推荐）</label>
+            <label class="ot-check"><input type="checkbox" id="cfgPrerender" checked/> 预渲染全部帧（高帧率必开）</label>
             <div class="ot-rows">
               <div class="ot-row"><span class="k">单帧上限</span><span class="v" id="txCap">—</span></div>
               <div class="ot-row"><span class="k">分片总数</span><span class="v" id="txTotal">—</span></div>
               <div class="ot-row"><span class="k">理论速率</span><span class="v" id="txRate">—</span></div>
               <div class="ot-row"><span class="k">单圈时长</span><span class="v" id="txCycle">—</span></div>
+              <div class="ot-row"><span class="k">实测帧率</span><span class="v" id="txRealFps">—</span></div>
+              <div class="ot-row"><span class="k">预渲染</span><span class="v" id="txPrewarm">—</span></div>
             </div>
           </div>
         </div>
@@ -158,6 +163,11 @@ extra_css:
             </div>
             <div class="ot-note warn">
               摄像头 API 需要 <code>https</code> 或 <code>localhost</code> 环境；若解码困难，请降低二维码版本、降低帧率、提高纠错等级或增大模块像素。
+            </div>
+            <div class="ot-note">
+              <b>想更快？</b>提速优先级：① 提高二维码版本（单帧载荷 v12→v27 可从 267 B 涨到 1445 B）；
+              ② 纠错降到 L；③ 帧率提到 15~30（超过屏幕刷新率的部分会被跳过，反而丢帧）；
+              ④ 接收端解析分辨率用 640 px 保证解码帧率跟得上。极速档下 10 KB 数据单圈仅 8 帧、约 0.4 秒。
             </div>
           </div>
         </div>
@@ -345,7 +355,7 @@ extra_css:
 
           <h4>META Body</h4>
           <p>UTF-8 JSON：<code>{ "n": 文件名, "s": 字节数, "t": MIME, "c": 整文件CRC32(hex), "k": 分片大小, "T": 分片总数 }</code>，
-          默认每 24 个数据帧插一次，保证接收端任何时刻入场都能很快拿到文件元信息。</p>
+          默认每 48 个数据帧插一次，保证接收端任何时刻入场都能很快拿到文件元信息。</p>
 
           <h4>可靠性设计</h4>
           <ul>
@@ -355,16 +365,38 @@ extra_css:
             <li><b>Binary 载荷</b>：直接使用 QR Byte 模式承载 8bit 原始字节，比 Base64 少 33% 体积；接收端读取 jsQR 的 <code>binaryData</code>。若设备解码不稳，可切到 Base64 模式。</li>
           </ul>
 
-          <h4>吞吐估算</h4>
-          <p>有效速率 ≈ <code>单帧净载荷 × 帧率 × 帧成功率</code>。例如 QR 版本 12 / 纠错 M / Binary 单帧约 ~280 B 净载荷，
-          10 fps、成功率 80% 时约 2.2 KB/s，即 1 分钟约 130 KB。传大文件请先压缩，并优先提高二维码版本而不是帧率
-          （摄像头曝光时间受限，帧率过高更容易糊帧）。</p>
+          <h4>吞吐估算与预设档位</h4>
+          <p>有效速率 ≈ <code>单帧净载荷 × 实际帧率 × 帧成功率</code>。单帧净载荷 = QR Byte 容量 − 20 B 协议头，
+          因此<b>提高二维码版本比提高帧率划算得多</b>（版本翻倍容量约 4 倍，而帧率受屏幕刷新率与摄像头曝光双重限制）。</p>
+          <table class="ot-table">
+            <thead><tr><th>预设</th><th>版本/纠错</th><th>单帧载荷</th><th>帧率</th><th>理论速率</th><th>10 KB 单圈</th></tr></thead>
+            <tbody>
+              <tr><td>保守 · 远距离</td><td>v8 / Q</td><td>88 B</td><td>5</td><td>0.43 KB/s</td><td>~23 s</td></tr>
+              <tr><td>均衡</td><td>v14 / M</td><td>342 B</td><td>10</td><td>3.34 KB/s</td><td>~3.0 s</td></tr>
+              <tr><td>高速 · 近距离</td><td>v20 / L</td><td>838 B</td><td>15</td><td>12.3 KB/s</td><td>~0.8 s</td></tr>
+              <tr><td>极速 · 贴屏</td><td>v27 / L</td><td>1445 B</td><td>24</td><td>33.9 KB/s</td><td>~0.3 s</td></tr>
+            </tbody>
+          </table>
+          <p>表中为理论上限（无丢帧）。真实链路按 60%~90% 帧成功率折算；页面「实测帧率 / 有效速率」显示的是当前实际值。</p>
+
+          <h4>播放器实现要点（为什么快）</h4>
+          <ul>
+            <li><b>帧位图缓存 + 后台预渲染</b>：每帧 QR 只算一次并缓存成离屏 Canvas，播放时仅 <code>drawImage</code>，
+            高帧率下不会因逐帧编码而掉帧（缓存上限约 48 MB，FIFO 淘汰）。</li>
+            <li><b>requestAnimationFrame 定时</b>：按目标间隔累加时间戳推进，避免 <code>setInterval</code> 的抖动与堆积；
+            落后超过 200 ms 自动重同步。</li>
+            <li><b>UI 节流</b>：文字标签 ~8 Hz、分片位图 10 Hz 更新，DOM 操作不参与逐帧开销。</li>
+            <li><b>帧率上限受屏幕刷新率约束</b>：60 Hz 屏最高就是 60 fps；设置超过刷新率只会丢帧不会更快，
+            所以显示「实测帧率」以便自查。</li>
+          </ul>
 
           <h4>调参建议</h4>
           <ul>
-            <li>糊帧 / 一直不识别：降版本（如 20 → 10）、降帧率（如 12 → 6）、提高模块像素、纠错升到 Q。</li>
-            <li>识别很稳但太慢：升版本、纠错降到 L、帧率升到 10~15、Binary 模式。</li>
-            <li>屏幕反光/摩尔纹：调整屏幕亮度与角度，或让摄像头稍微离远一点、避免正对光源。</li>
+            <li>太慢：先升版本（v20 → v27）、纠错降到 L、Binary 模式，再把帧率提到 15~24。</li>
+            <li>糊帧 / 一直不识别：降版本、降帧率、提高模块像素、纠错升到 Q；接收端解析分辨率提到 800/1080。</li>
+            <li>接收端「解码帧率」明显低于发送端「实测帧率」：说明解码是瓶颈，把解析分辨率降到 480/640、
+            扫描区域选「中心正方形」，或降低发送帧率。</li>
+            <li>屏幕反光/摩尔纹：调整屏幕亮度与角度，摄像头稍微离远、避免正对光源。</li>
           </ul>
 
           <div class="ot-note warn">
@@ -677,19 +709,22 @@ for (var ti = 0; ti < tabs.length; ti++){
 /* ============================================================
    发送端
    ============================================================ */
-var cfg = { version: 12, ec: 'M', mode: 'binary', chunk: 0, fps: 8, cell: 6, metaEvery: 24, loop: true };
+var cfg = { version: 20, ec: 'L', mode: 'binary', chunk: 0, fps: 15, cell: 4,
+            metaEvery: 48, loop: true, prerender: true };
 var tx = {
   bytes: null, name: '', type: '', size: 0, crc: '',
   session: 0, total: 0, chunk: 0, plan: null, pos: 0,
-  playing: false, timer: null, cycles: 0
+  playing: false, raf: null, nextAt: 0, cycles: 0,
+  shown: 0, fpsAt: 0, uiAt: 0, gridAt: 0
 };
 
-/* 版本下拉 */
+/* 版本下拉（附带该版本 L 级容量，便于按速率选） */
 (function(){
   var sel = $('cfgVersion'), html = '';
   for (var v = 1; v <= 40; v++){
     var n = 17 + 4 * v;
-    html += '<option value="' + v + '"' + (v === 12 ? ' selected' : '') + '>v' + v + ' · ' + n + '×' + n + '</option>';
+    html += '<option value="' + v + '"' + (v === 20 ? ' selected' : '') + '>v' + v + ' · '
+      + n + '×' + n + ' · ' + CAP.L[v - 1] + 'B(L)</option>';
   }
   sel.innerHTML = html;
 })();
@@ -702,6 +737,7 @@ function readCfg(){
   cfg.cell = parseInt($('cfgCell').value, 10);
   cfg.metaEvery = Math.max(0, parseInt($('cfgMetaEvery').value, 10) || 0);
   cfg.loop = $('cfgLoop').checked;
+  cfg.prerender = $('cfgPrerender').checked;
   var frameMax = maxFrameBytes(cfg.version, cfg.ec, cfg.mode);
   var autoChunk = Math.max(1, frameMax - FRAME_OVERHEAD);
   var want = parseInt($('cfgChunk').value, 10);
@@ -740,21 +776,31 @@ function updateTxEstimate(){
 ['cfgChunk','cfgMetaEvery'].forEach(function(id){
   $(id).addEventListener('change', function(){ $('txPreset').textContent = '自定义'; rebuildPlan(); });
 });
+/* 帧率改变无需重建计划，rAF 循环下一帧即生效 */
 $('cfgFps').addEventListener('input', function(){
+  cfg.fps = parseInt(this.value, 10);
+  $('cfgFpsVal').textContent = cfg.fps + ' fps';
   updateTxEstimate();
-  if (tx.playing){ stopPlay(); startPlay(); }
+  if (tx.playing) $('txState').textContent = '播放中 · 目标 ' + cfg.fps + ' fps';
 });
 $('cfgCell').addEventListener('input', function(){
   readCfg();
-  if (tx.plan) renderCurrent();
+  invalidateCache();
+  if (tx.plan){ renderCurrent(true); prewarm(); }
 });
 $('cfgLoop').addEventListener('change', function(){ cfg.loop = this.checked; });
+$('cfgPrerender').addEventListener('change', function(){
+  cfg.prerender = this.checked;
+  if (cfg.prerender) prewarm();
+  else { prewarmToken++; $('txPrewarm').textContent = '已关闭（按需渲染）'; }
+});
 
 /* 预设 */
 var PRESETS = {
   safe:     { v: 8,  ec: 'Q', mode: 'binary', fps: 5,  cell: 8, meta: 16, label: '保守 · 远距离' },
-  balanced: { v: 12, ec: 'M', mode: 'binary', fps: 8,  cell: 6, meta: 24, label: '均衡' },
-  fast:     { v: 20, ec: 'L', mode: 'binary', fps: 12, cell: 4, meta: 40, label: '高速 · 近距离' }
+  balanced: { v: 14, ec: 'M', mode: 'binary', fps: 10, cell: 5, meta: 32, label: '均衡' },
+  fast:     { v: 20, ec: 'L', mode: 'binary', fps: 15, cell: 4, meta: 48, label: '高速 · 近距离' },
+  turbo:    { v: 27, ec: 'L', mode: 'binary', fps: 24, cell: 3, meta: 64, label: '极速 · 贴屏' }
 };
 var presetBtns = document.querySelectorAll('[data-preset]');
 for (var pi = 0; pi < presetBtns.length; pi++){
@@ -813,10 +859,58 @@ function buildDataFrame(seq){
 }
 function buildMetaFrame(){ return buildFrame(T_META, tx.session, utf8enc(metaJson())); }
 
+/* ---- 帧位图缓存：播放时只 drawImage，不重算 QR（这是提速关键） ---- */
+var qrCache = { key: '', map: null, order: [] };
+function cacheKey(){
+  return [tx.session, cfg.version, cfg.ec, cfg.mode, cfg.chunk, cfg.cell, tx.total].join('|');
+}
+function invalidateCache(){ qrCache.key = ''; qrCache.map = null; qrCache.order = []; }
+function getFrameBitmap(id){
+  var key = cacheKey();
+  if (qrCache.key !== key || !qrCache.map){
+    qrCache.key = key; qrCache.map = {}; qrCache.order = [];
+  }
+  var hit = qrCache.map[id];
+  if (hit) return hit;
+  var frame = id < 0 ? buildMetaFrame() : buildDataFrame(id);
+  var off = document.createElement('canvas');
+  var info = renderQR(off, frame, cfg);
+  var rec = { canvas: off, info: info, len: frame.length };
+  qrCache.map[id] = rec;
+  qrCache.order.push(id);
+  /* 位图总量约束在 ~48 MB，超出按 FIFO 淘汰 */
+  var limit = Math.max(64, Math.floor(48e6 / Math.max(1, info.px * info.px * 4)));
+  while (qrCache.order.length > limit) delete qrCache.map[qrCache.order.shift()];
+  return rec;
+}
+
+/* 后台分批预渲染整圈帧，避免播放时逐帧算 QR 造成掉帧 */
+var prewarmToken = 0;
+function prewarm(){
+  var token = ++prewarmToken;
+  if (!tx.plan || !window.qrcode){ $('txPrewarm').textContent = '—'; return; }
+  if (!cfg.prerender){ $('txPrewarm').textContent = '已关闭（按需渲染）'; return; }
+  var i = 0, t0 = performance.now();
+  function step(){
+    if (token !== prewarmToken || !tx.plan) return;
+    var budget = 0;
+    while (i < tx.plan.length && budget < 12){
+      try { getFrameBitmap(tx.plan[i]); } catch(e){}
+      i++; budget++;
+    }
+    $('txPrewarm').textContent = i >= tx.plan.length
+      ? (tx.plan.length + ' 帧就绪 · ' + (performance.now() - t0).toFixed(0) + ' ms')
+      : (i + ' / ' + tx.plan.length + ' …');
+    if (i < tx.plan.length) setTimeout(step, 0);
+  }
+  step();
+}
+
 /* 播放计划：-1 表示 META 帧 */
 function rebuildPlan(){
   updateTxEstimate();
-  if (!tx.bytes){ tx.plan = null; return; }
+  invalidateCache();
+  if (!tx.bytes){ tx.plan = null; $('txPrewarm').textContent = '—'; return; }
   var plan = [], i;
   for (i = 0; i < tx.total; i++){
     if (cfg.metaEvery > 0 && i % cfg.metaEvery === 0) plan.push(-1);
@@ -825,29 +919,46 @@ function rebuildPlan(){
   if (cfg.metaEvery > 0) plan.push(-1);
   tx.plan = plan;
   tx.pos = 0; tx.cycles = 0;
-  renderCurrent();
+  renderCurrent(true);
   drawTxGrid();
+  prewarm();
 }
 
-function renderCurrent(){
+/* force=true 强制刷新文字标签；播放中默认节流，避免 DOM 更新拖慢帧率 */
+function renderCurrent(force){
   if (!tx.plan || !window.qrcode) return;
-  var id = tx.plan[tx.pos];
-  var frame = id < 0 ? buildMetaFrame() : buildDataFrame(id);
-  var canvas = $('txCanvas');
-  var info;
-  try { info = renderQR(canvas, frame, cfg); }
+  var id = tx.plan[tx.pos], rec;
+  try { rec = getFrameBitmap(id); }
   catch(err){ $('txState').textContent = '错误：' + err.message; return; }
-  canvas.style.display = 'block';
-  canvas.style.maxWidth = info.px + 'px';
-  $('txStagePlaceholder').style.display = 'none';
-  $('txStage').classList.remove('empty');
-  $('txFrameLabel').textContent = (id < 0 ? 'META 帧' : ('分片 ' + (id + 1) + ' / ' + tx.total))
-    + ' · 播放位 ' + (tx.pos + 1) + '/' + tx.plan.length + ' · 第 ' + (tx.cycles + 1) + ' 圈';
-  $('txQrInfo').textContent = 'v' + info.version + ' ' + cfg.ec + ' · ' + info.modules + '×' + info.modules
-    + ' · ' + frame.length + ' B → ' + info.chars + ' 字符';
-  var pct = ((tx.pos + 1) / tx.plan.length * 100);
-  $('txBar').style.width = pct.toFixed(1) + '%';
-  drawTxGrid();
+
+  var canvas = $('txCanvas');
+  if (canvas.width !== rec.info.px){ canvas.width = rec.info.px; canvas.height = rec.info.px; }
+  canvas.getContext('2d').drawImage(rec.canvas, 0, 0);
+  if (canvas.style.display !== 'block'){
+    canvas.style.display = 'block';
+    $('txStagePlaceholder').style.display = 'none';
+    $('txStage').classList.remove('empty');
+  }
+  canvas.style.maxWidth = rec.info.px + 'px';
+
+  tx.shown++;
+  var now = performance.now();
+  if (force || now - tx.uiAt >= 120){
+    tx.uiAt = now;
+    $('txFrameLabel').textContent = (id < 0 ? 'META 帧' : ('分片 ' + (id + 1) + ' / ' + tx.total))
+      + ' · 播放位 ' + (tx.pos + 1) + '/' + tx.plan.length + ' · 第 ' + (tx.cycles + 1) + ' 圈';
+    $('txQrInfo').textContent = 'v' + rec.info.version + ' ' + cfg.ec + ' · '
+      + rec.info.modules + '×' + rec.info.modules + ' · ' + rec.len + ' B → ' + rec.info.chars + ' 字符';
+    $('txBar').style.width = ((tx.pos + 1) / tx.plan.length * 100).toFixed(1) + '%';
+  }
+  if (force || now - tx.gridAt >= 100){ tx.gridAt = now; drawTxGrid(); }
+  if (tx.playing && now - tx.fpsAt >= 1000){
+    var real = tx.shown * 1000 / (now - tx.fpsAt);
+    $('txRealFps').textContent = real.toFixed(1) + ' fps'
+      + (real < cfg.fps * 0.85 ? '（受刷新率/性能限制）' : '');
+    $('txRate').textContent = fmtBytes(Math.round(cfg.chunk * Math.min(real, cfg.fps))) + '/s（实测）';
+    tx.fpsAt = now; tx.shown = 0;
+  }
 }
 
 function drawTxGrid(){
@@ -868,29 +979,48 @@ function drawTxGrid(){
   }
 }
 
-function nextFrame(step){
-  if (!tx.plan) return;
+function advance(step){
+  if (!tx.plan) return false;
   tx.pos += step;
   if (tx.pos >= tx.plan.length){
     if (cfg.loop){ tx.pos = 0; tx.cycles++; }
-    else { tx.pos = tx.plan.length - 1; stopPlay(); $('txState').textContent = '单圈播放完成'; }
+    else { tx.pos = tx.plan.length - 1; stopPlay(); $('txState').textContent = '单圈播放完成'; return false; }
   }
   if (tx.pos < 0) tx.pos = tx.plan.length - 1;
-  renderCurrent();
+  return true;
+}
+function nextFrame(step){
+  if (advance(step)) renderCurrent(true);
+}
+
+/* rAF 驱动：按目标间隔累加时间戳，比 setInterval 更稳；
+   目标帧率高于屏幕刷新率时每次刷新推进多帧（但每次刷新只显示最后一帧，故上限为刷新率） */
+function playLoop(ts){
+  if (!tx.playing) return;
+  tx.raf = requestAnimationFrame(playLoop);
+  var interval = 1000 / cfg.fps;
+  if (!tx.nextAt) tx.nextAt = ts;
+  if (ts + 1 < tx.nextAt) return;
+  var steps = 0;
+  while (ts + 1 >= tx.nextAt && steps < 4){ tx.nextAt += interval; steps++; }
+  if (ts - tx.nextAt > 200) tx.nextAt = ts + interval;   /* 落后太多则重同步 */
+  if (advance(1)) renderCurrent(false);
 }
 
 function startPlay(){
   if (!tx.plan) return;
   readCfg();
+  if (cfg.prerender) prewarm();
   tx.playing = true;
+  tx.nextAt = 0; tx.shown = 0; tx.fpsAt = performance.now();
   $('btnPlay').disabled = true; $('btnPause').disabled = false;
-  $('txState').textContent = '播放中 · ' + cfg.fps + ' fps';
-  var interval = Math.max(20, Math.round(1000 / cfg.fps));
-  tx.timer = setInterval(function(){ nextFrame(1); }, interval);
+  $('txState').textContent = '播放中 · 目标 ' + cfg.fps + ' fps';
+  tx.raf = requestAnimationFrame(playLoop);
 }
 function stopPlay(){
   tx.playing = false;
-  if (tx.timer){ clearInterval(tx.timer); tx.timer = null; }
+  if (tx.raf){ cancelAnimationFrame(tx.raf); tx.raf = null; }
+  tx.nextAt = 0;
   $('btnPlay').disabled = !tx.plan;
   $('btnPause').disabled = true;
   if ($('txState').textContent.indexOf('播放中') === 0) $('txState').textContent = '已暂停';
@@ -907,7 +1037,11 @@ $('btnFull').addEventListener('click', function(){
 });
 $('btnReset').addEventListener('click', function(){
   stopPlay();
+  prewarmToken++;
+  invalidateCache();
   tx.bytes = null; tx.plan = null; tx.pos = 0; tx.cycles = 0; tx.total = 0;
+  $('txRealFps').textContent = '—';
+  $('txPrewarm').textContent = '—';
   $('txFileInfo').style.display = 'none';
   $('txFile').value = '';
   $('txCanvas').style.display = 'none';
@@ -1346,7 +1480,7 @@ updateRxUI();
 loadFirst(LIB_QR, function(){ return typeof window.qrcode === 'function'; }).then(function(ok){
   if (ok){
     setBadge($('libQr'), 'ok', '编码库就绪');
-    if (tx.plan) renderCurrent();
+    if (tx.plan){ renderCurrent(true); prewarm(); }
   } else {
     setBadge($('libQr'), 'err', '编码库加载失败');
   }
