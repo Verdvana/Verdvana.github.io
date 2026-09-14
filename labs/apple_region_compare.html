@@ -1,0 +1,392 @@
+---
+layout: modern
+title: "Apple 产品分区对比"
+back_button: true
+permalink: /labs/apple_region_compare.html
+extra_css:
+  - /assets/css/labs/apple_region_compare.css
+---
+
+<div class="arc-page" id="arcRoot">
+
+  <!-- Hero -->
+  <header class="arc-hero">
+    <div class="arc-hero-inner">
+      <h1 class="arc-hero-title">Apple 产品分区对比</h1>
+      <p class="arc-hero-sub">
+        对比 iPhone、Apple Watch、iPad、Mac 在美版、日版、韩版、台版、港版、澳版等不同地区版本间的功能差异。<br/>
+        涵盖硬件（如毫米波 5G）、账户区域功能（如 Apple Intelligence）、App Store 服务（如 Apple TV+、Fitness+）以及区域受限服务（如 Apple Card）。
+      </p>
+      <p class="arc-hero-note">统计范围：2020 年 1 月 1 日之后发布的机型 · 数据持续补充中</p>
+    </div>
+  </header>
+
+  <!-- Toolbar -->
+  <div class="arc-toolbar">
+    <div class="arc-toolbar-inner">
+      <div class="arc-seg" id="catSeg">
+        <button class="arc-seg-btn active" data-cat="all">全部</button>
+        <button class="arc-seg-btn" data-cat="iphone">iPhone</button>
+        <button class="arc-seg-btn" data-cat="watch">Apple Watch</button>
+        <button class="arc-seg-btn" data-cat="ipad">iPad</button>
+        <button class="arc-seg-btn" data-cat="mac">Mac</button>
+      </div>
+      <div class="arc-search-wrap">
+        <i class="fa-solid fa-magnifying-glass"></i>
+        <input id="arcSearch" type="text" placeholder="搜索机型、功能或地区…" />
+      </div>
+    </div>
+  </div>
+
+  <main class="arc-main">
+
+    <!-- Region legend / matrix -->
+    <section class="arc-section">
+      <h2 class="arc-h2"><i class="fa-solid fa-earth-asia"></i> 地区差异总览</h2>
+      <p class="arc-p">下表汇总各地区版本的关键差异维度。绿色勾表示支持/具备，红色叉表示不支持/缺失，灰色表示视账户或系统区域而定。</p>
+      <div class="arc-table-scroll">
+        <table class="arc-matrix" id="regionMatrix">
+          <thead>
+            <tr>
+              <th class="sticky-col">差异维度</th>
+              <!-- region columns injected -->
+            </tr>
+          </thead>
+          <tbody><!-- rows injected --></tbody>
+        </table>
+      </div>
+      <p class="arc-legend">
+        <span class="lg lg-yes"><i class="fa-solid fa-check"></i> 支持</span>
+        <span class="lg lg-no"><i class="fa-solid fa-xmark"></i> 不支持 / 缺失</span>
+        <span class="lg lg-dep"><i class="fa-solid fa-circle-half-stroke"></i> 取决于账户 / 系统区域</span>
+      </p>
+    </section>
+
+    <!-- Product cards -->
+    <section class="arc-section">
+      <h2 class="arc-h2"><i class="fa-solid fa-mobile-screen-button"></i> 机型分区差异</h2>
+      <p class="arc-p">点击任意机型展开查看该产品各地区版本的硬件、频段与功能差异明细。</p>
+      <div class="arc-products" id="productList"><!-- product cards injected --></div>
+      <div class="arc-empty" id="emptyState" hidden>
+        <i class="fa-solid fa-box-open"></i>
+        <p>没有匹配的机型，试试其他关键词或分类。</p>
+      </div>
+    </section>
+
+    <!-- Feature knowledge base -->
+    <section class="arc-section">
+      <h2 class="arc-h2"><i class="fa-solid fa-circle-info"></i> 功能与区域限制说明</h2>
+      <p class="arc-p">这些差异并非硬件决定，而是由 Apple ID 所在区域、App Store 商店区域或服务的地区可用性决定。</p>
+      <div class="arc-features" id="featureList"><!-- feature cards injected --></div>
+    </section>
+
+    <!-- How to extend -->
+    <section class="arc-section arc-extend">
+      <h2 class="arc-h2"><i class="fa-solid fa-code-branch"></i> 如何补充新机型</h2>
+      <p class="arc-p">
+        本页数据通过页面底部 <code>ARC_DATA</code> 对象驱动。新增产品时，只需在对应分类的 <code>products</code> 数组中追加一个对象即可，字段结构如下：
+      </p>
+      <pre class="arc-code">{
+  id: "iphone-17-pro",          // 唯一标识
+  name: "iPhone 17 Pro",        // 机型名称
+  category: "iphone",           // iphone | watch | ipad | mac
+  released: "2025-09",          // 发布年月（用于 2020.01 之后过滤）
+  summary: "分区差异摘要…",
+  regions: {                    // 各地区版本差异
+    "US": { model: "A3xxx", diffs: ["支持 mmWave 5G", "eSIM only"] },
+    "JP": { model: "A3xxx", diffs: ["强制快门音"] },
+    "HK": { model: "A3xxx", diffs: ["双实体 SIM"] }
+    // …
+  }
+}</pre>
+      <p class="arc-p">保存后 Jekyll 重新构建即可生效，无需改动 JS 逻辑。</p>
+    </section>
+
+  </main>
+</div>
+
+<script>
+/* ============================================================
+   数据模型：Apple 各产品线分区差异
+   统计范围：2020-01-01 之后发布
+   region 键说明：
+     US 美版 · JP 日版 · KR 韩版 · TW 台版 · HK 港版 · AU 澳版
+     CN 国行 · CA 加版 · UK 英版 · EU 欧版
+   ============================================================ */
+const ARC_DATA = {
+  regions: [
+    { key: "US", flag: "🇺🇸", label: "美版" },
+    { key: "JP", flag: "🇯🇵", label: "日版" },
+    { key: "KR", flag: "🇰🇷", label: "韩版" },
+    { key: "TW", flag: "🇹🇼", label: "台版" },
+    { key: "HK", flag: "🇭🇰", label: "港版" },
+    { key: "AU", flag: "🇦🇺", label: "澳版" },
+    { key: "CN", flag: "🇨🇳", label: "国行" },
+    { key: "EU", flag: "🇪🇺", label: "欧版" }
+  ],
+
+  /* 地区差异总览矩阵：yes / no / dep(取决于账户或系统区域) */
+  matrix: [
+    { dim: "毫米波 5G (mmWave)", note: "仅特定机型硬件差异",
+      cells: { US:"yes", JP:"no", KR:"no", TW:"no", HK:"no", AU:"no", CN:"no", EU:"no" } },
+    { dim: "实体 SIM 卡槽", note: "美版部分 iPhone 为 eSIM only",
+      cells: { US:"no", JP:"yes", KR:"yes", TW:"yes", HK:"yes", AU:"yes", CN:"yes", EU:"yes" } },
+    { dim: "双实体 SIM (nano+nano)", note: "港/澳版特色",
+      cells: { US:"no", JP:"no", KR:"no", TW:"no", HK:"yes", AU:"no", CN:"yes", EU:"no" } },
+    { dim: "拍照 / 录像强制快门音", note: "系统级地区锁",
+      cells: { US:"no", JP:"yes", KR:"yes", TW:"no", HK:"no", AU:"no", CN:"no", EU:"no" } },
+    { dim: "Apple Intelligence (AI)", note: "取决于 Apple ID 区域 + 系统语言/区域",
+      cells: { US:"yes", JP:"dep", KR:"dep", TW:"dep", HK:"dep", AU:"yes", CN:"no", EU:"dep" } },
+    { dim: "Apple TV+", note: "取决于 App Store 账户区域",
+      cells: { US:"yes", JP:"yes", KR:"yes", TW:"yes", HK:"yes", AU:"yes", CN:"no", EU:"yes" } },
+    { dim: "Apple Fitness+", note: "取决于账户区域，部分地区未上线",
+      cells: { US:"yes", JP:"yes", KR:"yes", TW:"no", HK:"yes", AU:"yes", CN:"no", EU:"yes" } },
+    { dim: "Apple Card", note: "仅美国 Apple ID + 美国硬件生态",
+      cells: { US:"yes", JP:"no", KR:"no", TW:"no", HK:"no", AU:"no", CN:"no", EU:"no" } },
+    { dim: "Apple Cash", note: "仅美国区可用",
+      cells: { US:"yes", JP:"no", KR:"no", TW:"no", HK:"no", AU:"no", CN:"no", EU:"no" } },
+    { dim: "Apple News+", note: "仅美/加/英/澳区",
+      cells: { US:"yes", JP:"no", KR:"no", TW:"no", HK:"no", AU:"yes", CN:"no", EU:"no" } },
+    { dim: "Apple Pay 交通卡 (Suica/八达通)", note: "取决于地区钱包支持",
+      cells: { US:"no", JP:"yes", KR:"no", TW:"no", HK:"yes", AU:"no", CN:"yes", EU:"no" } },
+    { dim: "紧急 SOS 卫星 / 卫星通信", note: "取决于机型硬件 + 地区开通",
+      cells: { US:"yes", JP:"yes", KR:"no", TW:"no", HK:"no", AU:"yes", CN:"no", EU:"yes" } },
+    { dim: "微信支付 / 支付宝深度集成", note: "国行生态",
+      cells: { US:"no", JP:"no", KR:"no", TW:"no", HK:"no", AU:"no", CN:"yes", EU:"no" } },
+    { dim: "FaceTime / iMessage 完整可用", note: "国行系统区域限制部分功能",
+      cells: { US:"yes", JP:"yes", KR:"yes", TW:"yes", HK:"yes", AU:"yes", CN:"dep", EU:"yes" } }
+  ],
+
+  /* 各产品线机型（2020.01 之后发布，内容相同的已合并） */
+  categories: [
+    {
+      id: "iphone", name: "iPhone",
+      products: [
+        {
+          id: "iphone-12", name: "iPhone 12 / 12 mini / 12 Pro / 12 Pro Max", released: "2020-10",
+          summary: "首代 5G iPhone。美版支持毫米波（mmWave）5G，其余全球版本仅 Sub-6GHz；日/韩版强制快门音。",
+          regions: {
+            US: { model: "A2172/A2341…", diffs: ["支持 mmWave + Sub-6 5G", "背部有毫米波天线窗", "含实体 SIM + eSIM"] },
+            JP: { model: "A2402/A2406…", diffs: ["仅 Sub-6 5G", "强制拍照/录像快门音", "支持 Suica 交通卡"] },
+            KR: { model: "A2404…", diffs: ["仅 Sub-6 5G", "强制快门音"] },
+            HK: { model: "A2404…", diffs: ["仅 Sub-6 5G", "双实体 nano-SIM", "无快门音"] },
+            TW: { model: "A2404…", diffs: ["仅 Sub-6 5G", "单实体 SIM + eSIM", "无快门音"] },
+            AU: { model: "A2403…", diffs: ["仅 Sub-6 5G"] },
+            CN: { model: "A2404…", diffs: ["仅 Sub-6 5G", "双实体 nano-SIM（无 eSIM）", "预置微信/支付宝生态"] },
+            EU: { model: "A2403…", diffs: ["仅 Sub-6 5G"] }
+          }
+        },
+        {
+          id: "iphone-13", name: "iPhone 13 系列 (13/mini/Pro/Pro Max)", released: "2021-09",
+          summary: "延续毫米波仅美版策略；港/澳/国行双卡；日韩快门音。",
+          regions: {
+            US: { model: "A2482…", diffs: ["支持 mmWave 5G", "eSIM + 实体 SIM"] },
+            JP: { model: "A2631…", diffs: ["仅 Sub-6 5G", "强制快门音", "Suica"] },
+            KR: { model: "A2634…", diffs: ["仅 Sub-6 5G", "强制快门音"] },
+            HK: { model: "A2634…", diffs: ["双实体 SIM", "无快门音"] },
+            TW: { model: "A2634…", diffs: ["Sub-6 5G", "单 SIM + eSIM"] },
+            CN: { model: "A2634…", diffs: ["双实体 SIM，无 eSIM"] },
+            EU: { model: "A2633…", diffs: ["Sub-6 5G"] }
+          }
+        },
+        {
+          id: "iphone-14", name: "iPhone 14 / 14 Plus / 14 Pro / 14 Pro Max", released: "2022-09",
+          summary: "美版取消实体 SIM（eSIM only）；引入卫星紧急 SOS（地区分批开通）。",
+          regions: {
+            US: { model: "A2649…", diffs: ["eSIM only（无实体卡槽）", "mmWave 5G", "紧急 SOS 卫星（美加先行）"] },
+            JP: { model: "A2881…", diffs: ["含实体 SIM", "强制快门音", "卫星 SOS 后续开通"] },
+            KR: { model: "A2884…", diffs: ["含实体 SIM", "强制快门音"] },
+            HK: { model: "A2884…", diffs: ["双实体 SIM", "无卫星 SOS（未开通）"] },
+            TW: { model: "A2884…", diffs: ["实体 SIM + eSIM"] },
+            AU: { model: "A2882…", diffs: ["实体 SIM", "卫星 SOS 开通"] },
+            CN: { model: "A2884…", diffs: ["双实体 SIM，无 eSIM", "无卫星 SOS"] },
+            EU: { model: "A2882…", diffs: ["实体 SIM", "卫星 SOS 分批开通"] }
+          }
+        },
+        {
+          id: "iphone-15", name: "iPhone 15 系列 (15/Plus/Pro/Pro Max)", released: "2023-09",
+          summary: "全系 USB-C；美版持续 eSIM only；Pro 系列钛金属。快门音、双卡策略延续地区差异。",
+          regions: {
+            US: { model: "A2846…", diffs: ["USB-C", "eSIM only", "mmWave 5G"] },
+            JP: { model: "A3089…", diffs: ["USB-C", "实体 SIM", "强制快门音"] },
+            KR: { model: "A3092…", diffs: ["实体 SIM", "强制快门音"] },
+            HK: { model: "A3092…", diffs: ["双实体 SIM"] },
+            TW: { model: "A3092…", diffs: ["实体 SIM + eSIM"] },
+            AU: { model: "A3090…", diffs: ["实体 SIM"] },
+            CN: { model: "A3092…", diffs: ["双实体 SIM，无 eSIM"] },
+            EU: { model: "A3090…", diffs: ["实体 SIM", "USB-C 由欧盟法规推动"] }
+          }
+        },
+        {
+          id: "iphone-16", name: "iPhone 16 系列 (16/Plus/Pro/Pro Max)", released: "2024-09",
+          summary: "首批支持 Apple Intelligence 的机型；AI 可用性取决于 Apple ID 区域与系统语言，国行暂不支持。",
+          regions: {
+            US: { model: "A3081…", diffs: ["eSIM only", "mmWave 5G", "Apple Intelligence 原生可用", "相机控制按钮"] },
+            JP: { model: "A3286…", diffs: ["实体 SIM", "强制快门音", "AI 取决于账户区域"] },
+            KR: { model: "A3289…", diffs: ["实体 SIM", "强制快门音", "AI 分阶段支持韩语"] },
+            HK: { model: "A3289…", diffs: ["双实体 SIM", "AI 取决于账户区域"] },
+            TW: { model: "A3289…", diffs: ["实体 SIM + eSIM", "AI 需切换区域/语言"] },
+            AU: { model: "A3287…", diffs: ["实体 SIM", "AI 原生可用（英语）"] },
+            CN: { model: "A3289…", diffs: ["双实体 SIM，无 eSIM", "Apple Intelligence 未上线（合规审批中）"] },
+            EU: { model: "A3287…", diffs: ["实体 SIM", "AI 因 DMA 分批开放"] }
+          }
+        }
+      ]
+    },
+    {
+      id: "watch", name: "Apple Watch",
+      products: [
+        {
+          id: "watch-se-s6", name: "Apple Watch Series 6 / SE (第一代)", released: "2020-09",
+          summary: "血氧检测硬件全球一致，但功能受地区法规限制（部分地区曾禁售血氧）；蜂窝版取决于运营商。",
+          regions: {
+            US: { model: "GPS+Cellular", diffs: ["血氧后被专利诉讼限制（后续机型受影响）", "ECG 已获批", "蜂窝依运营商"] },
+            JP: { model: "GPS+Cellular", diffs: ["ECG 需系统区域为日本并获批", "蜂窝依运营商"] },
+            KR: { model: "GPS", diffs: ["ECG 获批时间较晚"] },
+            HK: { model: "GPS+Cellular", diffs: ["ECG 可用", "蜂窝依运营商"] },
+            TW: { model: "GPS", diffs: ["ECG 可用"] },
+            CN: { model: "GPS+Cellular", diffs: ["蜂窝仅联通/电信 eSIM 一号双终端", "ECG 长期不可用（后开放）"] },
+            EU: { model: "GPS+Cellular", diffs: ["ECG 可用"] }
+          }
+        },
+        {
+          id: "watch-s7-s9", name: "Apple Watch Series 7 / 8 / 9 / SE2 / Ultra / Ultra 2", released: "2021-10",
+          summary: "Ultra 支持双频 GPS 与更强防护；血氧功能在美版新机（2024 后）因专利被禁用，其他地区不受影响。",
+          regions: {
+            US: { model: "各型号", diffs: ["2024.01 后新售机型血氧被禁用（专利纠纷）", "蜂窝依运营商"] },
+            JP: { model: "各型号", diffs: ["血氧可用", "ECG 已获批"] },
+            KR: { model: "各型号", diffs: ["血氧可用"] },
+            HK: { model: "各型号", diffs: ["血氧可用", "ECG 可用"] },
+            TW: { model: "各型号", diffs: ["血氧可用"] },
+            CN: { model: "各型号", diffs: ["血氧可用", "蜂窝仅一号双终端 eSIM"] },
+            EU: { model: "各型号", diffs: ["血氧可用", "ECG 可用"] }
+          }
+        },
+        {
+          id: "watch-s10", name: "Apple Watch Series 10 / Ultra (2024)", released: "2024-09",
+          summary: "更大屏幕与更薄机身；血氧在美版继续禁用，其他地区正常；睡眠呼吸暂停通知取决于地区监管获批。",
+          regions: {
+            US: { model: "GPS / Cellular", diffs: ["血氧被禁用", "睡眠呼吸暂停通知已获批"] },
+            JP: { model: "GPS / Cellular", diffs: ["血氧可用", "睡眠呼吸暂停通知获批"] },
+            KR: { model: "GPS / Cellular", diffs: ["血氧可用"] },
+            HK: { model: "GPS / Cellular", diffs: ["血氧可用"] },
+            TW: { model: "GPS / Cellular", diffs: ["血氧可用"] },
+            CN: { model: "GPS / Cellular", diffs: ["血氧可用", "睡眠呼吸暂停通知获批较晚"] },
+            EU: { model: "GPS / Cellular", diffs: ["血氧可用", "睡眠呼吸暂停通知分地区获批"] }
+          }
+        }
+      ]
+    },
+    {
+      id: "ipad", name: "iPad",
+      products: [
+        {
+          id: "ipad-air-pro-2020", name: "iPad Pro (2020/2021) / iPad Air 4", released: "2020-03",
+          summary: "蜂窝版支持 5G（2021 Pro）；毫米波仅美版 5G 机型；eSIM 支持全球，但激活取决于运营商。",
+          regions: {
+            US: { model: "Wi-Fi + Cellular", diffs: ["5G 毫米波（2021 Pro 美版）", "eSIM 可用"] },
+            JP: { model: "Wi-Fi + Cellular", diffs: ["Sub-6 5G", "eSIM 依运营商"] },
+            HK: { model: "Wi-Fi + Cellular", diffs: ["Sub-6 5G"] },
+            TW: { model: "Wi-Fi + Cellular", diffs: ["Sub-6 5G"] },
+            CN: { model: "Wi-Fi + Cellular", diffs: ["Sub-6 5G", "eSIM 支持有限"] },
+            EU: { model: "Wi-Fi + Cellular", diffs: ["Sub-6 5G"] }
+          }
+        },
+        {
+          id: "ipad-2022-2024", name: "iPad (10) / iPad Air 5-6 / iPad Pro M2-M4", released: "2022-10",
+          summary: "M4 iPad Pro（2024）支持 Apple Intelligence，可用性同样取决于 Apple ID 区域；蜂窝版差异主要在频段与 eSIM。",
+          regions: {
+            US: { model: "各型号", diffs: ["Apple Intelligence 原生（M4 Pro）", "eSIM only（部分新机）"] },
+            JP: { model: "各型号", diffs: ["AI 取决于账户区域", "含实体 SIM 选项"] },
+            KR: { model: "各型号", diffs: ["AI 分阶段"] },
+            HK: { model: "各型号", diffs: ["AI 取决于账户区域"] },
+            TW: { model: "各型号", diffs: ["AI 需切区/语言"] },
+            CN: { model: "各型号", diffs: ["Apple Intelligence 未上线"] },
+            EU: { model: "各型号", diffs: ["AI 因 DMA 分批"] }
+          }
+        }
+      ]
+    },
+    {
+      id: "mac", name: "Mac",
+      products: [
+        {
+          id: "mac-m1", name: "MacBook Air / Pro (M1, 2020)", released: "2020-11",
+          summary: "首批 Apple Silicon Mac。硬件全球一致，主要差异在键盘布局、电源插头与预装 App Store 区域服务。",
+          regions: {
+            US: { model: "US 键盘", diffs: ["US 布局键盘", "Apple Card / News+ 等区域服务"] },
+            JP: { model: "JIS 键盘", diffs: ["JIS 日文键盘（可选 US）", "无 Apple Card"] },
+            KR: { model: "KR 键盘", diffs: ["韩文键盘"] },
+            HK: { model: "US/英式", diffs: ["US 键盘", "英式插头"] },
+            TW: { model: "注音键盘", diffs: ["繁中注音键盘"] },
+            CN: { model: "US 键盘", diffs: ["国行保修", "无 Apple TV+/Card"] },
+            EU: { model: "本地布局", diffs: ["各国本地键盘布局", "欧标插头"] }
+          }
+        },
+        {
+          id: "mac-m2-m3", name: "MacBook Air/Pro (M2/M3) · Mac mini/Studio", released: "2022-06",
+          summary: "硬件差异极小，功能差异集中在软件服务与 Apple Intelligence（macOS Sequoia 起，取决于账户区域与系统语言）。",
+          regions: {
+            US: { model: "US", diffs: ["Apple Intelligence 原生", "全部区域服务"] },
+            JP: { model: "JIS", diffs: ["AI 取决于账户区域"] },
+            KR: { model: "KR", diffs: ["AI 分阶段"] },
+            HK: { model: "US", diffs: ["AI 取决于账户区域"] },
+            TW: { model: "注音", diffs: ["AI 需切区"] },
+            CN: { model: "US", diffs: ["Apple Intelligence 未上线", "无 Apple TV+/Card/News+"] },
+            EU: { model: "本地", diffs: ["AI 因 DMA 分批"] }
+          }
+        },
+        {
+          id: "mac-m4", name: "MacBook Pro/Air (M4) · Mac mini M4 (2024-2025)", released: "2024-10",
+          summary: "最新 Apple Silicon。Apple Intelligence 支持更完整，仍受账户区域/语言与地区法规影响。",
+          regions: {
+            US: { model: "US", diffs: ["Apple Intelligence 完整功能"] },
+            JP: { model: "JIS", diffs: ["AI 支持日语（分阶段）"] },
+            KR: { model: "KR", diffs: ["AI 支持韩语（分阶段）"] },
+            HK: { model: "US", diffs: ["AI 取决于账户区域"] },
+            TW: { model: "注音", diffs: ["AI 需切区/语言"] },
+            CN: { model: "US", diffs: ["Apple Intelligence 未上线"] },
+            EU: { model: "本地", diffs: ["AI 因 DMA 分批放开"] }
+          }
+        }
+      ]
+    }
+  ],
+
+  /* 功能 / 区域限制知识库 */
+  features: [
+    { icon: "fa-solid fa-wand-magic-sparkles", title: "Apple Intelligence（AI）",
+      by: "Apple ID 区域 + 系统语言/区域",
+      desc: "由 Apple ID 所在区域与设备系统语言/区域共同决定。切换到已支持地区（如美国）并将系统语言设为对应语言即可启用；国行设备当前不支持，欧盟因 DMA 分批开放。" },
+    { icon: "fa-brands fa-apple", title: "Apple TV+",
+      by: "App Store 账户区域",
+      desc: "取决于 Apple ID 的 App Store 商店区域。将账户切换到已上线地区即可订阅观看，与硬件版本无关；中国大陆商店区域不提供。" },
+    { icon: "fa-solid fa-dumbbell", title: "Apple Fitness+",
+      by: "App Store 账户区域",
+      desc: "同样取决于账户区域。已在美、英、澳、日、港等地上线；台湾、中国大陆等地区未上线，切换账户区域后可用。" },
+    { icon: "fa-solid fa-newspaper", title: "Apple News+",
+      by: "账户区域（美/加/英/澳）",
+      desc: "仅在美国、加拿大、英国、澳大利亚提供。其他区域账户无法订阅，属服务地区限制而非硬件差异。" },
+    { icon: "fa-regular fa-credit-card", title: "Apple Card",
+      by: "美国 Apple ID + 美国生态",
+      desc: "仅限美国。需要美国 Apple ID、美国信用记录与美国生态，切换账户区域也无法开通，属于典型的区域受限金融服务。" },
+    { icon: "fa-solid fa-money-bill-transfer", title: "Apple Cash",
+      by: "仅美国区",
+      desc: "Apple 的点对点转账，仅在美国可用，需美国 Apple ID 与合规银行卡。" },
+    { icon: "fa-solid fa-train-subway", title: "交通卡（Suica / 八达通等）",
+      by: "地区钱包支持 + 硬件 NFC",
+      desc: "日本 Suica、香港八达通、中国大陆交通卡等需设备系统区域/钱包支持。硬件 NFC 一致，但可添加的卡种取决于系统区域。" },
+    { icon: "fa-solid fa-satellite", title: "紧急 SOS 卫星 / 卫星通信",
+      by: "机型硬件 + 地区开通",
+      desc: "需支持卫星通信的机型（iPhone 14 起），且功能按地区分批开通；中国大陆等地区未开通该服务。" },
+    { icon: "fa-solid fa-camera", title: "拍照 / 录像快门音",
+      by: "系统区域（硬性）",
+      desc: "日本、韩国版本因当地法规强制拍照/录像发出快门音，无法关闭；其他地区版本可静音。属出厂固件锁定，换区不生效。" },
+    { icon: "fa-solid fa-heart-pulse", title: "血氧 (Blood Oxygen)",
+      by: "地区专利/监管",
+      desc: "因专利诉讼，2024 年 1 月后在美国销售的新款 Apple Watch 禁用血氧功能；其他地区版本不受影响，功能正常。" }
+  ]
+};
+</script>
+
+<script src="/assets/js/labs/apple_region_compare.js"></script>
