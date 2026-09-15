@@ -65,9 +65,9 @@
   order: 2
 
 - slug: optical_transfer
-  title: 光学通信系统
+  title: 二维码裸屏直传
   desc: >
-    屏幕到摄像头的单向光学传输：发送端将任意文件分片编码为循环播放的二维码，接收端摄像头扫描后经双层 CRC32 校验无损还原源文件。
+    无需安装 App，也无需网络、蓝牙、NFC 等通信协议：屏幕直接播放文件二维码，浏览器摄像头扫描后经双层 CRC32 校验无损还原。
   thumb: /assets/labs/thumbs/optical_transfer.jpg
   tags: [Communication]
   order: 8
