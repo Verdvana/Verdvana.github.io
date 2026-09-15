@@ -2,10 +2,13 @@
 (function () {
   "use strict";
 
-  if (typeof ARC_DATA === "undefined") return;
+  const data = window.ARC_DATA;
+  if (!data || !Array.isArray(data.categories) || !Array.isArray(data.regions)) {
+    return;
+  }
 
   const CUTOFF = "2020-01";
-  const regions = ARC_DATA.regions;
+  const regions = data.regions;
   const iconFor = {
     yes: "fa-check",
     no: "fa-xmark",
@@ -20,7 +23,7 @@
   }
 
   function getCategory(categoryId) {
-    return ARC_DATA.categories.find(function (category) {
+    return data.categories.find(function (category) {
       return category.id === categoryId;
     });
   }
@@ -38,7 +41,7 @@
     if (product.comparisons && product.comparisons.length) {
       return product.comparisons;
     }
-    return activeCategory === "iphone" ? ARC_DATA.matrix : [];
+    return activeCategory === "iphone" ? data.matrix || [] : [];
   }
 
   function regionInfoSignature(info) {
@@ -229,7 +232,7 @@
     if (!wrap) return;
 
     wrap.innerHTML = "";
-    ARC_DATA.features.forEach(function (feature) {
+    (data.features || []).forEach(function (feature) {
       const element = document.createElement("div");
       element.className = "arc-feature";
       element.innerHTML =
