@@ -24,53 +24,34 @@ extra_css:
   <!-- Toolbar -->
   <div class="arc-toolbar">
     <div class="arc-toolbar-inner">
-      <div class="arc-seg" id="catSeg">
-        <button class="arc-seg-btn active" data-cat="all">全部</button>
-        <button class="arc-seg-btn" data-cat="iphone">iPhone</button>
-        <button class="arc-seg-btn" data-cat="watch">Apple Watch</button>
+      <div class="arc-seg" id="catSeg" aria-label="产品分类">
+        <button class="arc-seg-btn active" data-cat="iphone">iPhone</button>
         <button class="arc-seg-btn" data-cat="ipad">iPad</button>
+        <button class="arc-seg-btn" data-cat="watch">Apple Watch</button>
         <button class="arc-seg-btn" data-cat="mac">Mac</button>
-      </div>
-      <div class="arc-search-wrap">
-        <i class="fa-solid fa-magnifying-glass"></i>
-        <input id="arcSearch" type="text" placeholder="搜索机型、功能或地区…" />
       </div>
     </div>
   </div>
 
   <main class="arc-main">
 
-    <!-- Region legend / matrix -->
+    <!-- Product comparison -->
     <section class="arc-section">
-      <h2 class="arc-h2"><i class="fa-solid fa-earth-asia"></i> 地区差异总览</h2>
-      <p class="arc-p">下表汇总各地区版本的关键差异维度。绿色勾表示支持/具备，红色叉表示不支持/缺失，灰色表示视账户或系统区域而定。</p>
+      <h2 class="arc-h2"><i class="fa-solid fa-mobile-screen-button"></i> 机型分区差异</h2>
+      <p class="arc-p">先选择产品分类，再选择具体机型。切换机型后，下方表格会显示对应的地区版本差异；内容完全相同的地区会自动合并。</p>
+      <div class="arc-model-seg" id="modelSeg" aria-label="具体型号"></div>
+      <p class="arc-product-summary" id="productSummary"></p>
       <div class="arc-table-scroll">
-        <table class="arc-matrix" id="regionMatrix">
-          <thead>
-            <tr>
-              <th class="sticky-col">差异维度</th>
-              <!-- region columns injected -->
-            </tr>
-          </thead>
-          <tbody><!-- rows injected --></tbody>
+        <table class="arc-matrix arc-product-matrix" id="productMatrix">
+          <thead></thead>
+          <tbody></tbody>
         </table>
       </div>
       <p class="arc-legend">
-        <span class="lg lg-yes"><i class="fa-solid fa-check"></i> 支持</span>
-        <span class="lg lg-no"><i class="fa-solid fa-xmark"></i> 不支持 / 缺失</span>
-        <span class="lg lg-dep"><i class="fa-solid fa-circle-half-stroke"></i> 取决于账户 / 系统区域</span>
+        <span class="lg lg-yes"><i class="fa-solid fa-check"></i> 支持 / 可以关闭</span>
+        <span class="lg lg-no"><i class="fa-solid fa-xmark"></i> 不支持 / 不可关闭</span>
+        <span class="lg lg-dep"><i class="fa-solid fa-circle-half-stroke"></i> 视地区、账户或具体版本而定</span>
       </p>
-    </section>
-
-    <!-- Product cards -->
-    <section class="arc-section">
-      <h2 class="arc-h2"><i class="fa-solid fa-mobile-screen-button"></i> 机型分区差异</h2>
-      <p class="arc-p">点击任意机型展开查看该产品各地区版本的硬件、频段与功能差异明细。</p>
-      <div class="arc-products" id="productList"><!-- product cards injected --></div>
-      <div class="arc-empty" id="emptyState" hidden>
-        <i class="fa-solid fa-box-open"></i>
-        <p>没有匹配的机型，试试其他关键词或分类。</p>
-      </div>
     </section>
 
     <!-- Feature knowledge base -->
@@ -78,28 +59,6 @@ extra_css:
       <h2 class="arc-h2"><i class="fa-solid fa-circle-info"></i> 功能与区域限制说明</h2>
       <p class="arc-p">这些差异并非硬件决定，而是由 Apple ID 所在区域、App Store 商店区域或服务的地区可用性决定。</p>
       <div class="arc-features" id="featureList"><!-- feature cards injected --></div>
-    </section>
-
-    <!-- How to extend -->
-    <section class="arc-section arc-extend">
-      <h2 class="arc-h2"><i class="fa-solid fa-code-branch"></i> 如何补充新机型</h2>
-      <p class="arc-p">
-        本页数据通过页面底部 <code>ARC_DATA</code> 对象驱动。新增产品时，只需在对应分类的 <code>products</code> 数组中追加一个对象即可，字段结构如下：
-      </p>
-      <pre class="arc-code">{
-  id: "iphone-17-pro",          // 唯一标识
-  name: "iPhone 17 Pro",        // 机型名称
-  category: "iphone",           // iphone | watch | ipad | mac
-  released: "2025-09",          // 发布年月（用于 2020.01 之后过滤）
-  summary: "分区差异摘要…",
-  regions: {                    // 各地区版本差异
-    "US": { model: "A3xxx", diffs: ["支持 mmWave 5G", "eSIM only"] },
-    "JP": { model: "A3xxx", diffs: ["强制快门音"] },
-    "HK": { model: "A3xxx", diffs: ["双实体 SIM"] }
-    // …
-  }
-}</pre>
-      <p class="arc-p">保存后 Jekyll 重新构建即可生效，无需改动 JS 逻辑。</p>
     </section>
 
   </main>
@@ -133,8 +92,8 @@ const ARC_DATA = {
       cells: { US:"no", JP:"yes", KR:"yes", TW:"yes", HK:"yes", AU:"yes", CN:"yes", EU:"yes" } },
     { dim: "双实体 SIM (nano+nano)", note: "港/澳版特色",
       cells: { US:"no", JP:"no", KR:"no", TW:"no", HK:"yes", AU:"no", CN:"yes", EU:"no" } },
-    { dim: "拍照 / 录像强制快门音", note: "系统级地区锁",
-      cells: { US:"no", JP:"yes", KR:"yes", TW:"no", HK:"no", AU:"no", CN:"no", EU:"no" } },
+    { dim: "拍照 / 录像快门音可关闭", note: "日本、韩国版本不可关闭",
+      cells: { US:"yes", JP:"no", KR:"no", TW:"yes", HK:"yes", AU:"yes", CN:"yes", EU:"yes" } },
     { dim: "Apple Intelligence (AI)", note: "取决于 Apple ID 区域 + 系统语言/区域",
       cells: { US:"yes", JP:"dep", KR:"dep", TW:"dep", HK:"dep", AU:"yes", CN:"no", EU:"dep" } },
     { dim: "Apple TV+", note: "取决于 App Store 账户区域",
@@ -238,7 +197,12 @@ const ARC_DATA = {
       products: [
         {
           id: "watch-se-s6", name: "Apple Watch Series 6 / SE (第一代)", released: "2020-09",
-          summary: "血氧检测硬件全球一致，但功能受地区法规限制（部分地区曾禁售血氧）；蜂窝版取决于运营商。",
+          summary: "血氧检测硬件全球一致，但功能受地区法规限制（部分地区曾禁售血氧）；蜂窝版取决于运营商；Series 6 与第一代 SE 均不支持快充。",
+          comparisons: [
+            { dim: "血氧检测", cells: { US:"dep", JP:"yes", KR:"yes", HK:"yes", TW:"yes", CN:"yes", EU:"yes" } },
+            { dim: "ECG 心电图", cells: { US:"yes", JP:"dep", KR:"dep", HK:"yes", TW:"yes", CN:"dep", EU:"yes" } },
+            { dim: "快速充电", note: "Series 6 与第一代 SE 均不支持", cells: { US:"no", JP:"no", KR:"no", HK:"no", TW:"no", CN:"no", EU:"no" } }
+          ],
           regions: {
             US: { model: "GPS+Cellular", diffs: ["血氧后被专利诉讼限制（后续机型受影响）", "ECG 已获批", "蜂窝依运营商"] },
             JP: { model: "GPS+Cellular", diffs: ["ECG 需系统区域为日本并获批", "蜂窝依运营商"] },
@@ -251,7 +215,11 @@ const ARC_DATA = {
         },
         {
           id: "watch-s7-s9", name: "Apple Watch Series 7 / 8 / 9 / SE2 / Ultra / Ultra 2", released: "2021-10",
-          summary: "Ultra 支持双频 GPS 与更强防护；血氧功能在美版新机（2024 后）因专利被禁用，其他地区不受影响。",
+          summary: "Ultra 支持双频 GPS 与更强防护；血氧功能在美版新机（2024 后）因专利被禁用，其他地区不受影响；Series 7 及后续 Series、Ultra 支持快充，SE2 不支持。",
+          comparisons: [
+            { dim: "血氧检测", cells: { US:"dep", JP:"yes", KR:"yes", HK:"yes", TW:"yes", CN:"yes", EU:"yes" } },
+            { dim: "快速充电", note: "Series 7/8/9、Ultra/Ultra 2 支持；SE2 不支持", cells: { US:"dep", JP:"dep", KR:"dep", HK:"dep", TW:"dep", CN:"dep", EU:"dep" } }
+          ],
           regions: {
             US: { model: "各型号", diffs: ["2024.01 后新售机型血氧被禁用（专利纠纷）", "蜂窝依运营商"] },
             JP: { model: "各型号", diffs: ["血氧可用", "ECG 已获批"] },
@@ -264,7 +232,12 @@ const ARC_DATA = {
         },
         {
           id: "watch-s10", name: "Apple Watch Series 10 / Ultra (2024)", released: "2024-09",
-          summary: "更大屏幕与更薄机身；血氧在美版继续禁用，其他地区正常；睡眠呼吸暂停通知取决于地区监管获批。",
+          summary: "更大屏幕与更薄机身；血氧在美版继续禁用，其他地区正常；睡眠呼吸暂停通知取决于地区监管获批；Series 10 与 Ultra 均支持快充。",
+          comparisons: [
+            { dim: "血氧检测", cells: { US:"no", JP:"yes", KR:"yes", HK:"yes", TW:"yes", CN:"yes", EU:"yes" } },
+            { dim: "睡眠呼吸暂停通知", cells: { US:"yes", JP:"yes", KR:"dep", HK:"dep", TW:"dep", CN:"dep", EU:"dep" } },
+            { dim: "快速充电", cells: { US:"yes", JP:"yes", KR:"yes", HK:"yes", TW:"yes", CN:"yes", EU:"yes" } }
+          ],
           regions: {
             US: { model: "GPS / Cellular", diffs: ["血氧被禁用", "睡眠呼吸暂停通知已获批"] },
             JP: { model: "GPS / Cellular", diffs: ["血氧可用", "睡眠呼吸暂停通知获批"] },
