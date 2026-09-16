@@ -47,11 +47,15 @@ extra_css:
           <tbody></tbody>
         </table>
       </div>
-      <p class="arc-legend">
-        <span class="lg lg-yes"><i class="fa-solid fa-check"></i> 支持 / 可以关闭</span>
-        <span class="lg lg-no"><i class="fa-solid fa-xmark"></i> 不支持 / 不可关闭</span>
-        <span class="lg lg-dep"><i class="fa-solid fa-circle-half-stroke"></i> 视地区、账户或具体版本而定</span>
-      </p>
+      <div class="arc-status-legend" aria-label="支持状态说明">
+        <span class="arc-status status-full"><i class="fa-solid fa-check"></i> 完全支持</span>
+        <span class="arc-status status-hardware"><i class="fa-solid fa-microchip"></i> 硬件不支持，换 ID / 网络无效</span>
+        <span class="arc-status status-account"><i class="fa-solid fa-user-gear"></i> 换 App Store / Apple ID 区域可用</span>
+        <span class="arc-status status-location"><i class="fa-solid fa-location-dot"></i> 必须身处服务地区</span>
+        <span class="arc-status status-carrier"><i class="fa-solid fa-tower-cell"></i> 取决于运营商 / 当地监管</span>
+        <span class="arc-status status-model"><i class="fa-solid fa-code-branch"></i> 取决于具体型号 / 销售批次</span>
+        <span class="arc-status status-locked"><i class="fa-solid fa-lock"></i> 地区固件锁定，无法绕过</span>
+      </div>
     </section>
 
     <!-- Feature knowledge base -->
@@ -86,34 +90,34 @@ window.ARC_DATA = {
 
   /* 地区差异总览矩阵：yes / no / dep(取决于账户或系统区域) */
   matrix: [
-    { dim: "毫米波 5G (mmWave)", note: "仅特定机型硬件差异",
-      cells: { US:"yes", JP:"no", KR:"no", TW:"no", HK:"no", AU:"no", CN:"no", EU:"no" } },
-    { dim: "实体 SIM 卡槽", note: "美版部分 iPhone 为 eSIM only",
-      cells: { US:"no", JP:"yes", KR:"yes", TW:"yes", HK:"yes", AU:"yes", CN:"yes", EU:"yes" } },
-    { dim: "双实体 SIM (nano+nano)", note: "港/澳版特色",
-      cells: { US:"no", JP:"no", KR:"no", TW:"no", HK:"yes", AU:"no", CN:"yes", EU:"no" } },
-    { dim: "拍照 / 录像快门音可关闭", note: "日本、韩国版本不可关闭",
-      cells: { US:"yes", JP:"no", KR:"no", TW:"yes", HK:"yes", AU:"yes", CN:"yes", EU:"yes" } },
-    { dim: "Apple Intelligence (AI)", note: "取决于 Apple ID 区域 + 系统语言/区域",
-      cells: { US:"yes", JP:"dep", KR:"dep", TW:"dep", HK:"dep", AU:"yes", CN:"no", EU:"dep" } },
-    { dim: "Apple TV+", note: "取决于 App Store 账户区域",
-      cells: { US:"yes", JP:"yes", KR:"yes", TW:"yes", HK:"yes", AU:"yes", CN:"no", EU:"yes" } },
-    { dim: "Apple Fitness+", note: "取决于账户区域，部分地区未上线",
-      cells: { US:"yes", JP:"yes", KR:"yes", TW:"no", HK:"yes", AU:"yes", CN:"no", EU:"yes" } },
-    { dim: "Apple Card", note: "仅美国 Apple ID + 美国硬件生态",
-      cells: { US:"yes", JP:"no", KR:"no", TW:"no", HK:"no", AU:"no", CN:"no", EU:"no" } },
-    { dim: "Apple Cash", note: "仅美国区可用",
-      cells: { US:"yes", JP:"no", KR:"no", TW:"no", HK:"no", AU:"no", CN:"no", EU:"no" } },
-    { dim: "Apple News+", note: "仅美/加/英/澳区",
-      cells: { US:"yes", JP:"no", KR:"no", TW:"no", HK:"no", AU:"yes", CN:"no", EU:"no" } },
-    { dim: "Apple Pay 交通卡 (Suica/八达通)", note: "取决于地区钱包支持",
-      cells: { US:"no", JP:"yes", KR:"no", TW:"no", HK:"yes", AU:"no", CN:"yes", EU:"no" } },
-    { dim: "紧急 SOS 卫星 / 卫星通信", note: "取决于机型硬件 + 地区开通",
-      cells: { US:"yes", JP:"yes", KR:"no", TW:"no", HK:"no", AU:"yes", CN:"no", EU:"yes" } },
-    { dim: "微信支付 / 支付宝深度集成", note: "国行生态",
-      cells: { US:"no", JP:"no", KR:"no", TW:"no", HK:"no", AU:"no", CN:"yes", EU:"no" } },
-    { dim: "FaceTime / iMessage 完整可用", note: "国行系统区域限制部分功能",
-      cells: { US:"yes", JP:"yes", KR:"yes", TW:"yes", HK:"yes", AU:"yes", CN:"dep", EU:"yes" } }
+    { dim: "毫米波 5G (mmWave)", note: "天线与射频硬件差异",
+      cells: { US:"full", JP:"hardware", KR:"hardware", TW:"hardware", HK:"hardware", AU:"hardware", CN:"hardware", EU:"hardware" } },
+    { dim: "实体 SIM 卡槽", note: "美版 iPhone 14 及后续机型为 eSIM only",
+      cells: { US:"model", JP:"full", KR:"full", TW:"full", HK:"full", AU:"full", CN:"full", EU:"full" } },
+    { dim: "双实体 SIM (nano+nano)", note: "卡槽硬件差异",
+      cells: { US:"hardware", JP:"hardware", KR:"hardware", TW:"hardware", HK:"full", AU:"hardware", CN:"full", EU:"hardware" } },
+    { dim: "拍照 / 录像快门音可关闭", note: "日本、韩国版本由地区固件锁定",
+      cells: { US:"full", JP:"locked", KR:"locked", TW:"full", HK:"full", AU:"full", CN:"full", EU:"full" } },
+    { dim: "Apple Intelligence (AI)", note: "仅支持机型；还受 Apple ID、语言与地区政策影响",
+      cells: { US:"full", JP:"account", KR:"account", TW:"account", HK:"account", AU:"full", CN:"carrier", EU:"account" } },
+    { dim: "Apple TV+", note: "硬件无差异，取决于 App Store 账户区域",
+      cells: { US:"full", JP:"full", KR:"full", TW:"full", HK:"full", AU:"full", CN:"account", EU:"full" } },
+    { dim: "Apple Fitness+", note: "硬件无差异，取决于 App Store 账户区域",
+      cells: { US:"full", JP:"full", KR:"full", TW:"account", HK:"full", AU:"full", CN:"account", EU:"full" } },
+    { dim: "Apple Card", note: "需美国身份、信用记录、地址及合规资格，单纯换区无效",
+      cells: { US:"location", JP:"location", KR:"location", TW:"location", HK:"location", AU:"location", CN:"location", EU:"location" } },
+    { dim: "Apple Cash", note: "需身处美国并满足美国账户与身份资格",
+      cells: { US:"location", JP:"location", KR:"location", TW:"location", HK:"location", AU:"location", CN:"location", EU:"location" } },
+    { dim: "Apple News+", note: "切换到美、加、英、澳等受支持商店区域可用",
+      cells: { US:"full", JP:"account", KR:"account", TW:"account", HK:"account", AU:"full", CN:"account", EU:"account" } },
+    { dim: "Apple Pay 交通卡 (Suica/八达通)", note: "取决于钱包区域、发卡方及当地服务",
+      cells: { US:"account", JP:"full", KR:"account", TW:"account", HK:"full", AU:"account", CN:"full", EU:"account" } },
+    { dim: "紧急 SOS 卫星 / 卫星通信", note: "须支持机型并身处已开通服务的地区",
+      cells: { US:"location", JP:"location", KR:"location", TW:"location", HK:"location", AU:"location", CN:"location", EU:"location" } },
+    { dim: "微信支付 / 支付宝深度集成", note: "主要取决于 App 与账户生态，并非设备硬件限制",
+      cells: { US:"account", JP:"account", KR:"account", TW:"account", HK:"account", AU:"account", CN:"full", EU:"account" } },
+    { dim: "FaceTime / iMessage 完整功能", note: "国行部分能力受销售地区与监管策略限制",
+      cells: { US:"full", JP:"full", KR:"full", TW:"full", HK:"full", AU:"full", CN:"locked", EU:"full" } }
   ],
 
   /* 各产品线机型（2020.01 之后发布，内容相同的已合并） */
@@ -199,9 +203,9 @@ window.ARC_DATA = {
           id: "watch-se-s6", name: "Apple Watch Series 6 / SE (第一代)", released: "2020-09",
           summary: "血氧检测硬件全球一致，但功能受地区法规限制（部分地区曾禁售血氧）；蜂窝版取决于运营商；Series 6 与第一代 SE 均不支持快充。",
           comparisons: [
-            { dim: "血氧检测", cells: { US:"dep", JP:"yes", KR:"yes", HK:"yes", TW:"yes", CN:"yes", EU:"yes" } },
-            { dim: "ECG 心电图", cells: { US:"yes", JP:"dep", KR:"dep", HK:"yes", TW:"yes", CN:"dep", EU:"yes" } },
-            { dim: "快速充电", note: "Series 6 与第一代 SE 均不支持", cells: { US:"no", JP:"no", KR:"no", HK:"no", TW:"no", CN:"no", EU:"no" } }
+            { dim: "血氧检测", cells: { US:"full", JP:"full", KR:"full", HK:"full", TW:"full", CN:"full", EU:"full" } },
+            { dim: "ECG 心电图", cells: { US:"full", JP:"carrier", KR:"carrier", HK:"full", TW:"full", CN:"carrier", EU:"full" } },
+            { dim: "快速充电", note: "Series 6 与第一代 SE 均不支持", cells: { US:"hardware", JP:"hardware", KR:"hardware", HK:"hardware", TW:"hardware", CN:"hardware", EU:"hardware" } }
           ],
           regions: {
             US: { model: "GPS+Cellular", diffs: ["血氧后被专利诉讼限制（后续机型受影响）", "ECG 已获批", "蜂窝依运营商"] },
@@ -217,8 +221,8 @@ window.ARC_DATA = {
           id: "watch-s7-s9", name: "Apple Watch Series 7 / 8 / 9 / SE2 / Ultra / Ultra 2", released: "2021-10",
           summary: "Ultra 支持双频 GPS 与更强防护；血氧功能在美版新机（2024 后）因专利被禁用，其他地区不受影响；Series 7 及后续 Series、Ultra 支持快充，SE2 不支持。",
           comparisons: [
-            { dim: "血氧检测", cells: { US:"dep", JP:"yes", KR:"yes", HK:"yes", TW:"yes", CN:"yes", EU:"yes" } },
-            { dim: "快速充电", note: "Series 7/8/9、Ultra/Ultra 2 支持；SE2 不支持", cells: { US:"dep", JP:"dep", KR:"dep", HK:"dep", TW:"dep", CN:"dep", EU:"dep" } }
+            { dim: "血氧检测", note: "美国 2024 年后销售批次受专利禁用", cells: { US:"model", JP:"full", KR:"full", HK:"full", TW:"full", CN:"full", EU:"full" } },
+            { dim: "快速充电", note: "Series 7/8/9、Ultra/Ultra 2 支持；SE2 硬件不支持", cells: { US:"model", JP:"model", KR:"model", HK:"model", TW:"model", CN:"model", EU:"model" } }
           ],
           regions: {
             US: { model: "各型号", diffs: ["2024.01 后新售机型血氧被禁用（专利纠纷）", "蜂窝依运营商"] },
@@ -234,9 +238,9 @@ window.ARC_DATA = {
           id: "watch-s10", name: "Apple Watch Series 10 / Ultra (2024)", released: "2024-09",
           summary: "更大屏幕与更薄机身；血氧在美版继续禁用，其他地区正常；睡眠呼吸暂停通知取决于地区监管获批；Series 10 与 Ultra 均支持快充。",
           comparisons: [
-            { dim: "血氧检测", cells: { US:"no", JP:"yes", KR:"yes", HK:"yes", TW:"yes", CN:"yes", EU:"yes" } },
-            { dim: "睡眠呼吸暂停通知", cells: { US:"yes", JP:"yes", KR:"dep", HK:"dep", TW:"dep", CN:"dep", EU:"dep" } },
-            { dim: "快速充电", cells: { US:"yes", JP:"yes", KR:"yes", HK:"yes", TW:"yes", CN:"yes", EU:"yes" } }
+            { dim: "血氧检测", note: "美版销售批次由固件禁用，硬件仍存在", cells: { US:"locked", JP:"full", KR:"full", HK:"full", TW:"full", CN:"full", EU:"full" } },
+            { dim: "睡眠呼吸暂停通知", cells: { US:"full", JP:"full", KR:"carrier", HK:"carrier", TW:"carrier", CN:"carrier", EU:"carrier" } },
+            { dim: "快速充电", cells: { US:"full", JP:"full", KR:"full", HK:"full", TW:"full", CN:"full", EU:"full" } }
           ],
           regions: {
             US: { model: "GPS / Cellular", diffs: ["血氧被禁用", "睡眠呼吸暂停通知已获批"] },
@@ -362,4 +366,4 @@ window.ARC_DATA = {
 };
 </script>
 
-<script src="/assets/js/labs/apple_region_compare.js?v=20260915-2"></script>
+<script src="/assets/js/labs/apple_region_compare.js?v=20260916-1"></script>

@@ -197,10 +197,67 @@ body[data-theme="dark"] .arc-seg-btn.active { background: #2c2c2e; }
 .dim-cell { padding: 12px 14px; }
 .dim-name { display: block; font-weight: 600; }
 .dim-note { display: block; font-size: 12px; color: var(--arc-text-soft); margin-top: 2px; }
-.arc-matrix td.cell { text-align: center; padding: 12px 10px; }
-.cell-yes i { color: var(--arc-green); }
-.cell-no i { color: var(--arc-red); opacity: 0.7; }
-.cell-dep i { color: var(--arc-dep); }
+.arc-matrix td.cell {
+  text-align: center;
+  padding: 10px 8px;
+  min-width: 118px;
+}
+.arc-status {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  border: 1px solid currentColor;
+  border-radius: 8px;
+  padding: 5px 8px;
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 1.25;
+  white-space: nowrap;
+}
+.arc-status i {
+  width: 13px;
+  text-align: center;
+}
+.status-full {
+  color: #167d36;
+  background: color-mix(in srgb, #34c759 13%, var(--arc-bg));
+}
+.status-hardware {
+  color: #c62828;
+  background: color-mix(in srgb, #ff3b30 12%, var(--arc-bg));
+}
+.status-account {
+  color: #0068c9;
+  background: color-mix(in srgb, #0071e3 12%, var(--arc-bg));
+}
+.status-location {
+  color: #a24b00;
+  background: color-mix(in srgb, #ff9500 14%, var(--arc-bg));
+}
+.status-carrier {
+  color: #6f42c1;
+  background: color-mix(in srgb, #af52de 13%, var(--arc-bg));
+}
+.status-model {
+  color: #786000;
+  background: color-mix(in srgb, #ffd60a 18%, var(--arc-bg));
+}
+.status-locked {
+  color: #b00058;
+  background: color-mix(in srgb, #ff2d55 12%, var(--arc-bg));
+}
+.arc-status-legend {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  flex-wrap: wrap;
+  margin-top: 16px;
+}
+.arc-status-legend .arc-status {
+  font-size: 12px;
+  padding: 6px 9px;
+}
 
 .arc-legend {
   display: flex;
@@ -448,6 +505,14 @@ body[data-theme="dark"] .arc-seg-btn.active { background: #2c2c2e; }
   .arc-seg { width: 100%; justify-content: center; }
   .arc-model-btn { max-width: 240px; white-space: normal; }
   .arc-product-summary strong { display: block; margin-bottom: 2px; }
+  .arc-status-legend {
+    display: grid;
+    grid-template-columns: 1fr;
+  }
+  .arc-status-legend .arc-status {
+    justify-content: flex-start;
+    white-space: normal;
+  }
   .arc-card-head { padding: 18px 18px; }
   .arc-card-body { padding: 0 18px; }
   .arc-card.open .arc-card-body { padding-bottom: 18px; }

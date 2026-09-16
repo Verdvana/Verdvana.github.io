@@ -9,10 +9,14 @@
 
   const CUTOFF = "2020-01";
   const regions = data.regions;
-  const iconFor = {
-    yes: "fa-check",
-    no: "fa-xmark",
-    dep: "fa-circle-half-stroke"
+  const statusMeta = {
+    full: { icon: "fa-check", label: "完全支持" },
+    hardware: { icon: "fa-microchip", label: "硬件不支持" },
+    account: { icon: "fa-user-gear", label: "换区可用" },
+    location: { icon: "fa-location-dot", label: "须在服务地区" },
+    carrier: { icon: "fa-tower-cell", label: "运营商 / 监管" },
+    model: { icon: "fa-code-branch", label: "视型号 / 批次" },
+    locked: { icon: "fa-lock", label: "地区固件锁定" }
   };
 
   let activeCategory = "iphone";
@@ -111,15 +115,21 @@
   }
 
   function statusCell(value, title) {
-    const status = value || "no";
+    const status = statusMeta[value] ? value : "model";
+    const meta = statusMeta[status];
+    const tooltip = title ? title + " · " + meta.label : meta.label;
     return (
       '<td class="cell cell-' +
       status +
-      '"' +
-      (title ? ' title="' + title + '"' : "") +
-      '><i class="fa-solid ' +
-      iconFor[status] +
-      '"></i></td>'
+      '" title="' +
+      tooltip +
+      '"><span class="arc-status status-' +
+      status +
+      '"><i class="fa-solid ' +
+      meta.icon +
+      '"></i><span>' +
+      meta.label +
+      "</span></span></td>"
     );
   }
 
@@ -193,13 +203,13 @@
 
         groups.forEach(function (group) {
           const values = group.regions.map(function (region) {
-            return comparison.cells[region.key] || "no";
+            return comparison.cells[region.key] || "model";
           });
           const value = values.every(function (item) {
             return item === values[0];
           })
             ? values[0]
-            : "dep";
+            : "model";
           body += statusCell(value, comparison.dim);
         });
         body += "</tr>";
