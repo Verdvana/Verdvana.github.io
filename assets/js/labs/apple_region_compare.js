@@ -123,13 +123,13 @@
       status +
       '" title="' +
       tooltip +
-      '"><span class="arc-status status-' +
+      '"><span class="arc-status arc-status-icon status-' +
       status +
+      '" aria-label="' +
+      meta.label +
       '"><i class="fa-solid ' +
       meta.icon +
-      '"></i><span>' +
-      meta.label +
-      "</span></span></td>"
+      '"></i></span></td>'
     );
   }
 

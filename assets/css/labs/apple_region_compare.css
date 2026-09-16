@@ -170,8 +170,9 @@ body[data-theme="dark"] .arc-seg-btn.active { background: #2c2c2e; }
 .arc-matrix {
   border-collapse: collapse;
   width: 100%;
-  min-width: 760px;
-  font-size: 14px;
+  min-width: 620px;
+  table-layout: auto;
+  font-size: 13px;
 }
 .arc-matrix thead th {
   background: var(--arc-bg-soft);
@@ -187,9 +188,11 @@ body[data-theme="dark"] .arc-seg-btn.active { background: #2c2c2e; }
   position: sticky;
   left: 0;
   z-index: 2;
+  width: 155px;
+  min-width: 155px;
+  max-width: 155px;
   background: var(--arc-bg);
   text-align: left;
-  min-width: 200px;
 }
 .arc-matrix thead .sticky-col { background: var(--arc-bg-soft); }
 .arc-matrix tbody tr:nth-child(even) td { background: color-mix(in srgb, var(--arc-bg-soft) 50%, var(--arc-bg)); }
@@ -199,8 +202,16 @@ body[data-theme="dark"] .arc-seg-btn.active { background: #2c2c2e; }
 .dim-note { display: block; font-size: 12px; color: var(--arc-text-soft); margin-top: 2px; }
 .arc-matrix td.cell {
   text-align: center;
-  padding: 10px 8px;
-  min-width: 118px;
+  padding: 8px 5px;
+  width: 68px;
+  min-width: 68px;
+}
+.arc-matrix td.cell .arc-status-icon {
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border-radius: 50%;
+  font-size: 12px;
 }
 .arc-status {
   display: inline-flex;
@@ -321,7 +332,9 @@ body[data-theme="dark"] .arc-seg-btn.active { background: #2c2c2e; }
   margin-bottom: 5px;
 }
 .arc-product-matrix th:not(.sticky-col) {
-  min-width: 130px;
+  min-width: 72px;
+  padding-left: 6px;
+  padding-right: 6px;
 }
 .arc-group-region {
   display: inline-flex;
@@ -336,11 +349,13 @@ body[data-theme="dark"] .arc-seg-btn.active { background: #2c2c2e; }
   vertical-align: middle;
 }
 .arc-text-cell {
-  min-width: 150px;
-  padding: 13px 14px;
+  min-width: 96px;
+  max-width: 140px;
+  padding: 10px 9px;
   text-align: left;
   vertical-align: top;
   color: var(--arc-text);
+  overflow-wrap: anywhere;
   border-left: 1px solid color-mix(in srgb, var(--arc-line) 65%, transparent);
 }
 .arc-table-diffs {
@@ -505,6 +520,26 @@ body[data-theme="dark"] .arc-seg-btn.active { background: #2c2c2e; }
   .arc-seg { width: 100%; justify-content: center; }
   .arc-model-btn { max-width: 240px; white-space: normal; }
   .arc-product-summary strong { display: block; margin-bottom: 2px; }
+  .arc-matrix {
+    min-width: 560px;
+    font-size: 12px;
+  }
+  .arc-matrix .sticky-col {
+    width: 132px;
+    min-width: 132px;
+    max-width: 132px;
+  }
+  .dim-cell {
+    padding: 9px 8px;
+  }
+  .dim-note {
+    font-size: 10px;
+  }
+  .arc-text-cell {
+    min-width: 86px;
+    max-width: 115px;
+    padding: 8px 7px;
+  }
   .arc-status-legend {
     display: grid;
     grid-template-columns: 1fr;
