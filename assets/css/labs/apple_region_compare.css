@@ -236,7 +236,7 @@ body[data-theme="dark"] .arc-seg-btn.active { background: #2c2c2e; }
 }
 .status-hardware {
   color: #c62828;
-  background: color-mix(in srgb, #ff3b30 12%, var(--arc-bg));
+  background: color-mix(in srgb, #ff3b30 14%, var(--arc-bg));
 }
 .status-account {
   color: #0068c9;
@@ -255,8 +255,9 @@ body[data-theme="dark"] .arc-seg-btn.active { background: #2c2c2e; }
   background: color-mix(in srgb, #ffd60a 18%, var(--arc-bg));
 }
 .status-locked {
-  color: #b00058;
-  background: color-mix(in srgb, #ff2d55 12%, var(--arc-bg));
+  color: #3949ab;
+  background: color-mix(in srgb, #5e5ce6 16%, var(--arc-bg));
+  border-style: dashed;
 }
 .arc-status-legend {
   display: flex;
