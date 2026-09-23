@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="560" viewBox="0 0 1200 560">
+  <defs><marker id="a" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto"><path d="M0 0L9 3L0 6Z" fill="#334155"/></marker></defs>
+  <rect width="1200" height="560" fill="#f8fafc"/>
+  <text x="600" y="50" text-anchor="middle" font-family="sans-serif" font-size="28" font-weight="700" fill="#0f172a">Σ-Δ 调制器的反馈闭环</text>
+  <g fill="#e0f2fe" stroke="#0284c7" stroke-width="3">
+    <circle cx="260" cy="230" r="42" fill="#fff7ed" stroke="#f97316"/>
+    <rect x="365" y="180" width="190" height="100" rx="14"/>
+    <rect x="650" y="180" width="190" height="100" rx="14"/>
+    <rect x="650" y="390" width="190" height="85" rx="14" fill="#dcfce7" stroke="#16a34a"/>
+  </g>
+  <g font-family="sans-serif" text-anchor="middle" fill="#0f172a">
+    <text x="260" y="225" font-size="30">Σ</text><text x="260" y="252" font-size="17">求差</text>
+    <text x="460" y="222" font-size="23">环路滤波器</text><text x="460" y="252" font-size="18">积分并记住历史误差</text>
+    <text x="745" y="222" font-size="23">1-bit 量化器</text><text x="745" y="252" font-size="18">只输出 0 或 1</text>
+    <text x="745" y="426" font-size="23">1-bit DAC</text><text x="745" y="454" font-size="18">产生 ±参考电平</text>
+  </g>
+  <g stroke="#334155" stroke-width="4" fill="none" marker-end="url(#a)">
+    <path d="M75 230H212"/><path d="M302 230H360"/><path d="M560 230H645"/><path d="M845 230H1090"/>
+    <path d="M920 230V432H845"/><path d="M645 432H260V277"/>
+  </g>
+  <g font-family="sans-serif" font-size="20" fill="#334155">
+    <text x="78" y="210">模拟输入</text><text x="930" y="210">DSD 比特流</text><text x="273" y="195" fill="#16a34a">+</text><text x="273" y="291" fill="#dc2626">−</text>
+  </g>
+  <text x="600" y="525" text-anchor="middle" font-family="sans-serif" font-size="21" fill="#64748b">当前输入与过去误差共同决定下一个 bit，负反馈使长期平均输出跟随输入</text>
+</svg>

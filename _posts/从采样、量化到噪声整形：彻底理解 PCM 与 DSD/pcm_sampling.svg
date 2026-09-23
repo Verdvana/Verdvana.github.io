@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="620" viewBox="0 0 1200 620">
+  <rect width="1200" height="620" fill="#f8fafc"/>
+  <text x="600" y="48" text-anchor="middle" font-family="sans-serif" font-size="28" font-weight="700" fill="#0f172a">模拟信号、采样与 PCM 量化</text>
+  <g stroke="#cbd5e1" stroke-width="1">
+    <path d="M90 100V520M90 520H1120" stroke="#64748b" stroke-width="2"/>
+    <path d="M90 160H1120M90 250H1120M90 340H1120M90 430H1120" stroke-dasharray="5 7"/>
+  </g>
+  <path d="M90 355 C170 120 250 120 330 355 S490 590 570 355 S730 120 810 355 S970 590 1050 355" fill="none" stroke="#2563eb" stroke-width="5"/>
+  <g stroke="#f97316" stroke-width="2" fill="#f97316">
+    <path d="M140 520V235M220 520V152M300 520V278M380 520V441M460 520V513M540 520V395M620 520V196M700 520V159M780 520V310M860 520V476M940 520V490M1020 520V338" opacity=".75"/>
+    <circle cx="140" cy="235" r="7"/><circle cx="220" cy="152" r="7"/><circle cx="300" cy="278" r="7"/><circle cx="380" cy="441" r="7"/><circle cx="460" cy="513" r="7"/><circle cx="540" cy="395" r="7"/><circle cx="620" cy="196" r="7"/><circle cx="700" cy="159" r="7"/><circle cx="780" cy="310" r="7"/><circle cx="860" cy="476" r="7"/><circle cx="940" cy="490" r="7"/><circle cx="1020" cy="338" r="7"/>
+  </g>
+  <g font-family="sans-serif" font-size="21" fill="#334155">
+    <text x="1060" y="335" fill="#2563eb">模拟波形</text>
+    <text x="950" y="575" fill="#f97316">离散采样值</text>
+    <text x="34" y="112">幅度</text><text x="1080" y="555">时间</text>
+  </g>
+</svg>

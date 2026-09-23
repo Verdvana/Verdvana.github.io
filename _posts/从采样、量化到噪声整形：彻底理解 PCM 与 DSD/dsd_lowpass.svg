@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="610" viewBox="0 0 1200 610">
+  <defs><marker id="b" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto"><path d="M0 0L9 3L0 6Z" fill="#334155"/></marker></defs>
+  <rect width="1200" height="610" fill="#f8fafc"/>
+  <text x="600" y="48" text-anchor="middle" font-family="sans-serif" font-size="28" font-weight="700" fill="#0f172a">低通滤波从 DSD 脉冲流中恢复模拟波形</text>
+  <g transform="translate(70 125)" fill="none" stroke="#7c3aed" stroke-width="4">
+    <path d="M0 90V15H25V90H50V15H75V90H100V15H125V90H150V15H175V90H200V90H225V15H250V90H275V15H300V90"/>
+  </g>
+  <rect x="470" y="115" width="250" height="125" rx="18" fill="#e0f2fe" stroke="#0284c7" stroke-width="3"/>
+  <text x="595" y="165" text-anchor="middle" font-family="sans-serif" font-size="25" font-weight="700" fill="#0f172a">模拟低通滤波器</text>
+  <text x="595" y="202" text-anchor="middle" font-family="sans-serif" font-size="19" fill="#334155">保留慢变化，衰减快速翻转</text>
+  <g stroke="#334155" stroke-width="4" fill="none" marker-end="url(#b)"><path d="M385 175H460"/><path d="M730 175H810"/></g>
+  <path d="M820 175 C855 75 900 75 935 175 S1015 275 1050 175 S1120 75 1150 175" fill="none" stroke="#2563eb" stroke-width="6"/>
+  <g font-family="sans-serif" font-size="20" fill="#334155"><text x="125" y="270">高速 1-bit 脉冲</text><text x="930" y="270">连续模拟输出</text></g>
+  <g transform="translate(85 350)">
+    <path d="M0 145H1030M0 145V0" stroke="#64748b" stroke-width="2"/>
+    <path d="M0 25H260Q360 25 430 140H1030" fill="none" stroke="#f97316" stroke-width="6"/>
+    <path d="M0 130C300 130 380 125 500 90S760 40 1030 30" fill="none" stroke="#7c3aed" stroke-width="4" stroke-dasharray="9 8"/>
+    <text x="70" y="18" font-family="sans-serif" font-size="19" fill="#f97316">滤波器通过范围</text><text x="690" y="74" font-family="sans-serif" font-size="19" fill="#7c3aed">DSD 超声噪声</text>
+    <text x="860" y="175" font-family="sans-serif" font-size="19" fill="#334155">频率</text>
+  </g>
+</svg>

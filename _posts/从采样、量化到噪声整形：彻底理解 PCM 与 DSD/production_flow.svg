@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="650" viewBox="0 0 1200 650">
+  <defs><marker id="c" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto"><path d="M0 0L9 3L0 6Z" fill="#475569"/></marker></defs>
+  <rect width="1200" height="650" fill="#f8fafc"/>
+  <text x="600" y="48" text-anchor="middle" font-family="sans-serif" font-size="28" font-weight="700" fill="#0f172a">常见数字音频制作流程</text>
+  <g font-family="sans-serif" font-size="20" text-anchor="middle" fill="#0f172a">
+    <text x="70" y="145" text-anchor="start" font-weight="700" fill="#2563eb">PCM 制作</text>
+    <text x="70" y="315" text-anchor="start" font-weight="700" fill="#16a34a">DSD 直录</text>
+    <text x="70" y="485" text-anchor="start" font-weight="700" fill="#7c3aed">DSD / DXD</text>
+  </g>
+  <g stroke-width="3">
+    <g fill="#dbeafe" stroke="#2563eb"><rect x="220" y="100" width="160" height="80" rx="14"/><rect x="460" y="100" width="230" height="80" rx="14"/><rect x="770" y="100" width="170" height="80" rx="14"/><rect x="1010" y="100" width="140" height="80" rx="14"/></g>
+    <g fill="#dcfce7" stroke="#16a34a"><rect x="220" y="270" width="160" height="80" rx="14"/><rect x="460" y="270" width="230" height="80" rx="14"/><rect x="770" y="270" width="170" height="80" rx="14"/><rect x="1010" y="270" width="140" height="80" rx="14"/></g>
+    <g fill="#ede9fe" stroke="#7c3aed"><rect x="220" y="440" width="160" height="80" rx="14"/><rect x="460" y="440" width="230" height="80" rx="14"/><rect x="770" y="440" width="170" height="80" rx="14"/><rect x="1010" y="440" width="140" height="80" rx="14"/></g>
+  </g>
+  <g font-family="sans-serif" font-size="19" text-anchor="middle" fill="#0f172a">
+    <text x="300" y="148">PCM ADC</text><text x="575" y="135">PCM / 浮点编辑</text><text x="575" y="160">混音、插件、母带</text><text x="855" y="148">PCM 母带</text><text x="1080" y="148">PCM 发行</text>
+    <text x="300" y="318">DSD ADC</text><text x="575" y="305">少量处理</text><text x="575" y="330">剪切与拼接</text><text x="855" y="318">DSD 母带</text><text x="1080" y="318">DSD 发行</text>
+    <text x="300" y="488">DSD ADC</text><text x="575" y="475">转换为 DXD</text><text x="575" y="500">复杂编辑与混音</text><text x="855" y="475">重新进行</text><text x="855" y="500">DSD 调制</text><text x="1080" y="488">DSD 发行</text>
+  </g>
+  <g stroke="#475569" stroke-width="4" fill="none" marker-end="url(#c)">
+    <path d="M385 140H450M700 140H760M950 140H1000"/><path d="M385 310H450M700 310H760M950 310H1000"/><path d="M385 480H450M700 480H760M950 480H1000"/>
+  </g>
+  <text x="600" y="600" text-anchor="middle" font-family="sans-serif" font-size="21" fill="#64748b">最终文件是 DSD，不代表录音、编辑和母带阶段始终处于 1-bit DSD 域</text>
+</svg>

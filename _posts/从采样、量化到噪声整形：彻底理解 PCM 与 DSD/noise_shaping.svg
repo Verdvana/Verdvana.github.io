@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="620" viewBox="0 0 1200 620">
+  <rect width="1200" height="620" fill="#f8fafc"/>
+  <text x="600" y="48" text-anchor="middle" font-family="sans-serif" font-size="28" font-weight="700" fill="#0f172a">噪声整形改变噪声分布，不消灭噪声</text>
+  <g stroke="#64748b" stroke-width="2"><path d="M90 510H1120"/><path d="M90 510V95"/><path d="M390 510V95" stroke="#f97316" stroke-dasharray="8 7"/></g>
+  <rect x="90" y="95" width="300" height="415" fill="#dcfce7" opacity=".65"/>
+  <path d="M90 410 C230 400 330 405 430 395 S650 360 760 290 S940 145 1120 105" fill="none" stroke="#7c3aed" stroke-width="7"/>
+  <path d="M90 310 C300 305 520 315 730 308 S930 312 1120 306" fill="none" stroke="#2563eb" stroke-width="5" stroke-dasharray="12 8"/>
+  <g font-family="sans-serif" font-size="20" fill="#334155">
+    <text x="170" y="130">主要听觉频带</text><text x="400" y="540">20 kHz</text><text x="1025" y="540">频率</text><text x="28" y="110">噪声</text>
+    <text x="770" y="270" fill="#7c3aed">DSD：带内低、超声区快速上升</text><text x="765" y="340" fill="#2563eb">示意性的平坦量化噪声</text>
+  </g>
+  <path d="M160 180H330" stroke="#16a34a" stroke-width="5"/>
+  <text x="600" y="585" text-anchor="middle" font-family="sans-serif" font-size="21" fill="#64748b">低通滤波器保留左侧音乐频带，并衰减右侧被“搬走”的超声噪声</text>
+</svg>

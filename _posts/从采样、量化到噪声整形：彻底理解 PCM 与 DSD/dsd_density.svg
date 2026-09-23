@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="650" viewBox="0 0 1200 650">
+  <rect width="1200" height="650" fill="#f8fafc"/>
+  <text x="600" y="48" text-anchor="middle" font-family="sans-serif" font-size="28" font-weight="700" fill="#0f172a">DSD 用脉冲密度描述局部平均幅度</text>
+  <g font-family="sans-serif" font-size="22" fill="#334155">
+    <text x="55" y="145">正幅度</text><text x="55" y="315">零附近</text><text x="55" y="485">负幅度</text>
+    <text x="1000" y="145" fill="#2563eb">1 较多</text><text x="1000" y="315" fill="#2563eb">约各一半</text><text x="1000" y="485" fill="#2563eb">0 较多</text>
+  </g>
+  <g transform="translate(190 95)" fill="none" stroke="#2563eb" stroke-width="5" stroke-linejoin="round">
+    <path d="M0 80V15H45V15H90V15H135V80H180V15H225V15H270V15H315V80H360V15H405V15H450V15H495V80H540V15H585V15H630V15H675V80H720V15H765V80"/>
+    <path transform="translate(0 170)" d="M0 80V15H45V80H90V15H135V80H180V15H225V80H270V15H315V80H360V15H405V80H450V15H495V80H540V15H585V80H630V15H675V80H720V15H765V80"/>
+    <path transform="translate(0 340)" d="M0 80V15H45V80H90V80H135V80H180V15H225V80H270V80H315V80H360V15H405V80H450V80H495V80H540V15H585V80H630V80H675V80H720V15H765V80"/>
+  </g>
+  <g stroke="#f97316" stroke-width="4" stroke-dasharray="10 8">
+    <path d="M190 125H955"/><path d="M190 297H955"/><path d="M190 468H955"/>
+  </g>
+  <text x="600" y="610" text-anchor="middle" font-family="sans-serif" font-size="21" fill="#64748b">脉冲幅度和 bit 周期不变，变化的是一段时间内 1 与 0 的比例</text>
+</svg>
